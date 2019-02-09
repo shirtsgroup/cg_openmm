@@ -1,0 +1,10 @@
+2019-02-08 16:51:26,521 - DEBUG - yank.mpi - Running _setup_molecules serially.
+2019-02-08 16:51:27,022 - DEBUG - root - Fixing net charge from -2.000000000015878e-06 to 4.163336342344337e-17
+2019-02-08 16:51:27,026 - DEBUG - yank.mpi - Running get_system serially.
+2019-02-08 16:51:27,026 - INFO - yank.pipeline - Setting up the systems for t4-lysozyme and p-xylene using solvent GBSA
+2019-02-08 16:51:27,027 - DEBUG - yank.pipeline - Setting up solvent phase
+2019-02-08 16:51:27,246 - DEBUG - yank.pipeline - Setting up complex phase
+2019-02-08 16:51:28,103 - WARNING - yank.pipeline - TLeap: The unperturbed charge of the unit: 8.000000 is not zero.
+2019-02-08 16:51:28,103 - WARNING - yank.pipeline - TLeap: The unperturbed charge of the unit: 8.000000 is not zero.
+2019-02-08 16:51:28,104 - DEBUG - yank.mpi - Single node: executing <function ExperimentBuilder._generate_yaml at 0x7f6048bb7c80>
+2019-02-08 16:51:28,117 - DEBUG - yank.mpi - Running _generate_experiment_protocol serially.

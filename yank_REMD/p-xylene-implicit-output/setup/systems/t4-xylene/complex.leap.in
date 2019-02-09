@@ -1,0 +1,25 @@
+
+# Load parameters
+loadAmberParams p-xylene-implicit-output/setup/molecules/p-xylene/p-xylene.frcmod
+source leaprc.protein.ff14SB
+source leaprc.gaff2
+source leaprc.water.tip4pew
+
+# Load molecules
+t4-lysozyme = loadPdb /home/gmeek/software/anaconda3/pkgs/yank-examples-1.1.0-0/share/yank/examples/binding/t4-lysozyme/input/receptor.pdbfixer.pdb
+p-xylene = loadMol2 p-xylene-implicit-output/setup/molecules/p-xylene/p-xylene.gaff.mol2
+
+# Create complex
+complex = combine { t4-lysozyme p-xylene }
+
+# Set GB radii to recommended values for OBC
+set default PBRadii mbondi2
+
+# Check charge
+check complex
+
+# Save prmtop and inpcrd files
+saveAmberParm complex p-xylene-implicit-output/setup/systems/t4-xylene/complex.prmtop p-xylene-implicit-output/setup/systems/t4-xylene/complex.inpcrd
+savePDB complex p-xylene-implicit-output/setup/systems/t4-xylene/complex.pdb
+
+quit

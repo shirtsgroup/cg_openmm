@@ -1,0 +1,12 @@
+2019-02-08 18:39:36,165 - DEBUG - yank.experiment - Cannot find ligand specification. Alchemically modifying the whole solute.
+2019-02-08 18:39:36,165 - DEBUG - yank.experiment - DSL string for the solvent: "auto"
+2019-02-08 18:39:36,167 - INFO - yank.experiment - Reading phase complex
+2019-02-08 18:39:36,167 - DEBUG - yank.pipeline - top: /home/gmeek/Foldamers/OpenMM_CG_polymers/structure_files/CG_8-mer.top
+2019-02-08 18:39:36,167 - DEBUG - yank.pipeline - gro: /home/gmeek/Foldamers/OpenMM_CG_polymers/structure_files/CG_8-mer.gro
+2019-02-08 18:39:36,168 - INFO - yank.pipeline - nonbonded_method = NoCutoff, so removing periodic box vectors from gro file
+2019-02-08 18:42:38,089 - DEBUG - yank.experiment - Cannot find ligand specification. Alchemically modifying the whole solute.
+2019-02-08 18:42:38,089 - DEBUG - yank.experiment - DSL string for the solvent: "auto"
+2019-02-08 18:42:38,090 - INFO - yank.experiment - Reading phase complex
+2019-02-08 18:42:38,090 - DEBUG - yank.pipeline - top: /home/gmeek/Foldamers/OpenMM_CG_polymers/structure_files/CG_8-mer.top
+2019-02-08 18:42:38,090 - DEBUG - yank.pipeline - gro: /home/gmeek/Foldamers/OpenMM_CG_polymers/structure_files/CG_8-mer.gro
+2019-02-08 18:42:38,092 - INFO - yank.pipeline - nonbonded_method = NoCutoff, so removing periodic box vectors from gro file

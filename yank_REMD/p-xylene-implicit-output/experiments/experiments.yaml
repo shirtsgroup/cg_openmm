@@ -1,0 +1,50 @@
+---
+version: '1.3'
+options:
+    minimize: true
+    output_dir: ..
+    pressure: null
+    temperature: 300*kelvin
+    verbose: true
+molecules:
+    p-xylene:
+        antechamber:
+            charge_method: bcc
+        filepath: /home/gmeek/software/anaconda3/pkgs/yank-examples-1.1.0-0/share/yank/examples/binding/t4-lysozyme/input/ligand.tripos.mol2
+    t4-lysozyme:
+        filepath: /home/gmeek/software/anaconda3/pkgs/yank-examples-1.1.0-0/share/yank/examples/binding/t4-lysozyme/input/receptor.pdbfixer.pdb
+solvents:
+    GBSA:
+        implicit_solvent: OBC2
+        nonbonded_method: NoCutoff
+systems:
+    t4-xylene:
+        leap:
+            parameters: [leaprc.protein.ff14SB, leaprc.gaff2, leaprc.water.tip4pew]
+        ligand: p-xylene
+        receptor: t4-lysozyme
+        solvent: GBSA
+protocols:
+    absolute-binding:
+        complex:
+            alchemical_path:
+                lambda_electrostatics: [1.0, 1.0, 1.0, 1.0, 1.0, 0.9, 0.8, 0.7, 0.6,
+                    0.5, 0.4, 0.3, 0.2, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                    0.0, 0.0, 0.0]
+                lambda_restraints: [0.0, 0.25, 0.5, 0.75, 1.0, 1.0, 1.0, 1.0, 1.0,
+                    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                    1.0, 1.0, 1.0]
+                lambda_sterics: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                    1.0, 1.0, 1.0, 1.0, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2,
+                    0.1, 0.0]
+        solvent:
+            alchemical_path:
+                lambda_electrostatics: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2,
+                    0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+                lambda_sterics: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                    1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0]
+experiments:
+    protocol: absolute-binding
+    restraint:
+        type: Harmonic
+    system: t4-xylene

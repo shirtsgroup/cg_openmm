@@ -12,10 +12,10 @@ options:
 molecules:
   # Define our receptor, T4-Lysozyme, we can call it whatever we want so we just use its name here as the directive
   t4-lysozyme:
-    filepath: /input/receptor.pdbfixer.pdb
+    filepath: /home/gmeek/software/anaconda3/pkgs/yank-examples-1.1.0-0/share/yank/examples/binding/t4-lysozyme/input/receptor.pdbfixer.pdb
   # Define our ligand molecule
   p-xylene:
-    filepath: input/ligand.tripos.mol2
+    filepath: /home/gmeek/software/anaconda3/pkgs/yank-examples-1.1.0-0/share/yank/examples/binding/t4-lysozyme/input/ligand.tripos.mol2
     # Get the partial charges for the ligand by generating them from antechamber with the AM1-BCC charge method
     antechamber:
       charge_method: bcc

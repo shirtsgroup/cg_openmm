@@ -1,0 +1,7 @@
+2019-02-08 18:39:36,153 - DEBUG - yank.mpi - Running _setup_molecules serially.
+2019-02-08 18:39:36,153 - DEBUG - yank.mpi - Running get_system serially.
+2019-02-08 18:39:36,153 - DEBUG - yank.mpi - Single node: executing <function ExperimentBuilder._generate_yaml at 0x7f3880143c80>
+2019-02-08 18:39:36,165 - DEBUG - yank.mpi - Running _generate_experiment_protocol serially.
+2019-02-08 18:42:38,088 - DEBUG - yank.mpi - Running _setup_molecules serially.
+2019-02-08 18:42:38,088 - DEBUG - yank.mpi - Running get_system serially.
+2019-02-08 18:42:38,088 - DEBUG - yank.mpi - Running _generate_experiment_protocol serially.

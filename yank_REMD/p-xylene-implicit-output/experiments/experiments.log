@@ -1,0 +1,167 @@
+2019-02-08 16:51:28,118 - DEBUG - yank.experiment - DSL string for the ligand: "resname MOL"
+2019-02-08 16:51:28,118 - DEBUG - yank.experiment - DSL string for the solvent: "auto"
+2019-02-08 16:51:28,120 - INFO - yank.experiment - Reading phase complex
+2019-02-08 16:51:28,120 - DEBUG - yank.pipeline - prmtop: p-xylene-implicit-output/setup/systems/t4-xylene/complex.prmtop
+2019-02-08 16:51:28,120 - DEBUG - yank.pipeline - inpcrd: p-xylene-implicit-output/setup/systems/t4-xylene/complex.inpcrd
+2019-02-08 16:51:29,156 - INFO - yank.experiment - Reading phase solvent
+2019-02-08 16:51:29,156 - DEBUG - yank.pipeline - prmtop: p-xylene-implicit-output/setup/systems/t4-xylene/solvent.prmtop
+2019-02-08 16:51:29,156 - DEBUG - yank.pipeline - inpcrd: p-xylene-implicit-output/setup/systems/t4-xylene/solvent.inpcrd
+2019-02-08 16:51:29,166 - DEBUG - yank.mpi - Single node: executing <function ExperimentBuilder._save_analysis_script at 0x7f6048bb7d90>
+2019-02-08 16:51:29,167 - DEBUG - yank.multistate.multistatereporter - Initial checkpoint file automatically chosen as p-xylene-implicit-output/experiments/complex_checkpoint.nc
+2019-02-08 16:51:29,855 - DEBUG - yank.yank - Creating receptor-ligand restraints...
+2019-02-08 16:51:29,855 - DEBUG - yank.yank - There are undefined restraint parameters. Trying automatic parametrization.
+2019-02-08 16:51:29,855 - DEBUG - yank.restraints - Restraint Harmonic: Automatically picked restrained ligand_atoms atom: ligand_atoms
+2019-02-08 16:51:29,856 - DEBUG - yank.restraints - Restraint Harmonic: Automatically picked restrained receptor_atoms atom: receptor_atoms
+2019-02-08 16:51:29,858 - DEBUG - yank.restraints - Spring constant sigma, s = 0.522 nm
+2019-02-08 16:51:29,858 - DEBUG - yank.restraints - K = 0.0 kcal/mol/A^2
+2019-02-08 16:51:30,822 - DEBUG - yank.restraints - Standard state correction: 0.297 kT
+2019-02-08 16:51:30,822 - DEBUG - openmmtools.utils - Restraint Harmonic: Computing standard state correction took    0.001s
+2019-02-08 16:51:30,822 - DEBUG - yank.yank - Creating alchemically-modified states...
+2019-02-08 16:51:32,835 - DEBUG - openmmtools.utils - Create alchemically modified system took    1.683s
+2019-02-08 16:51:35,332 - DEBUG - yank.yank - Creating expanded cutoff states...
+2019-02-08 16:51:35,332 - WARNING - yank.yank - The requested anisotropic dispersion correction won't be computed since the system is non-periodic.
+2019-02-08 16:51:35,333 - DEBUG - yank.yank - Creating sampler object...
+2019-02-08 16:51:35,334 - DEBUG - yank.mpi - Single node: executing <bound method MultiStateReporter.storage_exists of <yank.multistate.multistatereporter.MultiStateReporter object at 0x7f60484a31d0>>
+2019-02-08 16:51:35,999 - DEBUG - yank.mpi - Single node: executing <function ReplicaExchangeSampler._display_citations at 0x7f6048cf1378>
+2019-02-08 16:51:36,000 - DEBUG - yank.mpi - Single node: executing <function MultiStateSampler._display_citations at 0x7f6048d50488>
+2019-02-08 16:51:36,000 - DEBUG - yank.mpi - Single node: executing <function MultiStateSampler._initialize_reporter at 0x7f6048d50730>
+2019-02-08 16:51:36,722 - DEBUG - yank.multistate.multistatereporter - Serialized state thermodynamic_states/0 is  469931B | 458.917KB | 0.448MB
+2019-02-08 16:51:36,819 - DEBUG - openmmtools.utils - Storing thermodynamic states took    0.799s
+2019-02-08 16:51:36,819 - DEBUG - yank.multistate.multistatesampler - Storing general ReplicaExchange options...
+2019-02-08 16:51:36,958 - DEBUG - yank.mpi - Single node: executing <function MultiStateSampler._report_iteration at 0x7f6048d50840>
+2019-02-08 16:51:36,958 - DEBUG - yank.mpi - Single node: executing <function MultiStateSampler._report_iteration_items at 0x7f6048d50ae8>
+2019-02-08 16:51:37,073 - DEBUG - openmmtools.utils - Storing sampler states took    0.114s
+2019-02-08 16:51:37,175 - DEBUG - openmmtools.utils - Writing iteration information to storage took    0.217s
+2019-02-08 16:51:37,197 - DEBUG - yank.yank - Minimizing 1 sampler states in the reference thermodynamic state
+2019-02-08 16:51:37,197 - DEBUG - yank.mpi - Running _minimize_sampler_state serially.
+2019-02-08 16:51:37,633 - DEBUG - yank.yank - Sampler state 1/25: initial energy -8732.167kT
+2019-02-08 16:51:37,633 - DEBUG - yank.yank - Using FIRE: tolerance 1.0 kJ/(nm mol) max_iterations 1000
+2019-02-08 16:51:40,891 - DEBUG - yank.yank - Sampler state 1/25: final energy -10900.167kT
+2019-02-08 16:51:40,896 - DEBUG - yank.mpi - Single node: executing <bound method MultiStateReporter.write_sampler_states of <yank.multistate.multistatereporter.MultiStateReporter object at 0x7f60484a31d0>>
+2019-02-08 16:51:41,017 - DEBUG - openmmtools.utils - Storing sampler states took    0.121s
+2019-02-08 16:51:41,017 - DEBUG - yank.multistate.multistatesampler - Minimizing all replicas...
+2019-02-08 16:51:41,017 - DEBUG - yank.mpi - Running _minimize_replica serially.
+2019-02-08 16:51:42,117 - DEBUG - yank.multistate.multistatesampler - Replica 1/25: initial energy -10900.172kT
+2019-02-08 16:51:42,117 - DEBUG - yank.multistate.multistatesampler - Using FIRE: tolerance 1.0 kJ/(nm mol) max_iterations 1000
+2019-02-08 16:51:42,755 - DEBUG - yank.multistate.multistatesampler - Replica 1/25: final energy -10900.172kT
+2019-02-08 16:51:43,902 - DEBUG - yank.multistate.multistatesampler - Replica 2/25: initial energy -10894.122kT
+2019-02-08 16:51:43,902 - DEBUG - yank.multistate.multistatesampler - Using FIRE: tolerance 1.0 kJ/(nm mol) max_iterations 1000
+2019-02-08 16:51:44,538 - DEBUG - yank.multistate.multistatesampler - Replica 2/25: final energy -10894.122kT
+2019-02-08 16:51:45,640 - DEBUG - yank.multistate.multistatesampler - Replica 3/25: initial energy -10888.072kT
+2019-02-08 16:51:45,640 - DEBUG - yank.multistate.multistatesampler - Using FIRE: tolerance 1.0 kJ/(nm mol) max_iterations 1000
+2019-02-08 16:51:46,257 - DEBUG - yank.multistate.multistatesampler - Replica 3/25: final energy -10888.072kT
+2019-02-08 16:51:47,369 - DEBUG - yank.multistate.multistatesampler - Replica 4/25: initial energy -10882.023kT
+2019-02-08 16:51:47,370 - DEBUG - yank.multistate.multistatesampler - Using FIRE: tolerance 1.0 kJ/(nm mol) max_iterations 1000
+2019-02-08 16:51:47,990 - DEBUG - yank.multistate.multistatesampler - Replica 4/25: final energy -10882.023kT
+2019-02-08 16:51:49,116 - DEBUG - yank.multistate.multistatesampler - Replica 5/25: initial energy -10875.973kT
+2019-02-08 16:51:49,116 - DEBUG - yank.multistate.multistatesampler - Using FIRE: tolerance 1.0 kJ/(nm mol) max_iterations 1000
+2019-02-08 16:51:49,758 - DEBUG - yank.multistate.multistatesampler - Replica 5/25: final energy -10875.973kT
+2019-02-08 16:51:50,855 - DEBUG - yank.multistate.multistatesampler - Replica 6/25: initial energy -10876.630kT
+2019-02-08 16:51:50,855 - DEBUG - yank.multistate.multistatesampler - Using FIRE: tolerance 1.0 kJ/(nm mol) max_iterations 1000
+2019-02-08 16:51:51,475 - DEBUG - yank.multistate.multistatesampler - Replica 6/25: final energy -10876.630kT
+2019-02-08 16:51:52,615 - DEBUG - yank.multistate.multistatesampler - Replica 7/25: initial energy -10876.865kT
+2019-02-08 16:51:52,615 - DEBUG - yank.multistate.multistatesampler - Using FIRE: tolerance 1.0 kJ/(nm mol) max_iterations 1000
+2019-02-08 16:51:53,237 - DEBUG - yank.multistate.multistatesampler - Replica 7/25: final energy -10876.865kT
+2019-02-08 16:51:54,356 - DEBUG - yank.multistate.multistatesampler - Replica 8/25: initial energy -10876.716kT
+2019-02-08 16:51:54,356 - DEBUG - yank.multistate.multistatesampler - Using FIRE: tolerance 1.0 kJ/(nm mol) max_iterations 1000
+2019-02-08 16:51:54,991 - DEBUG - yank.multistate.multistatesampler - Replica 8/25: final energy -10876.716kT
+2019-02-08 16:51:56,146 - DEBUG - yank.multistate.multistatesampler - Replica 9/25: initial energy -10876.220kT
+2019-02-08 16:51:56,146 - DEBUG - yank.multistate.multistatesampler - Using FIRE: tolerance 1.0 kJ/(nm mol) max_iterations 1000
+2019-02-08 16:51:56,773 - DEBUG - yank.multistate.multistatesampler - Replica 9/25: final energy -10876.220kT
+2019-02-08 16:51:57,906 - DEBUG - yank.multistate.multistatesampler - Replica 10/25: initial energy -10875.413kT
+2019-02-08 16:51:57,906 - DEBUG - yank.multistate.multistatesampler - Using FIRE: tolerance 1.0 kJ/(nm mol) max_iterations 1000
+2019-02-08 16:51:58,530 - DEBUG - yank.multistate.multistatesampler - Replica 10/25: final energy -10875.413kT
+2019-02-08 16:51:59,678 - DEBUG - yank.multistate.multistatesampler - Replica 11/25: initial energy -10874.332kT
+2019-02-08 16:51:59,678 - DEBUG - yank.multistate.multistatesampler - Using FIRE: tolerance 1.0 kJ/(nm mol) max_iterations 1000
+2019-02-08 16:52:00,315 - DEBUG - yank.multistate.multistatesampler - Replica 11/25: final energy -10874.332kT
+2019-02-08 16:52:01,460 - DEBUG - yank.multistate.multistatesampler - Replica 12/25: initial energy -10873.013kT
+2019-02-08 16:52:01,460 - DEBUG - yank.multistate.multistatesampler - Using FIRE: tolerance 1.0 kJ/(nm mol) max_iterations 1000
+2019-02-08 16:52:02,080 - DEBUG - yank.multistate.multistatesampler - Replica 12/25: final energy -10873.013kT
+2019-02-08 16:52:03,186 - DEBUG - yank.multistate.multistatesampler - Replica 13/25: initial energy -10871.501kT
+2019-02-08 16:52:03,186 - DEBUG - yank.multistate.multistatesampler - Using FIRE: tolerance 1.0 kJ/(nm mol) max_iterations 1000
+2019-02-08 16:52:03,811 - DEBUG - yank.multistate.multistatesampler - Replica 13/25: final energy -10871.500kT
+2019-02-08 16:52:04,952 - DEBUG - yank.multistate.multistatesampler - Replica 14/25: initial energy -10869.847kT
+2019-02-08 16:52:04,952 - DEBUG - yank.multistate.multistatesampler - Using FIRE: tolerance 1.0 kJ/(nm mol) max_iterations 1000
+2019-02-08 16:52:05,595 - DEBUG - yank.multistate.multistatesampler - Replica 14/25: final energy -10869.847kT
+2019-02-08 16:52:06,734 - DEBUG - yank.multistate.multistatesampler - Replica 15/25: initial energy -10868.124kT
+2019-02-08 16:52:06,734 - DEBUG - yank.multistate.multistatesampler - Using FIRE: tolerance 1.0 kJ/(nm mol) max_iterations 1000
+2019-02-08 16:52:07,372 - DEBUG - yank.multistate.multistatesampler - Replica 15/25: final energy -10868.125kT
+2019-02-08 16:52:08,502 - DEBUG - yank.multistate.multistatesampler - Replica 16/25: initial energy -10868.121kT
+2019-02-08 16:52:08,502 - DEBUG - yank.multistate.multistatesampler - Using FIRE: tolerance 1.0 kJ/(nm mol) max_iterations 1000
+2019-02-08 16:52:09,121 - DEBUG - yank.multistate.multistatesampler - Replica 16/25: final energy -10868.121kT
+2019-02-08 16:52:10,258 - DEBUG - yank.multistate.multistatesampler - Replica 17/25: initial energy -10868.119kT
+2019-02-08 16:52:10,258 - DEBUG - yank.multistate.multistatesampler - Using FIRE: tolerance 1.0 kJ/(nm mol) max_iterations 1000
+2019-02-08 16:52:10,883 - DEBUG - yank.multistate.multistatesampler - Replica 17/25: final energy -10868.118kT
+2019-02-08 16:52:12,018 - DEBUG - yank.multistate.multistatesampler - Replica 18/25: initial energy -10868.115kT
+2019-02-08 16:52:12,018 - DEBUG - yank.multistate.multistatesampler - Using FIRE: tolerance 1.0 kJ/(nm mol) max_iterations 1000
+2019-02-08 16:52:12,640 - DEBUG - yank.multistate.multistatesampler - Replica 18/25: final energy -10868.115kT
+2019-02-08 16:52:13,744 - DEBUG - yank.multistate.multistatesampler - Replica 19/25: initial energy -10868.112kT
+2019-02-08 16:52:13,744 - DEBUG - yank.multistate.multistatesampler - Using FIRE: tolerance 1.0 kJ/(nm mol) max_iterations 1000
+2019-02-08 16:52:14,376 - DEBUG - yank.multistate.multistatesampler - Replica 19/25: final energy -10868.112kT
+2019-02-08 16:52:15,491 - DEBUG - yank.multistate.multistatesampler - Replica 20/25: initial energy -10868.109kT
+2019-02-08 16:52:15,491 - DEBUG - yank.multistate.multistatesampler - Using FIRE: tolerance 1.0 kJ/(nm mol) max_iterations 1000
+2019-02-08 16:52:16,128 - DEBUG - yank.multistate.multistatesampler - Replica 20/25: final energy -10868.109kT
+2019-02-08 16:52:17,265 - DEBUG - yank.multistate.multistatesampler - Replica 21/25: initial energy -10868.106kT
+2019-02-08 16:52:17,265 - DEBUG - yank.multistate.multistatesampler - Using FIRE: tolerance 1.0 kJ/(nm mol) max_iterations 1000
+2019-02-08 16:52:17,896 - DEBUG - yank.multistate.multistatesampler - Replica 21/25: final energy -10868.106kT
+2019-02-08 16:52:18,991 - DEBUG - yank.multistate.multistatesampler - Replica 22/25: initial energy -10868.103kT
+2019-02-08 16:52:18,991 - DEBUG - yank.multistate.multistatesampler - Using FIRE: tolerance 1.0 kJ/(nm mol) max_iterations 1000
+2019-02-08 16:52:19,603 - DEBUG - yank.multistate.multistatesampler - Replica 22/25: final energy -10868.103kT
+2019-02-08 16:52:20,734 - DEBUG - yank.multistate.multistatesampler - Replica 23/25: initial energy -10868.100kT
+2019-02-08 16:52:20,734 - DEBUG - yank.multistate.multistatesampler - Using FIRE: tolerance 1.0 kJ/(nm mol) max_iterations 1000
+2019-02-08 16:52:21,347 - DEBUG - yank.multistate.multistatesampler - Replica 23/25: final energy -10868.100kT
+2019-02-08 16:52:22,479 - DEBUG - yank.multistate.multistatesampler - Replica 24/25: initial energy -10868.097kT
+2019-02-08 16:52:22,479 - DEBUG - yank.multistate.multistatesampler - Using FIRE: tolerance 1.0 kJ/(nm mol) max_iterations 1000
+2019-02-08 16:52:23,119 - DEBUG - yank.multistate.multistatesampler - Replica 24/25: final energy -10868.098kT
+2019-02-08 16:52:24,211 - DEBUG - yank.multistate.multistatesampler - Replica 25/25: initial energy -10868.094kT
+2019-02-08 16:52:24,211 - DEBUG - yank.multistate.multistatesampler - Using FIRE: tolerance 1.0 kJ/(nm mol) max_iterations 1000
+2019-02-08 16:52:24,825 - DEBUG - yank.multistate.multistatesampler - Replica 25/25: final energy -10868.094kT
+2019-02-08 16:52:24,843 - DEBUG - yank.mpi - Single node: executing <bound method MultiStateReporter.write_sampler_states of <yank.multistate.multistatereporter.MultiStateReporter object at 0x7f60484a31d0>>
+2019-02-08 16:52:24,956 - DEBUG - openmmtools.utils - Storing sampler states took    0.113s
+2019-02-08 16:52:24,957 - DEBUG - openmmtools.utils - Minimizing all replicas took   43.939s
+2019-02-08 16:52:24,957 - DEBUG - yank.mpi - Running _compute_replica_energies serially.
+2019-02-08 16:53:43,332 - DEBUG - openmmtools.utils - Computing energy matrix took   78.375s
+2019-02-08 16:53:43,332 - DEBUG - yank.mpi - Single node: executing <bound method MultiStateReporter.write_energies of <yank.multistate.multistatereporter.MultiStateReporter object at 0x7f60484a31d0>>
+2019-02-08 16:53:43,334 - DEBUG - yank.multistate.multistatesampler - Iteration 1/5000
+2019-02-08 16:53:43,334 - DEBUG - yank.mpi - Single node: executing <function ReplicaExchangeSampler._mix_replicas at 0x7f6048cf1048>
+2019-02-08 16:53:43,334 - DEBUG - yank.multistate.replicaexchange - Mixing replicas...
+2019-02-08 16:53:43,359 - DEBUG - openmmtools.utils - Mixing of replicas took    0.025s
+2019-02-08 16:53:43,359 - DEBUG - yank.multistate.replicaexchange - Accepted 781204/781250 attempted swaps (100.0%)
+2019-02-08 16:53:43,359 - DEBUG - yank.multistate.multistatesampler - Propagating all replicas...
+2019-02-08 16:53:43,359 - DEBUG - yank.mpi - Running _propagate_replica serially.
+2019-02-08 17:48:02,925 - DEBUG - yank.mpi - Running _get_replica_move_statistics serially.
+2019-02-08 17:48:02,926 - DEBUG - openmmtools.utils - Propagating all replicas took 3259.567s
+2019-02-08 17:48:02,926 - DEBUG - yank.mpi - Running _compute_replica_energies serially.
+2019-02-08 17:49:15,993 - DEBUG - openmmtools.utils - Computing energy matrix took   73.067s
+2019-02-08 17:49:15,993 - DEBUG - yank.mpi - Single node: executing <function MultiStateSampler._report_iteration at 0x7f6048d50840>
+2019-02-08 17:49:15,993 - DEBUG - yank.mpi - Single node: executing <function MultiStateSampler._report_iteration_items at 0x7f6048d50ae8>
+2019-02-08 17:49:15,993 - DEBUG - yank.multistate.multistatereporter - Iteration 1 not on the Checkpoint Interval of 10. Sampler State not written.
+2019-02-08 17:49:16,071 - DEBUG - openmmtools.utils - Storing sampler states took    0.078s
+2019-02-08 17:49:16,189 - DEBUG - openmmtools.utils - Writing iteration information to storage took    0.196s
+2019-02-08 17:49:16,189 - DEBUG - yank.multistate.multistatesampler - Iteration took 3332.855s.
+2019-02-08 17:49:16,189 - DEBUG - yank.multistate.multistatesampler - Estimated completion in 192 days, 20:02:24.881593, at Tue Aug 20 14:51:41 2019 (consuming total wall clock time 192 days, 20:57:57.737141).
+2019-02-08 17:49:16,190 - DEBUG - yank.multistate.multistatesampler - Iteration 2/5000
+2019-02-08 17:49:16,190 - DEBUG - yank.mpi - Single node: executing <function ReplicaExchangeSampler._mix_replicas at 0x7f6048cf1048>
+2019-02-08 17:49:16,190 - DEBUG - yank.multistate.replicaexchange - Mixing replicas...
+2019-02-08 17:49:16,219 - DEBUG - openmmtools.utils - Mixing of replicas took    0.029s
+2019-02-08 17:49:16,219 - DEBUG - yank.multistate.replicaexchange - Accepted 584228/781250 attempted swaps (74.8%)
+2019-02-08 17:49:16,219 - DEBUG - yank.multistate.multistatesampler - Propagating all replicas...
+2019-02-08 17:49:16,219 - DEBUG - yank.mpi - Running _propagate_replica serially.
+2019-02-08 18:43:27,749 - DEBUG - yank.mpi - Running _get_replica_move_statistics serially.
+2019-02-08 18:43:27,749 - DEBUG - openmmtools.utils - Propagating all replicas took 3251.530s
+2019-02-08 18:43:27,749 - DEBUG - yank.mpi - Running _compute_replica_energies serially.
+2019-02-08 18:44:40,822 - DEBUG - openmmtools.utils - Computing energy matrix took   73.073s
+2019-02-08 18:44:40,822 - DEBUG - yank.mpi - Single node: executing <function MultiStateSampler._report_iteration at 0x7f6048d50840>
+2019-02-08 18:44:40,823 - DEBUG - yank.mpi - Single node: executing <function MultiStateSampler._report_iteration_items at 0x7f6048d50ae8>
+2019-02-08 18:44:40,823 - DEBUG - yank.multistate.multistatereporter - Iteration 2 not on the Checkpoint Interval of 10. Sampler State not written.
+2019-02-08 18:44:40,901 - DEBUG - openmmtools.utils - Storing sampler states took    0.078s
+2019-02-08 18:44:41,028 - DEBUG - openmmtools.utils - Writing iteration information to storage took    0.205s
+2019-02-08 18:44:41,028 - DEBUG - yank.multistate.multistatesampler - Iteration took 3324.838s.
+2019-02-08 18:44:41,028 - DEBUG - yank.multistate.multistatesampler - Estimated completion in 192 days, 13:32:58.241433, at Tue Aug 20 09:17:39 2019 (consuming total wall clock time 192 days, 15:23:55.935807).
+2019-02-08 18:44:41,029 - DEBUG - yank.multistate.multistatesampler - Iteration 3/5000
+2019-02-08 18:44:41,029 - DEBUG - yank.mpi - Single node: executing <function ReplicaExchangeSampler._mix_replicas at 0x7f6048cf1048>
+2019-02-08 18:44:41,029 - DEBUG - yank.multistate.replicaexchange - Mixing replicas...
+2019-02-08 18:44:41,056 - DEBUG - openmmtools.utils - Mixing of replicas took    0.027s
+2019-02-08 18:44:41,056 - DEBUG - yank.multistate.replicaexchange - Accepted 457764/781250 attempted swaps (58.6%)
+2019-02-08 18:44:41,057 - DEBUG - yank.multistate.multistatesampler - Propagating all replicas...
+2019-02-08 18:44:41,057 - DEBUG - yank.mpi - Running _propagate_replica serially.
