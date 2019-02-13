@@ -15,10 +15,10 @@ molecules:
     filepath: /home/gmeek/Foldamers/OpenMM_CG_polymers/structure_files/CG_8-mer.pdb
 
 # Define the solvent for our system, here we use GBSA Implicit Solvent
-solvents:
-  GBSA:
-    nonbonded_method: NoCutoff # Main definition of the nonbonded method
-    implicit_solvent: OBC2 # Onufriev-Bashford-Case GBSA model, name is related to Implicit solvents in OpenMM
+#solvents:
+#  GBSA:
+#    nonbonded_method: NoCutoff # Main definition of the nonbonded method
+#    implicit_solvent: OBC2 # Onufriev-Bashford-Case GBSA model, name is related to Implicit solvents in OpenMM
 
 # Define the systems: What is the ligand, receptor, and solvent we put them in
 systems:
@@ -27,7 +27,9 @@ systems:
     phase1_path: [/home/gmeek/Foldamers/OpenMM_CG_polymers/structure_files/CG_8-mer.top, /home/gmeek/Foldamers/OpenMM_CG_polymers/structure_files/CG_8-mer.gro]
     phase2_path: [/home/gmeek/Foldamers/OpenMM_CG_polymers/structure_files/CG_8-mer.top, /home/gmeek/Foldamers/OpenMM_CG_polymers/structure_files/CG_8-mer.gro]
 #    phase2_path: [/home/gmeek/Foldamers/OpenMM_CG_polymers/structure_files/solvent.top, /home/gmeek/Foldamers/OpenMM_CG_polymers/structure_files/solvent.gro]
-    solvent: GBSA
+#    solvent: GBSA
+#    leap:
+#      parameters: [leaprc.protein.ff14SB]
     gromacs_include_dir: /home/gmeek/software/anaconda3/pkgs/gromacs-4.6.5-0/share/gromacs/top
 
 # The protocols define the alchemical path each phase will take, we use the same lambda values, though they could be different

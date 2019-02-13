@@ -2,7 +2,7 @@
 ;	File 'topol.top' was generated
 ;	By user: root (0)
 ;	On host: crestone
-;	At date: Fri Feb  8 18:12:40 2019
+;	At date: Mon Feb 11 15:26:45 2019
 ;
 ;	This is a standalone topology file
 ;
@@ -16,30 +16,30 @@
 ;
 
 ; Include forcefield parameters
-#include "oplsaa.ff/forcefield.itp"
+#include "gromos54a7.ff/forcefield.itp"
 
 [ moleculetype ]
 ; Name            nrexcl
-Ion                 3
+Other               3
 
 [ atoms ]
 ;   nr       type  resnr residue  atom   cgnr     charge       mass  typeB    chargeB      massB
-; residue   1 CA  rtp CA   q +2.0
-     1   opls_412      1     CA     CA      1          2      40.08   ; qtot 2
-; residue   2 CA  rtp CA   q +2.0
-     2   opls_412      2     CA     CA      2          2      40.08   ; qtot 4
-; residue   3 CA  rtp CA   q +2.0
-     3   opls_412      3     CA     CA      3          2      40.08   ; qtot 6
-; residue   4 CA  rtp CA   q +2.0
-     4   opls_412      4     CA     CA      4          2      40.08   ; qtot 8
-; residue   5 CA  rtp CA   q +2.0
-     5   opls_412      5     CA     CA      5          2      40.08   ; qtot 10
-; residue   6 CA  rtp CA   q +2.0
-     6   opls_412      6     CA     CA      6          2      40.08   ; qtot 12
-; residue   7 CA  rtp CA   q +2.0
-     7   opls_412      7     CA     CA      7          2      40.08   ; qtot 14
-; residue   8 CA  rtp CA   q +2.0
-     8   opls_412      8     CA     CA      8          2      40.08   ; qtot 16
+; residue   1 CG  rtp CG   q  0.0
+     1        CH2      1     CG    CG1      1          0     14.027   ; qtot 0
+; residue   2 CG  rtp CG   q  0.0
+     2        CH2      2     CG    CG1      2          0     14.027   ; qtot 0
+; residue   3 CG  rtp CG   q  0.0
+     3        CH2      3     CG    CG1      3          0     14.027   ; qtot 0
+; residue   4 CG  rtp CG   q  0.0
+     4        CH2      4     CG    CG1      4          0     14.027   ; qtot 0
+; residue   5 CG  rtp CG   q  0.0
+     5        CH2      5     CG    CG1      5          0     14.027   ; qtot 0
+; residue   6 CG  rtp CG   q  0.0
+     6        CH2      6     CG    CG1      6          0     14.027   ; qtot 0
+; residue   7 CG  rtp CG   q  0.0
+     7        CH2      7     CG    CG1      7          0     14.027   ; qtot 0
+; residue   8 CG  rtp CG   q  0.0
+     8        CH2      8     CG    CG1      8          0     14.027   ; qtot 0
 
 ; Include Position restraint file
 #ifdef POSRES
@@ -47,7 +47,7 @@ Ion                 3
 #endif
 
 ; Include water topology
-#include "oplsaa.ff/spc.itp"
+#include "gromos54a7.ff/spc.itp"
 
 #ifdef POSRES_WATER
 ; Position restraint for each water oxygen
@@ -57,7 +57,7 @@ Ion                 3
 #endif
 
 ; Include topology for ions
-#include "oplsaa.ff/ions.itp"
+#include "gromos54a7.ff/ions.itp"
 
 [ system ]
 ; Name
@@ -65,4 +65,4 @@ Protein
 
 [ molecules ]
 ; Compound        #mols
-Ion                 1
+Other               1
