@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# To run the test in this directory type the following at the command line:
+
+echo "Running simulation..."
+
+mpirun python3 test_sampling.py > test_sampling.out
+
+
