@@ -1769,11 +1769,31 @@ if __name__ == "__main__":
     # Configure logger.
     config_root_logger(False)
 
-    # Test simple system of harmonic oscillators.
-    # Disabled until we fix the test
-#    mpicomm = mpi.get_mpicomm()
-    start_time = timeit.default_timer()
-    run_replica_exchange()
-#    mpi.run_single_node(rank=0,task=run_replica_exchange(mpicomm))
-    stop_time = timeit.default_timer()
-    print("Calculation time was: "+str(stop_time-start_time)+" seconds.")
+
+#-netcdf=FILEPATH             Path to the NetCDF file.
+#  --checkpoint=FILEPATH         Path to the NetCDF checkpoint file if not the default name inferned from "netcdf" option
+#  --state=STATE_IDX             Index of the alchemical state for which to extract the trajectory
+#  --replica=REPLICA_IDX         Index of the replica for which to extract the trajectory
+#  --trajectory=FILEPATH         Path to the trajectory file to create (extension determines the format)
+
+    analyze.dispatch_extract_trajectory({'--checkpoint': 'test_storage_checkpoint.nc',
+ '--fulltraj': True,
+ '--netcdf': 'test_storage.nc',
+ '--output': 'traj1',
+ '--replica': 1,
+ '--trajectory': 1,
+ '--state': 1,
+ 'extract-trajectory': True,
+ '--discardequil': False,
+ '--distcutoff': None,
+ '--end': None,
+ '--energycutoff': None,
+ '--format': None,
+ '--serial': None,
+ '--skip': None,
+ '--skipunbiasing': False,
+ '--start': None,
+ '--imagemol': None,
+ '--nosolvent': None,
+ '--verbose': False})
+#    analyze.dispatch_extract_trajectory("--netcdf=storage.nc --checkpoint=storage_checkoint.nc --state=1 --replica=1 --trajectory=traj1")

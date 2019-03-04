@@ -26,8 +26,8 @@ gromacs_atp="/home/gmeek/software/anaconda3/pkgs/gromacs-4.6.5-0/share/gromacs/t
 
 #exit
 # Run the simulation
-echo "Running simulation..."
-yank script --yaml=CG_octamer.yaml
+#echo "Running simulation..."
+#yank script --yaml=CG_octamer.yaml
 
 # Analyze the data
 echo "Analyzing data..."

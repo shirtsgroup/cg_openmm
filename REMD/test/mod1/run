@@ -4,6 +4,9 @@
 
 echo "Running simulation..."
 
-mpirun python3 test_sampling.py > test_sampling.out
+# mpirun python3 test_sampling.py > test_sampling.out
+
+echo "Analyzing simultion data..."
+
 
 
