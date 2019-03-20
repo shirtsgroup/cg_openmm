@@ -46,12 +46,12 @@ sigma_CG2 = 4.5 * unit.angstrom
 epsilon_CG1 = 0.2 * unit.kilocalorie_per_mole
 epsilon_CG2 = 0.1 * unit.kilocalorie_per_mole
 
-box_size = 5.628 * unit.angstroms  # box width
-a = unit.Quantity(np.zeros([3]), unit.nanometers)
+box_size = 200.00 * unit.angstroms  # box width
+a = unit.Quantity(np.zeros([3]), unit.angstroms)
 a[0] = box_size
-b = unit.Quantity(np.zeros([3]), unit.nanometers)
+b = unit.Quantity(np.zeros([3]), unit.angstroms)
 b[1] = box_size
-c = unit.Quantity(np.zeros([3]), unit.nanometers)
+c = unit.Quantity(np.zeros([3]), unit.angstroms)
 c[2] = box_size
 # Create nonbonded force term.
 force = mm.NonbondedForce()
@@ -96,6 +96,7 @@ def run_cg_simulation(verbose=False, verbose_simulation=False):
     step=True, totalEnergy=True, potentialEnergy=True, kineticEnergy=True, temperature=True)) # Write simulation data
     simulation.context.setPositions(mm_positions) # Assign particle positions for this context
     simulation.minimizeEnergy() # Set the simulation type to energy minimization
+    print("Made it to the step before running simulations.")
     simulation.step(simulation_steps) # Run the simulation 
     config_root_logger(verbose_simulation)
 
