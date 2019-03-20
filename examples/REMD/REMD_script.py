@@ -18,7 +18,7 @@ storage_checkpoint = os.path.join(os.getcwd(), 'test_storage_checkpoint.nc')
 import sys
 import timeit
 from io import StringIO
-import openmm
+from simtk import openmm
 import openmmtools as mmtools
 from openmmtools import testsystems
 from simtk import unit
@@ -38,7 +38,7 @@ MultiStateSampler._global_citation_silence = True
 # RUN REPLICA EXCHANGE
 # ==============================================================================
 
-testsystem = testsystems.IdealGas()
+testsystem = testsystems.SodiumChlorideCrystal()
         # Create thermodynamic state and save positions.
 
 def run_replica_exchange(verbose=False, verbose_simulation=False):
@@ -57,13 +57,14 @@ def run_replica_exchange(verbose=False, verbose_simulation=False):
 #        box_vectors = thermodynamic_state.system.default_box_vectors()
         sampler_states.append(mmtools.states.SamplerState(positions,box_vectors=box_vectors))
     # Create and configure simulation object.
-    move = mmtools.mcmc.LangevinDynamicsMove(timestep=2.0*unit.femtoseconds,
+    move = mmtools.mcmc.LangevinDynamicsMove(timestep=20.0*unit.femtoseconds,
                                              collision_rate=20.0/unit.picosecond,
-                                             n_steps=100, reassign_velocities=True)
-    simulation = ReplicaExchangeSampler(mcmc_moves=move, number_of_iterations=20)
+                                             n_steps=1000, reassign_velocities=True)
+    simulation = ReplicaExchangeSampler(mcmc_moves=move, number_of_iterations=10)
 
     if os.path.exists(storage): os.remove(storage)
     reporter = MultiStateReporter(storage, checkpoint_interval=1)
+    
     simulation.create(thermodynamic_states, sampler_states, reporter)
     config_root_logger(verbose_simulation)
     simulation.run()
@@ -87,6 +88,6 @@ if __name__ == "__main__":
     stop_time = timeit.default_timer()
     print("Calculation time was: "+str(stop_time-start_time)+" seconds.")
 	
-    trajectory = analyze.extract_trajectory(testsystem,storage,nc_checkpoint_file=storage_checkpoint,replica_index=1)
-    trajectory.save_hdf5('test.h5')
-    trajectory.save_pdb('test.pdb')
+    trajectory = analyze.extract_trajectory(testsystem,storage,nc_checkpoint_file=storage_checkpoint,replica_index=1,image_molecules=True)
+    energies = MultiStateReporter(storage, open_mode='r').read_energies()
+    print(energies)
