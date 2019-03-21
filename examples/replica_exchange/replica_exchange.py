@@ -1,58 +1,37 @@
 ###!/usr/local/bin/env python
 
-# I made the following changes to this test case:
+# This script runs replica exchange simulations with Yank,
+# while leveraging multiple functions from OpenMM.
+
+# The script has the following organization:
 #
-# 1) Changed the test system from harmonic oscillators to the alanine dipeptide
-# 2) Changed the number of MC iterations
-# 3) Changed select (internal) function names
+# 1) Run-time options 
+# 2) PYthon imports
+# 3) 
 
 # =============================================================================================
-# GLOBAL IMPORTS
+# 1) Run-time options
 # =============================================================================================
 
-# Non-scientific python packages needed for this protocol
-
-import os
-storage = os.path.join(os.getcwd(), 'test_storage.nc')
-storage_checkpoint = os.path.join(os.getcwd(), 'test_storage_checkpoint.nc')
-import sys
-import timeit
-import socket
-from io import StringIO
-from simtk import openmm as mm
-import numpy as np
-import openmmtools as mmtools
-from openmmtools import testsystems
-from simtk import unit
-from simtk.openmm.app.pdbfile import PDBFile
-import mdtraj as md
-# This is where replica exchange utilities are imported from Yank
-
-from yank import mpi, analyze
-from yank.multistate import MultiStateReporter, MultiStateSampler, ReplicaExchangeSampler, ParallelTemperingSampler, SAMSSampler
-from yank.multistate import ReplicaExchangeAnalyzer, SAMSAnalyzer
-from yank.multistate.multistatereporter import _DictYamlLoader
-from yank.utils import config_root_logger
-
-# quiet down some citation spam
-MultiStateSampler._global_citation_silence = True
-
+import os, socket
+# File names
+storage_file = 'test_storage.nc'
+storage_checkpoint = 'test_storage_checkpoint.nc'
 if socket.gethostname() == "Louie":
  pdb_file="/mnt/d/Foldamers/OpenMM_CG_polymers/structure_files/CG_8-mer.pdb"
+
+# Simulation settings
 simulation_time_step = 0.002 # Units = picoseconds
 kB = 0.008314462  #Boltzmann constant (Gas constant) in kJ/(mol*K)
 simulation_steps = 100 # Number of steps used in individual Langevin dynamics simulations
 print_frequency = 10 # Number of steps to skip when printing output
 total_simulation_time = simulation_time_step * simulation_steps # Units = picoseconds
-temp_increment = 20.0
-exchange_attempts = 2
-num_replicas = 10
-temperatures = [200.0 + i * temp_increment for i in range(0,num_replicas)] * unit.kelvin
+exchange_attempts = 2 # The number of times that a replica exchange will be attempted within the simulation
+num_replicas = 10 # Number of discrete temperatures at which we will run simulations
+temp_increment = 20.0 # Increment by which we will discretize the temperature range for replicas
+t_min = 200.0 # Minimum temperature for replicas
 
-pdb_object = PDBFile(file=pdb_file)
-pdb_positions = pdb_object.getPositions()
-positions = np.array(pdb_positions)
-
+# Molecule settings
 mass_CG1 = 1.0 * unit.amu
 mass_CG2 = 1.0 * unit.amu
 q_CG1 = 0.0 * unit.elementary_charge
@@ -62,7 +41,43 @@ sigma_CG2 = 4.5 * unit.angstrom
 epsilon_CG1 = 0.2 * unit.kilocalorie_per_mole
 epsilon_CG2 = 0.1 * unit.kilocalorie_per_mole
 
-box_size = 100.00 * unit.angstroms  # box width
+# Simulation box (unit cell) settings
+box_size = 100.00 # box width
+
+# =============================================================================================
+# 2) Import Python packages
+# =============================================================================================
+
+import sys
+import timeit
+from io import StringIO
+from simtk import openmm as mm
+import numpy as np
+import openmmtools as mmtools
+from openmmtools import testsystems
+from simtk import unit
+from simtk.openmm.app.pdbfile import PDBFile
+import mdtraj as md
+
+# This is where replica exchange utilities are imported from Yank
+from yank import mpi, analyze
+from yank.multistate import MultiStateReporter, MultiStateSampler, ReplicaExchangeSampler, ParallelTemperingSampler, SAMSSampler
+from yank.multistate import ReplicaExchangeAnalyzer, SAMSAnalyzer
+from yank.multistate.multistatereporter import _DictYamlLoader
+from yank.utils import config_root_logger
+# quiet down some citation spam
+MultiStateSampler._global_citation_silence = True
+
+# Define temperatures for each replica
+temperatures = [t_min + i * temp_increment for i in range(0,num_replicas)] * unit.kelvin
+
+# Load coordinates from PDB file
+pdb_object = PDBFile(file=pdb_file)
+pdb_positions = pdb_object.getPositions()
+positions = np.array(pdb_positions)
+
+# Define unit cell dimensions
+box_size = box_size * unit.angstroms  # box width
 a = unit.Quantity(np.zeros([3]), unit.angstroms)
 a[0] = box_size
 b = unit.Quantity(np.zeros([3]), unit.angstroms)
@@ -71,6 +86,7 @@ c = unit.Quantity(np.zeros([3]), unit.angstroms)
 c[2] = box_size
 box_vectors = [a, b, c]
 
+# Define a system using OpenMM
 system = mm.System()
 force = mm.NonbondedForce()
 for particle in positions:
