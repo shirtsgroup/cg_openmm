@@ -1,0 +1,112 @@
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-03-20
+MODEL        1
+HETATM    1  CG1  CG A   1      54.654  32.372 194.610  1.00  0.00           C  
+HETATM    2  CG1  CG A   2      58.066  30.983 195.402  1.00  0.00           C  
+HETATM    3  CG1  CG A   3      58.396  29.502 191.874  1.00  0.00           C  
+HETATM    4  CG1  CG A   4      57.594  32.832 190.283  1.00  0.00           C  
+HETATM    5  CG1  CG A   5      60.172  34.602 192.379  1.00  0.00           C  
+HETATM    6  CG1  CG A   6      62.888  32.136 191.402  1.00  0.00           C  
+HETATM    7  CG1  CG A   7      62.112  32.516 187.692  1.00  0.00           C  
+HETATM    8  CG1  CG A   8      62.391  36.295 187.902  1.00  0.00           C  
+TER       9       CG A   8
+ENDMDL
+MODEL        2
+HETATM    1  CG1  CG A   1      54.648  32.330 194.546  1.00  0.00           C  
+HETATM    2  CG1  CG A   2      58.139  31.074 195.443  1.00  0.00           C  
+HETATM    3  CG1  CG A   3      58.424  29.449 191.826  1.00  0.00           C  
+HETATM    4  CG1  CG A   4      57.598  32.852 190.273  1.00  0.00           C  
+HETATM    5  CG1  CG A   5      60.151  34.598 192.411  1.00  0.00           C  
+HETATM    6  CG1  CG A   6      62.904  32.103 191.459  1.00  0.00           C  
+HETATM    7  CG1  CG A   7      62.069  32.464 187.673  1.00  0.00           C  
+HETATM    8  CG1  CG A   8      62.347  36.355 187.938  1.00  0.00           C  
+TER       9       CG A   8
+ENDMDL
+MODEL        3
+HETATM    1  CG1  CG A   1      54.655  32.307 194.426  1.00  0.00           C  
+HETATM    2  CG1  CG A   2      58.231  31.207 195.464  1.00  0.00           C  
+HETATM    3  CG1  CG A   3      58.478  29.347 191.841  1.00  0.00           C  
+HETATM    4  CG1  CG A   4      57.583  32.880 190.292  1.00  0.00           C  
+HETATM    5  CG1  CG A   5      60.152  34.612 192.453  1.00  0.00           C  
+HETATM    6  CG1  CG A   6      62.902  32.043 191.513  1.00  0.00           C  
+HETATM    7  CG1  CG A   7      62.031  32.399 187.658  1.00  0.00           C  
+HETATM    8  CG1  CG A   8      62.273  36.413 187.970  1.00  0.00           C  
+TER       9       CG A   8
+ENDMDL
+MODEL        4
+HETATM    1  CG1  CG A   1      54.700  32.287 194.315  1.00  0.00           C  
+HETATM    2  CG1  CG A   2      58.311  31.356 195.466  1.00  0.00           C  
+HETATM    3  CG1  CG A   3      58.500  29.295 191.900  1.00  0.00           C  
+HETATM    4  CG1  CG A   4      57.539  32.858 190.313  1.00  0.00           C  
+HETATM    5  CG1  CG A   5      60.164  34.656 192.495  1.00  0.00           C  
+HETATM    6  CG1  CG A   6      62.906  32.045 191.560  1.00  0.00           C  
+HETATM    7  CG1  CG A   7      61.959  32.378 187.630  1.00  0.00           C  
+HETATM    8  CG1  CG A   8      62.186  36.446 187.989  1.00  0.00           C  
+TER       9       CG A   8
+ENDMDL
+MODEL        5
+HETATM    1  CG1  CG A   1      54.740  32.287 194.187  1.00  0.00           C  
+HETATM    2  CG1  CG A   2      58.414  31.521 195.429  1.00  0.00           C  
+HETATM    3  CG1  CG A   3      58.492  29.273 192.002  1.00  0.00           C  
+HETATM    4  CG1  CG A   4      57.476  32.824 190.329  1.00  0.00           C  
+HETATM    5  CG1  CG A   5      60.196  34.681 192.551  1.00  0.00           C  
+HETATM    6  CG1  CG A   6      62.919  32.084 191.608  1.00  0.00           C  
+HETATM    7  CG1  CG A   7      61.875  32.392 187.631  1.00  0.00           C  
+HETATM    8  CG1  CG A   8      62.118  36.413 187.979  1.00  0.00           C  
+TER       9       CG A   8
+ENDMDL
+MODEL        6
+HETATM    1  CG1  CG A   1      54.793  32.291 193.962  1.00  0.00           C  
+HETATM    2  CG1  CG A   2      58.515  31.726 195.349  1.00  0.00           C  
+HETATM    3  CG1  CG A   3      58.474  29.339 192.159  1.00  0.00           C  
+HETATM    4  CG1  CG A   4      57.384  32.773 190.380  1.00  0.00           C  
+HETATM    5  CG1  CG A   5      60.237  34.694 192.634  1.00  0.00           C  
+HETATM    6  CG1  CG A   6      62.885  32.122 191.641  1.00  0.00           C  
+HETATM    7  CG1  CG A   7      61.790  32.407 187.655  1.00  0.00           C  
+HETATM    8  CG1  CG A   8      62.042  36.325 187.976  1.00  0.00           C  
+TER       9       CG A   8
+ENDMDL
+MODEL        7
+HETATM    1  CG1  CG A   1      54.904  32.286 193.705  1.00  0.00           C  
+HETATM    2  CG1  CG A   2      58.607  31.917 195.203  1.00  0.00           C  
+HETATM    3  CG1  CG A   3      58.486  29.467 192.340  1.00  0.00           C  
+HETATM    4  CG1  CG A   4      57.314  32.705 190.486  1.00  0.00           C  
+HETATM    5  CG1  CG A   5      60.289  34.694 192.719  1.00  0.00           C  
+HETATM    6  CG1  CG A   6      62.863  32.103 191.639  1.00  0.00           C  
+HETATM    7  CG1  CG A   7      61.684  32.406 187.689  1.00  0.00           C  
+HETATM    8  CG1  CG A   8      61.961  36.235 187.961  1.00  0.00           C  
+TER       9       CG A   8
+ENDMDL
+MODEL        8
+HETATM    1  CG1  CG A   1      55.043  32.220 193.452  1.00  0.00           C  
+HETATM    2  CG1  CG A   2      58.695  32.119 195.034  1.00  0.00           C  
+HETATM    3  CG1  CG A   3      58.499  29.585 192.494  1.00  0.00           C  
+HETATM    4  CG1  CG A   4      57.299  32.633 190.620  1.00  0.00           C  
+HETATM    5  CG1  CG A   5      60.309  34.684 192.791  1.00  0.00           C  
+HETATM    6  CG1  CG A   6      62.831  32.037 191.606  1.00  0.00           C  
+HETATM    7  CG1  CG A   7      61.575  32.373 187.764  1.00  0.00           C  
+HETATM    8  CG1  CG A   8      61.908  36.159 187.965  1.00  0.00           C  
+TER       9       CG A   8
+ENDMDL
+MODEL        9
+HETATM    1  CG1  CG A   1      55.173  32.120 193.311  1.00  0.00           C  
+HETATM    2  CG1  CG A   2      58.757  32.366 194.974  1.00  0.00           C  
+HETATM    3  CG1  CG A   3      58.518  29.607 192.602  1.00  0.00           C  
+HETATM    4  CG1  CG A   4      57.396  32.620 190.666  1.00  0.00           C  
+HETATM    5  CG1  CG A   5      60.312  34.698 192.838  1.00  0.00           C  
+HETATM    6  CG1  CG A   6      62.789  32.004 191.606  1.00  0.00           C  
+HETATM    7  CG1  CG A   7      61.454  32.321 187.870  1.00  0.00           C  
+HETATM    8  CG1  CG A   8      61.879  36.119 188.006  1.00  0.00           C  
+TER       9       CG A   8
+ENDMDL
+MODEL       10
+HETATM    1  CG1  CG A   1      55.197  31.973 193.324  1.00  0.00           C  
+HETATM    2  CG1  CG A   2      58.755  32.585 195.100  1.00  0.00           C  
+HETATM    3  CG1  CG A   3      58.549  29.559 192.712  1.00  0.00           C  
+HETATM    4  CG1  CG A   4      57.630  32.636 190.540  1.00  0.00           C  
+HETATM    5  CG1  CG A   5      60.335  34.822 192.728  1.00  0.00           C  
+HETATM    6  CG1  CG A   6      62.735  31.951 191.616  1.00  0.00           C  
+HETATM    7  CG1  CG A   7      61.268  32.223 188.007  1.00  0.00           C  
+HETATM    8  CG1  CG A   8      61.836  36.106 188.029  1.00  0.00           C  
+TER       9       CG A   8
+ENDMDL
+END

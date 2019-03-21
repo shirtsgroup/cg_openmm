@@ -1,4 +1,4 @@
-###!/usr/local/bin/env python
+###!/usr/lccal/bin/env python
 
 # =============================================================================================
 # GLOBAL IMPORTS
@@ -73,12 +73,10 @@ def run_cg_simulation(verbose=False, verbose_simulation=False):
     # Create thermodynamic state and save positions.
     pdb_object = PDBFile(file=pdb_file)
     positions = pdb_object.getPositions()
+    positions_test = testsystems.SodiumChlorideCrystal().positions
     mm_positions = []
     for particle in range(0,len(positions)):
-#     print(mm_positions[particle][:])
-#     print(mm_positions[particle][0]) 
-     mm_positions.append(mm.Vec3(positions[particle][0], positions[particle][1], positions[particle][2]))
-    mm_positions = unit.Quantity((mm_positions, np.float32), unit.angstrom)
+     mm_positions.append(np.array([positions[particle][0], positions[particle][1], positions[particle][2]]))
     topology = pdb_object.getTopology()
     system = mm.System()
 #    system.positions = positions
@@ -94,9 +92,10 @@ def run_cg_simulation(verbose=False, verbose_simulation=False):
     simulation.reporters.append(PDBReporter(str(os.getcwd()+"/coordinates.pdb"),print_frequency)) # Write simulation PDB coordinates
     simulation.reporters.append(StateDataReporter(str(os.getcwd()+"/sim_data.dat"), print_frequency, \
     step=True, totalEnergy=True, potentialEnergy=True, kineticEnergy=True, temperature=True)) # Write simulation data
+    print(mm_positions)
+    print(positions_test)
     simulation.context.setPositions(mm_positions) # Assign particle positions for this context
     simulation.minimizeEnergy() # Set the simulation type to energy minimization
-    print("Made it to the step before running simulations.")
     simulation.step(simulation_steps) # Run the simulation 
     config_root_logger(verbose_simulation)
 
