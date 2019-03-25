@@ -2,6 +2,10 @@ import copy
 import numpy as np
 from simtk import openmm, unit
 
+# This script was provided by Andea Rizzi,
+# with addt'l changes by Garrett A. Meek
+# on 3/23/19
+
 # LJ_parameter_pairs is a dictionary atom_index -> (sigma, epsilon)
 # with the new parameters that are the target of the reweighting.
 LJ_parameter_pairs = ...
