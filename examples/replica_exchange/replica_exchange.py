@@ -14,8 +14,9 @@
 # =============================================================================================
 
 import os, socket
+from simtk import unit
 # File names
-storage_file = 'test_storage.nc'
+storage = 'test_storage.nc'
 storage_checkpoint = 'test_storage_checkpoint.nc'
 if socket.gethostname() == "Louie":
  pdb_file="/mnt/d/Foldamers/OpenMM_CG_polymers/structure_files/CG_8-mer.pdb"
@@ -55,7 +56,6 @@ from simtk import openmm as mm
 import numpy as np
 import openmmtools as mmtools
 from openmmtools import testsystems
-from simtk import unit
 from simtk.openmm.app.pdbfile import PDBFile
 import mdtraj as md
 
@@ -105,6 +105,7 @@ def run_replica_exchange(verbose=False, verbose_simulation=False):
     pdb_object = PDBFile(file=pdb_file)
     pdb_positions = pdb_object.getPositions()
     positions = np.array(pdb_positions)
+    print(positions)
     # Define thermodynamic states.
     for temperature in temperatures:
      system = mm.System()
@@ -127,7 +128,8 @@ def run_replica_exchange(verbose=False, verbose_simulation=False):
 
     if os.path.exists(storage): os.remove(storage)
     reporter = MultiStateReporter(storage, checkpoint_interval=10)
-  
+    print(sampler_states)
+    exit() 
     simulation.create(thermodynamic_states, sampler_states, reporter)
     config_root_logger(verbose_simulation)
     simulation.run()
