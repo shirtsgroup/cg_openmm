@@ -132,8 +132,18 @@ def get_nonbonded_forcefield(model_settings,particle_properties):
  nonbonded = forcefield.NonbondedGenerator(ff, 0.8333, 0.5)
  int_strength = str(epsilon).replace(' kcal/mol','')
  charge = str(q).replace(' e','')
- nonbonded.registerAtom({'type':'X', 'charge':charge, 'sigma':0.1*sigma*unit.nanometers, 'epsilon':int_strength*unit.kilojoules_per_mole})
- nonbonded.registerAtom({'type':'Q', 'charge':charge, 'sigma':0.1*sigma*unit.nanometers, 'epsilon':int_strength*unit.kilojoules_per_mole})
+ nonbonded.registerAtom({'type':'X', 'charge':charge, 'sigma':sigma*unit.angstroms, 'epsilon':int_strength*unit.kilocalories_per_mole})
+ nonbonded.registerAtom({'type':'Q', 'charge':charge, 'sigma':sigma*unit.angstroms, 'epsilon':int_strength*unit.kilocalories_per_mole})
+ for monomer in range(polymer_length):
+  for backbone_bead in range(backbone_length):
+   if bead_index != 0:
+    bead_index = bead_index + 1
+    nonbonded.addException(bead_index,bead_index-sidechain_length-1,chargeProd=0.0,sigma=sigma*0.1,epsilon=0.0)
+   if backbone_bead in sidechain_positions:
+    for sidechain in range(sidechain_length):
+     bead_index = bead_index + 1
+     nonbonded.addException(bead_index,bead_index-1,chargeProd=0.0,sigma=sigma*0.1,epsilon=0.0)
+ print(nonbonded.getNumExceptions())
  ff.registerGenerator(nonbonded)
  return(ff)
 
@@ -148,7 +158,7 @@ def build_cg_system(model_settings,particle_properties):
    system.addParticle(mass)
    if bead_index != 0:
     bead_index = bead_index + 1
-    system.addConstraint(bead_index,bead_index-sidechain_length-1,sigma)
+    system.addConstraint(bead_index,bead_index-sidechain_length-1,sigma*0.1)
    if backbone_bead in sidechain_positions:
     for sidechain in range(sidechain_length):
      system.addParticle(mass)
@@ -162,8 +172,19 @@ def get_mm_force(model_settings,particle_properties):
  mass,q,sigma,epsilon = particle_properties[:]
  force = mm.NonbondedForce()
  force.setCutoffDistance(1*unit.nanometer)
+ bead_index = 0
  for particle in range(num_particles):
   force.addParticle(q, sigma, epsilon)
+ for monomer in range(polymer_length):
+  for backbone_bead in range(backbone_length):
+   if bead_index != 0:
+    bead_index = bead_index + 1
+    force.addException(particle1=bead_index,particle2=bead_index-sidechain_length-1,sigma=sigma*0.1,epsilon=0.0,chargeProd=0.0)
+   if backbone_bead in sidechain_positions:
+    for sidechain in range(sidechain_length):
+     bead_index = bead_index + 1
+     force.addException(particle1=bead_index,particle2=bead_index-1,sigma=sigma*0.1,epsilon=0.0,chargeProd=0.0)
+ print(force.getNumExceptions())
  return(force)
 
 def build_cg_model(model_settings,particle_properties,positions):
@@ -181,5 +202,5 @@ def build_cg_model(model_settings,particle_properties,positions):
  force = get_mm_force(model_settings,particle_properties)
  system = build_cg_system(model_settings,particle_properties)
  system.addForce(force) 
- system = assign_default_box_vectors(system,box_size)
+# system = assign_default_box_vectors(system,box_size)
  return(system,topology)

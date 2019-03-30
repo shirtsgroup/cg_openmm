@@ -42,7 +42,7 @@ def get_low_energy_structure(simulation_settings,model_settings,particle_propert
    step=True, totalEnergy=True, potentialEnergy=True, kineticEnergy=True, temperature=True))
 # simulation.minimizeEnergy() # Set the simulation type to energy minimization
 # simulation.step(1000)
-# positions = simulation.context.getState(getPositions=True).getPositions()
+ positions = simulation.context.getState(getPositions=True).getPositions()
  print(simulation.context.getState(getEnergy=True).getPotentialEnergy())
  positions = positions * 10.0
  positions_no_units = remove_position_units(positions)

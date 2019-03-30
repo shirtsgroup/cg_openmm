@@ -88,7 +88,7 @@ polymer_length = 8 # Number of monomers in the polymer
 num_particles = (backbone_length + sidechain_length) * polymer_length
 model_settings = [box_size,polymer_length,backbone_length,sidechain_length,sidechain_positions]
 mass = 12.0 * unit.amu # Mass of beads
-sigma = 1.0 # unit.angstroms Lennard-Jones interaction distance, and bond length
+sigma = 0.5 # unit.angstroms Lennard-Jones interaction distance, and bond length
 epsilon = 0.2 * unit.kilocalorie_per_mole # Lennard-Jones interaction strength
 q = 0.0 * unit.elementary_charge # Charge of beads
 particle_properties = [mass,q,sigma,epsilon]
@@ -98,8 +98,9 @@ start_time = timeit.default_timer()
 # =============================================================================================
 # 3) BUILD COARSE-GRAINED MODEL
 # =============================================================================================
-
-get_low_energy_structure(simulation_settings,model_settings,particle_properties)
+#for epsilon in list([0.2 * unit.kilocalorie_per_mole,0.5 * unit.kilocalorie_per_mole,1.0 * unit.kilocalorie_per_mole]):
+# particle_properties = [mass,q,sigma,epsilon]
+positions = get_low_energy_structure(simulation_settings,model_settings,particle_properties)
 exit()
 #positions = assign_random_initial_coordinates(model_settings)
 system,topology = build_cg_model(model_settings,particle_properties,positions)
