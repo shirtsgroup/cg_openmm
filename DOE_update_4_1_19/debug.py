@@ -64,8 +64,6 @@ simulation.reporters.append(StateDataReporter(str(output_directory+"/minimize_te
 #simulation.step(1000)
 positions = simulation.context.getState(getPositions=True).getPositions()
 print("The potential energy is: "+str(simulation.context.getState(getEnergy=True).getPotentialEnergy()))
-print("Calculating the nonbonded energy")
 nonbonded_energy = calculate_nonbonded_energy(model_settings,particle_properties,positions)
-print("Calculated the nonbonded energy")
 print("The nonbonded energy is: "+str(nonbonded_energy))
 exit()

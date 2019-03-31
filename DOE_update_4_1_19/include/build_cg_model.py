@@ -76,9 +76,9 @@ def distance(positions_1,positions_2):
 
 def lj_v(positions_1,positions_2,sigma,epsilon):
  dist = distance(positions_1,positions_2)
- attr = ( dist / sigma ) ** 6.0
- rep = ( dist / sigma ) ** 12.0
- v = 4.0 * float(epsilon) * ( rep - attr )
+ attr = dist.__div__(sigma).__pow__(6.0)
+ rep = dist.__div__(sigma).__pow__(12.0)
+ v = 4.0 * epsilon.__mul__(rep.__sub__(attr))
  return(v)
 
 def calculate_nonbonded_energy(model_settings,particle_properties,positions):
@@ -90,11 +90,11 @@ def calculate_nonbonded_energy(model_settings,particle_properties,positions):
   for backbone_bead in range(backbone_length):
    if bead_index != 0:
     bead_index = bead_index + 1
-    energy = energy + lj_v(positions[bead_index],positions[bead_index-sidechain_length-1],sigma,epsilon)
+    energy = energy.__add__(lj_v(positions[bead_index],positions[bead_index-sidechain_length-1],sigma,epsilon))
    if backbone_bead in sidechain_positions:
     for sidechain in range(sidechain_length):
      bead_index = bead_index + 1
-     energy = energy + lj_v(positions[bead_index],positions[bead_index-sidechain_length-1],sigma,epsilon)
+     energy = energy.__add__(lj_v(positions[bead_index],positions[bead_index-sidechain_length-1],sigma,epsilon))
  return(energy)
 
 def build_cg_system(model_settings,particle_properties):
