@@ -11,19 +11,11 @@ import os, sys, timeit, socket
 from io import StringIO
 import numpy as np
 import math, random
+from include.build_cg_model import *
 from simtk import unit
 # =============================================================================================
 # 2) ENVIRONMENT/JOB SETTINGS
 # =============================================================================================
-
-sigma = 1.0
-
-def get_distance(bead_1,bead_2):
- sqrt_arg = 0.0
- for direction in range(0,len(bead_1)):
-  sqrt_arg = sqrt_arg + ( bead_2[direction] - bead_1[direction] ) ** 2.0
- distance = math.sqrt(sqrt_arg)
- return(distance)
 
 def random_sign(number):
 # 0 = negative, 1 = positive
@@ -31,120 +23,105 @@ def random_sign(number):
  if random_int == 0: number = -1.0 * number
  return(number)
 
-def attempt_move(parent_coordinates):
-#    print(parent_coordinates)
-    new_coordinates = np.zeros([3])
-    move = np.zeros([3])
+def attempt_move(parent_coordinates,sigma):
+    print(parent_coordinates)
+    units = parent_coordinates.unit
+    move = unit.Quantity(np.zeros([3]), units)
+    trial_coordinates = unit.Quantity(np.zeros([3]), units)
     move_direction_list = []
-    distance = 0.0
+    distance = 0.0 * units
     for direction in range(0,3):
      move_direction = random.randint(0,2)
      while move_direction in move_direction_list:
       move_direction = random.randint(0,2)
      if direction != 2:
-      move[move_direction] = random_sign(random.uniform(0.0,math.sqrt(sigma**2.0-distance**2.0)))
+      move[move_direction] = unit.Quantity(value=random_sign(random.uniform(0.0,math.sqrt(sigma.__pow__(2.0)._value-distance.__pow__(2.0)._value))),unit=units)
      if direction == 2:
-      move[move_direction] = random_sign(math.sqrt(sigma**2.0-distance**2.0))
-     
-     distance = get_distance(parent_coordinates,np.array([parent_coordinates[index] + move[index] for index in range(0,3)]))
-     
+      move[move_direction] = unit.Quantity(value=random_sign(random.uniform(0.0,math.sqrt(sigma.__pow__(2.0)._value-distance.__pow__(2.0)._value))),unit=units)
+     for direction in range(0,3):
+      trial_coordinates[direction] = parent_coordinates[direction].__add__(move[direction])
+     distance = distance(parent_coordinates,trial_coordinates)
      move_direction_list.append(move_direction)
-     new_coordinates[move_direction] = float("{:10.5f}".format(parent_coordinates[move_direction] + move[move_direction])) 
-#    print(get_distance(parent_coordinates,new_coordinates))
-    return(new_coordinates)
+    for direction in range(0,3):
+     trial_coordinates[direction] = parent_coordinates[direction].__add__(move[direction])
+    return(trial_coordinates)
 
-def non_bonded_distances(new_coordinates,existing_coordinates):
-   distances = [float(round(get_distance(new_coordinates,existing_coordinates[monomer_index]),2)) for monomer_index in range(0,len(existing_coordinates))]
+def non_bonded_distances(new_coordinates,existing_coordinates,sigma):
+   distances = [distance(new_coordinates,existing_coordinates[monomer_index]) for monomer_index in range(0,len(existing_coordinates))]
 #   print(distances)
    if sigma in distances:
     distances.remove(sigma)
    return(distances)
 
-def collisions(distances):
+def collisions(distances,sigma):
    collision = False
    if len(distances) > 0:
     for distance in distances:
-     if distance < float(round(sigma,2)):
+     if distance < sigma:
       collision = True
 #   if collision: print(distances)
    return(collision)
 
-def assign_position(positions,parent_index=-1):
+def assign_position(positions,sigma,parent_index=-1):
+  units = sigma.unit
   if len(positions) == 0:
-   new_coordinates = np.zeros([3])
+   new_coordinates = unit.Quantity(np.zeros([3]), units)
+   return
   else:
    if parent_index == -1:
     parent_index = len(positions)
    parent_coordinates = positions[parent_index-1]
-   new_coordinates = np.zeros([3])
+   new_coordinates = unit.Quantity(np.zeros([3]), units)
    success = False
    attempts = 0
    while not success: 
-    new_coordinates = attempt_move(parent_coordinates)
-    distances = non_bonded_distances(new_coordinates,positions)
-    if not collisions(distances): success = True
+    new_coordinates = attempt_move(parent_coordinates,sigma)
+    distances = non_bonded_distances(new_coordinates,positions,sigma)
+    if not collisions(distances,sigma): success = True
     if not success and attempts > 1000000:
      print("Error: maximum number of bead placement attempts exceeded")
      exit()
     attempts = attempts + 1
-   for index in range(0,3):
-    new_coordinates[index] = float("{:7.2f}".format(new_coordinates[index]))
-#    print(parent_atom_coordinates)
-#    print(get_distance(new_coordinates,parent_atom_coordinates))
-#  print(new_coordinates)
   positions.append(new_coordinates)
   return(positions)
 
-def assign_sidechain_beads(positions,model_settings):
+def assign_sidechain_beads(positions,model_settings,sigma):
      sidechain_length = model_settings[3]
      for sidechain in range(0,sidechain_length):
 #       print("Assigning coordinates for sidechain bead: bead "+str(len(positions)+1))
-       positions = assign_position(positions)
+       positions = assign_position(positions,sigma)
      return(positions)
 
-def assign_backbone_beads(positions,monomer_start,model_settings):
+def assign_backbone_beads(positions,monomer_start,model_settings,sigma):
     backbone_length = model_settings[2]
     sidechain_positions = model_settings[4]
+    units = sigma.unit
     for backbone_bead_index in range(0,backbone_length):
 #     print("Assigning coordinates for backbone bead: bead "+str(len(positions)+1))
      if len(positions) == 0:
-      positions = [np.zeros([3])]
+      positions = unit.Quantity(np.zeros([3]), units)
      else:
       if backbone_bead_index == 0:
-       positions = assign_position(positions,parent_index=monomer_start)
+       positions = assign_position(positions,sigma,parent_index=monomer_start)
       else:
-       positions = assign_position(positions)
+       positions = assign_position(positions,sigma)
      # Assign side-chain beads if appropriate
      if backbone_bead_index in sidechain_positions:
-       positions = assign_sidechain_beads(positions,model_settings)
+       positions = assign_sidechain_beads(positions,model_settings,sigma)
     return(positions)
 
-def assign_random_initial_coordinates(model_settings):
+def assign_random_initial_coordinates(model_settings,particle_properties):
 # Define array for initial Cartesian coordinates
  box_size,polymer_length,backbone_length,sidechain_length,sidechain_positions = model_settings[:]
+ mass,q,sigma,epsilon = particle_properties[:] 
  positions = []
  for monomer in range(0,polymer_length):
    monomer_start = len(positions) - sidechain_length
 #   if monomer > 0: print("monomer start is: "+str(monomer_start))
 # Assign backbone bead positions
-   positions = assign_backbone_beads(positions,monomer_start,model_settings)
+   positions = assign_backbone_beads(positions,monomer_start,model_settings,sigma)
 # Assign all side-chain bead positions
  return(positions)
-
-def add_position_units(positions):
- positions = unit.Quantity(positions, unit.angstroms)
- return(positions)
-
-def remove_position_units(positions):
- new_positions = np.zeros([len(positions),3])
- for position in range(0,len(positions)):
-  if str("nm") in str(positions[position]):
-   coordinates = str(positions[position]).replace('(','').replace(')','').replace(' nm','').replace(' ','').split(',')
-  if str("A") in str(positions[position]):
-   coordinates = str(positions[position]).replace('[','').replace(']','').replace(' A','').replace('   ',' ').replace('  ',' ').strip().split(' ')
-  for direction in range(0,3):
-   new_positions[position][direction] = float(coordinates[direction])
- return(new_positions)
 
 def write_positions_to_xyzfile(coordinates,filename,model_settings):
  box_size,polymer_length,backbone_length,sidechain_length,sidechain_positions = model_settings[:]

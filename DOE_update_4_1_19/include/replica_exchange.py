@@ -37,13 +37,18 @@ def get_low_energy_structure(simulation_settings,model_settings,particle_propert
  integrator = LangevinIntegrator(500.0  * unit.kelvin, minimization_time, simulation_time_step) # Define Langevin integrator
  simulation = Simulation(topology, system, integrator) # Define a simulation 'context'
  simulation.context.setPositions(positions) # Assign particle positions for this context
+# simulation.context.setVelocitiesToTemperature(500.0*unit.kelvin)
+# nonbondedforce = get_mm_force(model_settings,particle_properties)
+# nonbondedforce.updateParametersInContext(simulation.context)
  simulation.reporters.append(PDBReporter(str(output_directory+"/minimize_coordinates_test.pdb"),1)) # Write simulation PDB coordinates  
  simulation.reporters.append(StateDataReporter(str(output_directory+"/minimize_test.dat"),1, \
    step=True, totalEnergy=True, potentialEnergy=True, kineticEnergy=True, temperature=True))
 # simulation.minimizeEnergy() # Set the simulation type to energy minimization
 # simulation.step(1000)
  positions = simulation.context.getState(getPositions=True).getPositions()
- print(simulation.context.getState(getEnergy=True).getPotentialEnergy())
+# velocities = simulation.context.getState(getVelocities=True).getVelocities()
+ print("The potential energy is: "+str(simulation.context.getState(getEnergy=True).getPotentialEnergy()))
+ calculate_nonbonded_energy(model_settings,particle_properties,positions)
  positions = positions * 10.0
  positions_no_units = remove_position_units(positions)
  for position in positions:
