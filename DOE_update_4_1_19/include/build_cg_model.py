@@ -76,7 +76,6 @@ def distance(positions_1,positions_2):
 
 def lj_v(positions_1,positions_2,sigma,epsilon):
  dist = distance(positions_1,positions_2)
- exit()
  attr = ( dist / sigma ) ** 6.0
  rep = ( dist / sigma ) ** 12.0
  v = 4.0 * float(epsilon) * ( rep - attr )
@@ -84,8 +83,8 @@ def lj_v(positions_1,positions_2,sigma,epsilon):
 
 def calculate_nonbonded_energy(model_settings,particle_properties,positions):
  box_size,polymer_length,backbone_length,sidechain_length,sidechain_positions = model_settings
- mass,q,sigma,epsilon = particle_properties[:]
- energy = 0.0
+ mass,q,sigma,epsilon = particle_properties
+ energy = unit.Quantity(0.0,unit.kilojoules_per_mole)
  bead_index = 0
  for monomer in range(polymer_length):
   for backbone_bead in range(backbone_length):
@@ -96,7 +95,6 @@ def calculate_nonbonded_energy(model_settings,particle_properties,positions):
     for sidechain in range(sidechain_length):
      bead_index = bead_index + 1
      energy = energy + lj_v(positions[bead_index],positions[bead_index-sidechain_length-1],sigma,epsilon)
- print("Nonbonded energy is: "+str(energy))
  return(energy)
 
 def build_cg_system(model_settings,particle_properties):
@@ -124,7 +122,7 @@ def build_cg_model(model_settings,particle_properties,positions):
  mass,q,sigma,epsilon = particle_properties[:]
 # Record the positions
  pdb_file = 'temp.pdb'
- write_positions_to_pdbfile(positions,pdb_file,model_settings)
+# write_positions_to_pdbfile(positions,pdb_file,model_settings)
 # Build a topology
  topology = build_cg_topology(model_settings,particle_properties)
 #

@@ -45,23 +45,27 @@ epsilon = 0.2 * unit.kilocalorie_per_mole # Lennard-Jones interaction strength
 q = 0.0 * unit.elementary_charge # Charge of beads
 particle_properties = [mass,q,sigma,epsilon]
 
+print("Generating a random initial structure")
 positions = assign_random_initial_coordinates(model_settings,particle_properties)
+print("Building a coarse grained model with user-provided settings")
 system,topology = build_cg_model(model_settings,particle_properties,positions)
 system = assign_default_box_vectors(system,box_size)
 minimization_time = simulation_time_step * 1000
 integrator = LangevinIntegrator(500.0  * unit.kelvin, minimization_time, simulation_time_step) # Define Langevin integrator
 simulation = Simulation(topology, system, integrator) # Define a simulation 'context'
 simulation.context.setPositions(positions) # Assign particle positions for this context
-# simulation.context.setVelocitiesToTemperature(500.0*unit.kelvin)
-# nonbondedforce = get_mm_force(model_settings,particle_properties)
-# nonbondedforce.updateParametersInContext(simulation.context)
+simulation.context.setVelocitiesToTemperature(500.0*unit.kelvin)
+nonbondedforce = get_mm_force(model_settings,particle_properties)
+#nonbondedforce.updateParametersInContext(simulation.context)
 simulation.reporters.append(PDBReporter(str(output_directory+"/minimize_coordinates_test.pdb"),1)) # Write simulation PDB coordinates  
 simulation.reporters.append(StateDataReporter(str(output_directory+"/minimize_test.dat"),1, \
    step=True, totalEnergy=True, potentialEnergy=True, kineticEnergy=True, temperature=True))
-# simulation.minimizeEnergy() # Set the simulation type to energy minimization
-# simulation.step(1000)
+#simulation.minimizeEnergy() # Set the simulation type to energy minimization
+#simulation.step(1000)
 positions = simulation.context.getState(getPositions=True).getPositions()
-# velocities = simulation.context.getState(getVelocities=True).getVelocities()
 print("The potential energy is: "+str(simulation.context.getState(getEnergy=True).getPotentialEnergy()))
-calculate_nonbonded_energy(model_settings,particle_properties,positions)
+print("Calculating the nonbonded energy")
+nonbonded_energy = calculate_nonbonded_energy(model_settings,particle_properties,positions)
+print("Calculated the nonbonded energy")
+print("The nonbonded energy is: "+str(nonbonded_energy))
 exit()
