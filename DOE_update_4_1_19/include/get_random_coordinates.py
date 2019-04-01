@@ -164,8 +164,9 @@ def assign_backbone_beads(positions,monomer_start,model_settings,bond_length):
        positions = assign_sidechain_beads(positions,model_settings,bond_length)
     return(positions)
 
-def assign_random_initial_coordinates(model_settings,particle_properties):
+def assign_random_initial_coordinates(input_array):
 # Define array for initial Cartesian coordinates
+ model_settings,particle_properties = input_array[0],input_array[1]
  box_size,polymer_length,backbone_length,sidechain_length,sidechain_positions = model_settings[:]
  mass,q,sigma,epsilon,bond_length = particle_properties[:] 
  positions = unit.Quantity(np.zeros([3]), unit.angstrom)

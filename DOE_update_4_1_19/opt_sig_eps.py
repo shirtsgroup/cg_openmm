@@ -16,9 +16,11 @@ from simtk.openmm import *
 from simtk import unit
 import matplotlib.pyplot as pyplot
 from multiprocessing import Pool
+from multiprocessing import cpu_count
 
 # Job settings
-processors = 6
+processors = cpu_count() - 4
+print("Found "+str(processors)+" processors on the system.")
 output_directory = "output"
 input_directory = "input"
 if not os.path.exists(output_directory): os.makedirs(output_directory)
@@ -56,7 +58,8 @@ add_cg_elem(particle_properties)
 sigma_list = [unit.Quantity(sigma._value+length*step_length,sigma.unit) for length in range(0,steps)]
 epsilon_list = [unit.Quantity(epsilon._value+index*step_length,epsilon.unit) for index in range(0,steps)]
 
-def get_configuration_energies(model_settings,particle_properties,configuration):
+def get_configuration_energies(input_array):
+   model_settings,particle_properties,configuration = input_array[0],input_array[1],input_array[2]
    system,topology = build_cg_model(model_settings,particle_properties,configuration)
    system = assign_default_box_vectors(system,box_size)
    minimization_time = simulation_time_step * 1000
@@ -91,7 +94,8 @@ def get_lowest_energy_configurations(model_settings,particle_properties,configur
    energies = []
    configuration_index = 0
    for configuration in configurations:
-    potential_energy = get_configuration_energies(model_settings,particle_properties,configuration)
+    input_array = model_settings,particle_properties,configuration
+    potential_energy = get_configuration_energies(input_array)
     if len(low_energy_configurations) > number:
      print("Error: too many configurations.")
      exit()
@@ -99,9 +103,9 @@ def get_lowest_energy_configurations(model_settings,particle_properties,configur
      low_energy_configurations.append(configuration)
      energies.append(potential_energy)
     if len(low_energy_configurations) == number:
-     array = model_settings,particle_properties,configuration
-     value = replace([get_configuration_energies(model_settings,particle_properties,configuration) for configuration in low_energy_configurations],potential_energy,"lower")[0]
-     replace_index = replace([get_configuration_energies(model_settings,particle_properties,configuration) for configuration in low_energy_configurations],potential_energy,"lower")[1]
+     energy_array = [pool.map([get_configuration_energies(model_settings,particle_properties,configuration) for configuration in low_energy_configurations])] 
+     value = replace(energy_array,potential_energy,"lower")[0]
+     replace_index = replace(energy_array,potential_energy,"lower")[1]
      if replace_index != -1:
       if potential_energy > energies[replace_index]:
        print("Error: replaced a lower energy configuration")
@@ -149,12 +153,8 @@ if __name__ == '__main__':
  configurations = []
  counter = 0
  pool = Pool(processes=processors)
- for i in range(0,num_configurations*100):
-  if counter == 1000:
-   print(i)
-   counter = 0
-  counter = counter + 1
-  configurations.append(assign_random_initial_coordinates(model_settings,particle_properties))
+ configurations = [pool.map(assign_random_initial_coordinates,[[model_settings,particle_properties] for i in range(num_configurations*100)])]
+ 
  print("Pruning configurations")
  configurations = get_most_folded_configurations(model_settings,particle_properties,configurations,num_configurations)
  print("Writing configurations to PDB file")
@@ -168,7 +168,7 @@ if __name__ == '__main__':
  for epsilon in epsilon_list:
   for sigma in sigma_list:
    particle_properties = [mass,q,sigma,epsilon,bond_length]
-   avg_potential_energy = sum([get_configuration_energies(model_settings,particle_properties,configuration) for configuration in configurations])/len(configurations)
+   avg_potential_energy = sum([pool.map(get_configuration_energies,[[model_settings,particle_properties,configuration] for configuration in configurations])])/len(configurations)
    potential_energies.append(avg_potential_energy)
 #   nonbonded_energies.append(sum(all_nonbonded_energies)/len(all_nonbonded_energies))
  print("Writing potential energies to output file")
