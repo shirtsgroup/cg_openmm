@@ -27,7 +27,7 @@ def assign_default_box_vectors(system,box_size):
 def get_mm_force(model_settings,particle_properties):
  box_size,polymer_length,backbone_length,sidechain_length,sidechain_positions = model_settings
  num_particles = (backbone_length + sidechain_length) * polymer_length
- mass,q,sigma,epsilon = particle_properties[:]
+ mass,q,sigma,epsilon,bond_length = particle_properties
  force = mm.NonbondedForce()
  force.setCutoffDistance(1*unit.nanometer)
  bead_index = 0
@@ -37,28 +37,28 @@ def get_mm_force(model_settings,particle_properties):
   for backbone_bead in range(backbone_length):
    if bead_index != 0:
     bead_index = bead_index + 1
-    force.addException(particle1=bead_index,particle2=bead_index-sidechain_length-1,sigma=sigma*0.1,epsilon=0.0,chargeProd=0.0)
+    force.addException(particle1=bead_index,particle2=bead_index-sidechain_length-1,sigma=sigma,epsilon=0.0,chargeProd=0.0)
    if backbone_bead in sidechain_positions:
     for sidechain in range(sidechain_length):
      bead_index = bead_index + 1
-     force.addException(particle1=bead_index,particle2=bead_index-1,sigma=sigma*0.1,epsilon=0.0,chargeProd=0.0)
+     force.addException(particle1=bead_index,particle2=bead_index-1,sigma=sigma,epsilon=0.0,chargeProd=0.0)
  return(force)
+
+def add_cg_elem(particle_properties):
+        mass,q,sigma,epsilon,bond_length = particle_properties
+        elem.Element(117,'cgbackbone','X',mass)
+        elem.Element(118,'cgsidechain','Q',mass)
+        return
 
 def build_cg_topology(model_settings,particle_properties):
         # Create topology.
         box_size,polymer_length,backbone_length,sidechain_length,sidechain_positions = model_settings
         topology = Topology()
-        backbone_elem = elem.Element(117,'cgbackbone','X',10.0)
-        sidechain_elem = elem.Element(118,'cgsidechain','Q',10.0)
-#        element(117,'cgbackbone','X',10.0)
-#        element(118,'cgsidechain','Q',10.0)
-#        backbone_elem = element.get_by_symbol('X')
-#        sidechain_elem = element.get_by_symbol('Q')
         chain = topology.addChain()
         for monomer in range(polymer_length):
             residue = topology.addResidue('CG', chain)
-            topology.addAtom('X', backbone_elem, residue)
-            topology.addAtom('Q', sidechain_elem, residue)
+            topology.addAtom('X', 'cgbackbone', residue)
+            topology.addAtom('Q', 'cgsidechain', residue)
         return(topology)
 
 def distance(positions_1,positions_2):
@@ -76,31 +76,83 @@ def distance(positions_1,positions_2):
 
 def lj_v(positions_1,positions_2,sigma,epsilon):
  dist = distance(positions_1,positions_2)
- attr = dist.__div__(sigma).__pow__(6.0)
- rep = dist.__div__(sigma).__pow__(12.0)
- v = 4.0 * epsilon.__mul__(rep.__sub__(attr))
+ quot = dist.__div__(sigma)
+ attr = (quot.__pow__(6.0)).__mul__(2.0)
+ rep = quot.__pow__(12.0)
+ v = epsilon.__mul__(rep.__sub__(attr))
  return(v)
 
-def calculate_nonbonded_energy(model_settings,particle_properties,positions):
+def get_bonded_particle_list(model_settings,particle_properties):
  box_size,polymer_length,backbone_length,sidechain_length,sidechain_positions = model_settings
- mass,q,sigma,epsilon = particle_properties
- energy = unit.Quantity(0.0,unit.kilojoules_per_mole)
+ mass,q,sigma,epsilon,bond_length = particle_properties
+ bond_list = []
  bead_index = 0
  for monomer in range(polymer_length):
   for backbone_bead in range(backbone_length):
    if bead_index != 0:
+    bond_list.append([bead_index,bead_index-sidechain_length-1])
     bead_index = bead_index + 1
-    energy = energy.__add__(lj_v(positions[bead_index],positions[bead_index-sidechain_length-1],sigma,epsilon))
+   if bead_index == 0:
+    bead_index = bead_index + 1
    if backbone_bead in sidechain_positions:
     for sidechain in range(sidechain_length):
+     bond_list.append([bead_index,bead_index-1])
      bead_index = bead_index + 1
-     energy = energy.__add__(lj_v(positions[bead_index],positions[bead_index-sidechain_length-1],sigma,epsilon))
+ return(bond_list)
+
+def get_interaction_list(num_particles):
+ interaction_list = []
+ for monomer_1 in range(num_particles):
+  for monomer_2 in range(monomer_1+1,num_particles):
+   if monomer_1 != monomer_2:
+    inter = [monomer_1,monomer_2]
+    interaction_list.append(inter)
+ return(interaction_list)
+
+def check_list_for_entry(checklist,entry):
+ monomer_1,monomer_2 = entry
+ present = False
+ for item in checklist:
+  monomer_3,monomer_4 = item
+  if monomer_3 == monomer_1 or monomer_3 == monomer_2:
+    if monomer_4 == monomer_1 or monomer_4 == monomer_2:
+     present = True
+ return(present)
+
+def get_nonbonded_interactions(model_settings,particle_properties):
+ box_size,polymer_length,backbone_length,sidechain_length,sidechain_positions = model_settings
+ num_particles = polymer_length * ( backbone_length + sidechain_length )
+ mass,q,sigma,epsilon,bond_length = particle_properties
+ nonbonded_interaction_list = []
+ bond_list = get_bonded_particle_list(model_settings,particle_properties)
+ interaction_list = get_interaction_list(num_particles)
+ for interaction in interaction_list:
+  if not check_list_for_entry(bond_list,interaction):
+   if not check_list_for_entry(nonbonded_interaction_list,interaction):
+    nonbonded_interaction_list.append(interaction)
+ return(nonbonded_interaction_list)
+
+def get_num_nonbonded_interactions(model_settings,particle_properties):
+ return(len(get_nonbonded_interactions(model_settings,particle_properties)))
+
+def calculate_nonbonded_energy(model_settings,particle_properties,positions):
+ box_size,polymer_length,backbone_length,sidechain_length,sidechain_positions = model_settings
+ num_particles = len(positions._value)
+ mass,q,sigma,epsilon,bond_length = particle_properties
+ energy = unit.Quantity(0.0,unit.kilojoules_per_mole)
+ nonbonded_interaction_list = get_nonbonded_interactions(model_settings,particle_properties)
+ for interaction in nonbonded_interaction_list:
+  dist = distance(positions[interaction[0]],positions[interaction[1]])
+#  print("The distance between particles "+str(interaction[0])+" and "+str(interaction[1])+" is "+str(dist.in_units_of(unit.angstrom)))
+  inter_energy = lj_v(positions[interaction[0]],positions[interaction[1]],sigma,epsilon).in_units_of(unit.kilojoules_per_mole)
+#  print("The non-bonded contribution from beads "+str(interaction[0])+" and "+str(interaction[1])+" is: "+str(inter_energy))
+  energy = energy.__add__(inter_energy)
  return(energy)
 
 def build_cg_system(model_settings,particle_properties):
  box_size,polymer_length,backbone_length,sidechain_length,sidechain_positions = model_settings
  num_particles = (backbone_length + sidechain_length) * polymer_length
- mass,q,sigma,epsilon = particle_properties[:]
+ mass,q,sigma,epsilon,bond_length = particle_properties[:]
  system = mm.System()
  bead_index = 0
  for monomer in range(polymer_length):
@@ -108,18 +160,18 @@ def build_cg_system(model_settings,particle_properties):
    system.addParticle(mass)
    if bead_index != 0:
     bead_index = bead_index + 1
-    system.addConstraint(bead_index,bead_index-sidechain_length-1,sigma*0.1)
+    system.addConstraint(bead_index,bead_index-sidechain_length-1,sigma)
    if backbone_bead in sidechain_positions:
     for sidechain in range(sidechain_length):
      system.addParticle(mass)
      bead_index = bead_index + 1
-     system.addConstraint(bead_index,bead_index-1,sigma*0.1)
+     system.addConstraint(bead_index,bead_index-1,sigma)
  return(system)
 
 def build_cg_model(model_settings,particle_properties,positions):
  box_size,polymer_length,backbone_length,sidechain_length,sidechain_positions = model_settings
  num_particles = (backbone_length + sidechain_length) * polymer_length
- mass,q,sigma,epsilon = particle_properties[:]
+ mass,q,sigma,epsilon,bond_length = particle_properties[:]
 # Record the positions
  pdb_file = 'temp.pdb'
 # write_positions_to_pdbfile(positions,pdb_file,model_settings)

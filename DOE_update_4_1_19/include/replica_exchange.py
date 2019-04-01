@@ -26,6 +26,18 @@ from yank.utils import config_root_logger
 # quiet down some citation spam
 MultiStateSampler._global_citation_silence = True
 
+def test_simulation(simulation):
+ init_positions = simulation.context.getState(getPositions=True).getPositions()
+ try:
+  simulation.minimizeEnergy() # Set the simulation type to energy minimization
+  simulation.step(1000)
+  success = True
+  return(simulation,success)
+ except Exception:
+  success = False
+  simulation.context.setPositions(init_positions)
+  return(simulation,success)
+
 def get_low_energy_structure(simulation_settings,model_settings,particle_properties):
  temperatures,simulation_time_step,simulation_steps,print_frequency,total_simulation_time,exchange_attempts,replica_exchange_storage_file,input_directory,output_directory = simulation_settings
  positions = assign_random_initial_coordinates(model_settings)

@@ -77,9 +77,9 @@ def attempt_move(parent_coordinates,sigma):
      move_direction = random.randint(0,2)
      while move_direction in move_direction_list:
       move_direction = random.randint(0,2)
-     value = float(round(sigma._value**2.0,2)-round(dist._value**2.0,2))
+     value = float(round(sigma._value**2.0,4)-round(dist._value**2.0,4))
      if value < 0.0:
-      print("Error: new particlesare not being assigned correctly.")
+      print("Error: new particles are not being assigned correctly.")
       exit()
      units = dist.unit.__pow__(2.0)
      step_arg = unit.Quantity(value,units)
@@ -88,7 +88,7 @@ def attempt_move(parent_coordinates,sigma):
      move_direction_list.append(move_direction)
      trial_coordinates = update_trial_coordinates(move[move_direction],move_direction,trial_coordinates)
      dist = distance(ref,trial_coordinates)
-    if round(distance(trial_coordinates,ref)._value,2) < round(sigma._value,2):
+    if round(distance(trial_coordinates,ref)._value,4) < round(sigma._value,4):
      print("Error: particles are being placed at a distance different from the bond length")
      print("Bond length is: "+str(sigma))
      print("The particle distance is: "+str(distance(trial_coordinates,ref)))
@@ -105,10 +105,6 @@ def non_bonded_distances(new_coordinates,existing_coordinates,sigma):
     for particle in range(0,len(existing_coordinates)):
      test_position = unit.Quantity(existing_coordinates._value[particle],existing_coordinates.unit)
      distances.append(distance(new_coordinates,test_position))
-#   print(distances)
-    for dist in distances:
-     if distances == sigma:
-      distances.remove(dist)
    return(distances)
 
 def collisions(distances,sigma):
@@ -172,7 +168,7 @@ def assign_backbone_beads(positions,monomer_start,model_settings,sigma):
 def assign_random_initial_coordinates(model_settings,particle_properties):
 # Define array for initial Cartesian coordinates
  box_size,polymer_length,backbone_length,sidechain_length,sidechain_positions = model_settings[:]
- mass,q,sigma,epsilon = particle_properties[:] 
+ mass,q,sigma,epsilon,bond_length = particle_properties[:] 
  positions = unit.Quantity(np.zeros([3]), unit.angstrom)
  for monomer in range(0,polymer_length):
    if monomer == 0:
