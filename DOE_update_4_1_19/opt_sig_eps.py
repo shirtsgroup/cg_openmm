@@ -47,27 +47,97 @@ sigma = 8.4 * unit.angstrom # Lennard-Jones interaction distance
 bond_length = 1.0 * unit.angstrom # bond length
 epsilon = 0.5 * unit.kilojoules_per_mole # Lennard-Jones interaction strength
 steps = 50
-num_configurations = 100
+step_length = 0.1
+num_configurations = 10000
 q = 0.0 * unit.elementary_charge # Charge of beads
 particle_properties = [mass,q,sigma,epsilon,bond_length]
 add_cg_elem(particle_properties)
 
-sigma_list = [unit.Quantity(sigma._value+length*0.1,sigma.unit) for length in range(0,steps)]
-epsilon_list = [unit.Quantity(epsilon._value+index*0.1,epsilon.unit) for index in range(0,steps)]
+sigma_list = [unit.Quantity(sigma._value+length*step_length,sigma.unit) for length in range(0,steps)]
+epsilon_list = [unit.Quantity(epsilon._value+index*step_length,epsilon.unit) for index in range(0,steps)]
 
-def get_configuration_energies(configuration):
+def get_configuration_energies(model_settings,particle_properties,configuration):
    system,topology = build_cg_model(model_settings,particle_properties,configuration)
    system = assign_default_box_vectors(system,box_size)
    minimization_time = simulation_time_step * 1000
    integrator = LangevinIntegrator(500.0  * unit.kelvin, minimization_time, simulation_time_step) # Define Langevin integrator
    simulation = Simulation(topology, system, integrator) # Define a simulation 'context'
    simulation.context.setPositions(configuration) # Assign particle positions for this context
-#   nonbondedforce = get_mm_force(model_settings,particle_properties)
-   simulation,success = test_simulation(simulation)
-   positions = simulation.context.getState(getPositions=True).getPositions()
    potential_energy = round(simulation.context.getState(getEnergy=True).getPotentialEnergy()._value,2)
 #   nonbonded_energy = float("{:.2E}".format(calculate_nonbonded_energy(model_settings,particle_properties,positions)._value))
    return(potential_energy)
+
+def replace(num_list,comparison,direction):
+ smaller = False
+ index = -1
+ if direction == "lower": 
+  current = -999.0 * comparison.unit
+  if any([comparison < num_list[num] for num in range(len(num_list))]):
+   for num in range(len(num_list)):
+    if num_list[num] > current:
+     current = num_list[num]
+     index = num
+ if direction == "upper": 
+  current = 999.0 * comparison.unit
+  if any([comparison > num_list[num] for num in range(len(num_list))]):
+   for num in range(len(num_list)):
+    if num_list[num] < current:
+     current = num_list[num]
+     index = num
+ return(current,index)
+
+def get_lowest_energy_configurations(model_settings,particle_properties,configurations,number):
+   low_energy_configurations = []
+   energies = []
+   configuration_index = 0
+   for configuration in configurations:
+    potential_energy = get_configuration_energies(model_settings,particle_properties,configuration)
+    if len(low_energy_configurations) > number:
+     print("Error: too many configurations.")
+     exit()
+    if len(low_energy_configurations) < number:
+     low_energy_configurations.append(configuration)
+     energies.append(potential_energy)
+    if len(low_energy_configurations) == number:
+     array = model_settings,particle_properties,configuration
+     value = replace([get_configuration_energies(model_settings,particle_properties,configuration) for configuration in low_energy_configurations],potential_energy,"lower")[0]
+     replace_index = replace([get_configuration_energies(model_settings,particle_properties,configuration) for configuration in low_energy_configurations],potential_energy,"lower")[1]
+     if replace_index != -1:
+      if potential_energy > energies[replace_index]:
+       print("Error: replaced a lower energy configuration")
+       exit()
+      print("Replacing configuration "+str(replace_index)+" with configuration "+str(configuration_index))
+#      print("with configuration that has energy "+str(potential_energy))
+      low_energy_configurations[replace_index] = configuration
+      energies[replace_index] = potential_energy
+    configuration_index = configuration_index + 1
+   return(low_energy_configurations)   
+
+def get_most_folded_configurations(model_settings,particle_properties,configurations,number):
+   most_folded_configurations = []
+   end_to_end_distances = []
+   configuration_index = 0
+   for configuration in configurations:
+    end_to_end_distance = distance(configuration[0],configuration[-1])
+    if len(most_folded_configurations) > number:
+     print("Error: too many configurations.")
+     exit()
+    if len(most_folded_configurations) < number:
+     most_folded_configurations.append(configuration)
+     end_to_end_distances.append(end_to_end_distance)
+    if len(most_folded_configurations) == number:
+     value = replace(end_to_end_distances,end_to_end_distance,"lower")[0]
+     replace_index = replace(end_to_end_distances,end_to_end_distance,"lower")[1]
+     if replace_index != -1:
+      if end_to_end_distance > end_to_end_distances[replace_index]:
+       print("Error: replaced a lower energy configuration")
+       exit()
+      print("Replacing configuration "+str(replace_index)+" with distance "+str(end_to_end_distances[replace_index])+" with configuration "+str(configuration_index)+" with distance "+str(end_to_end_distance))
+#      print("with configuration that has energy "+str(potential_energy))
+      most_folded_configurations[replace_index] = configuration
+      end_to_end_distances[replace_index] = end_to_end_distance
+    configuration_index = configuration_index + 1
+   return(most_folded_configurations)
 
 if __name__ == '__main__':
 
@@ -75,19 +145,41 @@ if __name__ == '__main__':
  nonbonded_energies = []
  sig_list = []
  eps_list = []
+ print("Generating initial configurations")
+ configurations = []
+ counter = 0
+ pool = Pool(processes=processors)
+ for i in range(0,num_configurations*100):
+  if counter == 1000:
+   print(i)
+   counter = 0
+  counter = counter + 1
+  configurations.append(assign_random_initial_coordinates(model_settings,particle_properties))
+ print("Pruning configurations")
+ configurations = get_most_folded_configurations(model_settings,particle_properties,configurations,num_configurations)
+ print("Writing configurations to PDB file")
+ for configuration in range(len(configurations)):
+  write_positions_to_pdbfile(configurations[configuration],str(output_directory+"/ens_"+str(configuration)+".pdb"),model_settings)
+ configurations = get_lowest_energy_configurations(model_settings,particle_properties,configurations,num_configurations*0.01)
+ print("Writing configurations to PDB file")
+ for configuration in range(len(configurations)):
+  write_positions_to_pdbfile(configurations[configuration],str(output_directory+"/ens_"+str(configuration)+".pdb"),model_settings)
+ print("Calculating potential energies for surrogate model with a range of sigma and epsilon.")
  for epsilon in epsilon_list:
-  print("Epsilon = "+str(epsilon))
   for sigma in sigma_list:
-   print("Sigma = "+str(sigma))
    particle_properties = [mass,q,sigma,epsilon,bond_length]
-   configurations = [assign_random_initial_coordinates(model_settings,particle_properties) for i in range(0,num_configurations)]
-   pool = Pool(processes=processors)
-   avg_potential_energy = sum(pool.map(get_configuration_energies,configurations))/len(configurations)
+   avg_potential_energy = sum([get_configuration_energies(model_settings,particle_properties,configuration) for configuration in configurations])/len(configurations)
    potential_energies.append(avg_potential_energy)
 #   nonbonded_energies.append(sum(all_nonbonded_energies)/len(all_nonbonded_energies))
- 
+ print("Writing potential energies to output file")
+ file_obj = open('potential_energies.dat','w')
+ file_obj.write("Coordinates	Potential Energy ( kJ/mol )\n")
+ for energy in potential_energies:
+  file_obj.write(str(output_directory+"/ens_"+str(configuration)+".pdb "+str(round(energy,4))+"\n"))
+ file_obj.close()
 # Plot heatmap
 
+ print("Plotting results")
  x=np.unique(sig_list)
  y=np.unique(eps_list)
  z=np.array(potential_energies)

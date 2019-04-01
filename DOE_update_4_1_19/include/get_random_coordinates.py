@@ -63,7 +63,7 @@ def get_move(move,direction,step):
      move = unit.Quantity(values,move.unit)
      return(move)
 
-def attempt_move(parent_coordinates,sigma):
+def attempt_move(parent_coordinates,bond_length):
     units = parent_coordinates.unit
     move = unit.Quantity(np.zeros([3]), units)
     move_direction_list = []
@@ -77,7 +77,7 @@ def attempt_move(parent_coordinates,sigma):
      move_direction = random.randint(0,2)
      while move_direction in move_direction_list:
       move_direction = random.randint(0,2)
-     value = float(round(sigma._value**2.0,4)-round(dist._value**2.0,4))
+     value = float(round(bond_length._value**2.0,4)-round(dist._value**2.0,4))
      if value < 0.0:
       print("Error: new particles are not being assigned correctly.")
       exit()
@@ -88,16 +88,16 @@ def attempt_move(parent_coordinates,sigma):
      move_direction_list.append(move_direction)
      trial_coordinates = update_trial_coordinates(move[move_direction],move_direction,trial_coordinates)
      dist = distance(ref,trial_coordinates)
-    if round(distance(trial_coordinates,ref)._value,4) < round(sigma._value,4):
+    if round(distance(trial_coordinates,ref)._value,4) < round(bond_length._value,4):
      print("Error: particles are being placed at a distance different from the bond length")
-     print("Bond length is: "+str(sigma))
+     print("Bond length is: "+str(bond_length))
      print("The particle distance is: "+str(distance(trial_coordinates,ref)))
      print(ref)
      print(trial_coordinates)
      exit()
     return(trial_coordinates)
 
-def non_bonded_distances(new_coordinates,existing_coordinates,sigma):
+def non_bonded_distances(new_coordinates,existing_coordinates):
    distances = []
    if first_atom(existing_coordinates):
     return(distances)
@@ -107,17 +107,16 @@ def non_bonded_distances(new_coordinates,existing_coordinates,sigma):
      distances.append(distance(new_coordinates,test_position))
    return(distances)
 
-def collisions(distances,sigma):
+def collisions(distances,bond_length):
    collision = False
    if len(distances) > 0:
     for distance in distances:
-     if distance._value < sigma._value:
+     if round(distance._value,4) < round(bond_length._value,4):
       collision = True
-#   if collision: print(distances)
    return(collision)
 
-def assign_position(positions,sigma,parent_index=-1):
-  units = sigma.unit
+def assign_position(positions,bond_length,parent_index=-1):
+  units = bond_length.unit
   if len(positions) == 0:
    new_coordinates = unit.Quantity(np.zeros([3]), units)
    return
@@ -131,10 +130,10 @@ def assign_position(positions,sigma,parent_index=-1):
    new_coordinates = unit.Quantity(np.zeros([3]), units)
    success = False
    attempts = 0
-   while not success: 
-    new_coordinates = attempt_move(parent_coordinates,sigma)
-    distances = non_bonded_distances(new_coordinates,positions,sigma)
-    if not collisions(distances,sigma): success = True
+   while not success:
+    new_coordinates = attempt_move(parent_coordinates,bond_length)
+    distances = non_bonded_distances(new_coordinates,positions)
+    if not collisions(distances,bond_length): success = True
     if not success and attempts > 1000000:
      print("Error: maximum number of bead placement attempts exceeded")
      exit()
@@ -142,27 +141,27 @@ def assign_position(positions,sigma,parent_index=-1):
   positions = append_position(positions,new_coordinates)
   return(positions)
 
-def assign_sidechain_beads(positions,model_settings,sigma):
+def assign_sidechain_beads(positions,model_settings,bond_length):
      sidechain_length = model_settings[3]
      for sidechain in range(0,sidechain_length):
 #       print("Assigning coordinates for sidechain bead: bead "+str(len(positions)+1))
-       positions = assign_position(positions,sigma)
+       positions = assign_position(positions,bond_length)
      return(positions)
 
-def assign_backbone_beads(positions,monomer_start,model_settings,sigma):
+def assign_backbone_beads(positions,monomer_start,model_settings,bond_length):
     backbone_length = model_settings[2]
     sidechain_positions = model_settings[4]
-    units = sigma.unit
+    units = bond_length.unit
     for backbone_bead_index in range(0,backbone_length):
 #     print("Assigning coordinates for backbone bead: bead "+str(len(positions)+1))
      if backbone_bead_index == 0:
       if not first_atom(positions):
-       positions = assign_position(positions,sigma,parent_index=monomer_start)
+       positions = assign_position(positions,bond_length,parent_index=monomer_start)
      else:
-      positions = assign_position(positions,sigma)
+      positions = assign_position(positions,bond_length)
      # Assign side-chain beads if appropriate
      if backbone_bead_index in sidechain_positions:
-       positions = assign_sidechain_beads(positions,model_settings,sigma)
+       positions = assign_sidechain_beads(positions,model_settings,bond_length)
     return(positions)
 
 def assign_random_initial_coordinates(model_settings,particle_properties):
@@ -176,7 +175,7 @@ def assign_random_initial_coordinates(model_settings,particle_properties):
    if monomer != 0:
     monomer_start = len(positions) - sidechain_length - 1
 # Assign backbone bead positions
-   positions = assign_backbone_beads(positions,monomer_start,model_settings,sigma)
+   positions = assign_backbone_beads(positions,monomer_start,model_settings,bond_length)
  return(positions)
 
 def write_positions_to_xyzfile(coordinates,filename,model_settings):
@@ -204,18 +203,13 @@ def write_positions_to_pdbfile(coordinates,filename,model_settings):
  monomer_size = backbone_length + sidechain_length
  pdb_object = open(filename,"w")
  bead_index = 1
+ coordinates = coordinates._value
  for monomer_index in range(0,polymer_length):
   for backbone_bead in range(0,backbone_length):
-   if monomer_index == 0 or monomer_index == int(polymer_length-1):
-    pdb_object.write(str("ATOM"+str("{:>7}".format(bead_index))+"  X   CG  A"+str("{:>4}".format(monomer_index+1))+"     "+str("{:>7}".format(coordinates[bead_index-1][0]))+" "+str("{:>7}".format(coordinates[bead_index-1][1]))+" "+str("{:>7}".format(coordinates[bead_index-1][2]))+"  1.00  0.00\n"))
-   else:
-    pdb_object.write(str("ATOM"+str("{:>7}".format(bead_index))+"  X   CG  A"+str("{:>4}".format(monomer_index+1))+"     "+str("{:>7}".format(coordinates[bead_index-1][0]))+" "+str("{:>7}".format(coordinates[bead_index-1][1]))+" "+str("{:>7}".format(coordinates[bead_index-1][2]))+"  1.00  0.00\n"))
+   pdb_object.write(str("ATOM"+str("{:>7}".format(bead_index))+"  X   CG  A"+str("{:>4}".format(monomer_index+1))+"     "+str("{:>7}".format(round(coordinates[bead_index-1][0],3)))+" "+str("{:>7}".format(round(coordinates[bead_index-1][1],3)))+" "+str("{:>7}".format(round(coordinates[bead_index-1][2],3)))+"  1.00  0.00\n"))
    bead_index = bead_index + 1
   for sidechain_bead in range(0,sidechain_length):
-   if monomer_index == 0 or monomer_index == int(polymer_length-1):
-    pdb_object.write(str("ATOM"+str("{:>7}".format(bead_index))+"  Q   CG  A"+str("{:>4}".format(monomer_index+1))+"     "+str("{:>7}".format(coordinates[bead_index-1][0]))+" "+str("{:>7}".format(coordinates[bead_index-1][1]))+" "+str("{:>7}".format(coordinates[bead_index-1][2]))+"  1.00  0.00\n"))
-   else:
-    pdb_object.write(str("ATOM"+str("{:>7}".format(bead_index))+"  Q   CG  A"+str("{:>4}".format(monomer_index+1))+"     "+str("{:>7}".format(coordinates[bead_index-1][0]))+" "+str("{:>7}".format(coordinates[bead_index-1][1]))+" "+str("{:>7}".format(coordinates[bead_index-1][2]))+"  1.00  0.00\n"))
+   pdb_object.write(str("ATOM"+str("{:>7}".format(bead_index))+"  Q   CG  A"+str("{:>4}".format(monomer_index+1))+"     "+str("{:>7}".format(round(coordinates[bead_index-1][0],3)))+" "+str("{:>7}".format(round(coordinates[bead_index-1][1],3)))+" "+str("{:>7}".format(round(coordinates[bead_index-1][2],3)))+"  1.00  0.00\n"))
    bead_index = bead_index + 1
  pdb_object.write(str("END"))
  pdb_object.close()
