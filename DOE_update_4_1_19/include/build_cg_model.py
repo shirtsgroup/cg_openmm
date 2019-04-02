@@ -25,29 +25,33 @@ def assign_default_box_vectors(system,box_size):
  return(system)
 
 def get_mm_force(model_settings,particle_properties):
- box_size,polymer_length,backbone_length,sidechain_length,sidechain_positions = model_settings
- num_particles = (backbone_length + sidechain_length) * polymer_length
- mass,q,sigma,epsilon,bond_length = particle_properties
+ if len(model_settings) == 5:
+  box_size,polymer_length,backbone_length,sidechain_length,sidechain_positions = model_settings
+  num_particles = (backbone_length + sidechain_length) * polymer_length
+  mass,q,sigma,epsilon,bond_length = particle_properties
+ else:
+  box_size = model_settings
+  mass,q,sigma,epsilon = particle_properties
  force = mm.NonbondedForce()
  force.setCutoffDistance(1*unit.nanometer)
- bead_index = 0
  for particle in range(num_particles):
   force.addParticle(q, sigma, epsilon)
- for monomer in range(polymer_length):
-  for backbone_bead in range(backbone_length):
-   if bead_index != 0:
-    bead_index = bead_index + 1
-    force.addException(particle1=bead_index,particle2=bead_index-sidechain_length-1,sigma=sigma,epsilon=0.0,chargeProd=0.0)
-   if backbone_bead in sidechain_positions:
-    for sidechain in range(sidechain_length):
+ if len(model_settings) == 5:
+  for monomer in range(polymer_length):
+   for backbone_bead in range(backbone_length):
+    if bead_index != 0:
      bead_index = bead_index + 1
-     force.addException(particle1=bead_index,particle2=bead_index-1,sigma=sigma,epsilon=0.0,chargeProd=0.0)
+     force.addException(particle1=bead_index,particle2=bead_index-sidechain_length-1,sigma=sigma,epsilon=0.0,chargeProd=0.0)
+    if backbone_bead in sidechain_positions:
+     for sidechain in range(sidechain_length):
+      bead_index = bead_index + 1
+      force.addException(particle1=bead_index,particle2=bead_index-1,sigma=sigma,epsilon=0.0,chargeProd=0.0)
  return(force)
 
 def add_cg_elem(particle_properties):
         mass,q,sigma,epsilon,bond_length = particle_properties
-        elem.Element(117,'cgbackbone','X',mass)
-        elem.Element(118,'cgsidechain','Q',mass)
+        elem.Element(117,"cgbackbone","X",mass)
+        elem.Element(118,"cgsidechain","Q",mass)
         return
 
 def build_cg_topology(model_settings,particle_properties):
