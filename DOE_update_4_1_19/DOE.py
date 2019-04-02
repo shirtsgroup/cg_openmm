@@ -18,7 +18,7 @@ from multiprocessing import cpu_count
 
 # Job settings
 processors = cpu_count() - 4
-output_directory = "output"
+output_directory = "output/init_simulations"
 input_directory = "input"
 if not os.path.exists(output_directory): os.makedirs(output_directory)
 if not os.path.exists(input_directory): os.makedirs(input_directory)
@@ -28,8 +28,8 @@ initial_coordinates_xyz = str(input_directory+"/coordinates.xyz")
 box_size = 10.00 * unit.nanometer # box width
 cutoff = box_size / 2.0 * 0.99
 simulation_time_step = 0.002 * unit.picosecond # Units = picoseconds
-simulation_steps = 1000 # Number of steps used in individual Langevin dynamics simulations
-print_frequency = 10 # Number of steps to skip when printing output
+simulation_steps = 10000 # Number of steps used in individual Langevin dynamics simulations
+print_frequency = 100 # Number of steps to skip when printing output
 total_simulation_time = simulation_time_step * simulation_steps # Units = picoseconds
 
 # System settings
@@ -178,6 +178,16 @@ def build_system(model_settings,particle_properties,num_particles):
  system = mm.System()
  for particle in range(num_particles):
    system.addParticle(mass)
+ bead_index = 0
+ for monomer in range(polymer_length):
+  for backbone_bead in range(backbone_length):
+   if bead_index != 0:
+    bead_index = bead_index + 1
+    system.addConstraint(bead_index,bead_index-sidechain_length-1,bond_length)
+   if backbone_bead in sidechain_positions:
+    for sidechain in range(sidechain_length):
+     bead_index = bead_index + 1
+     system.addConstraint(bead_index,bead_index-1,bond_length)
  return(system)
 
 def build_topology(particle_properties,num_particles):

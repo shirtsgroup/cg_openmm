@@ -175,6 +175,16 @@ def build_system(model_settings,particle_properties,num_particles):
  system = mm.System()
  for particle in range(num_particles):
    system.addParticle(mass)
+ bead_index = 0
+ for monomer in range(polymer_length):
+  for backbone_bead in range(backbone_length):
+   if bead_index != 0:
+    bead_index = bead_index + 1
+    system.addConstraint(bead_index,bead_index-sidechain_length-1,bond_length)
+   if backbone_bead in sidechain_positions:
+    for sidechain in range(sidechain_length):
+     bead_index = bead_index + 1
+     system.addConstraint(bead_index,bead_index-1,bond_length)
  return(system)
 
 def build_topology(particle_properties,num_particles):
