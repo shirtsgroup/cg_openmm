@@ -1,0 +1,258 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>OpenMM Functions &#8212; foldamers 0.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Welcome to the foldamers github repository documentation page!" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="openmm-functions">
+<h1>OpenMM Functions<a class="headerlink" href="#openmm-functions" title="Permalink to this headline">¶</a></h1>
+<p>This page details the functions and classes in src/openmm.py</p>
+<div class="section" id="cgmodel-class-for-openmm-simulation">
+<h2>‘cgmodel’ class for OpenMM simulation<a class="headerlink" href="#cgmodel-class-for-openmm-simulation" title="Permalink to this headline">¶</a></h2>
+<p>Shown below is a detailed description of the ‘cgmodel’ class object,
+which contains all simulation objects required by OpenMM.</p>
+<span class="target" id="module-openmm"></span><dl class="class">
+<dt id="openmm.cgmodel">
+<em class="property">class </em><code class="descclassname">openmm.</code><code class="descname">cgmodel</code><span class="sig-paren">(</span><em>box_size=Quantity(value=10.0, unit=nanometer), polymer_length=12, backbone_length=1, sidechain_length=1, sidechain_positions=[0], mass=Quantity(value=12.0, unit=dalton), sigma=Quantity(value=8.4, unit=angstrom), epsilon=Quantity(value=0.5, unit=kilocalorie/mole), bond_length=Quantity(value=1.0, unit=angstrom), bb_bond_length=Quantity(value=1.0, unit=angstrom), bs_bond_length=Quantity(value=1.0, unit=angstrom), ss_bond_length=Quantity(value=1.0, unit=angstrom), charge=Quantity(value=0.0, unit=elementary charge)</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openmm.html#cgmodel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#openmm.cgmodel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct all of the objects that OpenMM expects/requires 
+for simulations with a coarse grained model.</p>
+<p>box_size: Simulation box length, 
+default = 10.00 * unit.nanometer</p>
+<p>polymer_length: Number of monomer units (integer), default = 8</p>
+<p>backbone_length: Number of beads in the backbone 
+portion of each (individual) monomer (integer), default = 1</p>
+<p>sidechain_length: Number of beads in the sidechain
+portion of each (individual) monomer (integer), default = 1</p>
+<p>sidechain_positions: List of integers defining the backbone
+bead indices upon which we will place the sidechains,
+default = [0] (Place a sidechain on the backbone bead with
+index “0” (first backbone bead) in each (individual) monomer</p>
+<p>mass: Mass of coarse grained beads ( float * simtk.unit.mass )
+default = 12.0 * unit.amu</p>
+<p>sigma: Non-bonded bead Lennard-Jones interaction distances,
+( float * simtk.unit.distance )
+default = 8.4 * unit.angstrom</p>
+<p>epsilon: Non-bonded bead Lennard-Jones interaction strength,
+( float * simtk.unit.energy )
+default = 0.5 * unit.kilocalorie_per_mole</p>
+<p>bond_length: Bond length for all beads that are bonded,
+( float * simtk.unit.distance )
+default = 1.0 * unit.angstrom</p>
+<p>bb_bond_length: Bond length for all bonded backbone beads,
+( float * simtk.unit.distance )
+default = 1.0 * unit.angstrom</p>
+<p>bs_bond_length: Bond length for all backbone-sidechain bonds,
+( float * simtk.unit.distance )
+default = 1.0 * unit.angstrom</p>
+<p>ss_bond_length: Bond length for all beads within a sidechain,
+( float * simtk.unit.distance )
+default = 1.0 * unit.angstrom</p>
+<p>charge: Charge for all beads
+( float * simtk.unit.charge )
+default = 0.0 * unit.elementary_charge</p>
+<p>box_size
+polymer_length
+backbone_length
+sidechain_length
+sidechain_positions
+mass
+sigma
+epsilon
+bond_length
+bb_bond_length
+bs_bond_length
+ss_bond_length
+charge
+num_beads
+topology
+system
+positions
+simulation</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-openmm">
+<span id="foldamers-modules-for-openmm-simulation"></span><h2>foldamers ‘modules’ for OpenMM simulation<a class="headerlink" href="#module-openmm" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="openmm.build_mm_force">
+<code class="descclassname">openmm.</code><code class="descname">build_mm_force</code><span class="sig-paren">(</span><em>sigma</em>, <em>epsilon</em>, <em>charge</em>, <em>num_beads</em>, <em>cutoff=Quantity(value=1</em>, <em>unit=nanometer)</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openmm.html#build_mm_force"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#openmm.build_mm_force" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build an OpenMM ‘Force’ for the non-bonded interactions in our model.</p>
+<p>sigma: Non-bonded bead Lennard-Jones interaction distances,
+( float * simtk.unit.distance )</p>
+<p>epsilon: Non-bonded bead Lennard-Jones interaction strength,
+( float * simtk.unit.energy )</p>
+<p>charge: Charge for all beads
+( float * simtk.unit.charge )</p>
+<p>cutoff: Cutoff distance for nonbonded interactions
+( float * simtk.unit.distance )</p>
+<p>num_beads: Total number of beads in our coarse grained model
+( integer )</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="openmm.build_mm_simulation">
+<code class="descclassname">openmm.</code><code class="descname">build_mm_simulation</code><span class="sig-paren">(</span><em>topology</em>, <em>system</em>, <em>temperature</em>, <em>simulation_time_step</em>, <em>total_simulation_time</em>, <em>positions</em>, <em>output_data='output.dat'</em>, <em>print_frequency=100</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openmm.html#build_mm_simulation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#openmm.build_mm_simulation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct an OpenMM simulation object for our coarse grained model.</p>
+<p>topology: OpenMM topology object</p>
+<p>system: OpenMM system object</p>
+<p>temperature: Simulation temperature ( float * simtk.unit.temperature )</p>
+<p>simulation_time_step: Simulation integration time step
+( float * simtk.unit.time )</p>
+<p>total_simulation_time: Total simulation time ( float * simtk.unit.time )</p>
+<p>positions: Array containing the positions of all beads
+in the coarse grained model
+( np.array( ‘num_beads’ x 3 , ( float * simtk.unit.distance ) )</p>
+<p>output_data: Name of output file where we will write the data from this
+simulation ( string )</p>
+<p>print_frequency: Number of simulation steps to skip when writing data
+to ‘output_data’ ( integer )</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="openmm.build_mm_system">
+<code class="descclassname">openmm.</code><code class="descname">build_mm_system</code><span class="sig-paren">(</span><em>box_size</em>, <em>mass</em>, <em>num_beads</em>, <em>sigma</em>, <em>epsilon</em>, <em>charge</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openmm.html#build_mm_system"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#openmm.build_mm_system" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct an OpenMM system for our coarse grained model</p>
+<p>box_size: Simulation box length ( float * simtk.unit.length )</p>
+<p>mass: Coarse grained particle mass ( float * simtk.unit.length )</p>
+<p>num_beads: Total number of beads in our coarse grained model (int)</p>
+<p>sigma: Non-bonded bead Lennard-Jones interaction distances,
+( float * simtk.unit.distance )</p>
+<p>epsilon: Non-bonded bead Lennard-Jones interaction strength,
+( float * simtk.unit.energy )</p>
+<p>charge: Charge for all beads
+( float * simtk.unit.charge )</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="openmm.build_mm_topology">
+<code class="descclassname">openmm.</code><code class="descname">build_mm_topology</code><span class="sig-paren">(</span><em>polymer_length</em>, <em>backbone_length</em>, <em>sidechain_length</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openmm.html#build_mm_topology"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#openmm.build_mm_topology" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct an OpenMM topology for our coarse grained model</p>
+<p>polymer_length: Number of monomers in our coarse grained model
+( integer )</p>
+<p>backbone_length: Number of backbone beads on individual monomers
+in our coarse grained model, ( integer )</p>
+<p>sidechain_length: Number of sidechain beads on individual monomers
+in our coarse grained model, ( integer )</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="openmm.get_box_vectors">
+<code class="descclassname">openmm.</code><code class="descname">get_box_vectors</code><span class="sig-paren">(</span><em>box_size</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openmm.html#get_box_vectors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#openmm.get_box_vectors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assign all side lengths for simulation box.</p>
+<p>box_size: Simulation box length ( float * simtk.unit.length )</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="openmm.set_box_vectors">
+<code class="descclassname">openmm.</code><code class="descname">set_box_vectors</code><span class="sig-paren">(</span><em>system</em>, <em>box_size</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/openmm.html#set_box_vectors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#openmm.set_box_vectors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build a simulation box.</p>
+<p>system: OpenMM system object</p>
+<p>box_size: Simulation box length ( float * simtk.unit.length )</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">foldamers</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">OpenMM Functions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#cgmodel-class-for-openmm-simulation">‘cgmodel’ class for OpenMM simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-openmm">foldamers ‘modules’ for OpenMM simulation</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to the foldamers github repository documentation page!</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Research group of Michael R. Shirts.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/openmm.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
