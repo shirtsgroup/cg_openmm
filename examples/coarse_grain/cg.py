@@ -28,8 +28,7 @@ from yank.multistate import ReplicaExchangeAnalyzer, SAMSAnalyzer
 from yank.multistate.multistatereporter import _DictYamlLoader
 from yank.utils import config_root_logger
 
-if socket.gethostname() == "Louie":
- pdb_file="/mnt/d/Foldamers/OpenMM_CG_polymers/structure_files/CG_8-mer.pdb"
+pdb_file="test_coordinates.pdb"
 temperature = 300.0 
 simulation_time_step = 0.002 # Units = picoseconds
 kB = 0.008314462  #Boltzmann constant (Gas constant) in kJ/(mol*K)
