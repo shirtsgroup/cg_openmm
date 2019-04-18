@@ -1,5 +1,3 @@
-import foldamers
-from foldamers import cg_model
-from cg_model.cgmodel import *
+from foldamers.src.cg_model.cgmodel import CGModel as CGModel
 test = CGModel()
 print(test.positions)
