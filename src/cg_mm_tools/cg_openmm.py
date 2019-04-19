@@ -11,9 +11,10 @@
 
 
 from simtk import openmm as mm
+from simtk.openmm import *
 from simtk import unit
 import simtk.openmm.app.element as elem
-
+from simtk.openmm.app import *
 
 def get_box_vectors(box_size):
         """
@@ -159,7 +160,7 @@ def build_mm_topology(polymer_length,backbone_length,sidechain_length):
         return(topology)
 
 
-def build_mm_simulation(topology,system,temperature,simulation_time_step,total_simulation_time,positions,output_data='output.dat',print_frequency=100):
+def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvin,simulation_time_step=0.002 * unit.picosecond,total_simulation_time=1.0 * unit.picosecond,output_data='output.dat',print_frequency=100):
         """
         Construct an OpenMM simulation object for our coarse grained model.
 
@@ -170,16 +171,16 @@ def build_mm_simulation(topology,system,temperature,simulation_time_step,total_s
 
         system: OpenMM system object
 
+        positions: Array containing the positions of all beads
+        in the coarse grained model
+        ( np.array( 'num_beads' x 3 , ( float * simtk.unit.distance ) )
+
         temperature: Simulation temperature ( float * simtk.unit.temperature )
 
         simulation_time_step: Simulation integration time step
         ( float * simtk.unit.time )
 
         total_simulation_time: Total simulation time ( float * simtk.unit.time )
-
-        positions: Array containing the positions of all beads
-        in the coarse grained model
-        ( np.array( 'num_beads' x 3 , ( float * simtk.unit.distance ) )
 
         output_data: Name of output file where we will write the data from this
         simulation ( string )
@@ -195,6 +196,7 @@ def build_mm_simulation(topology,system,temperature,simulation_time_step,total_s
         simulation.context.setPositions(positions)
         simulation.context.setVelocitiesToTemperature(temperature)
 
+        simulation.reporters.append(PDBReporter("out.pdb",print_frequency))
         simulation.reporters.append(StateDataReporter(output_data,print_frequency, \
         step=True, totalEnergy=True, potentialEnergy=True, kineticEnergy=True, temperature=True))
 
