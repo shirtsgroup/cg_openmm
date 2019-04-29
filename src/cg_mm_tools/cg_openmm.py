@@ -160,7 +160,7 @@ def build_mm_topology(polymer_length,backbone_length,sidechain_length):
         return(topology)
 
 
-def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvin,simulation_time_step=0.002 * unit.picosecond,total_simulation_time=1.0 * unit.picosecond,output_data='output.dat',print_frequency=100):
+def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvin,simulation_time_step=0.002 * unit.picosecond,total_simulation_time=1.0 * unit.picosecond,output_pdb='output.pdb',output_data='output.dat',print_frequency=100):
         """
         Construct an OpenMM simulation object for our coarse grained model.
 
@@ -196,7 +196,7 @@ def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvi
         simulation.context.setPositions(positions)
         simulation.context.setVelocitiesToTemperature(temperature)
 
-        simulation.reporters.append(PDBReporter("out.pdb",print_frequency))
+        simulation.reporters.append(PDBReporter(output_pdb,print_frequency))
         simulation.reporters.append(StateDataReporter(output_data,print_frequency, \
         step=True, totalEnergy=True, potentialEnergy=True, kineticEnergy=True, temperature=True))
 
