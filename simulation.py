@@ -14,17 +14,17 @@ cutoff = box_size / 2.0 * 0.99
 simulation_time_step = 0.002 * unit.picosecond # Units = picoseconds
 temperature = 300.0 * unit.kelvin
 print_frequency = 10 # Number of steps to skip when printing output
-total_simulation_time = 1.0 * unit.picosecond # Units = picoseconds
+total_simulation_time = 100.0 * unit.picosecond # Units = picoseconds
 
 # Coarse grained model settings
-backbone_length = 1 # Number of backbone beads
-sidechain_length = 1 # Number of sidechain beads
-sidechain_positions = [0] # Index of backbone bead on which the side chains are placed
+backbone_length = 3 # Number of backbone beads
+sidechain_length = 4 # Number of sidechain beads
+sidechain_positions = [1] # Index of backbone bead on which the side chains are placed
 polymer_length = 12 # Number of monomers in the polymer
 mass = 12.0 * unit.amu # Mass of beads
 sigma = 8.4 * unit.angstrom # Lennard-Jones interaction distance
 bond_length = 1.0 * unit.angstrom # bond length
-bond_force_constant = 9.9e5 # Units = kJ/mol/A^2
+bond_force_constant = 9.9e3 # Units = kJ/mol/A^2
 constrain_bonds = False
 epsilon = 0.5 * unit.kilocalorie_per_mole # Lennard-Jones interaction strength
 charge = 0.0 * unit.elementary_charge # Charge of beads
