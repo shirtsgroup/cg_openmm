@@ -2,6 +2,7 @@
 
 from simtk import unit
 # foldamers utilities
+import foldamers
 from foldamers.src.cg_model.cgmodel import CGModel
 from foldamers.src.utilities.iotools import *
 from cg_openmm.src.cg_mm_tools.cg_openmm import *
@@ -18,7 +19,7 @@ total_simulation_time = 100.0 * unit.picosecond # Units = picoseconds
 
 # Coarse grained model settings
 backbone_length = 3 # Number of backbone beads
-sidechain_length = 4 # Number of sidechain beads
+sidechain_length = 2 # Number of sidechain beads
 sidechain_positions = [1] # Index of backbone bead on which the side chains are placed
 polymer_length = 12 # Number of monomers in the polymer
 mass = 12.0 * unit.amu # Mass of beads
