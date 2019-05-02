@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 from simtk import unit
+from simtk.openmm.app.pdbfile import PDBFile
 # foldamers utilities
 import foldamers
 from foldamers.src.cg_model.cgmodel import CGModel
@@ -36,11 +37,14 @@ cgmodel = CGModel(polymer_length=polymer_length,backbone_length=backbone_length,
 # Write the initial coordinates to a PDB file
 pdb_file = "init_coord.pdb"
 write_pdbfile(cgmodel,pdb_file)
+#exit()
 
 # Build a topology using the PDB file as input
 pdb_mm_obj = PDBFile(pdb_file)
 topology = pdb_mm_obj.getTopology()
-
+test_file = "test.pdb"
+write_cg_pdb(cgmodel,topology,cgmodel.positions,test_file)
+exit()
 # Build an OpenMM simulation object
 simulation = build_mm_simulation(topology,cgmodel.system,cgmodel.positions,temperature=temperature,simulation_time_step=simulation_time_step,total_simulation_time=simulation_time_step*print_frequency,output_pdb=output_pdb,output_data=output_data,print_frequency=print_frequency)
 
