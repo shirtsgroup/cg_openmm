@@ -9,12 +9,50 @@
 # GLOBAL IMPORTS
 # ==============================================================================
 
-
+import numpy as np
 from simtk import openmm as mm
 from simtk.openmm import *
 from simtk import unit
 import simtk.openmm.app.element as elem
 from simtk.openmm.app import *
+
+
+def distance(positions_1,positions_2):
+        """
+        Construct a matrix of the distances between all particles.
+
+        Parameters
+        ----------
+
+        positions_1: Positions for a particle
+        ( np.array( length = 3 ) )
+
+        positions_2: Positions for a particle
+        ( np.array( length = 3 ) )
+
+        Returns
+        -------
+
+        distance
+        ( float * unit )
+        """
+
+        direction_comp = np.zeros(3) * positions_1.unit
+
+        for direction in range(len(direction_comp)):
+          direction_comp[direction] = positions_1[direction].__sub__(positions_2[direction])
+
+        direction_comb = np.zeros(3) * positions_1.unit.__pow__(2.0)
+        for direction in range(3):
+          direction_comb[direction] = direction_comp[direction].__pow__(2.0)
+
+        sqrt_arg = direction_comb[0].__add__(direction_comb[1]).__add__(direction_comb[2])
+
+        value = math.sqrt(sqrt_arg._value)
+        units = sqrt_arg.unit.sqrt()
+        distance = unit.Quantity(value=value,unit=units)
+
+        return(distance)
 
 def get_box_vectors(box_size):
         """
@@ -204,196 +242,41 @@ def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvi
 
         return(simulation)
 
-class cgmodel(object):
-        """
-        Construct all of the objects that OpenMM expects/requires 
-        for simulations with a coarse grained model.
+def lj_v(positions_1,positions_2,sigma,epsilon):
+ dist = distance(positions_1,positions_2)
+ quot = dist.__div__(sigma)
+ attr = (quot.__pow__(6.0)).__mul__(2.0)
+ rep = quot.__pow__(12.0)
+ v = epsilon.__mul__(rep.__sub__(attr))
+ return(v)
 
-        Parameters
-        ----------
+def get_nonbonded_interaction_list(cgmodel):
+ interaction_list = []
+ bond_list = [[bond[0]-1,bond[1]-1] for bond in cgmodel.get_bond_list()]
+ for particle_1 in range(cgmodel.num_beads):
+  for particle_2 in range(cgmodel.num_beads):
+   if particle_1 != particle_2:
+    if [particle_1,particle_2] not in bond_list and [particle_2,particle_1] not in bond_list:
+     if [particle_1,particle_2] not in interaction_list:
+      if [particle_2,particle_1] not in interaction_list:
+       interaction_list.append([particle_1,particle_2])
+     if [particle_2,particle_1] not in interaction_list:
+      if [particle_1,particle_2] not in interaction_list:
+       interaction_list.append([particle_2,particle_1])
+ return(interaction_list)
 
-        box_size: Simulation box length, 
-        default = 10.00 * unit.nanometer
+def calculate_nonbonded_energy(cgmodel,particle1=None,particle2=None):
+ nonbonded_interaction_list = get_nonbonded_interaction_list(cgmodel)
+ positions = cgmodel.positions
+ energy = unit.Quantity(0.0,cgmodel.epsilon.unit)
+ if particle1 != None:
+  dist = distance(positions[particle1],positions[particle2])
+  inter_energy = lj_v(positions[particle1],positions[particle2],cgmodel.sigma,cgmodel.epsilon).in_units_of(unit.kilojoules_per_mole)
+  energy = energy.__add__(inter_energy)
+  return(energy)
+ for interaction in nonbonded_interaction_list:
+  dist = distance(positions[interaction[0]],positions[interaction[1]])
+  inter_energy = lj_v(positions[interaction[0]],positions[interaction[1]],cgmodel.sigma,cgmodel.epsilon).in_units_of(unit.kilojoules_per_mole)
+  energy = energy.__add__(inter_energy)
+ return(energy)
 
-        polymer_length: Number of monomer units (integer), default = 8
-      
-        backbone_length: Number of beads in the backbone 
-        portion of each (individual) monomer (integer), default = 1
-
-        sidechain_length: Number of beads in the sidechain
-        portion of each (individual) monomer (integer), default = 1
-
-        sidechain_positions: List of integers defining the backbone
-        bead indices upon which we will place the sidechains,
-        default = [0] (Place a sidechain on the backbone bead with
-        index "0" (first backbone bead) in each (individual) monomer
-
-        mass: Mass of coarse grained beads ( float * simtk.unit.mass )
-        default = 12.0 * unit.amu
-
-        sigma: Non-bonded bead Lennard-Jones interaction distances,
-        ( float * simtk.unit.distance )
-        default = 8.4 * unit.angstrom
-
-        epsilon: Non-bonded bead Lennard-Jones interaction strength,
-        ( float * simtk.unit.energy )
-        default = 0.5 * unit.kilocalorie_per_mole
-
-        bond_length: Bond length for all beads that are bonded,
-        ( float * simtk.unit.distance )
-        default = 1.0 * unit.angstrom
-
-        bb_bond_length: Bond length for all bonded backbone beads,
-        ( float * simtk.unit.distance )
-        default = 1.0 * unit.angstrom
-
-        bs_bond_length: Bond length for all backbone-sidechain bonds,
-        ( float * simtk.unit.distance )
-        default = 1.0 * unit.angstrom
-
-        ss_bond_length: Bond length for all beads within a sidechain,
-        ( float * simtk.unit.distance )
-        default = 1.0 * unit.angstrom
-
-        charge: Charge for all beads
-        ( float * simtk.unit.charge )
-        default = 0.0 * unit.elementary_charge
-
-        Attributes
-        ----------
-
-        box_size
-        polymer_length
-        backbone_length
-        sidechain_length
-        sidechain_positions
-        mass
-        sigma
-        epsilon
-        bond_length
-        bb_bond_length
-        bs_bond_length
-        ss_bond_length
-        charge
-        num_beads
-        topology
-        system
-        positions
-        simulation
-
-        Notes
-        -----
-        
-        """
-
-        # Built in class attributes
-        _BUILT_IN_REGIONS = ('box_size','polymer_length','backbone_length','sidechain_length','sidechain_positions','mass','sigma','epsilon','bond_length','bs_bond_length','bb_bond_length','ss_bond_length','charge','topology','system','simulation')
-
-        def __init__(self, box_size = 10.00 * unit.nanometer, polymer_length = 12, backbone_length = 1, sidechain_length = 1, sidechain_positions = [0], mass = 12.0 * unit.amu, sigma = 8.4 * unit.angstrom, epsilon = 0.5 * unit.kilocalorie_per_mole, bond_length = 1.0 * unit.angstrom, bb_bond_length = 1.0 * unit.angstrom, bs_bond_length = 1.0 * unit.angstrom, ss_bond_length = 1.0 * unit.angstrom, charge = 0.0 * unit.elementary_charge):
-
-          """
-          Initialize variables that were passed as input
-          """
-
-          self._box_size = box_size
-          self._polymer_length = polymer_length
-          self._backbone_length = backbone_length
-          self._sidechain_length = sidechain_length
-          self._sidechain_positions = sidechain_positions
-          self._mass = mass
-          self._sigma = sigma
-          self._epsilon = epsilon
-          self._bond_length = bond_length
-          self._bb_bond_length = bb_bond_length
-          self._bs_bond_length = bs_bond_length
-          self._ss_bond_length = ss_bond_length
-          self._charge = charge         
-
-          """
-          Initialize new (coarse grained) particle types:
-          """
-          elem.Element(117,'backbone','X',mass)
-          elem.Element(118,'sidechain','Q',mass) 
-
-          self._num_beads = polymer_length * ( backbone_length + sidechain_length )
-
-          self._system = build_mm_system( box_size, mass, self._num_beads, sigma, epsilon, charge )
-
-          self._topology = build_mm_topology( box_size,mass, self._num_beads )
-
-          self._positions = util.random_positions( polymer_length, bacbone_length, sidechain_length, bond_length, sigma ) 
-
-          self._simulation = build_mm_simulation( self._topology, self._system, self._positions, temperature = 500.0 * unit.kelvin, simulation_time_step = 0.002 * unit.picosecond, total_simulation_time = 1.000 * unit.picosecond )
-
-          """
-          Initialize attributes of our coarse grained model.
-          """
-
-        @property
-        def box_size(self):
-          return self._box_size
-
-        @property
-        def polymer_length(self):
-          return self._polymer_length
-
-        @property
-        def backbone_length(self):
-          return self._backbone_length
-
-        @property
-        def sidechain_length(self):
-          return self._sidechain_length
-
-        @property
-        def sidechain_positions(self):
-          return self._sidechain_positions
-
-        @property
-        def mass(self):
-          return self._mass
-
-        @property
-        def sigma(self):
-          return self._sigma
-
-        @property
-        def epsilon(self):
-          return self._epsilon
-
-        @property
-        def bond_length(self):
-          return self._bond_length
-
-        @property
-        def bb_bond_length(self):
-          return self._bb_bond_length
-
-        @property
-        def bs_bond_length(self):
-          return self._bs_bond_length
-
-        @property
-        def ss_bond_length(self):
-          return self._ss_bond_length
-
-        @property
-        def charge(self):
-          return self._charge
-
-        @property
-        def num_beads(self):
-          return self._num_beads
-
-        @property
-        def topology(self):
-          return self._topology
-
-        @property
-        def system(self):
-          return self._system
-         
-        @property
-        def simulation(self):
-          return self._simulation
- 
