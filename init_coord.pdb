@@ -1,21 +1,14 @@
-ATOM      1   B1  MT A   1         0.0     0.0     0.0  1.00  0.00
-ATOM      2   B2  MT A   1      -0.696  -0.558   0.452  1.00  0.00
-ATOM      3   S3  MT A   1      -0.503  -0.941  -0.451  1.00  0.00
-ATOM      4   S4  MT A   1       0.239  -0.435  -0.892  1.00  0.00
-ATOM      5   B5  MT A   1      -0.849  -1.401   0.968  1.00  0.00
-ATOM      6   B1  MT A   2      -0.278  -2.091   1.412  1.00  0.00
-ATOM      7   B2  MT A   2       0.611  -2.133   0.956  1.00  0.00
-ATOM      8   S3  MT A   2        0.98    -2.3   0.042  1.00  0.00
-ATOM      9   S4  MT A   2       1.742  -1.723  -0.251  1.00  0.00
-ATOM     10   B5  MT A   2       0.195  -2.972   0.608  1.00  0.00
-TER
-CONECT    2    1
-CONECT    3    2
-CONECT    4    3
-CONECT    5    2
-CONECT    6    5
-CONECT    7    6
-CONECT    8    7
-CONECT    9    8
-CONECT   10    7
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-05-03
+HETATM    1  B1   MT A   1       0.000   0.000   0.000  1.00  0.00           B  
+HETATM    2  B2   MT A   1       0.000   0.000   1.000  1.00  0.00           B  
+HETATM    3  B1    M A   2       1.000   0.000   1.000  1.00  0.00           B  
+HETATM    4  B2    M A   2       1.000   0.000   2.000  1.00  0.00           B  
+HETATM    5  B1   MT A   3       1.000   1.000   2.000  1.00  0.00           B  
+HETATM    6  B2   MT A   3       2.000   1.000   2.000  1.00  0.00           B  
+TER       7       MT A   3
+CONECT    1    2
+CONECT    2    3
+CONECT    3    4
+CONECT    4    5
+CONECT    5    6
 END
