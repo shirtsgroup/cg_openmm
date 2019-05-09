@@ -14,7 +14,7 @@ output_pdb = "test_simulation.pdb"
 output_data = "test_simulation.dat"
 box_size = 10.00 * unit.nanometer # box width
 cutoff = box_size / 2.0 * 0.99
-simulation_time_step = 0.5 * unit.femtosecond # Units = picoseconds
+simulation_time_step = 2.0 * unit.femtosecond # Units = picoseconds
 temperature = 300.0 * unit.kelvin
 print_frequency = 20 # Number of steps to skip when printing output
 total_simulation_time = 0.5 * unit.picosecond # Units = picoseconds
@@ -24,12 +24,12 @@ backbone_length = 2 # Number of backbone beads
 sidechain_length = 1 # Number of sidechain beads
 sidechain_positions = [0] # Index of backbone bead on which the side chains are placed
 polymer_length = 3 # Number of monomers in the polymer
-mass = 72.0 * unit.amu # Mass of beads
-sigma = 7.0 * unit.angstrom # Lennard-Jones interaction distance
-bond_length = 3.0 * unit.angstrom # bond length
+mass = 10.0 * unit.amu # Mass of beads
+sigma = 8.0 * unit.angstrom # Lennard-Jones interaction distance
+bond_length = 1.0 * unit.angstrom # bond length
 bond_force_constant = 200 # Units = kJ/mol/A^2
 constrain_bonds = True
-epsilon = 3.0 * unit.kilojoule_per_mole # Lennard-Jones interaction strength
+epsilon = 0.5 * unit.kilocalorie_per_mole # Lennard-Jones interaction strength
 charge = 0.0 * unit.elementary_charge # Charge of beads
 max_force = 1e6
 
