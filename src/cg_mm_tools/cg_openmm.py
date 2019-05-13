@@ -1,14 +1,3 @@
-#!/usr/local/bin/env python
-
-#foldamers/foldamers.py
-#====
-
-#Tools for building coarse grained models 
-
-# ==============================================================================
-# GLOBAL IMPORTS
-# ==============================================================================
-
 import numpy as np
 from simtk import openmm as mm
 from simtk.openmm import *
@@ -243,18 +232,18 @@ def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvi
         return(simulation)
 
 def lj_v(positions_1,positions_2,sigma,epsilon):
- dist = distance(positions_1,positions_2)
- quot = dist.__div__(sigma)
- attr = (quot.__pow__(6.0)).__mul__(2.0)
- rep = quot.__pow__(12.0)
- v = epsilon.__mul__(rep.__sub__(attr))
- return(v)
+        dist = distance(positions_1,positions_2)
+        quot = dist.__div__(sigma)
+        attr = (quot.__pow__(6.0)).__mul__(2.0)
+        rep = quot.__pow__(12.0)
+        v = epsilon.__mul__(rep.__sub__(attr))
+        return(v)
 
 
 def get_nonbonded_interaction_list(cgmodel):
-             interaction_list = []
-             bond_list = [[bond[0]-1,bond[1]-1] for bond in cgmodel.get_bond_list()]
-             for particle_1 in range(cgmodel.num_beads):
+        interaction_list = []
+        bond_list = [[bond[0]-1,bond[1]-1] for bond in cgmodel.get_bond_list()]
+        for particle_1 in range(cgmodel.num_beads):
                for particle_2 in range(cgmodel.num_beads):
                  if particle_1 != particle_2:
                    if [particle_1,particle_2] not in bond_list and [particle_2,particle_1] not in bond_list:
@@ -264,21 +253,21 @@ def get_nonbonded_interaction_list(cgmodel):
                      if [particle_2,particle_1] not in interaction_list:
                        if [particle_1,particle_2] not in interaction_list:
                          interaction_list.append([particle_2,particle_1])
-             return(interaction_list)
+        return(interaction_list)
 
 
 def calculate_nonbonded_energy(cgmodel,particle1=None,particle2=None):
- nonbonded_interaction_list = get_nonbonded_interaction_list(cgmodel)
- positions = cgmodel.positions
- energy = unit.Quantity(0.0,cgmodel.epsilon.unit)
- if particle1 != None:
-  dist = distance(positions[particle1],positions[particle2])
-  inter_energy = lj_v(positions[particle1],positions[particle2],cgmodel.sigma,cgmodel.epsilon).in_units_of(unit.kilojoules_per_mole)
-  energy = energy.__add__(inter_energy)
-  return(energy)
- for interaction in nonbonded_interaction_list:
-  dist = distance(positions[interaction[0]],positions[interaction[1]])
-  inter_energy = lj_v(positions[interaction[0]],positions[interaction[1]],cgmodel.sigma,cgmodel.epsilon).in_units_of(unit.kilojoules_per_mole)
-  energy = energy.__add__(inter_energy)
- return(energy)
+        nonbonded_interaction_list = get_nonbonded_interaction_list(cgmodel)
+        positions = cgmodel.positions
+        energy = unit.Quantity(0.0,cgmodel.epsilon.unit)
+        if particle1 != None:
+           dist = distance(positions[particle1],positions[particle2])
+           inter_energy = lj_v(positions[particle1],positions[particle2],cgmodel.sigma,cgmodel.epsilon).in_units_of(unit.kilojoules_per_mole)
+           energy = energy.__add__(inter_energy)
+           return(energy)
 
+        for interaction in nonbonded_interaction_list:
+           dist = distance(positions[interaction[0]],positions[interaction[1]])
+           inter_energy = lj_v(positions[interaction[0]],positions[interaction[1]],cgmodel.sigma,cgmodel.epsilon).in_units_of(unit.kilojoules_per_mole)
+           energy = energy.__add__(inter_energy)
+        return(energy)

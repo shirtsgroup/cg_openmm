@@ -14,14 +14,14 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('/home/gmeek/Foldamers/cg_openmm/src'))
+sys.path.insert(0, os.path.abspath('../../src'))
 
 
 # -- Project information -----------------------------------------------------
 
-project = 'cg_openmm'
-copyright = '2019, Research group of Michael R. Shirts'
-author = 'Garrett A. Meek, Michael R. Shirts'
+project = 'Coarse grained OpenMM'
+copyright = '2019, Shirts research group'
+author = "Shirts research group\\\ \\\Garrett A. Meek\\\Lenny T. Fobe\\\Michael R. Shirts\\\ \\\Dept. of Chemical and Biological Engineering\\\University of Colorado Boulder"
 
 # The short X.Y version
 version = ''
@@ -119,6 +119,8 @@ latex_elements = {
     # The font size ('10pt', '11pt' or '12pt').
     #
     # 'pointsize': '10pt',
+    'extraclassoptions': 'openany,oneside',
+    'pointsize': '12pt',
 
     # Additional stuff for the LaTeX preamble.
     #
@@ -133,8 +135,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'cg_openmm.tex', 'cg_openmm Documentation',
-     'Garrett A. Meek, Michael R. Shirts', 'manual'),
+    (master_doc, 'cgopenmm.tex', 'Coarse-grained OpenMM Documentation',
+     author, 'manual'),
 ]
 
 
@@ -143,7 +145,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'cg_openmm', 'cg_openmm Documentation',
+    (master_doc, 'cg_openmm', 'Coarse-grained OpenMM Documentation',
      [author], 1)
 ]
 
@@ -154,7 +156,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'cg_openmm', 'cg_openmm Documentation',
+    (master_doc, 'cg_openmm', 'Coarse-grained OpenMM Documentation',
      author, 'cg_openmm', 'One line description of project.',
      'Miscellaneous'),
 ]
