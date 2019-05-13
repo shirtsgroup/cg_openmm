@@ -19,6 +19,6 @@ or
 
 from cg_openmm import *
 
-If this test does not work, please check to make sure that the foldamers path is included in the $PYTHONPATH system variable.  This is the most common place for the package installation to fail.
+If this test does not work, please check to make sure that the cg_openmm path is included in the $PYTHONPATH system variable.  This is the most common place for the package installation to fail.
 
 **For full documentation please refer to 'manual.pdf'.**
