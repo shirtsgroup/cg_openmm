@@ -20,18 +20,60 @@ print_frequency = 20 # Number of steps to skip when printing output
 total_simulation_time = 0.5 * unit.picosecond # Units = picoseconds
 
 # Coarse grained model settings
-backbone_length = 2 # Number of backbone beads
-sidechain_length = 1 # Number of sidechain beads
-sidechain_positions = [0] # Index of backbone bead on which the side chains are placed
+
+####
+#
+# User note: If multiple 'backbone_lengths', 'sidechain_lengths',
+#
+#            'sidechain_positions', or 'sidechain_branches' are
+#
+#            provided as input, and optimize_model_parameters = False,
+#
+#            then the code will apply the same model parameters as 
+#
+#            input for all possible combinations of these input. 
+#
+#            If optimize_model_parameters = True, the code will optimize
+#
+#            parameters for all possible combinations of these input.
+#
+####
+
+backbone_lengths = [1] # Number of backbone beads in unique monomer types
+# List of backbone_lengths for which to construct unique monomer topology definitions
+# List( [ integers ( Number of backbone beads for each monomer type ) ] )
+sidechain_lengths = [1] # Number of sidechain beads in unique monomer types
+# List of sidechain_lengths for which to construct unique monomer topology definitions
+# List( [ integers ( Number of sidechain beads for each monomer type ) ] )
+constrain_bonds = [True,True,True] # Constrain bonds for these particle types?
+# List( [ Logical ( Constrain bonds btwn backbone beads? ), ( Constrain bonds btwn backbone and sidechain beads? ), ( Constrain bonds btwn sidechain beads? ) ] )
+sidechain_positions = [0] # Index of the backbone bead(s) to which sidechains are bonded
+sidechain_branches = [1] # Index of the sidechain bead off of which to branch (bond) another sidechain
 polymer_length = 3 # Number of monomers in the polymer
-mass = 10.0 * unit.amu # Mass of beads
-sigma = 8.0 * unit.angstrom # Lennard-Jones interaction distance
-bond_length = 1.0 * unit.angstrom # bond length
-bond_force_constant = 200 # Units = kJ/mol/A^2
+masses = [[10.0 * unit.amu],[10.0 * unit.amu]] # List of bead masses 
+# List( [ [ backbone_bead_masses ], [ sidechain_bead_masses ] ] )
+sigmas = [[8.0 * unit.angstrom],[8.0 * unit.angstrom],[8.0 * unit.angstrom]] # Lennard-Jones interaction distances.  List of unique interaction types
+# List( [ [ backbone_bead_sigma(s) ], [ backbone_bead-sidechain_bead-sigma(s) ], [ sidechain_bead_sigma(s) ] ] )
+bond_lengths = [[1.0 * unit.angstrom],[1.0 * unit.angstrom],[1.0 * unit.angstrom]] # bond length
+# List( [ [ backbone_bond_lengths ], [ backbone_sidechain_bond_lengths ], [ sidechain_bond_lengths ] )
+bond_force_constants = [[200],[200],[200]] # Units = kJ/mol/A^2 List of bond force constants for unique bond types
+# List( [ [ backbone_bond_force_constants ], [ backbone_sidechain_bond_force_constants ], [ sidechain_bond_force_constants ] )
 constrain_bonds = True
-epsilon = 0.5 * unit.kilocalorie_per_mole # Lennard-Jones interaction strength
-charge = 0.0 * unit.elementary_charge # Charge of beads
-max_force = 1e6
+epsilons = [[0.5 * unit.kilocalorie_per_mole],[0.5 * unit.kilocalorie_per_mole],[0.5 * unit.kilocalorie_per_mole]] # Lennard-Jones interaction strength.  List of unique interaction types
+# List( [ [ backbone_bead_epsilon(s) ], [ backbone_bead-sidechain_bead-epsilon(s) ], [ sidechain_bead_epsilon(s) ] ] )
+charges = [[0.0 * unit.elementary_charge],[0.0 * unit.elementary_charge]] # Charge of beads.
+# List( [ [ backbone_charges ],[ sidechain_charges ] )
+torsion_force_constants = [[200],[200],[200]] # List of torsion force constants (k) for each of the torsions in our coarse grained model
+# List( [ [ backbone_torsion_constants ], [ backbone_sidechain_torsion_constants ], [ sidechain_torsion_constants ] ] )
+bond_angle_force_constants = [[200],[200],[200]] # List of bond angle force constants (k) for each of the bond angles in our coarse grained model
+# List( [ [ backbone_bond_angle_force_constants ], [ backbone_sidechain_bond_angle_force_constants ], [ sidechain_bond_angle_force_constants ] ] )
+optimize_model_parameters = True # If true, we will attempt to (self-consistently) optimize all parameters
+# in our coarse grained model, and determine a valid simulation time step for a model with these parameters.
+# This option can also be used to determine/evaluate parameter ratios using the ratios = True option.
+optimize_parameter_ratios = True # If true, we will attempt to (self-consistently) optimize the ratios for
+# related parameters in our coarse grained model
+max_force = 1e6 # The maximum force ( in units of kJ/mol/A^2 ) that is accepted when determining the suitability
+# of a simulation time step
 
 cgmodel_built = False
 best_positions = None
@@ -39,9 +81,15 @@ largest_force = None
 max_build_attempts = 10
 attempt = 0
 
+if len(sigmas) != 0: include_nonbonded_forces = True
+if len(bond_force_constants) != 0: include_bond_forces = True
+if len(bond_angle_force_constants) != 0: include_bond_angle_forces = True
+if len(torsion_force_constants) != 0: include_torsion_forces = True
+if max_force != None: check_energy_conservation = True
+
 while not cgmodel_built and attempt < max_build_attempts:
 # Build a coarse grained model
- cgmodel = CGModel(polymer_length=polymer_length,backbone_length=backbone_length, sidechain_length=sidechain_length, sidechain_positions = sidechain_positions, mass = mass, sigma = sigma, epsilon = epsilon, bond_length = bond_length, bond_force_constant = bond_force_constant, charge = charge,constrain_bonds=constrain_bonds)
+ cgmodel = CGModel(polymer_length=polymer_length,backbone_lengths=backbone_lengths, sidechain_lengths=sidechain_lengths, sidechain_positions = sidechain_positions, masses = masses, sigmas = sigmas, epsilons = epsilons, bond_lengths = bond_lengths, bond_force_constants = bond_force_constants, torsion_force_constants=torsion_force_constants, bond_angle_force_constants=bond_angle_force_constants, charges = charges,constrain_bonds=constrain_bonds,include_bond_forces=include_bond_forces,include_nonbonded_forces=include_nonbonded_forces,include_bond_angle_forces=include_bond_angle_forces,include_torsion_forces=include_torsion_forces,check_energy_conservation=False)
 
 # Confirm the validity of our trial positions
  positions = cgmodel.positions
