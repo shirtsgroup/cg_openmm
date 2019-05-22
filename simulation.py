@@ -103,6 +103,7 @@ if max_force != None: check_energy_conservation = True
 parameter_combo_list = []
 sigma_list = [unit.Quantity(sigma,unit.angstrom) for sigma in [ 1.5 + 0.5 * index for index in range(0,increments)]]
 epsilon_list = [unit.Quantity(epsilon,unit.kilocalorie_per_mole) for epsilon in [ 0.2 + 0.2 * index for index in range(0,increments)]]
+variance_list = []
 for sigma in sigma_list:
  for epsilon in epsilon_list:
   for simulation_index in range(total_simulations):
@@ -129,6 +130,7 @@ for sigma in sigma_list:
     for row in readCSV:
      all_energies.append(float(row[3]))
    variance = statistics.variance(all_energies)
+   variance_list.append(variance)
    parameter_combo_list.append({'sigma': sigma, 'epsilon': epsilon, 'variance': variance})
 
 lowest_variance = None
@@ -142,17 +144,19 @@ for parameter_combo in parameter_combo_list:
    lowest_variance = parameter_combo['variance']
    best_combo = parameter_combo
 
-sigma=np.unique(sigma_list)
-epsilon=np.unique(epsilon_list)
-variance=np.ndarray(shape=(len(sigma),len(epsilon)))
-for sigma_index in range(len(sigma_list)):
- for epsilon_index in range(len(epsilon_list)):
-  for parameter_combo in parameter_combo_list:
-   if parameter_combo['sigma'] == sigma_list[sigma_index] and parameter_combo['epsilon'] == epsilon_list[epsilon_index]:
-    variance[sigma_index][epsilon_index] = parameter_combo['variance']
+sigma=np.unique([sig._value for sig in sigma_list])
+epsilon=np.unique([eps._value for eps in epsilon_list])
+variance=np.array(variance_list)
+#for sigma_index in range(len(sigma_list)):
+# for epsilon_index in range(len(epsilon_list)):
+#  for parameter_combo in parameter_combo_list:
+#   if parameter_combo['sigma'] == sigma_list[sigma_index] and parameter_combo['epsilon'] == epsilon_list[epsilon_index]:
+#    variance[sigma_index][epsilon_index] = parameter_combo['variance']
 X,Y = np.meshgrid(sigma,epsilon)
 Z=variance.reshape(len(epsilon),len(sigma))
-
+print(X)
+print(Y)
+print(Z)
 figure = pyplot.figure(0)
 pyplot.xlabel("Sigma (Angstroms)")
 pyplot.ylabel("Epsilon (kcal/mol)")
