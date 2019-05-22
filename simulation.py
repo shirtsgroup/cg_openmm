@@ -1,10 +1,12 @@
 #!/usr/bin/python
 
+import csv, statistics
 from simtk import unit
 from simtk.openmm.app.pdbfile import PDBFile
 # foldamers utilities
 from multiprocessing import Pool
 from multiprocessing import cpu_count
+import matplotlib.pyplot as pyplot
 import foldamers
 from foldamers.src.cg_model.cgmodel import CGModel
 from foldamers.src.utilities.util import *
@@ -17,13 +19,15 @@ print("Found "+str(cpu_count)+" processors on the system.")
 print("Using "+str(processors)+" processors for this calculation.")
 
 # OpenMM simulation settings
-total_simulations = processors
+total_simulations = 1
 box_size = 10.00 * unit.nanometer # box width
 cutoff = box_size / 2.0 * 0.99
-simulation_time_step = 0.1 * unit.femtosecond # Units = picoseconds
+simulation_time_step = 0.01 * unit.femtosecond # Units = picoseconds
 temperature = 300.0 * unit.kelvin
 print_frequency = 20 # Number of steps to skip when printing output
 total_simulation_time = 0.5 * unit.picosecond # Units = picoseconds
+total_steps = 500
+#total_steps = round(total_simulation_time.__div__(simulation_time_step))
 
 # Coarse grained model settings
 
@@ -55,6 +59,8 @@ torsion_force_constant = 200
 equil_dihedral_angle = 180
 bond_angle_force_constant = 200
 
+increments = 4
+
 backbone_lengths = [1] # Number of backbone beads in unique monomer types
 # List of backbone_lengths for which to construct unique monomer topology definitions
 # List( [ integers ( Number of backbone beads for each monomer type ) ] )
@@ -65,6 +71,8 @@ constrain_bonds = False # Constrain bonds for these particle types?
 # List( [ Logical ( Constrain bonds btwn backbone beads? ), ( Constrain bonds btwn backbone and sidechain beads? ), ( Constrain bonds btwn sidechain beads? ) ] )
 sidechain_positions = [0] # Index of the backbone bead(s) to which sidechains are bonded
 sidechain_branches = [1] # Index of the sidechain bead off of which to branch (bond) another sidechain
+
+
 polymer_length = 8 # Number of monomers in the polymer
 masses = {'backbone_bead_masses': mass, 'sidechain_bead_masses': mass} # List of bead masses 
 sigmas = {'bb_bb_sigma': sigma,'bb_sc_sigma': sigma,'sc_sc_sigma': sigma} # Lennard-Jones interaction distances.  List of unique interaction types
@@ -84,11 +92,6 @@ max_force = 1e6 # The maximum force ( in units of kJ/mol/A^2 ) that is accepted 
 # of a simulation time step
 homopolymer = True
 
-cgmodel_built = False
-best_positions = None
-largest_force = None
-max_build_attempts = 100
-attempt = 0
 
 if len(sigmas) != 0: include_nonbonded_forces = True
 if len(bond_force_constants) != 0: include_bond_forces = True
@@ -97,22 +100,68 @@ if len(bond_angle_force_constants) != 0: include_bond_angle_forces = True
 if len(torsion_force_constants) != 0: include_torsion_forces = True
 include_bond_angle_forces = False
 if max_force != None: check_energy_conservation = True
+parameter_combo_list = []
+sigma_list = [unit.Quantity(sigma,unit.angstrom) for sigma in [ 1.5 + 0.5 * index for index in range(0,increments)]]
+epsilon_list = [unit.Quantity(epsilon,unit.kilocalorie_per_mole) for epsilon in [ 0.2 + 0.2 * index for index in range(0,increments)]]
+for sigma in sigma_list:
+ for epsilon in epsilon_list:
+  for simulation_index in range(total_simulations):
+   print("Performing simulation with sigma="+str(sigma)+" and epsilon="+str(epsilon))
+   sigmas = {'bb_bb_sigma': sigma,'bb_sc_sigma': sigma,'sc_sc_sigma': sigma} # Lennard-Jones interaction distances.  List of unique interaction types
+   epsilons = {'bb_bb_eps': epsilon,'bb_sc_eps': epsilon,'sc_sc_eps': epsilon} # Lennard-Jones interaction strength.  List of unique interaction types
+   input_coordinates = str("init_"+str(simulation_index)+".pdb") # Read coordinates and build a coarse-grained model
+   pdb_mm_obj = PDBFile(input_coordinates)
+   positions = pdb_mm_obj.getPositions()
+   cgmodel = CGModel(positions=positions,polymer_length=polymer_length,backbone_lengths=backbone_lengths, sidechain_lengths=sidechain_lengths, sidechain_positions = sidechain_positions, masses = masses, sigmas = sigmas, epsilons = epsilons, bond_lengths = bond_lengths, bond_force_constants = bond_force_constants, torsion_force_constants=torsion_force_constants, equil_dihedral_angle=equil_dihedral_angle,bond_angle_force_constants=bond_angle_force_constants, charges = charges,constrain_bonds=constrain_bonds,include_bond_forces=include_bond_forces,include_nonbonded_forces=include_nonbonded_forces,include_bond_angle_forces=include_bond_angle_forces,include_torsion_forces=include_torsion_forces,check_energy_conservation=False)
 
-for simulation_index in range(total_simulations):
-  input_coordinates = str("init_"+str(simulation_index)+".pdb")
-# Read coordinates and build a coarse-grained model
-  pdb_mm_obj = PDBFile(input_coordinates)
-  positions = pdb_mm_obj.getPositions()
-  cgmodel = CGModel(positions=positions,polymer_length=polymer_length,backbone_lengths=backbone_lengths, sidechain_lengths=sidechain_lengths, sidechain_positions = sidechain_positions, masses = masses, sigmas = sigmas, epsilons = epsilons, bond_lengths = bond_lengths, bond_force_constants = bond_force_constants, torsion_force_constants=torsion_force_constants, equil_dihedral_angle=equil_dihedral_angle,bond_angle_force_constants=bond_angle_force_constants, charges = charges,constrain_bonds=constrain_bonds,include_bond_forces=include_bond_forces,include_nonbonded_forces=include_nonbonded_forces,include_bond_angle_forces=include_bond_angle_forces,include_torsion_forces=include_torsion_forces,check_energy_conservation=False)
-
-  output_pdb = str("simulation_"+str(simulation_index)+".pdb")
-  output_data = str("simulation_"+str(simulation_index)+".dat")
+   output_pdb = str("simulation_"+str(simulation_index)+".pdb")
+   output_data = str("simulation_"+str(simulation_index)+".dat")
 # Build an OpenMM simulation object
-  simulation = build_mm_simulation(cgmodel.topology,cgmodel.system,cgmodel.positions,temperature=temperature,simulation_time_step=simulation_time_step,total_simulation_time=total_simulation_time,output_pdb=output_pdb,output_data=output_data,print_frequency=print_frequency)
+   simulation = build_mm_simulation(cgmodel.topology,cgmodel.system,cgmodel.positions,temperature=temperature,simulation_time_step=simulation_time_step,total_simulation_time=total_simulation_time,output_pdb=output_pdb,output_data=output_data,print_frequency=print_frequency)
 
-  total_steps = round(total_simulation_time.__div__(simulation_time_step))
 #print(total_steps)
-  simulation.step(total_steps)
+   simulation.step(total_steps)
 # print("Finished simulation.")
+   all_energies = []
+   with open(output_data) as csvfile:
+    readCSV = csv.reader(csvfile,delimiter=',')
+    next(readCSV)
+    for row in readCSV:
+     all_energies.append(float(row[3]))
+   variance = statistics.variance(all_energies)
+   parameter_combo_list.append({'sigma': sigma, 'epsilon': epsilon, 'variance': variance})
 
+lowest_variance = None
+best_combo = None
+for parameter_combo in parameter_combo_list:
+ if lowest_variance == None: 
+  best_combo = parameter_combo
+  lowest_variance = parameter_combo['variance']
+ else:
+  if parameter_combo['variance'] < lowest_variance:
+   lowest_variance = parameter_combo['variance']
+   best_combo = parameter_combo
+
+sigma=np.unique(sigma_list)
+epsilon=np.unique(epsilon_list)
+variance=np.ndarray(shape=(len(sigma_list),len(epsilon_list)))
+for sigma_index in range(len(sigma_list)):
+ for epsilon_index in range(len(epsilon_list)):
+  for parameter_combo in parameter_combo_list:
+   if parameter_combo['sigma'] == sigma_list[sigma_index] and parameter_combo['epsilon'] == epsilon_list[epsilon_index]:
+    variance[sigma_index][epsilon_index] = parameter_combo['variance']
+X,Y = np.meshgrid(sigma,epsilon)
+Z=variance.reshape(len(epsilon),len(sigma))
+
+figure = pyplot.figure(0)
+pyplot.xlabel("Sigma (Angstroms)")
+pyplot.ylabel("Epsilon (kcal/mol)")
+pyplot.title("Variance in energy of a (1,1) 8-mer")
+pyplot.pcolormesh(X,Y,Z)
+pyplot.savefig("energy_variance_vs_sig_eps.png")
+pyplot.close()
+
+# Print the results for the best parameter set
+print("The best combination of parameters is:")
+print(best_combo)
 exit()
