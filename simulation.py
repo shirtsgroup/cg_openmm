@@ -59,7 +59,7 @@ torsion_force_constant = 200
 equil_dihedral_angle = 180
 bond_angle_force_constant = 200
 
-increments = 4
+increments = 2
 
 backbone_lengths = [1] # Number of backbone beads in unique monomer types
 # List of backbone_lengths for which to construct unique monomer topology definitions
@@ -144,7 +144,7 @@ for parameter_combo in parameter_combo_list:
 
 sigma=np.unique(sigma_list)
 epsilon=np.unique(epsilon_list)
-variance=np.ndarray(shape=(len(sigma_list),len(epsilon_list)))
+variance=np.ndarray(shape=(len(sigma),len(epsilon)))
 for sigma_index in range(len(sigma_list)):
  for epsilon_index in range(len(epsilon_list)):
   for parameter_combo in parameter_combo_list:
@@ -158,7 +158,7 @@ pyplot.xlabel("Sigma (Angstroms)")
 pyplot.ylabel("Epsilon (kcal/mol)")
 pyplot.title("Variance in energy of a (1,1) 8-mer")
 pyplot.pcolormesh(X,Y,Z)
-pyplot.savefig("energy_variance_vs_sig_eps.png")
+pyplot.savefig(str("energy_variance_vs_sig_eps.png"))
 pyplot.close()
 
 # Print the results for the best parameter set
