@@ -1,0 +1,33 @@
+HETATM    1  CG1  MT A   1       7.043   2.052  -0.794  1.00  0.00           C
+HETATM    2  CG2  MT A   1       7.159   3.050  -0.719  1.00  0.00           C
+HETATM    3  CG1   M A   2       7.501   1.438  -1.427  1.00  0.00           C
+HETATM    4  CG2   M A   2       8.277   1.169  -0.856  1.00  0.00           C
+HETATM    5  CG1   M A   3       8.470   1.619  -1.572  1.00  0.00           C
+HETATM    6  CG2   M A   3       7.722   1.530  -2.226  1.00  0.00           C
+HETATM    7  CG1   M A   4       9.443   1.762  -1.744  1.00  0.00           C
+HETATM    8  CG2   M A   4       9.461   2.664  -1.314  1.00  0.00           C
+HETATM    9  CG1   M A   5      10.299   1.491  -2.179  1.00  0.00           C
+HETATM   10  CG2   M A   5      10.411   0.509  -2.013  1.00  0.00           C
+HETATM   11  CG1   M A   6      11.123   2.053  -2.314  1.00  0.00           C
+HETATM   12  CG2   M A   6      11.412   1.186  -2.725  1.00  0.00           C
+HETATM   13  CG1   M A   7      11.615   2.801  -2.770  1.00  0.00           C
+HETATM   14  CG2   M A   7      12.606   2.658  -2.820  1.00  0.00           C
+HETATM   15  CG1  MT A   8      10.747   3.283  -2.618  1.00  0.00           C
+HETATM   16  CG2  MT A   8      11.418   3.459  -3.339  1.00  0.00           C
+TER      17       MT A   8
+CONECT    1    2
+CONECT    1    3
+CONECT    3    4
+CONECT    3    5
+CONECT    5    6
+CONECT    5    7
+CONECT    7    8
+CONECT    7    9
+CONECT   10    9
+CONECT   11    9
+CONECT   11   12
+CONECT   11   13
+CONECT   13   14
+CONECT   13   15
+CONECT   15   16
+END
