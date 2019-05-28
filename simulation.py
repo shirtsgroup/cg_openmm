@@ -59,7 +59,7 @@ torsion_force_constant = 200
 equil_dihedral_angle = 180
 bond_angle_force_constant = 200
 
-increments = 2
+increments = 10
 
 backbone_lengths = [1] # Number of backbone beads in unique monomer types
 # List of backbone_lengths for which to construct unique monomer topology definitions
@@ -144,8 +144,8 @@ for parameter_combo in parameter_combo_list:
    lowest_variance = parameter_combo['variance']
    best_combo = parameter_combo
 
-sigma=np.unique([sig._value for sig in sigma_list])
-epsilon=np.unique([eps._value for eps in epsilon_list])
+sigma=np.unique([float(sig._value) for sig in sigma_list])
+epsilon=np.unique([float(eps._value) for eps in epsilon_list])
 variance=np.array(variance_list)
 #for sigma_index in range(len(sigma_list)):
 # for epsilon_index in range(len(epsilon_list)):
@@ -154,9 +154,15 @@ variance=np.array(variance_list)
 #    variance[sigma_index][epsilon_index] = parameter_combo['variance']
 X,Y = np.meshgrid(sigma,epsilon)
 Z=variance.reshape(len(epsilon),len(sigma))
-print(X)
-print(Y)
-print(Z)
+file = open('sig.dat','w')
+file.write(str(X))
+file.close()
+file = open('eps.dat','w')
+file.write(str(Y))
+file.close()
+file = open('var.dat','w')
+file.write(str(Z))
+file.close()
 figure = pyplot.figure(0)
 pyplot.xlabel("Sigma (Angstroms)")
 pyplot.ylabel("Epsilon (kcal/mol)")
