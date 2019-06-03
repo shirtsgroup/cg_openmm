@@ -1,12 +1,11 @@
+import os
 import numpy as np
-from simtk import openmm as mm
-from simtk.openmm import *
 from simtk import unit
-from simtk.openmm.app import *
+import openmmtools as mmtools
+from cg_openmm.src.utilities.util import set_box_vectors, get_box_vectors
 from yank import mpi, analyze
 from yank.multistate import MultiStateReporter, MultiStateSampler, ReplicaExchangeSampler
 from yank.multistate import ReplicaExchangeAnalyzer
-from yank.multistate.multistatereporter import _DictYamlLoader
 from yank.utils import config_root_logger
 # quiet down some citation spam
 MultiStateSampler._global_citation_silence = True
@@ -29,22 +28,24 @@ def get_replica_energies(simulation_steps,num_replicas,replica_exchange_storage_
      data_file.close()
     return(replica_energies)
 
-def run_replica_exchange_in_temp(topology,system,positions,temperature_list=[300.0+i * unit.kelvin for i in range(-20,-10,0,10,20,30,40,50,60,70,80,90,100)],simulation_time_step=None,total_simulation_time=1.0 * unit.picosecond,output_pdb='output.pdb',output_data='output.nc',print_frequency=100,verbose=False, verbose_simulation=False):
+def run_replica_exchange_in_temp(topology,system,positions,temperature_list=[(300.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(-20,100,10)],simulation_time_step=None,total_simulation_time=1.0 * unit.picosecond,output_pdb='output.pdb',output_data='output.nc',print_frequency=100,verbose=False, verbose_simulation=False):
         """
         Construct an OpenMM simulation object for our coarse grained model.
 
         Parameters
         ----------
 
-        topology: OpenMM topology object
+        :param topology: An OpenMM object which contains information about the bonds and constraints in a molecular model
+        :type topology: OpenMM Topology() class object
 
-        system: OpenMM system object
+        :param system: An OpenMM object which contains information about the forces and particle properties in a molecular model
+        :type system: OpenMM System() class object
 
-        positions: Array containing the positions of all beads
-        in the coarse grained model
-        ( np.array( 'num_beads' x 3 , ( float * simtk.unit.distance ) )
+        :param positions: Contains the positions for all particles in a model
+        :type positions: np.array( 'num_beads' x 3 , ( float * simtk.unit.distance ) )
 
-        temperature: Simulation temperature ( float * simtk.unit.temperature )
+        :param temperature_list: List of temperatures for which to per ( float * simtk.unit.temperature )
+        :type temperature: 
 
         simulation_time_step: Simulation integration time step
         ( float * simtk.unit.time )
@@ -56,18 +57,22 @@ def run_replica_exchange_in_temp(topology,system,positions,temperature_list=[300
         """
         box_size = 10.00 * unit.nanometer # box width
         if simulation_time_step == None:
-          get_simulation_time_step(topology,system,positions,temperature_list[-1],time_step_list,total_simulation_time)
+          simulation_time_step = get_simulation_time_step(topology,system,positions,temperature_list[-1],time_step_list,total_simulation_time)
+
+        simulation_steps = total_simulation_time.__div__(simulation_time_step)
+
+        exchange_attempts = print_frequency * 5
 
         num_replicas = len(temperature_list)
         sampler_states = list()
         thermodynamic_states = list()
 
         # Define thermodynamic states.
-        for temperature in temperatures:
+        for temperature in temperature_list:
           thermodynamic_state = mmtools.states.ThermodynamicState(system=system, temperature=temperature)
           thermodynamic_states.append(thermodynamic_state)
 
-        system = assign_default_box_vectors(system,box_size)
+        system = set_box_vectors(system,box_size)
         box_vectors = get_box_vectors(box_size)
         sampler_states.append(mmtools.states.SamplerState(positions,box_vectors=box_vectors))
 
