@@ -275,4 +275,25 @@ def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvi
 
         simulation.minimizeEnergy() # Set the simulation type to energy minimization
 
+        try:
+          simulation_temp = simulation.__deepcopy__(memo={})
+          simulation_temp.step(100)
+        except:
+#          print("Simulation attempt failed with a time step of: "+str(simulation_time_step))
+#          print("Going to attempt to identify a smaller time step that allows simulation for this model and its current settings...")
+          time_step_list = [(10.0 * (0.5 ** i)) * unit.femtosecond for i in range(0,14)]
+          if all(simulation_time_step.__lt__(time_step) for time_step in time_step_list):
+            print("Error: couldn't identify a suitable simulation time step for this model.")
+            print("Check the model settings, consider changing the input time step,")
+            print("and if this doesn't fix the problem, try changing the default list of time steps")
+            print("that are sampled in 'src.build.cg_build.build_mm_simulation.py'")
+            exit()
+          for time_step in time_step_list:
+            if time_step < simulation_time_step:
+              simulation = build_mm_simulation(topology,system,positions,temperature=temperature,simulation_time_step=time_step,total_simulation_time=total_simulation_time,output_pdb=output_pdb,output_data=output_data,print_frequency=print_frequency)
+              try:
+                simulation_temp.step(100)
+                return(simulation)
+              except:
+                continue
         return(simulation)

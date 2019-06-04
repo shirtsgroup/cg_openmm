@@ -58,7 +58,7 @@
 
 
 \title{Coarse-grained OpenMM Documentation}
-\date{Jun 03, 2019}
+\date{Jun 04, 2019}
 \release{0.0.1}
 \author{Garrett A. Meek\\Lenny T. Fobe\\ \\Research group of Michael R. Shirts\\ \\Dept. of Chemical and Biological Engineering\\University of Colorado Boulder}
 \newcommand{\sphinxlogo}{\vbox{}}
@@ -182,40 +182,7 @@ This page details the functions in cg\_openmm/src/simulation/.
 
 
 \section{Replica exchange simulation tools for coarse grained modeling}
-\label{\detokenize{simulation:module-simulation.rep_exch}}\label{\detokenize{simulation:replica-exchange-simulation-tools-for-coarse-grained-modeling}}\index{simulation.rep\_exch (module)@\spxentry{simulation.rep\_exch}\spxextra{module}}\index{replica\_exchange() (in module simulation.rep\_exch)@\spxentry{replica\_exchange()}\spxextra{in module simulation.rep\_exch}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{simulation:simulation.rep_exch.replica_exchange}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{simulation.rep\_exch.}}\sphinxbfcode{\sphinxupquote{replica\_exchange}}}{\emph{topology, system, positions, temperature\_list={[}Quantity(value=280.0, unit=kelvin), Quantity(value=290.0, unit=kelvin), Quantity(value=300.0, unit=kelvin), Quantity(value=310.0, unit=kelvin), Quantity(value=320.0, unit=kelvin), Quantity(value=330.0, unit=kelvin), Quantity(value=340.0, unit=kelvin), Quantity(value=350.0, unit=kelvin), Quantity(value=360.0, unit=kelvin), Quantity(value=370.0, unit=kelvin), Quantity(value=380.0, unit=kelvin), Quantity(value=390.0, unit=kelvin){]}, simulation\_time\_step=None, total\_simulation\_time=Quantity(value=1.0, unit=picosecond), output\_pdb='output.pdb', output\_data='output.nc', print\_frequency=100, verbose=False, verbose\_simulation=False}}{}
-Construct an OpenMM simulation object for our coarse grained model.
-\begin{quote}\begin{description}
-\item[{Parameters}] \leavevmode\begin{itemize}
-\item {} 
-\sphinxstyleliteralstrong{\sphinxupquote{topology}} (\sphinxstyleliteralemphasis{\sphinxupquote{OpenMM Topology}}\sphinxstyleliteralemphasis{\sphinxupquote{(}}\sphinxstyleliteralemphasis{\sphinxupquote{) }}\sphinxstyleliteralemphasis{\sphinxupquote{class object}}) \textendash{} An OpenMM object which contains information about the bonds and constraints in a molecular model
-
-\item {} 
-\sphinxstyleliteralstrong{\sphinxupquote{system}} (\sphinxstyleliteralemphasis{\sphinxupquote{OpenMM System}}\sphinxstyleliteralemphasis{\sphinxupquote{(}}\sphinxstyleliteralemphasis{\sphinxupquote{) }}\sphinxstyleliteralemphasis{\sphinxupquote{class object}}) \textendash{} An OpenMM object which contains information about the forces and particle properties in a molecular model
-
-\item {} 
-\sphinxstyleliteralstrong{\sphinxupquote{positions}} (\sphinxstyleliteralemphasis{\sphinxupquote{np.array}}\sphinxstyleliteralemphasis{\sphinxupquote{( }}\sphinxstyleliteralemphasis{\sphinxupquote{'num\_beads' x 3}}\sphinxstyleliteralemphasis{\sphinxupquote{ , }}\sphinxstyleliteralemphasis{\sphinxupquote{( }}\sphinxstyleliteralemphasis{\sphinxupquote{float * simtk.unit.distance}}\sphinxstyleliteralemphasis{\sphinxupquote{ ) }}\sphinxstyleliteralemphasis{\sphinxupquote{)}}) \textendash{} Contains the positions for all particles in a model
-
-\item {} 
-\sphinxstyleliteralstrong{\sphinxupquote{temperature\_list}} \textendash{} List of temperatures for which to per ( float * simtk.unit.temperature )
-
-\end{itemize}
-
-\end{description}\end{quote}
-
-simulation\_time\_step: Simulation integration time step
-( float * simtk.unit.time )
-
-total\_simulation\_time: Total simulation time ( float * simtk.unit.time )
-
-output\_data: Name of output file where we will write the data from this
-simulation ( string )
-
-\end{fulllineitems}
-
-
+\label{\detokenize{simulation:replica-exchange-simulation-tools-for-coarse-grained-modeling}}
 
 \section{General simulation tools for coarse grained modeling}
 \label{\detokenize{simulation:module-simulation.tools}}\label{\detokenize{simulation:general-simulation-tools-for-coarse-grained-modeling}}\index{simulation.tools (module)@\spxentry{simulation.tools}\spxextra{module}}\index{get\_simulation\_time\_step() (in module simulation.tools)@\spxentry{get\_simulation\_time\_step()}\spxextra{in module simulation.tools}}
@@ -327,7 +294,6 @@ box\_size: Simulation box length ( float * simtk.unit.length )
 \item\relax\sphinxstyleindexentry{build.cg\_build}\sphinxstyleindexpageref{build:\detokenize{module-build.cg_build}}
 \indexspace
 \bigletter{s}
-\item\relax\sphinxstyleindexentry{simulation.rep\_exch}\sphinxstyleindexpageref{simulation:\detokenize{module-simulation.rep_exch}}
 \item\relax\sphinxstyleindexentry{simulation.tools}\sphinxstyleindexpageref{simulation:\detokenize{module-simulation.tools}}
 \indexspace
 \bigletter{u}

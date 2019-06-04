@@ -17,30 +17,25 @@
 
   \indexspace
   \bigletter D
-  \item \spxentry{distance()}\spxextra{in module utilities.util}, \hyperpage{7}
+  \item \spxentry{distance()}\spxextra{in module utilities.util}, \hyperpage{6}
 
   \indexspace
   \bigletter G
-  \item \spxentry{get\_box\_vectors()}\spxextra{in module utilities.util}, \hyperpage{7}
+  \item \spxentry{get\_box\_vectors()}\spxextra{in module utilities.util}, \hyperpage{6}
   \item \spxentry{get\_simulation\_time\_step()}\spxextra{in module simulation.tools}, 
-		\hyperpage{6}
+		\hyperpage{4}
 
   \indexspace
   \bigletter M
-  \item \spxentry{minimize\_structure()}\spxextra{in module simulation.tools}, \hyperpage{6}
-
-  \indexspace
-  \bigletter R
-  \item \spxentry{replica\_exchange()}\spxextra{in module simulation.rep\_exch}, \hyperpage{5}
+  \item \spxentry{minimize\_structure()}\spxextra{in module simulation.tools}, \hyperpage{4}
 
   \indexspace
   \bigletter S
-  \item \spxentry{set\_box\_vectors()}\spxextra{in module utilities.util}, \hyperpage{7}
-  \item \spxentry{simulation.rep\_exch}\spxextra{module}, \hyperpage{5}
-  \item \spxentry{simulation.tools}\spxextra{module}, \hyperpage{6}
+  \item \spxentry{set\_box\_vectors()}\spxextra{in module utilities.util}, \hyperpage{6}
+  \item \spxentry{simulation.tools}\spxextra{module}, \hyperpage{4}
 
   \indexspace
   \bigletter U
-  \item \spxentry{utilities.util}\spxextra{module}, \hyperpage{7}
+  \item \spxentry{utilities.util}\spxextra{module}, \hyperpage{6}
 
 \end{sphinxtheindex}

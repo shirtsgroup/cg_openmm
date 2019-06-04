@@ -18,8 +18,33 @@ def read_mm_energies(openmm_data_file):
 
           """
 
-          with open(output_data) as csvfile:
-            readCSV = csv.reader(csvfile,delimiter=',')
-            next(readCSV)
+          energies = {'step': [],'potential_energy': [],'kinetic_energy': [], 'total_energy': [], 'temperature': []}
 
-          for row in readCSV:
+          with open(openmm_data_file) as csvfile:
+            readCSV = csv.DictReader(csvfile,delimiter=',')
+            for row in readCSV:
+              try:
+                energies['step'].append(row['#"Step"'])
+              except:
+                continue
+              try:
+                energies['potential_energy'].append(row['Potential Energy (kJ/mole)'])
+              except:
+                continue
+              try:
+                energies['kinetic_energy'].append(row['Kinetic Energy (kJ/mole)'])
+              except:
+                continue
+              try:
+                energies['total_energy'].append(row['Total Energy (kJ/mole)'])
+              except:
+                continue
+              try:
+                energies['temperature'].append(row['Temperature (K)'])
+              except:
+                continue
+
+#              print(energies)
+#              exit()
+
+          return(energies)

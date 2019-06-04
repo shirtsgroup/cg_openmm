@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=pdflatex 2019.4.22)  3 JUN 2019 18:46
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=pdflatex 2019.4.22)  4 JUN 2019 09:52
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1235,220 +1235,73 @@ less on input line 132.
 ] [3]
 Chapter 2.
 
-Underfull \hbox (badness 10000) in paragraph at lines 188--188
-\T1/ptm/m/it/12 a-ture_list=[Quantity(value=280.0,
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 188--188
-\T1/ptm/m/it/12 unit=kelvin), Quan-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 188--188
-\T1/ptm/m/it/12 tity(value=290.0, unit=kelvin),
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 188--188
-\T1/ptm/m/it/12 Quan-tity(value=300.0,
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 188--188
-\T1/ptm/m/it/12 unit=kelvin), Quan-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 188--188
-\T1/ptm/m/it/12 tity(value=310.0, unit=kelvin),
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 188--188
-\T1/ptm/m/it/12 Quan-tity(value=320.0,
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 188--188
-\T1/ptm/m/it/12 unit=kelvin), Quan-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 188--188
-\T1/ptm/m/it/12 tity(value=330.0, unit=kelvin),
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 188--188
-\T1/ptm/m/it/12 Quan-tity(value=340.0,
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 188--188
-\T1/ptm/m/it/12 unit=kelvin), Quan-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 188--188
-\T1/ptm/m/it/12 tity(value=350.0, unit=kelvin),
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 188--188
-\T1/ptm/m/it/12 Quan-tity(value=360.0,
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 188--188
-\T1/ptm/m/it/12 unit=kelvin), Quan-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 188--188
-\T1/ptm/m/it/12 tity(value=370.0, unit=kelvin),
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 188--188
-\T1/ptm/m/it/12 Quan-tity(value=380.0,
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 188--188
-\T1/ptm/m/it/12 unit=kelvin), Quan-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 188--188
-\T1/ptm/m/it/12 tity(value=390.0, unit=kelvin)],
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 188--188
-\T1/ptm/m/it/12 sim-u-la-tion_time_step=None, to-
- []
-
-
-Overfull \hbox (28.21747pt too wide) in paragraph at lines 188--188
-\T1/ptm/m/it/12 tal_simulation_time=Quantity(value=1.0,
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 188--188
-\T1/ptm/m/it/12 unit=picosecond), out-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 188--188
-\T1/ptm/m/it/12 put_pdb='output.pdb',
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 188--188
-\T1/ptm/m/it/12 out-put_data='output.nc',
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 188--188
-\T1/ptm/m/it/12 print_frequency=100,
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 188--188
-\T1/ptm/m/it/12 ver-bose=False, ver-
- []
-
-
-Package Fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
-less on input line 190.
-
-[4
-
-]
-LaTeX Font Info:    Try loading font information for TS1+ptm on input line 192.
-
- (/usr/share/texlive/texmf-dist/tex/latex/psnfss/ts1ptm.fd
-File: ts1ptm.fd 2001/06/04 font definitions for TS1/ptm.
-)
-LaTeX Font Info:    Font shape `T1/pcr/m/it' in size <12> not available
-(Font)              Font shape `T1/pcr/m/sl' tried instead on input line 193.
-
-Underfull \hbox (badness 10000) in paragraph at lines 193--194
-[]\T1/pcr/b/n/12 topology \T1/ptm/m/n/12 (\T1/pcr/m/sl/12 OpenMM Topology() cla
-ss object\T1/ptm/m/n/12 ) ^^U An
- []
-
-LaTeX Font Info:    Try loading font information for TS1+pcr on input line 1.
-(/usr/share/texlive/texmf-dist/tex/latex/psnfss/ts1pcr.fd
-File: ts1pcr.fd 2001/06/04 font definitions for TS1/pcr.
-)
-LaTeX Font Info:    Font shape `TS1/pcr/m/it' in size <12> not available
-(Font)              Font shape `TS1/pcr/m/sl' tried instead on input line 1.
-
-Underfull \hbox (badness 7344) in paragraph at lines 199--200
-[]\T1/pcr/b/n/12 positions \T1/ptm/m/n/12 (\T1/pcr/m/sl/12 np.array( \TS1/pcr/m
-/sl/12 '\T1/pcr/m/sl/12 num_beads\TS1/pcr/m/sl/12 ' \T1/pcr/m/sl/12 x 3 , ( flo
-at *
- []
-
-[5]
-Underfull \hbox (badness 10000) in paragraph at lines 238--238
+Underfull \hbox (badness 10000) in paragraph at lines 205--205
 \T1/ptm/m/it/12 per-a-ture=Quantity(value=0.0\T1/ptm/m/n/12 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 238--238
+Underfull \hbox (badness 10000) in paragraph at lines 205--205
 \T1/ptm/m/it/12 unit=kelvin)\T1/ptm/m/n/12 , \T1/ptm/m/it/12 sim-u-la-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 238--238
+Underfull \hbox (badness 10000) in paragraph at lines 205--205
 \T1/ptm/m/it/12 tion_time_step=None\T1/ptm/m/n/12 , \T1/ptm/m/it/12 to-
  []
 
 
-Overfull \hbox (21.01747pt too wide) in paragraph at lines 238--238
+Overfull \hbox (21.01747pt too wide) in paragraph at lines 205--205
 \T1/ptm/m/it/12 tal_simulation_time=Quantity(value=1.0\T1/ptm/m/n/12 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 238--238
+Underfull \hbox (badness 10000) in paragraph at lines 205--205
 \T1/ptm/m/it/12 unit=picosecond)\T1/ptm/m/n/12 , \T1/ptm/m/it/12 out-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 238--238
+Underfull \hbox (badness 10000) in paragraph at lines 205--205
 \T1/ptm/m/it/12 put_pdb='minimum.pdb'\T1/ptm/m/n/12 , \T1/ptm/m/it/12 out-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 238--238
+Underfull \hbox (badness 10000) in paragraph at lines 205--205
 \T1/ptm/m/it/12 put_data='minimization.dat'\T1/ptm/m/n/12 ,
  []
 
-[6]
+
+Package Fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
+less on input line 215.
+
+[4
+
+] [5]
 Chapter 3.
 
 Package Fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
-less on input line 309.
+less on input line 276.
+
+[6
+
+]
+Chapter 4.
+LaTeX Font Info:    Try loading font information for TS1+ptm on input line 278.
+
+(/usr/share/texlive/texmf-dist/tex/latex/psnfss/ts1ptm.fd
+File: ts1ptm.fd 2001/06/04 font definitions for TS1/ptm.
+)
+
+Package Fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
+less on input line 291.
 
 [7
 
 ]
-Chapter 4.
 
 Package Fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
-less on input line 324.
+less on input line 301.
 
 [8
-
-]
-
-Package Fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
-less on input line 335.
-
-[9
 
 
 
@@ -1485,50 +1338,50 @@ til-i-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 38--39
+Underfull \hbox (badness 10000) in paragraph at lines 34--35
 []\T1/pcr/m/n/12 set_box_vectors() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-ule u
 til-i-
  []
 
 
 Package Fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
-less on input line 46.
+less on input line 41.
 
-[10
+[9
+
 
 
 
 ])
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 339.
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 339.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 305.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 305.
  (./cgopenmm.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 339.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 339.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 305.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 305.
 Package rerunfilecheck Info: File `cgopenmm.out' has not changed.
-(rerunfilecheck)             Checksum: D9CF3BB3B8F4862CC6BB9439D1D33965;2031.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 339.
+(rerunfilecheck)             Checksum: 1977F43EDF5E1775AE3BA006F31F0796;2031.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 305.
  ) 
 Here is how much of TeX's memory you used:
- 13679 strings out of 492982
- 189791 string characters out of 6134896
- 277900 words of memory out of 5000000
- 16896 multiletter control sequences out of 15000+600000
- 47590 words of font info for 76 fonts, out of 8000000 for 9000
+ 13648 strings out of 492982
+ 189288 string characters out of 6134896
+ 277724 words of memory out of 5000000
+ 16874 multiletter control sequences out of 15000+600000
+ 46541 words of font info for 73 fonts, out of 8000000 for 9000
  1142 hyphenation exceptions out of 8191
- 37i,11n,45p,961b,599s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 37i,11n,45p,581b,444s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texlive/texmf-dist/fonts/enc/dvips/base/8r.enc}</usr/share/texliv
 e/texmf-dist/fonts/type1/urw/courier/ucrb8a.pfb></usr/share/texlive/texmf-dist/
 fonts/type1/urw/courier/ucrr8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/u
-rw/courier/ucrro8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/helvetic/
-uhvb8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/helvetic/uhvbo8a.pfb>
-</usr/share/texlive/texmf-dist/fonts/type1/urw/helvetic/uhvr8a.pfb></usr/share/
-texlive/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/share/texlive/texmf-d
-ist/fonts/type1/urw/times/utmr8a.pfb></usr/share/texlive/texmf-dist/fonts/type1
-/urw/times/utmri8a.pfb>
-Output written on cgopenmm.pdf (12 pages, 114450 bytes).
+rw/helvetic/uhvb8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/helvetic/
+uhvbo8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/helvetic/uhvr8a.pfb>
+</usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/share/tex
+live/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/share/texlive/texmf-dist
+/fonts/type1/urw/times/utmri8a.pfb>
+Output written on cgopenmm.pdf (11 pages, 100587 bytes).
 PDF statistics:
- 182 PDF objects out of 1000 (max. 8388607)
- 152 compressed objects within 2 object streams
- 35 named destinations out of 1000 (max. 500000)
+ 170 PDF objects out of 1000 (max. 8388607)
+ 142 compressed objects within 2 object streams
+ 33 named destinations out of 1000 (max. 500000)
  85 words of extra memory for PDF output out of 10000 (max. 10000000)
 
