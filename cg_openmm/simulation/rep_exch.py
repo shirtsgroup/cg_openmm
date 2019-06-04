@@ -2,7 +2,7 @@ import os
 import numpy as np
 from simtk import unit
 import openmmtools as mmtools
-from cg_openmm.src.utilities.util import set_box_vectors, get_box_vectors
+from cg_openmm.utilities.util import set_box_vectors, get_box_vectors
 from yank import mpi, analyze
 from yank.multistate import MultiStateReporter, MultiStateSampler, ReplicaExchangeSampler
 from yank.multistate import ReplicaExchangeAnalyzer

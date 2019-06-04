@@ -1,0 +1,18 @@
+Metadata-Version: 2.1
+Name: cg-openmm
+Version: 0.0
+Summary: Package containing tools to perform coarse-grained modeling in OpenMM.
+Home-page: https://github.com/shirtsgroup/cg_openmm
+Author: Shirts research group
+Author-email: michael.shirts@colorado.edu
+License: MIT
+Description: UNKNOWN
+Platform: UNKNOWN
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: Implementation :: CPython
+Classifier: Programming Language :: Python :: Implementation :: PyPy
+Requires-Python: >=3.6.8
+Description-Content-Type: text/markdown

@@ -7,8 +7,7 @@ from simtk.openmm.app.statedatareporter import StateDataReporter
 from simtk.openmm.app.simulation import Simulation
 from simtk.openmm.app.topology import Topology
 import simtk.openmm.app.element as elem
-from foldamers.src.cg_model import cgmodel
-from cg_openmm.src.simulation.tools import get_simulation_time_step
+import cg_openmm.simulation.tools as tools
 
 def add_new_elements(cgmodel,list_of_masses):
         """
@@ -26,7 +25,7 @@ def add_new_elements(cgmodel,list_of_masses):
         mass_index = 0
         cg_particle_index = 1
         particle_list = []
-        for monomer_type in cgmodel.monomer_types:
+        for monomer_type in foldamers.cg_model.cgmodel.monomer_types:
          for backbone_bead in range(monomer_type['backbone_length']):
           particle_name = str("bb-"+str(cg_particle_index))
           particle_symbol = str("B"+str(cg_particle_index))
@@ -259,7 +258,7 @@ def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvi
           print("to confirm their validity for these model settings,")
           print("before performing a full simulation.")
           time_step_list = [(10.0 * (0.5 ** i)) * unit.femtosecond for i in range(0,14)]
-          simulation_time_step,force_cutoff = get_simulation_time_step(topology,system,positions,temperature,time_step_list,total_simulation_time)
+          simulation_time_step, force_cutoff = tools.get_simulation_time_step(topology,system,positions,temperature,time_step_list,total_simulation_time)
         friction = 0.0
 
         integrator = LangevinIntegrator(temperature._value,friction,simulation_time_step.in_units_of(unit.picosecond)._value)
