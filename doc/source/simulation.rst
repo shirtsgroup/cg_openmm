@@ -1,9 +1,17 @@
-OpenMM Simulation() protocols for coarse grained modeling 
-=========================================================
+OpenMM simulation tools for coarse grained modeling 
+===================================================
 
-This page details the functions in cg_openmm/src/cg_mm_tools/cg_openmm.py.
+This page details the functions in cg_openmm/src/simulation/.
 
+Replica exchange simulation tools for coarse grained modeling
+-------------------------------------------------------------
 
-.. automodule:: cg_mm_tools.cg_openmm
+.. automodule:: simulation.rep_exch
+    :members:
+
+General simulation tools for coarse grained modeling
+----------------------------------------------------
+
+.. automodule:: simulation.tools
     :members:
 

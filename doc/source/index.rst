@@ -9,7 +9,9 @@ This documentation is generated automatically using Sphinx, which reads all docs
 .. toctree::
    :maxdepth: 2
 
+   build.rst
    simulation.rst
+   utilities.rst
 
 Indices and tables
 ==================

@@ -10,7 +10,7 @@ from yank.utils import config_root_logger
 # quiet down some citation spam
 MultiStateSampler._global_citation_silence = True
 
-def get_replica_energies(simulation_steps,num_replicas,replica_exchange_storage_file):
+def replica_energies(simulation_steps,num_replicas,replica_exchange_storage_file):
     replica_energies = np.array([[0.0 for step in range(0,simulation_steps)] for replica in range(0,num_replicas)])
     energies = np.array([[] for iteration in range(0,exchange_attempts)])
     for replica in range(0,num_replicas):
@@ -28,7 +28,7 @@ def get_replica_energies(simulation_steps,num_replicas,replica_exchange_storage_
      data_file.close()
     return(replica_energies)
 
-def run_replica_exchange_in_temp(topology,system,positions,temperature_list=[(300.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(-20,100,10)],simulation_time_step=None,total_simulation_time=1.0 * unit.picosecond,output_pdb='output.pdb',output_data='output.nc',print_frequency=100,verbose=False, verbose_simulation=False):
+def replica_exchange(topology,system,positions,temperature_list=[(300.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(-20,100,10)],simulation_time_step=None,total_simulation_time=1.0 * unit.picosecond,output_pdb='output.pdb',output_data='output.nc',print_frequency=100,verbose=False, verbose_simulation=False):
         """
         Construct an OpenMM simulation object for our coarse grained model.
 
@@ -55,11 +55,12 @@ def run_replica_exchange_in_temp(topology,system,positions,temperature_list=[(30
         output_data: Name of output file where we will write the data from this
         simulation ( string )
         """
-        box_size = 10.00 * unit.nanometer # box width
+#        box_size = 10.00 * unit.nanometer # box width
         if simulation_time_step == None:
           simulation_time_step = get_simulation_time_step(topology,system,positions,temperature_list[-1],time_step_list,total_simulation_time)
 
-        simulation_steps = total_simulation_time.__div__(simulation_time_step)
+        simulation_steps = 2000
+#        simulation_steps = int(round(total_simulation_time.__div__(simulation_time_step)))
 
         exchange_attempts = print_frequency * 5
 
@@ -71,10 +72,11 @@ def run_replica_exchange_in_temp(topology,system,positions,temperature_list=[(30
         for temperature in temperature_list:
           thermodynamic_state = mmtools.states.ThermodynamicState(system=system, temperature=temperature)
           thermodynamic_states.append(thermodynamic_state)
+          sampler_states.append(mmtools.states.SamplerState(positions,box_vectors=None))
 
-        system = set_box_vectors(system,box_size)
-        box_vectors = get_box_vectors(box_size)
-        sampler_states.append(mmtools.states.SamplerState(positions,box_vectors=box_vectors))
+        
+        #system = set_box_vectors(system,box_size)
+        #box_vectors = get_box_vectors(box_size)
 
         # Create and configure simulation object.
         move = mmtools.mcmc.LangevinDynamicsMove(timestep=simulation_time_step,collision_rate=20.0/unit.picosecond,n_steps=simulation_steps, reassign_velocities=True)
@@ -84,6 +86,10 @@ def run_replica_exchange_in_temp(topology,system,positions,temperature_list=[(30
         reporter = MultiStateReporter(output_data, checkpoint_interval=1)
         simulation.create(thermodynamic_states, sampler_states, reporter)
         config_root_logger(verbose_simulation)
+        print("Running replica exchange simulations with Yank...")
+        print("Using a time step of "+str(simulation_time_step))
+        print("There are "+str(len(thermodynamic_states))+" replicas.")
+        print("Running each simulation for "+str(simulation_steps)+" steps.")
         simulation.run()
         del simulation
 
@@ -99,7 +105,7 @@ def run_replica_exchange_in_temp(topology,system,positions,temperature_list=[(30
           index = index + 1
 
         # Get the simulation data for individual temperature replicas
-        replica_energies = get_replica_energies(simulation_steps,num_replicas,replica_exchange_storage_file)
+        replica_energies = replica_energies(simulation_steps,num_replicas,output_data)
 
         return(replica_energies)
 
