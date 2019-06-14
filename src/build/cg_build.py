@@ -224,6 +224,31 @@ def build_system(cgmodel):
 
         return(system)
 
+
+def get_mm_energy(topology,system,positions):
+        """
+        Get the OpenMM potential energy for a system, given a topology and set of positions.
+
+        Parameters
+        ----------
+
+        topology: OpenMM topology object
+
+        system: OpenMM system object
+
+        positions: Array containing the positions of all beads
+        in the coarse grained model
+        ( np.array( 'num_beads' x 3 , ( float * simtk.unit.distance ) )
+
+ 
+        """
+        integrator = LangevinIntegrator(300.0 * unit.kelvin,0.0,1.0)
+        simulation = Simulation(topology, system, integrator)
+        simulation.context.setPositions(positions)
+        potential_energy = simulation.context.getEnergy(potentialEnergy=True).getPotentialEnergy()
+
+        return(potential_energy)
+
 def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvin,simulation_time_step=None,total_simulation_time=1.0 * unit.picosecond,output_pdb='output.pdb',output_data='output.dat',print_frequency=100):
         """
         Construct an OpenMM simulation object for our coarse grained model.
@@ -254,10 +279,10 @@ def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvi
  
         """
         if simulation_time_step == None:
-          print("No simulation time step provided.")
-          print("Going to attempt a range of time steps,")
-          print("to confirm their validity for these model settings,")
-          print("before performing a full simulation.")
+#          print("No simulation time step provided.")
+#          print("Going to attempt a range of time steps,")
+#          print("to confirm their validity for these model settings,")
+#          print("before performing a full simulation.")
           time_step_list = [(10.0 * (0.5 ** i)) * unit.femtosecond for i in range(0,14)]
           simulation_time_step,force_cutoff = get_simulation_time_step(topology,system,positions,temperature,time_step_list,total_simulation_time)
         friction = 0.0
