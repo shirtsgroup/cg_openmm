@@ -27,8 +27,10 @@ def get_simulation_time_step(topology,system,positions,temperature,total_simulat
         if time_step_list == None:
           time_step_list = [(10.0 * (0.5 ** i)) * unit.femtosecond for i in range(0,14)]
 
+        if type(time_step_list) != list:
+          time_step_list = [time_step_list]
         for time_step in time_step_list:
-          integrator = LangevinIntegrator(temperature, total_simulation_time, time_step)
+          integrator = LangevinIntegrator(temperature._value, total_simulation_time.in_units_of(unit.picosecond)._value, time_step.in_units_of(unit.picosecond)._value)
 
           simulation = Simulation(topology, system, integrator)
           simulation.context.setPositions(positions)
@@ -111,14 +113,15 @@ def minimize_structure(topology,system,positions,temperature=0.0 * unit.kelvin,s
         """
         if simulation_time_step == None:
           simulation_time_step_list = [(10.0 * (0.5 ** i)) * unit.femtosecond for i in range(0,14)]
-          time_step,tolerance = get_simulation_time_step(topology,system,positions,temperature,simulation_time_step_list,total_simulation_time)
+          time_step,tolerance = get_simulation_time_step(topology,system,positions,temperature,total_simulation_time,simulation_time_step_list)
           if tolerance == None:
 #            print("This set of positions is not a reasonable initial configuration.")
             energy = "NaN"
             return(positions,energy)
         else:
           time_step = simulation_time_step
-        integrator = LangevinIntegrator(temperature, total_simulation_time, time_step)
+        integrator = LangevinIntegrator(temperature._value, total_simulation_time.in_units_of(unit.picosecond)._value, time_step.in_units_of(unit.picosecond)._value)
+
 
         simulation = Simulation(topology, system, integrator)
         simulation.context.setPositions(positions)
@@ -129,22 +132,29 @@ def minimize_structure(topology,system,positions,temperature=0.0 * unit.kelvin,s
 
 
         total_steps = round(total_simulation_time.__div__(time_step))
-#        print("Running minimization with a time step of "+str(time_step))
-#        print("for "+str(total_steps)+" steps.")
+        print("Running minimization with a time step of "+str(time_step))
+        print("for "+str(total_steps)+" steps.")
         try:
-          simulation.minimizeEnergy(tolerance=tolerance) # Set the simulation type to energy minimization
-#          for step in range(0,total_steps):
-#            simulation.step(1)
+#          simulation.minimizeEnergy() # Set the simulation type to energy minimization
+          step_length = 10
+          for step in range(round(total_steps/step_length)):
+            print(step)
+            simulation.step(step_length)
 #            simulation.context.applyConstraints(1.0e8)
           positions = simulation.context.getState(getPositions=True).getPositions()
           potential_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
 #          confirm_bond_constraints(cgmodel,positions)
         except:
           print("Minimization attempt failed with a time step of: "+str(time_step))
-          print("Try using the 'get_simulation_time_step()' function,")
-          print("or changing the 'simulation_time_step',")
-          print("to see if one of these changes solves the problem.")
-          exit()
+          if time_step.__gt__(0.01 * unit.femtosecond):
+            time_step = time_step / 2.0
+            print("Attempting minimization with a smaller time step.")
+            positions,potential_energy,time_step = minimize_structure(topology,system,positions,temperature=temperature,simulation_time_step=time_step,total_simulation_time=total_simulation_time,output_pdb=output_pdb,output_data=output_data,print_frequency=print_frequency)
+          else:
+            print("Try using the 'get_simulation_time_step()' function,")
+            print("or changing the 'simulation_time_step',")
+            print("to see if one of these changes solves the problem.")
+            exit()
 
-        return(positions,potential_energy)
+        return(positions,potential_energy,time_step)
 

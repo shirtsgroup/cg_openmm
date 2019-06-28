@@ -284,7 +284,7 @@ def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvi
 #          print("to confirm their validity for these model settings,")
 #          print("before performing a full simulation.")
           time_step_list = [(10.0 * (0.5 ** i)) * unit.femtosecond for i in range(0,14)]
-          simulation_time_step,force_cutoff = get_simulation_time_step(topology,system,positions,temperature,time_step_list,total_simulation_time)
+          simulation_time_step,force_cutoff = get_simulation_time_step(topology,system,positions,temperature,total_simulation_time,time_step_list)
         friction = 0.0
 
         integrator = LangevinIntegrator(temperature._value,friction,simulation_time_step.in_units_of(unit.picosecond)._value)
