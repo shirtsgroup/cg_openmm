@@ -45,6 +45,8 @@ def get_replica_energies(simulation_steps,num_replicas,replica_exchange_storage_
            iteration_data = MultiStateReporter(replica_exchange_storage_file, open_mode='r').read_energies(iteration=iteration)
            iteration_data = np.array(iteration_data[0])
            for energy in iteration_data[replica]:
+            print(energy)
+            exit()
             replica_energies[replica][step] = energy
             step = step + 1
         for replica in range(0,num_replicas):
@@ -207,5 +209,5 @@ def replica_exchange(topology,system,positions,temperature_list=[(300.0 * unit.k
                for cart in range(3):
                  replica_positions[replica_index][thermodynamic_state_index][iteration][particle][cart] = sampler_states[replica_index].positions[particle][cart]
 
-        return(Delta_f_ij,dDelta_f_ij,reduced_replica_energies,replica_positions,temperature_list)
+        return(replica_energies,reduced_replica_energies,replica_positions,temperature_list)
 
