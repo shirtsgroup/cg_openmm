@@ -15,7 +15,7 @@ from cg_openmm.src.simulation.rep_exch import replica_exchange
 
 # Simulation settings
 simulation_time_step = 0.01 * unit.femtosecond
-total_simulation_time = 1.0 * unit.picosecond
+total_simulation_time = 0.1 * unit.picosecond
 
 # Define static model settings
 backbone_length = 1 # Number of backbone beads
