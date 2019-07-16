@@ -65,7 +65,7 @@ top_directory = 'optimize_lj'
 if not os.path.exists(top_directory):
   os.mkdir(top_directory)
 
-number_parameters_sampled = 20
+number_parameters_sampled = 4
 max_sigma = 7.0 * unit.angstrom
 min_sigma = 2.0 * unit.angstrom
 sigma_step_size = ( max_sigma - min_sigma ) / number_parameters_sampled
@@ -105,9 +105,8 @@ pyplot.pcolormesh(X,Y,Z)
 pyplot.xlabel("Sigma ( Angstroms )")
 pyplot.ylabel("Epsilon ( kCal/mol )")
 pyplot.title("Minimum Potential Energy ( kJ / mol )")
-pyplot.savefig(str(str(top_directory)+"/lj_energies_heatmap.png"))
 pyplot.colorbar()
-pyplot.show()
+pyplot.savefig(str(str(top_directory)+"/lj_energies_heatmap.png"))
 pyplot.close()
 
 

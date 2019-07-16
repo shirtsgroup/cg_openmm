@@ -2,9 +2,11 @@
 
 import os
 from simtk import unit
+from simtk.openmm import LangevinIntegrator
 import matplotlib.pyplot as pyplot
 from foldamers.src.cg_model.cgmodel import CGModel
-from cg_openmm.src.simulation.tools import * 
+from foldamers.src.utilities.util import random_positions
+from cg_openmm.src.simulation.tools import build_mm_simulation, run_simulation
 from cg_openmm.src.build.cg_build import *
 from cg_openmm.src.utilities.iotools import *
 
@@ -17,7 +19,7 @@ from cg_openmm.src.utilities.iotools import *
 temperature = 300.0 * unit.kelvin
 print_frequency = 1 # Number of steps to skip when printing output
 total_simulation_time = 0.1 * unit.picosecond # Units = picoseconds
-simulation_time_step = 1.0 * unit.femtosecond
+simulation_time_step = 5.0 * unit.femtosecond
 total_steps = total_simulation_time.__div__(simulation_time_step)
 
 ###
@@ -27,19 +29,19 @@ total_steps = total_simulation_time.__div__(simulation_time_step)
 ###
 
 # Global definitions
-polymer_length=8
+polymer_length=10
 backbone_lengths=[1]
 sidechain_lengths=[1]
 sidechain_positions=[0]
 
 # Particle properties
-mass = 10.0 * unit.amu
+mass = 100.0 * unit.amu
 masses = {'backbone_bead_masses': mass, 'sidechain_bead_masses': mass}
-sigmas = {'bb_bb_sigma': 2.5 * unit.angstrom,'bb_sc_sigma': 2.5 * unit.angstrom,'sc_sc_sigma': 2.5 * unit.angstrom}
+sigmas = {'bb_bb_sigma': 18.5 * unit.angstrom,'bb_sc_sigma': 18.5 * unit.angstrom,'sc_sc_sigma': 18.5 * unit.angstrom}
 epsilons = {'bb_bb_eps': 0.5 * unit.kilocalorie_per_mole,'bb_sc_eps': 0.5 * unit.kilocalorie_per_mole,'sc_sc_eps': 0.5 * unit.kilocalorie_per_mole}
 
 # Bonded interaction properties
-bond_length = 1.0 * unit.angstrom
+bond_length = 7.5 * unit.angstrom
 bond_lengths = {'bb_bb_bond_length': bond_length,'bb_sc_bond_length': bond_length,'sc_sc_bond_length': bond_length}
 constrain_bonds = False
 bond_force_constant = 1250 * unit.kilojoule_per_mole / unit.nanometer / unit.nanometer
@@ -63,39 +65,78 @@ if not os.path.exists(top_directory):
 
 dir = str(str(top_directory)+'/no_forces')
 if not os.path.exists(dir): os.mkdir(dir)
-cgmodel = CGModel(polymer_length=polymer_length,backbone_lengths=backbone_lengths,sidechain_lengths=sidechain_lengths,sidechain_positions=sidechain_positions,masses=masses,sigmas=sigmas,epsilons=epsilons,bond_lengths=bond_lengths,bond_force_constants=bond_force_constants,bond_angle_force_constants=bond_angle_force_constants,torsion_force_constants=torsion_force_constants,equil_bond_angles=equil_bond_angles,equil_torsion_angles=equil_torsion_angles,include_nonbonded_forces=False,include_bond_forces=False,include_bond_angle_forces = False,include_torsion_forces=False,constrain_bonds=constrain_bonds)
-run_simulation(cgmodel,dir,total_simulation_time,simulation_time_step,temperature,print_frequency)
-energies_no_forces = read_mm_energies(str(str(top_directory)+'/no_forces/simulation.dat'))
+cg_model = CGModel(polymer_length=polymer_length,backbone_lengths=backbone_lengths,sidechain_lengths=sidechain_lengths,sidechain_positions=sidechain_positions,masses=masses,sigmas=sigmas,epsilons=epsilons,bond_lengths=bond_lengths,bond_force_constants=bond_force_constants,bond_angle_force_constants=bond_angle_force_constants,torsion_force_constants=torsion_force_constants,equil_bond_angles=equil_bond_angles,equil_torsion_angles=equil_torsion_angles,include_nonbonded_forces=False,include_bond_forces=False,include_bond_angle_forces = False,include_torsion_forces=False,constrain_bonds=constrain_bonds)
+cg_model.positions = random_positions(cg_model,use_library=False)
+positions = cg_model.positions
+integrator = LangevinIntegrator(temperature._value,0.1,simulation_time_step.in_units_of(unit.picosecond)._value)
+simulation = build_mm_simulation(cg_model.topology, cg_model.system,positions,temperature=temperature,simulation_time_step=simulation_time_step,print_frequency=1)
+simulation.context.setPositions(cg_model.positions)
+forces = simulation.context.getState(getForces=True).getForces()
+print(forces)
+run_simulation(cg_model,dir,total_simulation_time,simulation_time_step,temperature,print_frequency)
+#energies_no_forces = read_mm_energies(str(str(top_directory)+'/no_forces/simulation.dat'))
 
 dir = str(str(top_directory)+'/nonbonded_forces')
 if not os.path.exists(dir): os.mkdir(dir)
-cgmodel = CGModel(polymer_length=polymer_length,backbone_lengths=backbone_lengths,sidechain_lengths=sidechain_lengths,sidechain_positions=sidechain_positions,masses=masses,sigmas=sigmas,epsilons=epsilons,bond_lengths=bond_lengths,bond_force_constants=bond_force_constants,bond_angle_force_constants=bond_angle_force_constants,torsion_force_constants=torsion_force_constants,equil_bond_angles=equil_bond_angles,equil_torsion_angles=equil_torsion_angles,include_nonbonded_forces=True,include_bond_forces=False,include_bond_angle_forces = False,include_torsion_forces=False,constrain_bonds=constrain_bonds)
-run_simulation(cgmodel,dir,total_simulation_time,simulation_time_step,temperature,print_frequency)
-energies_nonbonded_forces = read_mm_energies(str(str(top_directory)+'/nonbonded_forces/simulation.dat'))
+cg_model = CGModel(positions=positions,polymer_length=polymer_length,backbone_lengths=backbone_lengths,sidechain_lengths=sidechain_lengths,sidechain_positions=sidechain_positions,masses=masses,sigmas=sigmas,epsilons=epsilons,bond_lengths=bond_lengths,bond_force_constants=bond_force_constants,bond_angle_force_constants=bond_angle_force_constants,torsion_force_constants=torsion_force_constants,equil_bond_angles=equil_bond_angles,equil_torsion_angles=equil_torsion_angles,include_nonbonded_forces=True,include_bond_forces=False,include_bond_angle_forces = False,include_torsion_forces=False,constrain_bonds=constrain_bonds)
+integrator = LangevinIntegrator(temperature._value, total_simulation_time.in_units_of(unit.picosecond)._value, simulation_time_step.in_units_of(unit.picosecond)._value)
+simulation = Simulation(cg_model.topology, cg_model.system, integrator)
+simulation.context.setPositions(cg_model.positions)
+forces = simulation.context.getState(getForces=True).getForces()
+print(forces)
+
+#run_simulation(cgmodel,dir,total_simulation_time,simulation_time_step,temperature,print_frequency)
+#energies_nonbonded_forces = read_mm_energies(str(str(top_directory)+'/nonbonded_forces/simulation.dat'))
 
 dir = str(str(top_directory)+'/bond_forces')
 if not os.path.exists(dir): os.mkdir(dir)
-cgmodel = CGModel(polymer_length=polymer_length,backbone_lengths=backbone_lengths,sidechain_lengths=sidechain_lengths,sidechain_positions=sidechain_positions,masses=masses,sigmas=sigmas,epsilons=epsilons,bond_lengths=bond_lengths,bond_force_constants=bond_force_constants,bond_angle_force_constants=bond_angle_force_constants,torsion_force_constants=torsion_force_constants,equil_bond_angles=equil_bond_angles,equil_torsion_angles=equil_torsion_angles,include_nonbonded_forces=False,include_bond_forces=True,include_bond_angle_forces = False,include_torsion_forces=False,constrain_bonds=constrain_bonds)
-run_simulation(cgmodel,dir,total_simulation_time,simulation_time_step,temperature,print_frequency)
-energies_bond_forces = read_mm_energies(str(str(top_directory)+'/bond_forces/simulation.dat'))
+cg_model = CGModel(positions=positions,polymer_length=polymer_length,backbone_lengths=backbone_lengths,sidechain_lengths=sidechain_lengths,sidechain_positions=sidechain_positions,masses=masses,sigmas=sigmas,epsilons=epsilons,bond_lengths=bond_lengths,bond_force_constants=bond_force_constants,bond_angle_force_constants=bond_angle_force_constants,torsion_force_constants=torsion_force_constants,equil_bond_angles=equil_bond_angles,equil_torsion_angles=equil_torsion_angles,include_nonbonded_forces=True,include_bond_forces=True,include_bond_angle_forces = False,include_torsion_forces=False,constrain_bonds=constrain_bonds)
+integrator = LangevinIntegrator(temperature._value, total_simulation_time.in_units_of(unit.picosecond)._value, simulation_time_step.in_units_of(unit.picosecond)._value)
+simulation = Simulation(cg_model.topology, cg_model.system, integrator)
+simulation.context.setPositions(cg_model.positions)
+forces = simulation.context.getState(getForces=True).getForces()
+print(forces)
+
+#run_simulation(cgmodel,dir,total_simulation_time,simulation_time_step,temperature,print_frequency)
+#energies_bond_forces = read_mm_energies(str(str(top_directory)+'/bond_forces/simulation.dat'))
 
 dir = str(str(top_directory)+'/bond_angle_forces')
 if not os.path.exists(dir): os.mkdir(dir)
-cgmodel = CGModel(polymer_length=polymer_length,backbone_lengths=backbone_lengths,sidechain_lengths=sidechain_lengths,sidechain_positions=sidechain_positions,masses=masses,sigmas=sigmas,epsilons=epsilons,bond_lengths=bond_lengths,bond_force_constants=bond_force_constants,bond_angle_force_constants=bond_angle_force_constants,torsion_force_constants=torsion_force_constants,equil_bond_angles=equil_bond_angles,equil_torsion_angles=equil_torsion_angles,include_nonbonded_forces=False,include_bond_forces=False,include_bond_angle_forces = True,include_torsion_forces=False,constrain_bonds=constrain_bonds)
-run_simulation(cgmodel,dir,total_simulation_time,simulation_time_step,temperature,print_frequency)
-energies_bond_angle_forces = read_mm_energies(str(str(top_directory)+'/bond_angle_forces/simulation.dat'))
+cg_model = CGModel(positions=positions,polymer_length=polymer_length,backbone_lengths=backbone_lengths,sidechain_lengths=sidechain_lengths,sidechain_positions=sidechain_positions,masses=masses,sigmas=sigmas,epsilons=epsilons,bond_lengths=bond_lengths,bond_force_constants=bond_force_constants,bond_angle_force_constants=bond_angle_force_constants,torsion_force_constants=torsion_force_constants,equil_bond_angles=equil_bond_angles,equil_torsion_angles=equil_torsion_angles,include_nonbonded_forces=True,include_bond_forces=True,include_bond_angle_forces = True,include_torsion_forces=False,constrain_bonds=constrain_bonds)
+
+integrator = LangevinIntegrator(temperature._value, total_simulation_time.in_units_of(unit.picosecond)._value, simulation_time_step.in_units_of(unit.picosecond)._value)
+simulation = Simulation(cg_model.topology, cg_model.system, integrator)
+simulation.context.setPositions(cg_model.positions)
+forces = simulation.context.getState(getForces=True).getForces()
+print(forces)
+
+#run_simulation(cgmodel,dir,total_simulation_time,simulation_time_step,temperature,print_frequency)
+#energies_bond_angle_forces = read_mm_energies(str(str(top_directory)+'/bond_angle_forces/simulation.dat'))
 
 dir = str(str(top_directory)+'/torsion_forces')
 if not os.path.exists(dir): os.mkdir(dir)
-cgmodel = CGModel(polymer_length=polymer_length,backbone_lengths=backbone_lengths,sidechain_lengths=sidechain_lengths,sidechain_positions=sidechain_positions,masses=masses,sigmas=sigmas,epsilons=epsilons,bond_lengths=bond_lengths,bond_force_constants=bond_force_constants,bond_angle_force_constants=bond_angle_force_constants,torsion_force_constants=torsion_force_constants,equil_bond_angles=equil_bond_angles,equil_torsion_angles=equil_torsion_angles,include_nonbonded_forces=False,include_bond_forces=False,include_bond_angle_forces = False,include_torsion_forces=True,constrain_bonds=constrain_bonds)
-run_simulation(cgmodel,dir,total_simulation_time,simulation_time_step,temperature,print_frequency)
-energies_torsion_forces = read_mm_energies(str(str(top_directory)+'/torsion_forces/simulation.dat'))
+cg_model = CGModel(positions=positions,polymer_length=polymer_length,backbone_lengths=backbone_lengths,sidechain_lengths=sidechain_lengths,sidechain_positions=sidechain_positions,masses=masses,sigmas=sigmas,epsilons=epsilons,bond_lengths=bond_lengths,bond_force_constants=bond_force_constants,bond_angle_force_constants=bond_angle_force_constants,torsion_force_constants=torsion_force_constants,equil_bond_angles=equil_bond_angles,equil_torsion_angles=equil_torsion_angles,include_nonbonded_forces=True,include_bond_forces=True,include_bond_angle_forces = True,include_torsion_forces=True,constrain_bonds=constrain_bonds)
+
+integrator = LangevinIntegrator(temperature._value, total_simulation_time.in_units_of(unit.picosecond)._value, simulation_time_step.in_units_of(unit.picosecond)._value)
+simulation = Simulation(cg_model.topology, cg_model.system, integrator)
+simulation.context.setPositions(cg_model.positions)
+forces = simulation.context.getState(getForces=True).getForces()
+print(forces)
+
+#run_simulation(cgmodel,dir,total_simulation_time,simulation_time_step,temperature,print_frequency)
+#energies_torsion_forces = read_mm_energies(str(str(top_directory)+'/torsion_forces/simulation.dat'))
 
 dir = str(str(top_directory)+'/all_forces')
 if not os.path.exists(dir): os.mkdir(dir)
-cgmodel = CGModel(polymer_length=polymer_length,backbone_lengths=backbone_lengths,sidechain_lengths=sidechain_lengths,sidechain_positions=sidechain_positions,masses=masses,sigmas=sigmas,epsilons=epsilons,bond_lengths=bond_lengths,bond_force_constants=bond_force_constants,bond_angle_force_constants=bond_angle_force_constants,torsion_force_constants=torsion_force_constants,equil_bond_angles=equil_bond_angles,equil_torsion_angles=equil_torsion_angles,include_nonbonded_forces=True,include_bond_forces=True,include_bond_angle_forces =True,include_torsion_forces=True,constrain_bonds=constrain_bonds)
-run_simulation(cgmodel,dir,total_simulation_time,simulation_time_step,temperature,print_frequency)
-energies_all_forces = read_mm_energies(str(str(top_directory)+'/all_forces/simulation.dat'))
+cg_model = CGModel(positions=positions,polymer_length=polymer_length,backbone_lengths=backbone_lengths,sidechain_lengths=sidechain_lengths,sidechain_positions=sidechain_positions,masses=masses,sigmas=sigmas,epsilons=epsilons,bond_lengths=bond_lengths,bond_force_constants=bond_force_constants,bond_angle_force_constants=bond_angle_force_constants,torsion_force_constants=torsion_force_constants,equil_bond_angles=equil_bond_angles,equil_torsion_angles=equil_torsion_angles,include_nonbonded_forces=True,include_bond_forces=True,include_bond_angle_forces =True,include_torsion_forces=True,constrain_bonds=constrain_bonds)
+integrator = LangevinIntegrator(temperature._value, total_simulation_time.in_units_of(unit.picosecond)._value, simulation_time_step.in_units_of(unit.picosecond)._value)
+simulation = Simulation(cg_model.topology, cg_model.system, integrator)
+simulation.context.setPositions(cg_model.positions)
+forces = simulation.context.getState(getForces=True).getForces()
+print(forces)
+
+#run_simulation(cgmodel,dir,total_simulation_time,simulation_time_step,temperature,print_frequency)
+#energies_all_forces = read_mm_energies(str(str(top_directory)+'/all_forces/simulation.dat'))
 
 
 # Plot results
