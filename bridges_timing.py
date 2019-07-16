@@ -70,10 +70,12 @@ for polymer_length in [8,10,20,30]:
  simulation = build_mm_simulation(cg_model.topology, cg_model.system,positions,temperature=temperature,simulation_time_step=simulation_time_step,print_frequency=1)
  simulation.context.setPositions(cg_model.positions)
  times = []
+ print("About to run scaling tests")
  for i in range(10):
   try:
 
    start_time = timeit.default_timer()
+   print(i)
    simulation.step(1)
    end_time = timeit.default_timer()
   except:
@@ -83,7 +85,8 @@ for polymer_length in [8,10,20,30]:
   time = end_time - start_time
   times.append(time)
  time = mean(times)
+ print(time)
  file = open(str(str(top_directory)+"/time.dat"),"a")
- file.write(str(polymer_length)+" "+str(time*1000.0)+"\n")
+ file.write(str(polymer_length)+" "+str(time*400.0)+"\n")
  file.close()
 exit()
