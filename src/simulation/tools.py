@@ -25,7 +25,7 @@ def get_simulation_time_step(topology,system,positions,temperature,total_simulat
         success = False
 
         if time_step_list == None:
-          time_step_list = [(10.0 * (0.5 ** i)) * unit.femtosecond for i in range(0,14)]
+          time_step_list = [10.0-i * unit.femtosecond for i in [5.0,7.5,9.0,9.5,9.9,9.99]]
 
         if type(time_step_list) != list:
           time_step_list = [time_step_list]
@@ -47,7 +47,7 @@ def get_simulation_time_step(topology,system,positions,temperature,total_simulat
 #            simulation.context.applyConstraints(1.0e-8)
             simulation.minimizeEnergy()
 #            for step in range(0,total_steps):
-#              simulation.step(1)
+#            simulation.step(total_steps)
 #              simulation.context.applyConstraints(1.0e-8)
             positions = simulation.context.getState(getPositions=True).getPositions()
 #              confirm_bond_constraints(cgmodel,positions)
@@ -84,7 +84,7 @@ def get_simulation_time_step(topology,system,positions,temperature,total_simulat
 #        print("Simulation successful with a time step of: "+str(time_step))
         return(time_step,tolerance)
 
-def minimize_structure(topology,system,positions,temperature=0.0 * unit.kelvin,simulation_time_step=None,total_simulation_time=1.0 * unit.picosecond,output_pdb='minimum.pdb',output_data='minimization.dat',print_frequency=10):
+def minimize_structure(topology,system,positions,temperature=0.0 * unit.kelvin,simulation_time_step=None,total_simulation_time=1.0 * unit.picosecond,output_pdb='minimum.pdb',output_data='minimization.dat',print_frequency=1):
         """
         Construct an OpenMM simulation object for our coarse grained model.
 
@@ -112,6 +112,8 @@ def minimize_structure(topology,system,positions,temperature=0.0 * unit.kelvin,s
 
         """
         if simulation_time_step == None:
+          print("Minimizing the structure, but no time step was provided.")
+          exit()
           simulation_time_step_list = [(10.0 * (0.5 ** i)) * unit.femtosecond for i in range(0,14)]
           time_step,tolerance = get_simulation_time_step(topology,system,positions,temperature,total_simulation_time,simulation_time_step_list)
           if tolerance == None:
@@ -126,6 +128,9 @@ def minimize_structure(topology,system,positions,temperature=0.0 * unit.kelvin,s
         simulation = Simulation(topology, system, integrator)
         simulation.context.setPositions(positions)
 #        simulation.context.setVelocitiesToTemperature(temperature)
+        print(positions)
+        forces = simulation.context.getState(getForces=True).getForces()
+        print(forces)
         simulation.reporters.append(PDBReporter(output_pdb,print_frequency))
         simulation.reporters.append(StateDataReporter(output_data,print_frequency, \
         step=True, totalEnergy=True, potentialEnergy=True, kineticEnergy=True, temperature=True))
@@ -133,10 +138,13 @@ def minimize_structure(topology,system,positions,temperature=0.0 * unit.kelvin,s
 
         total_steps = round(total_simulation_time.__div__(time_step))
         try:
+          print("Starting minimization.")
 #          simulation.minimizeEnergy() # Set the simulation type to energy minimization
-          step_length = 10
-          for step in range(round(total_steps/step_length)):
-            simulation.step(step_length)
+          print("Minimization successful.")
+#          exit()
+#          step_length = 10
+#          for step in range(round(total_steps/step_length)):
+#            simulation.step(step_length)
 #            simulation.context.applyConstraints(1.0e8)
           positions = simulation.context.getState(getPositions=True).getPositions()
           potential_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
@@ -146,14 +154,14 @@ def minimize_structure(topology,system,positions,temperature=0.0 * unit.kelvin,s
           if time_step.__gt__(0.01 * unit.femtosecond):
             time_step = time_step / 2.0
             print("Attempting minimization with a smaller time step.")
-            positions,potential_energy,time_step = minimize_structure(topology,system,positions,temperature=temperature,simulation_time_step=time_step,total_simulation_time=total_simulation_time,output_pdb=output_pdb,output_data=output_data,print_frequency=print_frequency)
+            positions,potential_energy = minimize_structure(topology,system,positions,temperature=temperature,simulation_time_step=time_step,total_simulation_time=total_simulation_time,output_pdb=output_pdb,output_data=output_data,print_frequency=print_frequency)
           else:
             print("Try using the 'get_simulation_time_step()' function,")
             print("or changing the 'simulation_time_step',")
             print("to see if one of these changes solves the problem.")
             exit()
 
-        return(positions,potential_energy,time_step)
+        return(positions,potential_energy)
 
 def get_mm_energy(topology,system,positions):
         """
@@ -234,6 +242,7 @@ def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvi
           try:
             simulation_temp = simulation.__deepcopy__(memo={})
             simulation_temp.step(100)
+            print("Simulation attempt successful.")
           except:
 #            print("Simulation attempt failed with a time step of: "+str(simulation_time_step))
 #            print("Going to attempt to identify a smaller time step that allows simulation for this model and its current settings...")
@@ -248,6 +257,7 @@ def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvi
               if time_step < simulation_time_step:
                 simulation = build_mm_simulation(topology,system,positions,temperature=temperature,simulation_time_step=time_step,total_simulation_time=total_simulation_time,output_pdb=output_pdb,output_data=output_data,print_frequency=print_frequency)
                 try:
+                  
                   simulation_temp.step(100)
                   return(simulation)
                 except:
