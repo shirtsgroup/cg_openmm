@@ -187,7 +187,7 @@ def get_mm_energy(topology,system,positions):
 
         return(potential_energy)
 
-def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvin,simulation_time_step=None,total_simulation_time=1.0 * unit.picosecond,output_pdb='output.pdb',output_data='output.dat',print_frequency=100,test_time_step=True):
+def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvin,simulation_time_step=None,total_simulation_time=1.0 * unit.picosecond,output_pdb='output.pdb',output_data='output.dat',print_frequency=100,test_time_step=False):
         """
         Construct an OpenMM simulation object for our coarse grained model.
 
