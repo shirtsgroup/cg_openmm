@@ -232,7 +232,9 @@ def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvi
         simulation.context.setPositions(positions)
         simulation.context.setVelocitiesToTemperature(temperature)
 
-        simulation.reporters.append(PDBReporter(output_pdb,print_frequency))
+        #import pdb
+        #pdb.set_trace()
+        #simulation.reporters.append(PDBReporter(output_pdb,print_frequency))
         simulation.reporters.append(StateDataReporter(output_data,print_frequency, \
         step=True, totalEnergy=True, potentialEnergy=True, kineticEnergy=True, temperature=True))
 

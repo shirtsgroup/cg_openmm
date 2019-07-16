@@ -360,17 +360,17 @@ def build_system(cgmodel):
          angle_force = mm.HarmonicAngleForce()
          for angle in angle_list:
               bond_angle_force_constant = cgmodel.get_bond_angle_force_constant(angle[0],angle[1],angle[2])
-              equil_bond_angle = cgmodel.get_equil_bond_angle(angle[0],angle[1],angle[2]) * 0.0174533
+              equil_bond_angle = cgmodel.get_equil_bond_angle(angle[0],angle[1],angle[2]) * np.pi/180.0
               angle_force.addAngle(angle[0],angle[1],angle[2],equil_bond_angle,bond_angle_force_constant)
          system.addForce(angle_force)
 
-
         if cgmodel.include_torsion_forces:
+
          # Create torsion potentials
          torsion_force = mm.PeriodicTorsionForce()
          for torsion in torsion_list:
               torsion_force_constant = cgmodel.get_torsion_force_constant(torsion)
-              equil_torsion_angle = cgmodel.get_equil_torsion_angle(torsion) * 0.0174533
+              equil_torsion_angle = cgmodel.get_equil_torsion_angle(torsion) * np.pi/180.0
               periodicity = 1
               torsion_force.addTorsion(torsion[0],torsion[1],torsion[2],torsion[3],periodicity,equil_torsion_angle,torsion_force_constant)
          system.addForce(torsion_force)
