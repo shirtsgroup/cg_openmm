@@ -30,10 +30,10 @@ def get_simulation_time_step(topology,system,positions,temperature,total_simulat
         if type(time_step_list) != list:
           time_step_list = [time_step_list]
         for time_step in time_step_list:
-          integrator = LangevinIntegrator(temperature._value, total_simulation_time.in_units_of(unit.picosecond)._value, time_step.in_units_of(unit.picosecond)._value)
+          integrator = LangevinIntegrator(temperature._value,1.0 / unit.picoseconds, time_step.in_units_of(unit.picosecond)._value)
 
           simulation = Simulation(topology, system, integrator)
-          simulation.context.setPositions(positions)
+          simulation.context.setPositions(positions.in_units_of(unit.nanometer))
 #          simulation.context.setVelocitiesToTemperature(temperature)
           simulation.reporters.append(PDBReporter('test.pdb',1))
           simulation.reporters.append(StateDataReporter('test.dat',1, \
@@ -64,7 +64,7 @@ def get_simulation_time_step(topology,system,positions,temperature,total_simulat
 #            print("Running test simulation with a force tolerance of: "+str(tolerance))
             try:
 #            simulation.context.applyConstraints(1.0e-8)
-             integrator = LangevinIntegrator(temperature, total_simulation_time, time_step)
+             integrator = LangevinIntegrator(temperature._value,1.0 / unit.picoseconds, time_step.in_units_of(unit.picosecond)._value)
              simulation = Simulation(topology, system, integrator)
              simulation.context.setPositions(positions)
              simulation.minimizeEnergy(tolerance=tolerance)
@@ -122,25 +122,26 @@ def minimize_structure(topology,system,positions,temperature=0.0 * unit.kelvin,s
             return(positions,energy)
         else:
           time_step = simulation_time_step
-        integrator = LangevinIntegrator(temperature._value, total_simulation_time.in_units_of(unit.picosecond)._value, time_step.in_units_of(unit.picosecond)._value)
+        integrator = LangevinIntegrator(temperature._value,1.0 / unit.picoseconds, time_step.in_units_of(unit.picosecond)._value)
 
 
         simulation = Simulation(topology, system, integrator)
-        simulation.context.setPositions(positions)
-#        simulation.context.setVelocitiesToTemperature(temperature)
-        print(positions)
+        simulation.context.setPositions(positions.in_units_of(unit.nanometer))
+        simulation.context.setVelocitiesToTemperature(temperature)
+        #print(positions)
         forces = simulation.context.getState(getForces=True).getForces()
-        print(forces)
+        #print(forces)
         simulation.reporters.append(PDBReporter(output_pdb,print_frequency))
         simulation.reporters.append(StateDataReporter(output_data,print_frequency, \
         step=True, totalEnergy=True, potentialEnergy=True, kineticEnergy=True, temperature=True))
 
 
         total_steps = round(total_simulation_time.__div__(time_step))
+        potential_energy = None
         try:
-          print("Starting minimization.")
-#          simulation.minimizeEnergy() # Set the simulation type to energy minimization
-          print("Minimization successful.")
+          #print("Starting minimization.")
+          simulation.minimizeEnergy() # Set the simulation type to energy minimization
+          #print("Minimization successful.")
 #          exit()
 #          step_length = 10
 #          for step in range(round(total_steps/step_length)):
@@ -155,11 +156,12 @@ def minimize_structure(topology,system,positions,temperature=0.0 * unit.kelvin,s
             time_step = time_step / 2.0
             print("Attempting minimization with a smaller time step.")
             positions,potential_energy = minimize_structure(topology,system,positions,temperature=temperature,simulation_time_step=time_step,total_simulation_time=total_simulation_time,output_pdb=output_pdb,output_data=output_data,print_frequency=print_frequency)
-          else:
+            time_step = time_step / 2.0 
+          if time_step.__le__(0.01 * unit.femtosecond):
             print("Try using the 'get_simulation_time_step()' function,")
             print("or changing the 'simulation_time_step',")
             print("to see if one of these changes solves the problem.")
-            exit()
+            #exit()
 
         return(positions,potential_energy)
 
@@ -223,7 +225,7 @@ def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvi
 #          print("before performing a full simulation.")
           time_step_list = [(10.0 * (0.5 ** i)) * unit.femtosecond for i in range(0,14)]
           simulation_time_step,force_cutoff = get_simulation_time_step(topology,system,positions,temperature,total_simulation_time,time_step_list)
-        friction = 0.1
+        friction = 1.0 / unit.picosecond
 
         integrator = LangevinIntegrator(temperature._value,friction,simulation_time_step.in_units_of(unit.picosecond)._value)
         
@@ -275,6 +277,7 @@ def run_simulation(cgmodel,output_directory,total_simulation_time,simulation_tim
   simulation = build_mm_simulation(cgmodel.topology,cgmodel.system,cgmodel.positions,total_simulation_time=total_simulation_time,simulation_time_step=simulation_time_step,temperature=temperature,output_pdb=output_pdb,output_data=output_data,print_frequency=print_frequency)
 
   potential_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
+  print(potential_energy)
   positions = simulation.context.getState(getPositions=True).getPositions()
   kinetic_energy = simulation.context.getState(getEnergy=True).getKineticEnergy()
   forces = simulation.context.getState(getForces=True).getForces()
@@ -292,6 +295,7 @@ def run_simulation(cgmodel,output_directory,total_simulation_time,simulation_tim
       try:
         simulation.step(1)
       except:
+        print("Error: simulation attempt failed.")
         break
       kinetic_energy = simulation.context.getState(getEnergy=True).getKineticEnergy()
       output_kinetic_energy = str(str(output_directory)+'/kinetic_energy.dat')

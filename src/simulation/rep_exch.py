@@ -97,7 +97,11 @@ def replica_exchange(topology,system,positions,temperature_list=[(300.0 * unit.k
 
         simulation_steps = int(round(total_simulation_time.__div__(simulation_time_step)))
 
-        exchange_attempts = int(round(simulation_steps/1000))
+        if simulation_steps > 10000:
+          exchange_attempts = round(simulation_steps/1000)
+        else:
+          exchange_attempts = 10
+        print("Using "+str(exchange_attempts)+" exchange attempts")
 
         num_replicas = len(temperature_list)
         sampler_states = list()
@@ -115,7 +119,7 @@ def replica_exchange(topology,system,positions,temperature_list=[(300.0 * unit.k
         #box_vectors = get_box_vectors(box_size)
 
         # Create and configure simulation object.
-        move = mmtools.mcmc.LangevinDynamicsMove(timestep=simulation_time_step,collision_rate=20.0/unit.picosecond,n_steps=10, reassign_velocities=True)
+        move = mmtools.mcmc.LangevinDynamicsMove(timestep=simulation_time_step,collision_rate=5.0/unit.picosecond,n_steps=10, reassign_velocities=True)
         simulation = ReplicaExchangeSampler(mcmc_moves=move, number_of_iterations=exchange_attempts)
 
         if os.path.exists(output_data): os.remove(output_data)
@@ -131,17 +135,19 @@ def replica_exchange(topology,system,positions,temperature_list=[(300.0 * unit.k
            num_attempts = 0
            while num_attempts < 5:
             try:
-              print("Running replica exchange simulations with Yank...")
-              print("Using a time step of "+str(simulation_time_step))
-              print("Running each simulation for "+str(simulation_steps)+" steps, with "+str()+" exchange attempts.")
-              move = mmtools.mcmc.LangevinDynamicsMove(timestep=simulation_time_step,collision_rate=20.0/unit.picosecond,n_steps=round(simulation_steps/exchange_attempts), reassign_velocities=True)
-              simulation = ReplicaExchangeSampler(replica_mixing_scheme='swap-neighbors',mcmc_moves=move,number_of_iterations=exchange_attempts)
-              reporter = MultiStateReporter(output_data, checkpoint_interval=1)
-              if os.path.exists(output_data):
-                print("Removing old copy of: "+str(output_data))
-                os.remove(output_data)
-              simulation.create(thermodynamic_states, sampler_states, reporter)
-
+              #print("Running replica exchange simulations with Yank...")
+              #print("Using a time step of "+str(simulation_time_step))
+              #print("Running each simulation for "+str(simulation_steps)+" steps, with "+str()+" exchange attempts.")
+              #print("Before mcmc move")
+              #move = mmtools.mcmc.LangevinDynamicsMove(timestep=simulation_time_step,collision_rate=20.0/unit.picosecond,n_steps=round(simulation_steps/exchange_attempts), reassign_velocities=True)
+              #print("Before ReplicaExchangeSampler")
+              #simulation = ReplicaExchangeSampler(replica_mixing_scheme='swap-neighbors',mcmc_moves=move,number_of_iterations=exchange_attempts)
+              #reporter = MultiStateReporter(output_data, checkpoint_interval=1)
+              #if os.path.exists(output_data):
+              #  print("Removing old copy of: "+str(output_data))
+              #  os.remove(output_data)
+              #simulation.create(thermodynamic_states, sampler_states, reporter)
+              #print("About to run replica exchange simulation.")
               simulation.run()
               print("Replica exchange simulations succeeded with a time step of: "+str(simulation_time_step))
               break
