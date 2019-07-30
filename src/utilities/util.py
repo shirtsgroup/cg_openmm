@@ -84,10 +84,10 @@ def set_box_vectors(system,box_size):
 
 def lj_v(positions_1,positions_2,sigma,epsilon):
         dist = distance(positions_1,positions_2)
-        quot = dist.__div__(sigma)
-        attr = (quot.__pow__(6.0)).__mul__(2.0)
+        quot = sigma.__div__(dist)
+        attr = quot.__pow__(6.0)
         rep = quot.__pow__(12.0)
-        v = epsilon.__mul__(rep.__sub__(attr))
+        v = 4.0*epsilon.__mul__(rep.__sub__(attr))
         return(v)
 
 

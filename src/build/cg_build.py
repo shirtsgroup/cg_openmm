@@ -3,6 +3,7 @@ import numpy as np
 from simtk import openmm as mm
 from simtk.openmm.openmm import LangevinIntegrator
 from simtk import unit
+from simtk.openmm.app.pdbfile import PDBFile
 from simtk.openmm.app.pdbreporter import PDBReporter
 from simtk.openmm.app.statedatareporter import StateDataReporter
 from simtk.openmm.app.simulation import Simulation
@@ -10,6 +11,7 @@ from simtk.openmm.app.topology import Topology
 import simtk.openmm.app.element as elem
 from cg_openmm.src.simulation.tools import get_simulation_time_step, build_mm_simulation
 from cg_openmm.src.utilities.util import lj_v
+from foldamers.src.utilities.iotools import write_pdbfile_without_topology
 
 def add_new_elements(cgmodel):
         """
@@ -234,7 +236,7 @@ def verify_topology(cgmodel):
         return
 
 
-def build_topology(cgmodel):
+def build_topology(cgmodel,use_pdbfile=False):
         """
 
         Construct an OpenMM topology for our coarse grained model
@@ -252,27 +254,32 @@ def build_topology(cgmodel):
         in our coarse grained model, ( integer )
 
         """
+        if use_pdbfile:
+          write_pdbfile_without_topology(cgmodel,"topology_source.pdb")
+          pdb = PDBFile("topology_source.pdb")
+          topology = pdb.getTopology()
+          return(topology)
 
         topology = Topology()
 
         chain = topology.addChain()
         residue_index = 1
-        cg_particle_index = 1
+        cg_particle_index = 0
         for monomer_type in cgmodel.sequence:
          residue = topology.addResidue(str(residue_index), chain)
          for backbone_bead in range(monomer_type['backbone_length']):
-          particle_name = str("bb-"+str(cg_particle_index))
-          particle_symbol = str("B"+str(cg_particle_index))
-          particle = topology.addAtom(particle_symbol, particle_name, residue)
+          particle_symbol = cgmodel.get_particle_name(cg_particle_index)
+          element = elem.Element.getBySymbol(particle_symbol)
+          particle = topology.addAtom(particle_symbol, element, residue)
           if backbone_bead == 0 and residue_index != 1:
            topology.addBond(particle,last_backbone_particle)
           last_backbone_particle = particle
           cg_particle_index = cg_particle_index + 1
           if backbone_bead in [monomer_type['sidechain_positions']]:
            for sidechain_bead in range(monomer_type['sidechain_length']):
-             particle_name = str("sc-"+str(cg_particle_index))
-             particle_symbol = str("S"+str(cg_particle_index))
-             particle = topology.addAtom(particle_symbol, particle_name, residue)
+             particle_symbol = cgmodel.get_particle_name(cg_particle_index)
+             element = elem.Element.getBySymbol(particle_symbol)
+             particle = topology.addAtom(particle_symbol, element, residue)
              if sidechain_bead == 0:
               topology.addBond(particle,last_backbone_particle)
              if sidechain_bead != 0:
@@ -346,7 +353,7 @@ def test_force(cgmodel,force,force_type=None):
              success=False
 
            total_nonbonded_energy = 0.0 * unit.kilojoule_per_mole
-           print(cgmodel.nonbonded_interaction_list)
+           #print(cgmodel.nonbonded_interaction_list)
            for nonbonded_interaction in cgmodel.nonbonded_interaction_list:
              particle_1_positions = cgmodel.positions[nonbonded_interaction[0]]
              particle_2_positions = cgmodel.positions[nonbonded_interaction[1]]
@@ -360,7 +367,6 @@ def test_force(cgmodel,force,force_type=None):
            cgmodel.include_torsion_forces = False
            cgmodel.topology = build_topology(cgmodel)
            cgmodel.simulation = build_mm_simulation(cgmodel.topology,cgmodel.system,cgmodel.positions,simulation_time_step=5.0*unit.femtosecond,print_frequency=1)
-           print(cgmodel.positions)
            potential_energy = cgmodel.simulation.context.getState(getEnergy=True).getPotentialEnergy()
 
            if potential_energy.__sub__(total_nonbonded_energy).__gt__(0.1 * unit.kilojoule_per_mole):
@@ -371,9 +377,9 @@ def test_force(cgmodel,force,force_type=None):
              print("Check the units for your model parameters.  If the problem persists, there")
              print("could be some other problem with the configuration of your coarse grained model.")
              success = False
-           else:
-             print("The OpenMM nonbonded energy matches the energy computed by hand:")
-             print(str(potential_energy))
+           #else:
+             #print("The OpenMM nonbonded energy matches the energy computed by hand:")
+             #print(str(potential_energy))
 
         return(success)
 
@@ -407,8 +413,7 @@ def add_force(cgmodel,force_type=None):
         if force_type == "Nonbonded":
 
           nonbonded_force = mm.NonbondedForce()
-          nonbonded_force.setNonbondedMethod(2)
-          nonbonded_force.setCutoffDistance(3.0 * max([cgmodel.get_sigma(i) for i in range(cgmodel.num_beads)]))
+          nonbonded_force.setNonbondedMethod(mm.NonbondedForce.NoCutoff)
 
           for particle in range(cgmodel.num_beads):
             charge = cgmodel.get_particle_charge(particle)
@@ -416,9 +421,12 @@ def add_force(cgmodel,force_type=None):
             epsilon = cgmodel.get_epsilon(particle)
             nonbonded_force.addParticle(charge,sigma,epsilon)
 
-          nonbonded_force.createExceptionsFromBonds(cgmodel.bond_list,1.0,1.0)
+          if len(cgmodel.bond_list) >= 1:
+            nonbonded_force.createExceptionsFromBonds(cgmodel.bond_list,1.0,1.0)
           cgmodel.system.addForce(nonbonded_force)
           force = nonbonded_force
+          #for particle in range(cgmodel.num_beads):
+            #print(force.getParticleParameters(particle))
 
         if force_type == "Angle":
           angle_force = mm.HarmonicAngleForce()  
@@ -448,6 +456,8 @@ def add_force(cgmodel,force_type=None):
 def test_forces(cgmodel):
         """
         """
+        if cgmodel.topology == None:
+          cgmodel.topology = build_topology(cgmodel)
         simulation = build_mm_simulation(cgmodel.topology,cgmodel.system,cgmodel.positions,simulation_time_step=5.0*unit.femtosecond,print_frequency=1)
         forces = simulation.context.getState(getForces=True).getForces()
         success = True
@@ -458,7 +468,7 @@ def test_forces(cgmodel):
               print("for particle "+str(forces.index(force)))
               success = False
               return(success)
-            if component.__gt__(9.9e10 * component.unit):
+            if component.__gt__(9.9e6 * component.unit):
               print("Detected unusually large forces")
               print("for particle "+str(forces.index(force)))
               print("The force is: "+str("{:.2e}".format(component._value))+" "+str(component.unit))
@@ -488,9 +498,9 @@ def build_system(cgmodel):
             system.addParticle(mass)
         cgmodel.system = system
 
-        length_scale = cgmodel.bond_lengths['bb_bb_bond_length']
-        box_vectors = [[100.0*length_scale._value,0.0,0.0],[0.0,100.0*length_scale._value,0.0],[0.0,0.0,100.0*length_scale._value]]
-        system.setDefaultPeriodicBoxVectors(box_vectors[0],box_vectors[1],box_vectors[2])
+        #length_scale = cgmodel.bond_lengths['bb_bb_bond_length']
+        #box_vectors = [[100.0*length_scale._value,0.0,0.0],[0.0,100.0*length_scale._value,0.0],[0.0,0.0,100.0*length_scale._value]]
+        #system.setDefaultPeriodicBoxVectors(box_vectors[0],box_vectors[1],box_vectors[2])
 
         if cgmodel.include_bond_forces:
          # Create bond (harmonic) potentials
@@ -526,10 +536,13 @@ def build_system(cgmodel):
         if cgmodel.include_torsion_forces:
           # Create torsion potentials
           cgmodel,torsion_force = add_force(cgmodel,force_type="Torsion")
-
-          if not test_forces(cgmodel):
-            print("ERROR: There was a problem with the torsion force definitions.")
+          if not test_force(cgmodel,torsion_force,force_type="Torsion"):
+            print("ERROR: There was a problem with the torsion definitions.")
             exit()
+
+        if not test_forces(cgmodel):
+          print("ERROR: There was a problem with the forces.")
+          exit()
 
         return(system)
 

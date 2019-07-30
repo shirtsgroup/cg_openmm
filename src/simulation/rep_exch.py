@@ -56,7 +56,7 @@ def get_replica_energies(simulation_steps,num_replicas,replica_exchange_storage_
           data_file.close()
         return(replica_energies)
 
-def replica_exchange(topology,system,positions,temperature_list=[(300.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(-50,50,10)],simulation_time_step=None,total_simulation_time=1.0 * unit.picosecond,output_data='output.nc',print_frequency=100,verbose=False, verbose_simulation=False,test_time_step=True):
+def replica_exchange(topology,system,positions,temperature_list=[(300.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(-50,50,10)],simulation_time_step=None,total_simulation_time=1.0 * unit.picosecond,output_data='output.nc',print_frequency=100,verbose=False, verbose_simulation=False,test_time_step=False):
         """
         Construct an OpenMM simulation object for our coarse grained model.
 
