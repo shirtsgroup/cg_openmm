@@ -15,17 +15,23 @@ temperature = 300.0 * unit.kelvin
 print_frequency = 1 # Number of steps to skip when printing output
 total_simulation_time = 0.1 * unit.picosecond # Units = picoseconds
 simulation_time_step = 5.0 * unit.femtosecond
-
-cg_model = CGModel(backbone_lengths=[3],sidechain_lengths=[3],include_torsion_forces=False)
+bond_length = 0.75 * unit.nanometer
+bond_lengths = {'bb_bb_bond_length': bond_length,'bb_sc_bond_length': bond_length,'sc_sc_bond_length': bond_length}
+for sigma in [bond_length.__add__(0.1*i * bond_length.unit) for i in range(50)]:
+  sigmas = {'bb_bb_sigma': sigma,'bb_sc_sigma': sigma,'sc_sc_sigma': sigma}
+  try:
+    cg_model = CGModel(polymer_length=2,sigmas=sigmas,bond_lengths=bond_lengths)
+  except:
+    print("Model build failed with sigma = "+str(sigma))
 #cg_model.positions = random_positions(cg_model)
 #print(cg_model.positions)
 write_pdbfile_without_topology(cg_model,"test.pdb")
 #exit()
-#pdb = PDBFile("test.pdb")
-#xml_file = "test.xml"
-#top = pdb.topology
-#particle_list = write_xml_file(cg_model,xml_file)
-#ff = ForceField(xml_file)
+pdb = PDBFile("test.pdb")
+xml_file = "test.xml"
+top = pdb.topology
+particle_list = write_xml_file(cg_model,xml_file)
+ff = ForceField(xml_file)
 #element_list = elem.Element._elements_by_symbol
 #for residue in top.residues():
   #unique_bonds = []
@@ -39,11 +45,12 @@ write_pdbfile_without_topology(cg_model,"test.pdb")
 #        atom.element = element_list[atom.name]
 #      except:
 #        print("No element found.")
-#templates,residues = ff.generateTemplatesForUnmatchedResidues(top)
-#cg_model.topology = top
+templates,residues = ff.generateTemplatesForUnmatchedResidues(top)
+cg_model.topology = top
+cg_model.system = ff.createSystem(top)
 #cg_model.system = ff.createSystem(top,residueTemplates=templates)
-#print([cg_model.system.getForce(i) for i in range(cg_model.system.getNumForces())])
-#exit()
+print([cg_model.system.getForce(i) for i in range(cg_model.system.getNumForces())])
+exit()
 #cg_model.system.setDefaultPeriodicBoxVectors([10.0,0.0,0.0],[0.0,10.0,0.0],[0.0,0.0,10.0])
 #run_simulation(cg_model,os.getcwd(),total_simulation_time,simulation_time_step,temperature,print_frequency)
 #simulation = build_mm_simulation(cg_model.topology,cg_model.system,cg_model.positions,simulation_time_step=simulation_time_step,print_frequency=1)
