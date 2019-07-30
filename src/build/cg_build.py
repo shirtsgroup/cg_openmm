@@ -9,6 +9,7 @@ from simtk.openmm.app.simulation import Simulation
 from simtk.openmm.app.topology import Topology
 import simtk.openmm.app.element as elem
 from cg_openmm.src.simulation.tools import get_simulation_time_step, build_mm_simulation
+from cg_openmm.src.utilities.util import lj_v
 
 def add_new_elements(cgmodel):
         """
@@ -332,6 +333,118 @@ def verify_system(cgmodel):
 
         return
 
+def test_force(cgmodel,force,force_type=None):
+        """
+        """
+        success=True
+        if force_type == "Nonbonded":
+           if cgmodel.num_beads != force.getNumParticles():
+             print("ERROR: The number of particles in the coarse grained model is different")
+             print("from the number of particles with nonbonded force definitions in the OpenMM NonbondedForce.\n")
+             print("There are "+str(cgmodel.num_beads)+" particles in the coarse grained model")
+             print("and "+str(force.getNumParticles())+" particles in the OpenMM NonbondedForce.")
+             success=False
+
+           total_nonbonded_energy = 0.0 * unit.kilojoule_per_mole
+           print(cgmodel.nonbonded_interaction_list)
+           for nonbonded_interaction in cgmodel.nonbonded_interaction_list:
+             particle_1_positions = cgmodel.positions[nonbonded_interaction[0]]
+             particle_2_positions = cgmodel.positions[nonbonded_interaction[1]]
+             sigma = cgmodel.get_sigma(nonbonded_interaction[0])
+             epsilon = cgmodel.get_epsilon(nonbonded_interaction[0])
+             int_energy = lj_v(particle_1_positions,particle_2_positions,sigma,epsilon)
+             total_nonbonded_energy = total_nonbonded_energy.__add__(int_energy)
+           
+           cgmodel.include_bond_forces = False
+           cgmodel.include_bond_angle_forces = False
+           cgmodel.include_torsion_forces = False
+           cgmodel.topology = build_topology(cgmodel)
+           cgmodel.simulation = build_mm_simulation(cgmodel.topology,cgmodel.system,cgmodel.positions,simulation_time_step=5.0*unit.femtosecond,print_frequency=1)
+           print(cgmodel.positions)
+           potential_energy = cgmodel.simulation.context.getState(getEnergy=True).getPotentialEnergy()
+
+           if potential_energy.__sub__(total_nonbonded_energy).__gt__(0.1 * unit.kilojoule_per_mole):
+             print("ERROR: The nonbonded potential energy computed by hand does not agree")
+             print("with the value computed by OpenMM.")
+             print("The value computed by OpenMM was: "+str(potential_energy))
+             print("The value computed by hand was: "+str(total_nonbonded_energy))
+             print("Check the units for your model parameters.  If the problem persists, there")
+             print("could be some other problem with the configuration of your coarse grained model.")
+             success = False
+           else:
+             print("The OpenMM nonbonded energy matches the energy computed by hand:")
+             print(str(potential_energy))
+
+        return(success)
+
+def add_force(cgmodel,force_type=None):
+        """
+        """
+        if force_type == "Bond":
+
+          bond_force = mm.HarmonicBondForce()
+          bond_list = []
+
+          for bond_indices in cgmodel.get_bond_list():
+              bond_list.append([bond_indices[0],bond_indices[1]])
+              bond_force_constant = cgmodel.get_bond_force_constant(bond_indices[0],bond_indices[1])
+              bond_length = cgmodel.get_bond_length(bond_indices[0],bond_indices[1])
+              if cgmodel.constrain_bonds:
+                system.addConstraint(bond_indices[0],bond_indices[1],bond_length)
+              bond_length = bond_length.in_units_of(unit.nanometer)._value
+              bond_force.addBond(bond_indices[0],bond_indices[1],bond_length,bond_force_constant)
+
+          if len(bond_list) != bond_force.getNumBonds():
+            print("ERROR: The number of bonds in the coarse grained model is different\n")
+            print("from the number of bonds in its OpenMM System object\n")
+            print("There are "+str(len(bond_list))+" bonds in the coarse grained model\n")
+            print("and "+str(bond_force.getNumBonds())+" bonds in the OpenMM system object.")
+            exit()
+
+          cgmodel.system.addForce(bond_force)
+          force = bond_force
+
+        if force_type == "Nonbonded":
+
+          nonbonded_force = mm.NonbondedForce()
+          nonbonded_force.setNonbondedMethod(2)
+          nonbonded_force.setCutoffDistance(3.0 * max([cgmodel.get_sigma(i) for i in range(cgmodel.num_beads)]))
+
+          for particle in range(cgmodel.num_beads):
+            charge = cgmodel.get_particle_charge(particle)
+            sigma = cgmodel.get_sigma(particle)
+            epsilon = cgmodel.get_epsilon(particle)
+            nonbonded_force.addParticle(charge,sigma,epsilon)
+
+          nonbonded_force.createExceptionsFromBonds(cgmodel.bond_list,1.0,1.0)
+          cgmodel.system.addForce(nonbonded_force)
+          force = nonbonded_force
+
+        if force_type == "Angle":
+          angle_force = mm.HarmonicAngleForce()  
+          for angle in cgmodel.bond_angle_list:
+            bond_angle_force_constant = cgmodel.get_bond_angle_force_constant(angle[0],angle[1],angle[2])
+            equil_bond_angle = cgmodel.get_equil_bond_angle(angle[0],angle[1],angle[2])
+            angle_force.addAngle(angle[0],angle[1],angle[2],equil_bond_angle,bond_angle_force_constant)
+          cgmodel.system.addForce(angle_force)
+          force = angle_force
+
+        if force_type == "Torsion":
+          torsion_force = mm.PeriodicTorsionForce()
+          for torsion in torsion_list:
+            torsion_force_constant = cgmodel.get_torsion_force_constant(torsion)
+            equil_torsion_angle = cgmodel.get_equil_torsion_angle(torsion)
+            periodicity = 0
+            #print(torsion)
+            #print(equil_torsion_angle)
+            #print(torsion_force_constant)
+            torsion_force.addTorsion(torsion[0],torsion[1],torsion[2],torsion[3],periodicity,equil_torsion_angle,torsion_force_constant)
+              #print(torsion_force.getNumTorsions())
+          cgmodel.system.addForce(torsion_force)
+          force = torsion_force
+
+        return(cgmodel,force)
+
 def test_forces(cgmodel):
         """
         """
@@ -339,18 +452,16 @@ def test_forces(cgmodel):
         forces = simulation.context.getState(getForces=True).getForces()
         success = True
         for force in forces:
-          #print(force)
           for component in force:
-            #print(component)
             if 'nan' in str(component):
               print("Detected a 'nan' force value.")
               print("for particle "+str(forces.index(force)))
               success = False
               return(success)
-            if component.__gt__(9.9e6 * component.unit):
+            if component.__gt__(9.9e10 * component.unit):
               print("Detected unusually large forces")
               print("for particle "+str(forces.index(force)))
-              print("The force is: "+str(component))
+              print("The force is: "+str("{:.2e}".format(component._value))+" "+str(component.unit))
               success = False
               return(success)
         return(success)
@@ -370,189 +481,55 @@ def build_system(cgmodel):
         system: OpenMM System() class object
 
         """
-#        sigma = cgmodel.sigma.in_units_of(unit.nanometer)._value
-#        charge = cgmodel.charge._value
-#        epsilon = cgmodel.epsilon.in_units_of(unit.kilojoule_per_mole)._value
-#        bond_length = cgmodel.bond_length.in_units_of(unit.nanometer)._value
-
         # Create system
         system = mm.System()
-        bead_index = 0
-        for monomer_type in cgmodel.sequence:
-          for backbone_bead in range(monomer_type['backbone_length']):
-            mass = cgmodel.get_particle_mass(bead_index)
+        for particle in range(cgmodel.num_beads):
+            mass = cgmodel.get_particle_mass(particle)
             system.addParticle(mass)
-            bead_index = bead_index + 1
-            if backbone_bead in [monomer_type['sidechain_positions']]:
-              for sidechain_bead in range(monomer_type['sidechain_length']):
-                mass = cgmodel.get_particle_mass(bead_index)
-                system.addParticle(mass)
-                bead_index = bead_index + 1
+        cgmodel.system = system
+
+        length_scale = cgmodel.bond_lengths['bb_bb_bond_length']
+        box_vectors = [[100.0*length_scale._value,0.0,0.0],[0.0,100.0*length_scale._value,0.0],[0.0,0.0,100.0*length_scale._value]]
+        system.setDefaultPeriodicBoxVectors(box_vectors[0],box_vectors[1],box_vectors[2])
 
         if cgmodel.include_bond_forces:
          # Create bond (harmonic) potentials
-         bond_force = mm.HarmonicBondForce()
-         bond_list = []
-         for bond_indices in cgmodel.get_bond_list():
-              bond_list.append([bond_indices[0],bond_indices[1]])
-              bond_force_constant = cgmodel.get_bond_force_constant(bond_indices[0],bond_indices[1])
-              bond_length = cgmodel.get_bond_length(bond_indices[0],bond_indices[1])
-              if cgmodel.constrain_bonds:
-               system.addConstraint(bond_indices[0],bond_indices[1],bond_length)
-              bond_length = bond_length.in_units_of(unit.nanometer)._value
-              bond_force.addBond(bond_indices[0],bond_indices[1],bond_length,bond_force_constant)
-         if len(bond_list) != bond_force.getNumBonds():
-           print("ERROR: The number of bonds in the coarse grained model is different\n")
-           print("from the number of bonds in its OpenMM System object\n")
-           print("There are "+str(len(bond_list))+" bonds in the coarse grained model\n")
-           print("and "+str(bond_force.getNumBonds())+" bonds in the OpenMM system object.")
-           exit()
-         system.addForce(bond_force)
-         cgmodel.system = system
-         #print("Testing the bond forces.")
-         if not test_forces(cgmodel):
+         cgmodel,bond_force = add_force(cgmodel,force_type="Bond")
+         if not test_force(cgmodel,bond_force,force_type="Bond"):
            print("ERROR: The bond force definition is giving 'nan'")
            exit()
-         #else:
-           #print("Bond forces passed.")
+        else:
+         if cgmodel.constrain_bonds:
+          for bond_indices in cgmodel.bond_list:
+            bond_length = cgmodel.get_bond_length(bond_indices[0],bond_indices[1])
+            cgmodel.system.addConstraint(bond_indices[0],bond_indices[1],bond_length)
+          if not test_forces(cgmodel):
+            print("ERROR: The model broke after bond constraints were applied.")
+            exit()
 
         if cgmodel.include_nonbonded_forces:
          # Create nonbonded forces
-         nonbonded_force = mm.NonbondedForce()
-         bead_index = 0
-         for monomer_type in cgmodel.sequence:
-          for backbone_bead in range(monomer_type['backbone_length']):
-            mass = cgmodel.get_particle_mass(bead_index)
-            charge = cgmodel.get_particle_charge(bead_index)
-            sigma = cgmodel.get_sigma(bead_index)
-            epsilon = cgmodel.get_epsilon(bead_index)
-            bead_index = bead_index + 1
-            sigma = sigma.in_units_of(unit.nanometer)._value
-            charge = charge._value
-            epsilon = epsilon.in_units_of(unit.kilojoule_per_mole)._value
-            nonbonded_force.addParticle(charge,sigma,epsilon)
-            if backbone_bead in [monomer_type['sidechain_positions']]:
-              for sidechain_bead in range(monomer_type['sidechain_length']):
-                mass = cgmodel.get_particle_mass(bead_index)
-                charge = cgmodel.get_particle_charge(bead_index)
-                sigma = cgmodel.get_sigma(bead_index)
-                epsilon = cgmodel.get_epsilon(bead_index)
-                bead_index = bead_index + 1
-                sigma = sigma.in_units_of(unit.nanometer)._value
-                charge = charge._value
-                epsilon = epsilon.in_units_of(unit.kilojoule_per_mole)._value
-                nonbonded_force.addParticle(charge,sigma,epsilon)
+          cgmodel,nonbonded_force = add_force(cgmodel,force_type="Nonbonded")
 
-         nonbonded_force.createExceptionsFromBonds(cgmodel.bond_list,1.0,1.0)
-
-         #nonbonded_force_test = nonbonded_force.__deepcopy__(memo={})
-         #nonbonded_exclusion_list = []
-         # Make nonbonded exclusions from bonds
-         #for particle_1 in range(cgmodel.num_beads):
-           #for particle_2 in range(particle_1+1,cgmodel.num_beads):
-             #for bond in bond_list:
-               #if particle_1 in bond and particle_2 in bond:
-                 #if [particle_1,particle_2] not in nonbonded_exclusion_list and [particle_2,particle_1] not in nonbonded_exclusion_list:
-                   #charge_product = cgmodel.get_particle_charge(particle_1)*cgmodel.get_particle_charge(particle_2)
-                   #nonbonded_force.addException(particle_1,particle_2,charge_product,bond_length,0.0)
-                   #nonbonded_exclusion_list.append([particle_1,particle_2])
-         #print("There are "+str(len(nonbonded_exclusion_list))+" nonbonded exclusions after iterating over bonds.")
-         #if len(nonbonded_exclusion_list) != len(bond_list):
-         #  print("ERROR: There are "+str(len(nonbonded_exclusion_list))+" nonbonded particle exclusions built from bonds, however,")
-         #  print("there are "+str(len(bond_list))+" bonds in the coarse grained model.")
-         #  exit()
-         # Make nonbonded exclusions from angles
-         #for particle_1 in range(cgmodel.num_beads):
-           #for particle_2 in range(particle_1+1,cgmodel.num_beads):
-            #if [particle_1,particle_2] not in nonbonded_exclusion_list and [particle_2,particle_1] not in nonbonded_exclusion_list:
-             #angle_list = cgmodel.bond_angle_list
-             #for angle in angle_list:
-               #if particle_1 in angle and particle_2 in angle:
-                 #if [particle_1,particle_2] not in nonbonded_exclusion_list and [particle_2,particle_1] not in nonbonded_exclusion_list:
-                   #charge_product = cgmodel.get_particle_charge(particle_1)*cgmodel.get_particle_charge(particle_2)
-                   #nonbonded_force.addException(particle_1,particle_2,charge_product,sigma,0.0)
-                   #nonbonded_exclusion_list.append([particle_1,particle_2])
-         #print("There are "+str(len(nonbonded_exclusion_list))+" nonbonded exclusions after iterating over bond angles.")
-
-         #for particle_1 in range(cgmodel.num_beads):
-           #for particle_2 in range(particle_1+1,cgmodel.num_beads):
-            #if [particle_1,particle_2] not in nonbonded_exclusion_list and [particle_2,particle_1] not in nonbonded_exclusion_list:
-             #torsion_list = cgmodel.torsion_list
-             #for torsion in torsion_list:
-               #if particle_1 in torsion and particle_2 in torsion:
-                 #if (particle_1 == torsion[0] and particle_2 == torsion[3]) or (particle_1 == torsion[3] and particle_2 == torsion[0]):
-                  #if [particle_1,particle_2] not in nonbonded_exclusion_list and [particle_2,particle_1] not in nonbonded_exclusion_list:
-                   #charge_product = cgmodel.get_particle_charge(particle_1)*cgmodel.get_particle_charge(particle_2)
-                   #if cgmodel.include_torsion_forces:
-                     #nonbonded_force.addException(particle_1,particle_2,charge_product,sigma,epsilon)
-                   #else:
-                     #nonbonded_force.addException(particle_1,particle_2,charge_product,sigma,0.0)
-                   #nonbonded_exclusion_list.append([particle_1,particle_2])
-
-         #print("There are "+str(len(nonbonded_exclusion_list))+" nonbonded exclusions after iterating over torsions.")
-
-         if cgmodel.num_beads != nonbonded_force.getNumParticles():
-           print("ERROR: The number of particles in the coarse grained model is different")
-           print("from the number of particles with nonbonded force definitions in the OpenMM NonbondedForce.\n")
-           print("There are "+str(cgmodel.num_beads)+" particles in the coarse grained model")
-           print("and "+str(nonbonded_force.getNumParticles())+" particles in the OpenMM NonbondedForce.")
-           exit()
-
-#         nonbonded_force_test.createExceptionsFromBonds(bond_list,1.0,1.0)
-#         if len(nonbonded_exclusion_list) != nonbonded_force_test.getNumExceptions():
-           #print("ERROR: The number of nonbonded exceptions in the coarse grained model is different\n")
-           #print("from the number of exceptions generated with OpenMM NonbondedForce.createExceptionsFromBonds()\n")
-           #print("There are "+str(len(nonbonded_exclusion_list))+" exceptions in the coarse grained model\n")
-           #print("and "+str(nonbonded_force_test.getNumExceptions())+" exceptions in the OpenMM NonbondedForce.")
-#           exit()
-         system.addForce(nonbonded_force)
-         cgmodel.system = system
-         #print("Testing the nonbonded forces.")
-         if not test_forces(cgmodel):
-           print("ERROR: The nonbonded force definition is giving 'nan'")
-           exit()
-         #else:
-           #print("The nonbonded forces passed.")
-
+          if not test_force(cgmodel,nonbonded_force,force_type="Nonbonded"):
+            print("ERROR: there was a problem with the nonbonded force definitions.")
+            exit()
 
         if cgmodel.include_bond_angle_forces:
-         # Create bond angle potentials
-         angle_force = mm.HarmonicAngleForce()
-         #print(angle_list)
-         for angle in cgmodel.bond_angle_list:
-              bond_angle_force_constant = cgmodel.get_bond_angle_force_constant(angle[0],angle[1],angle[2])
-              equil_bond_angle = cgmodel.get_equil_bond_angle(angle[0],angle[1],angle[2])
-              angle_force.addAngle(angle[0],angle[1],angle[2],equil_bond_angle,bond_angle_force_constant)
-         system.addForce(angle_force)
-         cgmodel.system = system
-         #print("Testing the bond angle forces.")
-         if not test_forces(cgmodel):
-           print("ERROR: The bond angle force definition is giving 'nan'")
-           exit()
-         #else:
-           #print("The bond angle forces passed.")
+          # Create bond angle potentials
+          cgmodel,bond_angle_force = add_force(cgmodel,force_type="Angle")
+
+          if not test_force(cgmodel,bond_angle_force,force_type="Angle"):
+            print("ERROR: There was a problem with the bond angle force definitions.")
+            exit()
 
         if cgmodel.include_torsion_forces:
-         # Create torsion potentials
-         torsion_force = mm.PeriodicTorsionForce()
-         for torsion in torsion_list:
-              torsion_force_constant = cgmodel.get_torsion_force_constant(torsion)
-              equil_torsion_angle = cgmodel.get_equil_torsion_angle(torsion)
-              periodicity = 0
-              print(torsion)
-              print(equil_torsion_angle)
-              print(torsion_force_constant)
-              torsion_force.addTorsion(torsion[0],torsion[1],torsion[2],torsion[3],periodicity,equil_torsion_angle,torsion_force_constant)
-              #print(torsion_force.getNumTorsions())
-         system.addForce(torsion_force)
-         cgmodel.system = system
-         print("Testing the torsion forces.")
-         if not test_forces(cgmodel):
-           print("ERROR: A torsion force definition is giving 'nan'")
-           exit()
-         else:
-           print("The torsion forces passed.")
+          # Create torsion potentials
+          cgmodel,torsion_force = add_force(cgmodel,force_type="Torsion")
 
+          if not test_forces(cgmodel):
+            print("ERROR: There was a problem with the torsion force definitions.")
+            exit()
 
         return(system)
 

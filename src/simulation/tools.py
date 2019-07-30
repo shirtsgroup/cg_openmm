@@ -163,7 +163,7 @@ def minimize_structure(topology,system,positions,temperature=0.0 * unit.kelvin,s
             print("to see if one of these changes solves the problem.")
             #exit()
 
-        return(positions,potential_energy)
+        return(positions,potential_energy,simulation)
 
 def get_mm_energy(topology,system,positions):
         """
