@@ -15,11 +15,19 @@ temperature = 300.0 * unit.kelvin
 print_frequency = 1 # Number of steps to skip when printing output
 total_simulation_time = 0.1 * unit.picosecond # Units = picoseconds
 simulation_time_step = 5.0 * unit.femtosecond
-cg_model = CGModel(polymer_length=1,sidechain_lengths=[3])
-exit()
+
+cg_model = CGModel()
+
 simulation = build_mm_simulation(cg_model.topology,cg_model.system,cg_model.positions,simulation_time_step=simulation_time_step,print_frequency=1)
-cgmodel.positions,energy = minimize_structure(cg_model.topology,cg_model.system,cg_model.positions,temperature=300.0 * unit.kelvin,simulation_time_step=5.0 * unit.femtosecond,total_simulation_time=0.1 * unit.picosecond,output_pdb='minimum.pdb',output_data='minimization.dat',print_frequency=1)
-write_pdbfile_without_topology(cg_model,'minimum.pdb')
-replica_energies,reduced_replica_energies,replica_positions,temperature_list = replica_exchange(cg_model.topology,cg_model.system,cg_model.positions,simulation_time_step=5.0*unit.femtosecond,test_time_step=False)
+
+simulation.step(1000)
+
+simulation_energies = read_mm_energies("output.dat")
+
+print(simulation_energies)
+
+replica_energies,reduced_replica_energies,replica_positions,temperature_list = replica_exchange(cg_model.topology,cg_model.system,cg_model.positions,simulation_time_step=5.0*unit.femtosecond)
+
 print(replica_energies)
+
 exit()
