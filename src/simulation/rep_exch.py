@@ -4,7 +4,11 @@ from simtk import unit
 import openmmtools as mmtools
 from cg_openmm.src.utilities.util import set_box_vectors, get_box_vectors
 from cg_openmm.src.simulation.tools import get_simulation_time_step
+from simtk.openmm.app.pdbfile import PDBFile
+from mdtraj.formats import PDBTrajectoryFile
+from mdtraj import Topology
 from yank import mpi, analyze
+from yank.analyze import extract_trajectory
 from yank.multistate import MultiStateReporter, MultiStateSampler, ReplicaExchangeSampler
 from yank.multistate import ReplicaExchangeAnalyzer
 from yank.utils import config_root_logger
@@ -56,7 +60,7 @@ def get_replica_energies(simulation_steps,num_replicas,replica_exchange_storage_
           data_file.close()
         return(replica_energies)
 
-def replica_exchange(topology,system,positions,temperature_list=[(300.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(-50,50,10)],simulation_time_step=None,total_simulation_time=1.0 * unit.picosecond,output_data='output.nc',print_frequency=100,verbose=False, verbose_simulation=False,test_time_step=False):
+def replica_exchange(topology,system,positions,temperature_list=[(300.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(-50,50,10)],simulation_time_step=None,total_simulation_time=1.0 * unit.picosecond,output_data='output.nc',print_frequency=100,verbose=False, verbose_simulation=False,exchange_attempts=None,test_time_step=False):
         """
         Construct an OpenMM simulation object for our coarse grained model.
 
@@ -91,17 +95,16 @@ def replica_exchange(topology,system,positions,temperature_list=[(300.0 * unit.k
                           List of dimension num_replicas X simulation_steps, which gives the energies for all replicas at all simulation steps
 
         """
-#        box_size = 10.00 * unit.nanometer # box width
         if simulation_time_step == None:
           simulation_time_step,force_threshold = get_simulation_time_step(topology,system,positions,temperature_list[-1],total_simulation_time)
 
         simulation_steps = int(round(total_simulation_time.__div__(simulation_time_step)))
 
-        if simulation_steps > 10000:
-          exchange_attempts = round(simulation_steps/1000)
-        else:
-          exchange_attempts = 10
-        print("Using "+str(exchange_attempts)+" exchange attempts")
+        if exchange_attempts == None:
+          if simulation_steps > 10000:
+            exchange_attempts = round(simulation_steps/1000)
+          else:
+            exchange_attempts = 10
 
         num_replicas = len(temperature_list)
         sampler_states = list()
@@ -114,42 +117,25 @@ def replica_exchange(topology,system,positions,temperature_list=[(300.0 * unit.k
           thermodynamic_states.append(thermodynamic_state)
           sampler_states.append(mmtools.states.SamplerState(positions,box_vectors=box_vectors))
 
-        
-        #system = set_box_vectors(system,box_size)
-        #box_vectors = get_box_vectors(box_size)
-
         # Create and configure simulation object.
-        move = mmtools.mcmc.LangevinDynamicsMove(timestep=simulation_time_step,collision_rate=5.0/unit.picosecond,n_steps=10, reassign_velocities=True)
+        move = mmtools.mcmc.LangevinDynamicsMove(timestep=simulation_time_step,collision_rate=5.0/unit.picosecond,n_steps=round(simulation_steps/exchange_attempts), reassign_velocities=True)
         simulation = ReplicaExchangeSampler(mcmc_moves=move, number_of_iterations=exchange_attempts)
 
         if os.path.exists(output_data): os.remove(output_data)
-        reporter = MultiStateReporter(output_data, checkpoint_interval=1)
+        reporter = MultiStateReporter(output_data, checkpoint_interval=print_frequency)
         simulation.create(thermodynamic_states, sampler_states, reporter)
         config_root_logger(verbose_simulation)
-        print("Running replica exchange simulations with Yank...")
-        print("Using a time step of "+str(simulation_time_step))
-        print("There are "+str(len(thermodynamic_states))+" replicas.")
-        print("with the following simulation temperatures:"+str([temperature._value for temperature in temperature_list]))
+        #print("Running replica exchange simulations with Yank...")
+        #print("Using a time step of "+str(simulation_time_step))
+        #print("There are "+str(len(thermodynamic_states))+" replicas.")
+        #print("with the following simulation temperatures:"+str([temperature._value for temperature in temperature_list]))
        
         if not test_time_step:
            num_attempts = 0
            while num_attempts < 5:
             try:
-              #print("Running replica exchange simulations with Yank...")
-              #print("Using a time step of "+str(simulation_time_step))
-              #print("Running each simulation for "+str(simulation_steps)+" steps, with "+str()+" exchange attempts.")
-              #print("Before mcmc move")
-              #move = mmtools.mcmc.LangevinDynamicsMove(timestep=simulation_time_step,collision_rate=20.0/unit.picosecond,n_steps=round(simulation_steps/exchange_attempts), reassign_velocities=True)
-              #print("Before ReplicaExchangeSampler")
-              #simulation = ReplicaExchangeSampler(replica_mixing_scheme='swap-neighbors',mcmc_moves=move,number_of_iterations=exchange_attempts)
-              #reporter = MultiStateReporter(output_data, checkpoint_interval=1)
-              #if os.path.exists(output_data):
-              #  print("Removing old copy of: "+str(output_data))
-              #  os.remove(output_data)
-              #simulation.create(thermodynamic_states, sampler_states, reporter)
-              #print("About to run replica exchange simulation.")
               simulation.run()
-              print("Replica exchange simulations succeeded with a time step of: "+str(simulation_time_step))
+              #print("Replica exchange simulations succeeded with a time step of: "+str(simulation_time_step))
               break
             except:
               num_attempts = num_attempts + 1
@@ -184,36 +170,38 @@ def replica_exchange(topology,system,positions,temperature_list=[(300.0 * unit.k
                 print("Please check the model and simulations settings, and try again.")
                 exit()
 
-        # Write the simulation coordinates for individual temperature replicas
-        reporter = MultiStateReporter(output_data, open_mode='r', checkpoint_interval=1)
+        # Read the simulation coordinates for individual temperature replicas
+        reporter = MultiStateReporter(output_data, open_mode='r', checkpoint_interval=print_frequency)
         analyzer = ReplicaExchangeAnalyzer(reporter)
+
+        mixing_statistics = analyzer.show_mixing_statistics()
 
         try:
           Delta_f_ij, dDelta_f_ij = analyzer.get_free_energy()
+           
         except:
           Delta_f_ij, dDelta_f_ij = 0.0, 0.0
-#        print("Delta_f_ij")
-#        print(Delta_f_ij)
-#        print("stderr")
-#        print(dDelta_f_ij)
-        replica_energies = analyzer.read_energies()
-        iterations = len(replica_energies[0][0][0])
-        reduced_replica_energies = np.zeros([len(temperature_list),len(thermodynamic_states),iterations])
-        
-        for replica_index in range(len(temperature_list)):
-          for thermodynamic_state_index in range(len(thermodynamic_states)):
-            for iteration in range(iterations):
-              reduced_replica_energies[replica_index][thermodynamic_state_index][iteration] = replica_energies[0][replica_index][thermodynamic_state_index][iteration] / temperature_list[replica_index]._value
-        replica_energies = analyzer.reformat_energies_for_mbar(reduced_replica_energies)
 
-        replica_positions = unit.Quantity(np.zeros([len(temperature_list),len(temperature_list),iterations,system.getNumParticles(),3]),unit.nanometer)
-        for iteration in range(iterations):
-          sampler_states = reporter.read_sampler_states(iteration=iteration)
+        replica_energies,unsampled_state_energies,neighborhoods,replica_state_indices = analyzer.read_energies()
+
+        total_steps = len(replica_energies[0][0])
+        replica_positions = unit.Quantity(np.zeros([len(temperature_list),len(temperature_list),total_steps,system.getNumParticles(),3]),unit.nanometer)
+
+        for step in range(total_steps):
+          sampler_states = reporter.read_sampler_states(iteration=step)
           for replica_index in range(len(temperature_list)):
             for thermodynamic_state_index in range(len(thermodynamic_states)):
              for particle in range(system.getNumParticles()):
                for cart in range(3):
-                 replica_positions[replica_index][thermodynamic_state_index][iteration][particle][cart] = sampler_states[replica_index].positions[particle][cart]
+                 replica_positions[replica_index][thermodynamic_state_index][step][particle][cart] = sampler_states[replica_index].positions[particle][cart]
 
-        return(replica_energies,reduced_replica_energies,replica_positions,temperature_list)
+        replica_index = 1
+        for replica_index in range(len(replica_positions)):
+          replica_trajectory = replica_positions[replica_index][replica_index]
+          file = open(str("replica_"+str(replica_index+1)+".pdb"),"w")
+          for positions in replica_trajectory:
+            PDBFile.writeFile(topology,positions,file=file)
+          file.close()
+
+        return(replica_energies,replica_positions,replica_state_indices,temperature_list)
 

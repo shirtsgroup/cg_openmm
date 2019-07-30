@@ -58,7 +58,7 @@
 
 
 \title{Coarse-grained OpenMM Documentation}
-\date{Jun 04, 2019}
+\date{Jul 30, 2019}
 \release{0.0.1}
 \author{Garrett A. Meek\\Lenny T. Fobe\\ \\Research group of Michael R. Shirts\\ \\Dept. of Chemical and Biological Engineering\\University of Colorado Boulder}
 \newcommand{\sphinxlogo}{\vbox{}}
@@ -81,10 +81,16 @@ This documentation is generated automatically using Sphinx, which reads all docs
 \label{\detokenize{build:openmm-simulation-protocols-for-coarse-grained-modeling}}\label{\detokenize{build::doc}}
 This page details the functions in cg\_openmm/src/build/cg\_build.py.
 
-\phantomsection\label{\detokenize{build:module-build.cg_build}}\index{build.cg\_build (module)@\spxentry{build.cg\_build}\spxextra{module}}\index{add\_new\_elements() (in module build.cg\_build)@\spxentry{add\_new\_elements()}\spxextra{in module build.cg\_build}}
+\phantomsection\label{\detokenize{build:module-build.cg_build}}\index{build.cg\_build (module)@\spxentry{build.cg\_build}\spxextra{module}}\index{add\_force() (in module build.cg\_build)@\spxentry{add\_force()}\spxextra{in module build.cg\_build}}
 
 \begin{fulllineitems}
-\phantomsection\label{\detokenize{build:build.cg_build.add_new_elements}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{build.cg\_build.}}\sphinxbfcode{\sphinxupquote{add\_new\_elements}}}{\emph{cgmodel}, \emph{list\_of\_masses}}{}
+\phantomsection\label{\detokenize{build:build.cg_build.add_force}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{build.cg\_build.}}\sphinxbfcode{\sphinxupquote{add\_force}}}{\emph{cgmodel}, \emph{force\_type=None}}{}
+\end{fulllineitems}
+
+\index{add\_new\_elements() (in module build.cg\_build)@\spxentry{add\_new\_elements()}\spxextra{in module build.cg\_build}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{build:build.cg_build.add_new_elements}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{build.cg\_build.}}\sphinxbfcode{\sphinxupquote{add\_new\_elements}}}{\emph{cgmodel}}{}
 Adds new coarse grained particle types to OpenMM
 
 cgmodel: CGModel() class object
@@ -116,10 +122,159 @@ num\_beads: Total number of beads in our coarse grained model
 
 \end{fulllineitems}
 
-\index{build\_mm\_simulation() (in module build.cg\_build)@\spxentry{build\_mm\_simulation()}\spxextra{in module build.cg\_build}}
+\index{build\_system() (in module build.cg\_build)@\spxentry{build\_system()}\spxextra{in module build.cg\_build}}
 
 \begin{fulllineitems}
-\phantomsection\label{\detokenize{build:build.cg_build.build_mm_simulation}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{build.cg\_build.}}\sphinxbfcode{\sphinxupquote{build\_mm\_simulation}}}{\emph{topology}, \emph{system}, \emph{positions}, \emph{temperature=Quantity(value=300.0}, \emph{unit=kelvin)}, \emph{simulation\_time\_step=None}, \emph{total\_simulation\_time=Quantity(value=1.0}, \emph{unit=picosecond)}, \emph{output\_pdb='output.pdb'}, \emph{output\_data='output.dat'}, \emph{print\_frequency=100}}{}
+\phantomsection\label{\detokenize{build:build.cg_build.build_system}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{build.cg\_build.}}\sphinxbfcode{\sphinxupquote{build\_system}}}{\emph{cgmodel}}{}
+Builds an OpenMM System() class object, given a CGModel() class object as input.
+
+cgmodel: CGModel() class object
+
+system: OpenMM System() class object
+
+\end{fulllineitems}
+
+\index{build\_topology() (in module build.cg\_build)@\spxentry{build\_topology()}\spxextra{in module build.cg\_build}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{build:build.cg_build.build_topology}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{build.cg\_build.}}\sphinxbfcode{\sphinxupquote{build\_topology}}}{\emph{cgmodel}, \emph{use\_pdbfile=False}}{}
+Construct an OpenMM topology for our coarse grained model
+
+polymer\_length: Number of monomers in our coarse grained model
+( integer )
+
+backbone\_length: Number of backbone beads on individual monomers
+in our coarse grained model, ( integer )
+
+sidechain\_length: Number of sidechain beads on individual monomers
+in our coarse grained model, ( integer )
+
+\end{fulllineitems}
+
+\index{get\_num\_forces() (in module build.cg\_build)@\spxentry{get\_num\_forces()}\spxextra{in module build.cg\_build}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{build:build.cg_build.get_num_forces}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{build.cg\_build.}}\sphinxbfcode{\sphinxupquote{get\_num\_forces}}}{\emph{cgmodel}}{}
+Given a coarse grained model class object, this function dtermines how many forces we are including when evaluating its energy.
+
+\end{fulllineitems}
+
+\index{test\_force() (in module build.cg\_build)@\spxentry{test\_force()}\spxextra{in module build.cg\_build}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{build:build.cg_build.test_force}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{build.cg\_build.}}\sphinxbfcode{\sphinxupquote{test\_force}}}{\emph{cgmodel}, \emph{force}, \emph{force\_type=None}}{}
+\end{fulllineitems}
+
+\index{test\_forces() (in module build.cg\_build)@\spxentry{test\_forces()}\spxextra{in module build.cg\_build}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{build:build.cg_build.test_forces}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{build.cg\_build.}}\sphinxbfcode{\sphinxupquote{test\_forces}}}{\emph{cgmodel}}{}
+\end{fulllineitems}
+
+\index{verify\_system() (in module build.cg\_build)@\spxentry{verify\_system()}\spxextra{in module build.cg\_build}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{build:build.cg_build.verify_system}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{build.cg\_build.}}\sphinxbfcode{\sphinxupquote{verify\_system}}}{\emph{cgmodel}}{}
+Given a coarse grained model class object, this function confirms that its OpenMM system object is configured correctly.
+
+\end{fulllineitems}
+
+\index{verify\_topology() (in module build.cg\_build)@\spxentry{verify\_topology()}\spxextra{in module build.cg\_build}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{build:build.cg_build.verify_topology}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{build.cg\_build.}}\sphinxbfcode{\sphinxupquote{verify\_topology}}}{\emph{cgmodel}}{}
+Verify the OpenMM topology for our coarse grained model
+
+\end{fulllineitems}
+
+\index{write\_xml\_file() (in module build.cg\_build)@\spxentry{write\_xml\_file()}\spxextra{in module build.cg\_build}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{build:build.cg_build.write_xml_file}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{build.cg\_build.}}\sphinxbfcode{\sphinxupquote{write\_xml\_file}}}{\emph{cgmodel}, \emph{xml\_file\_name}}{}
+\end{fulllineitems}
+
+
+
+\chapter{OpenMM simulation tools for coarse grained modeling}
+\label{\detokenize{simulation:openmm-simulation-tools-for-coarse-grained-modeling}}\label{\detokenize{simulation::doc}}
+This page details the functions in cg\_openmm/src/simulation/.
+
+
+\section{Replica exchange simulation tools for coarse grained modeling}
+\label{\detokenize{simulation:module-simulation.rep_exch}}\label{\detokenize{simulation:replica-exchange-simulation-tools-for-coarse-grained-modeling}}\index{simulation.rep\_exch (module)@\spxentry{simulation.rep\_exch}\spxextra{module}}\index{get\_replica\_energies() (in module simulation.rep\_exch)@\spxentry{get\_replica\_energies()}\spxextra{in module simulation.rep\_exch}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{simulation:simulation.rep_exch.get_replica_energies}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{simulation.rep\_exch.}}\sphinxbfcode{\sphinxupquote{get\_replica\_energies}}}{\emph{simulation\_steps}, \emph{num\_replicas}, \emph{replica\_exchange\_storage\_file}, \emph{exchange\_attempts}}{}~\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{simulation\_steps}} (\sphinxstyleliteralemphasis{\sphinxupquote{integer}}) \textendash{} The number of steps to take during each replica exchange simulation
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{num\_replicas}} (\sphinxstyleliteralemphasis{\sphinxupquote{integer}}) \textendash{} The number of temperature replicas for which we will perform molecular dynamics simulations
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{replica\_exchange\_storage\_file}} (\sphinxstyleliteralemphasis{\sphinxupquote{string}}) \textendash{} The path to a NETCDF file containing the compressed output from all replica exchange simulation runs
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{exchange\_attempts}} (\sphinxstyleliteralemphasis{\sphinxupquote{integer}}) \textendash{} The number of times that temperature replica exchanges were attempted
+
+\end{itemize}
+
+\end{description}\end{quote}
+\begin{description}
+\item[{replica\_energies: List( List( float * simtk.unit.energy for simulation\_steps ) for num\_replicas )}] \leavevmode
+List of dimension num\_replicas X simulation\_steps, which gives the energies for all replicas at all simulation steps
+
+\end{description}
+
+\end{fulllineitems}
+
+\index{replica\_exchange() (in module simulation.rep\_exch)@\spxentry{replica\_exchange()}\spxextra{in module simulation.rep\_exch}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{simulation:simulation.rep_exch.replica_exchange}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{simulation.rep\_exch.}}\sphinxbfcode{\sphinxupquote{replica\_exchange}}}{\emph{topology, system, positions, temperature\_list={[}Quantity(value=250.0, unit=kelvin), Quantity(value=260.0, unit=kelvin), Quantity(value=270.0, unit=kelvin), Quantity(value=280.0, unit=kelvin), Quantity(value=290.0, unit=kelvin), Quantity(value=300.0, unit=kelvin), Quantity(value=310.0, unit=kelvin), Quantity(value=320.0, unit=kelvin), Quantity(value=330.0, unit=kelvin), Quantity(value=340.0, unit=kelvin){]}, simulation\_time\_step=None, total\_simulation\_time=Quantity(value=1.0, unit=picosecond), output\_data='output.nc', print\_frequency=100, verbose=False, verbose\_simulation=False, exchange\_attempts=None, test\_time\_step=False}}{}
+Construct an OpenMM simulation object for our coarse grained model.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{topology}} (\sphinxstyleliteralemphasis{\sphinxupquote{OpenMM Topology}}\sphinxstyleliteralemphasis{\sphinxupquote{(}}\sphinxstyleliteralemphasis{\sphinxupquote{) }}\sphinxstyleliteralemphasis{\sphinxupquote{class object}}) \textendash{} An OpenMM object which contains information about the bonds and constraints in a molecular model
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{system}} (\sphinxstyleliteralemphasis{\sphinxupquote{OpenMM System}}\sphinxstyleliteralemphasis{\sphinxupquote{(}}\sphinxstyleliteralemphasis{\sphinxupquote{) }}\sphinxstyleliteralemphasis{\sphinxupquote{class object}}) \textendash{} An OpenMM object which contains information about the forces and particle properties in a molecular model
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{positions}} (\sphinxstyleliteralemphasis{\sphinxupquote{np.array}}\sphinxstyleliteralemphasis{\sphinxupquote{( }}\sphinxstyleliteralemphasis{\sphinxupquote{'num\_beads' x 3}}\sphinxstyleliteralemphasis{\sphinxupquote{ , }}\sphinxstyleliteralemphasis{\sphinxupquote{( }}\sphinxstyleliteralemphasis{\sphinxupquote{float * simtk.unit.distance}}\sphinxstyleliteralemphasis{\sphinxupquote{ ) }}\sphinxstyleliteralemphasis{\sphinxupquote{)}}) \textendash{} Contains the positions for all particles in a model
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{temperature\_list}} \textendash{} List of temperatures for which to perform replica exchange simulations, default = {[}(300.0 * unit.kelvin).\_\_add\_\_(i * unit.kelvin) for i in range(-20,100,10){]}
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{simulation\_time\_step}} (\sphinxstyleliteralemphasis{\sphinxupquote{float * simtk.unit}}) \textendash{} Simulation integration time step, default = None
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{total\_simulation\_time}} (\sphinxstyleliteralemphasis{\sphinxupquote{float * simtk.unit}}) \textendash{} Total simulation time
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{output\_data}} (\sphinxstyleliteralemphasis{\sphinxupquote{string}}) \textendash{} Name of NETCDF file where we will write data from replica exchange simulations
+
+\end{itemize}
+
+\end{description}\end{quote}
+\begin{description}
+\item[{replica\_energies: List( List( float * simtk.unit.energy for simulation\_steps ) for num\_replicas )}] \leavevmode
+List of dimension num\_replicas X simulation\_steps, which gives the energies for all replicas at all simulation steps
+
+\end{description}
+
+\end{fulllineitems}
+
+
+
+\section{General simulation tools for coarse grained modeling}
+\label{\detokenize{simulation:module-simulation.tools}}\label{\detokenize{simulation:general-simulation-tools-for-coarse-grained-modeling}}\index{simulation.tools (module)@\spxentry{simulation.tools}\spxextra{module}}\index{build\_mm\_simulation() (in module simulation.tools)@\spxentry{build\_mm\_simulation()}\spxextra{in module simulation.tools}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{simulation:simulation.tools.build_mm_simulation}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{simulation.tools.}}\sphinxbfcode{\sphinxupquote{build\_mm\_simulation}}}{\emph{topology}, \emph{system}, \emph{positions}, \emph{temperature=Quantity(value=300.0}, \emph{unit=kelvin)}, \emph{simulation\_time\_step=None}, \emph{total\_simulation\_time=Quantity(value=1.0}, \emph{unit=picosecond)}, \emph{output\_pdb='output.pdb'}, \emph{output\_data='output.dat'}, \emph{print\_frequency=100}, \emph{test\_time\_step=False}}{}
 Construct an OpenMM simulation object for our coarse grained model.
 
 topology: OpenMM topology object
@@ -145,50 +300,26 @@ to ‘output\_data’ ( integer )
 
 \end{fulllineitems}
 
-\index{build\_system() (in module build.cg\_build)@\spxentry{build\_system()}\spxextra{in module build.cg\_build}}
+\index{get\_mm\_energy() (in module simulation.tools)@\spxentry{get\_mm\_energy()}\spxextra{in module simulation.tools}}
 
 \begin{fulllineitems}
-\phantomsection\label{\detokenize{build:build.cg_build.build_system}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{build.cg\_build.}}\sphinxbfcode{\sphinxupquote{build\_system}}}{\emph{cgmodel}}{}
-Builds an OpenMM System() class object, given a CGModel() class object as input.
+\phantomsection\label{\detokenize{simulation:simulation.tools.get_mm_energy}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{simulation.tools.}}\sphinxbfcode{\sphinxupquote{get\_mm\_energy}}}{\emph{topology}, \emph{system}, \emph{positions}}{}
+Get the OpenMM potential energy for a system, given a topology and set of positions.
 
-cgmodel: CGModel() class object
+topology: OpenMM topology object
 
-system: OpenMM System() class object
+system: OpenMM system object
+
+positions: Array containing the positions of all beads
+in the coarse grained model
+( np.array( ‘num\_beads’ x 3 , ( float * simtk.unit.distance ) )
 
 \end{fulllineitems}
 
-\index{build\_topology() (in module build.cg\_build)@\spxentry{build\_topology()}\spxextra{in module build.cg\_build}}
+\index{get\_simulation\_time\_step() (in module simulation.tools)@\spxentry{get\_simulation\_time\_step()}\spxextra{in module simulation.tools}}
 
 \begin{fulllineitems}
-\phantomsection\label{\detokenize{build:build.cg_build.build_topology}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{build.cg\_build.}}\sphinxbfcode{\sphinxupquote{build\_topology}}}{\emph{cgmodel}}{}
-Construct an OpenMM topology for our coarse grained model
-
-polymer\_length: Number of monomers in our coarse grained model
-( integer )
-
-backbone\_length: Number of backbone beads on individual monomers
-in our coarse grained model, ( integer )
-
-sidechain\_length: Number of sidechain beads on individual monomers
-in our coarse grained model, ( integer )
-
-\end{fulllineitems}
-
-
-
-\chapter{OpenMM simulation tools for coarse grained modeling}
-\label{\detokenize{simulation:openmm-simulation-tools-for-coarse-grained-modeling}}\label{\detokenize{simulation::doc}}
-This page details the functions in cg\_openmm/src/simulation/.
-
-
-\section{Replica exchange simulation tools for coarse grained modeling}
-\label{\detokenize{simulation:replica-exchange-simulation-tools-for-coarse-grained-modeling}}
-
-\section{General simulation tools for coarse grained modeling}
-\label{\detokenize{simulation:module-simulation.tools}}\label{\detokenize{simulation:general-simulation-tools-for-coarse-grained-modeling}}\index{simulation.tools (module)@\spxentry{simulation.tools}\spxextra{module}}\index{get\_simulation\_time\_step() (in module simulation.tools)@\spxentry{get\_simulation\_time\_step()}\spxextra{in module simulation.tools}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{simulation:simulation.tools.get_simulation_time_step}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{simulation.tools.}}\sphinxbfcode{\sphinxupquote{get\_simulation\_time\_step}}}{\emph{topology}, \emph{system}, \emph{positions}, \emph{temperature}, \emph{time\_step\_list}, \emph{total\_simulation\_time}}{}
+\phantomsection\label{\detokenize{simulation:simulation.tools.get_simulation_time_step}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{simulation.tools.}}\sphinxbfcode{\sphinxupquote{get\_simulation\_time\_step}}}{\emph{topology}, \emph{system}, \emph{positions}, \emph{temperature}, \emph{total\_simulation\_time}, \emph{time\_step\_list=None}}{}
 Determine a valid simulation time step for our coarse grained model.
 
 simulation: OpenMM simulation object
@@ -202,7 +333,7 @@ time\_step: A time step that was successful for our simulation object.
 \index{minimize\_structure() (in module simulation.tools)@\spxentry{minimize\_structure()}\spxextra{in module simulation.tools}}
 
 \begin{fulllineitems}
-\phantomsection\label{\detokenize{simulation:simulation.tools.minimize_structure}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{simulation.tools.}}\sphinxbfcode{\sphinxupquote{minimize\_structure}}}{\emph{topology}, \emph{system}, \emph{positions}, \emph{temperature=Quantity(value=0.0}, \emph{unit=kelvin)}, \emph{simulation\_time\_step=None}, \emph{total\_simulation\_time=Quantity(value=1.0}, \emph{unit=picosecond)}, \emph{output\_pdb='minimum.pdb'}, \emph{output\_data='minimization.dat'}, \emph{print\_frequency=10}}{}
+\phantomsection\label{\detokenize{simulation:simulation.tools.minimize_structure}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{simulation.tools.}}\sphinxbfcode{\sphinxupquote{minimize\_structure}}}{\emph{topology}, \emph{system}, \emph{positions}, \emph{temperature=Quantity(value=0.0}, \emph{unit=kelvin)}, \emph{simulation\_time\_step=None}, \emph{total\_simulation\_time=Quantity(value=1.0}, \emph{unit=picosecond)}, \emph{output\_pdb='minimum.pdb'}, \emph{output\_data='minimization.dat'}, \emph{print\_frequency=1}}{}
 Construct an OpenMM simulation object for our coarse grained model.
 
 topology: OpenMM topology object
@@ -294,6 +425,7 @@ box\_size: Simulation box length ( float * simtk.unit.length )
 \item\relax\sphinxstyleindexentry{build.cg\_build}\sphinxstyleindexpageref{build:\detokenize{module-build.cg_build}}
 \indexspace
 \bigletter{s}
+\item\relax\sphinxstyleindexentry{simulation.rep\_exch}\sphinxstyleindexpageref{simulation:\detokenize{module-simulation.rep_exch}}
 \item\relax\sphinxstyleindexentry{simulation.tools}\sphinxstyleindexpageref{simulation:\detokenize{module-simulation.tools}}
 \indexspace
 \bigletter{u}
