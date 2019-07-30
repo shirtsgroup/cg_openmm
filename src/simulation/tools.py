@@ -7,19 +7,34 @@ from simtk.openmm.app import *
 
 def get_simulation_time_step(topology,system,positions,temperature,total_simulation_time,time_step_list=None):
         """
-        Determine a valid simulation time step for our coarse grained model.
+        Determine a suitable simulation time step for an OpenMM system.
 
         Parameters
         ----------
 
-        simulation: OpenMM simulation object
+        topology: OpenMM Topology() object (with associated data)
+
+        system: OpenMM System() object (with associated data)
+
+        positions: A set of intial positions for the model we would like to test
+        when identifying an appropriate time step.
+        ( np.array( [ cgmodel.num_beads, 3 ] ) * simtk.unit
+
+        temperature: Temperature for which to test (NVT) simulations.
+
+        total_simulation_time: The total amount of time that we will run
+        test simulations when attempting to identify an appropriate time
+        step.  If a simulation attempt is successful for this amount of
+        time, the time step will be considered suitable for the model.
 
         time_step_list: List of time steps for which to attempt a simulation in OpenMM.
+        default = None
 
         Returns
         -------
 
         time_step: A time step that was successful for our simulation object.
+
         """
         tolerance = 10.0
         success = False
@@ -34,24 +49,15 @@ def get_simulation_time_step(topology,system,positions,temperature,total_simulat
 
           simulation = Simulation(topology, system, integrator)
           simulation.context.setPositions(positions.in_units_of(unit.nanometer))
-#          simulation.context.setVelocitiesToTemperature(temperature)
+          simulation.context.setVelocitiesToTemperature(temperature)
           simulation.reporters.append(PDBReporter('test.pdb',1))
           simulation.reporters.append(StateDataReporter('test.dat',1, \
           step=True, totalEnergy=True, potentialEnergy=True, kineticEnergy=True, temperature=True))
 
           total_steps = round(total_simulation_time.__div__(time_step))
-#          print("Running test simulation with time step of "+str(time_step)+" for "+str(total_steps)+" steps.")
-#          simulation.minimizeEnergy()
-#          exit()
           try:
-#            simulation.context.applyConstraints(1.0e-8)
             simulation.minimizeEnergy()
-#            for step in range(0,total_steps):
-#            simulation.step(total_steps)
-#              simulation.context.applyConstraints(1.0e-8)
             positions = simulation.context.getState(getPositions=True).getPositions()
-#              confirm_bond_constraints(cgmodel,positions)
-#            print("Simulation successful with a time step of: "+str(simulation_time_step))
             success = True
             break
           except:
@@ -104,6 +110,13 @@ def minimize_structure(topology,system,positions,temperature=0.0 * unit.kelvin,s
         simulation_time_step: Simulation integration time step
         ( float * simtk.unit.time )
 
+        total_simulation_time: Total amount of simulation time allowed for this
+        minimization run.
+        ( float * simtk.unit.time )
+
+        output_pdb: Name of output file where we will write the coordinates
+        during a simulation run ( string )
+
         output_data: Name of output file where we will write the data from this
         simulation ( string )
 
@@ -128,9 +141,7 @@ def minimize_structure(topology,system,positions,temperature=0.0 * unit.kelvin,s
         simulation = Simulation(topology, system, integrator)
         simulation.context.setPositions(positions.in_units_of(unit.nanometer))
         simulation.context.setVelocitiesToTemperature(temperature)
-        #print(positions)
         forces = simulation.context.getState(getForces=True).getForces()
-        #print(forces)
         simulation.reporters.append(PDBReporter(output_pdb,print_frequency))
         simulation.reporters.append(StateDataReporter(output_data,print_frequency, \
         step=True, totalEnergy=True, potentialEnergy=True, kineticEnergy=True, temperature=True))
@@ -139,17 +150,9 @@ def minimize_structure(topology,system,positions,temperature=0.0 * unit.kelvin,s
         total_steps = round(total_simulation_time.__div__(time_step))
         potential_energy = None
         try:
-          #print("Starting minimization.")
           simulation.minimizeEnergy() # Set the simulation type to energy minimization
-          #print("Minimization successful.")
-#          exit()
-#          step_length = 10
-#          for step in range(round(total_steps/step_length)):
-#            simulation.step(step_length)
-#            simulation.context.applyConstraints(1.0e8)
           positions = simulation.context.getState(getPositions=True).getPositions()
           potential_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
-#          confirm_bond_constraints(cgmodel,positions)
         except:
           print("Minimization attempt failed with a time step of: "+str(time_step))
           if time_step.__gt__(0.01 * unit.femtosecond):
@@ -211,12 +214,19 @@ def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvi
 
         total_simulation_time: Total simulation time ( float * simtk.unit.time )
 
+        output_pdb: Name of output file where we will write the coordinates for this
+        simulation run ( string )
+
         output_data: Name of output file where we will write the data from this
         simulation ( string )
 
         print_frequency: Number of simulation steps to skip when writing data
         to 'output_data' ( integer )
  
+        test_time_step: Logical variable determining whether or not the user-provided
+        time step will be tested prior to a full simulation run ( Logical )
+        Default = False
+
         """
         if simulation_time_step == None:
 #          print("No simulation time step provided.")
@@ -268,46 +278,37 @@ def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvi
 
 
 def run_simulation(cgmodel,output_directory,total_simulation_time,simulation_time_step,temperature,print_frequency):
+        """
 
-  total_steps = round(total_simulation_time.__div__(simulation_time_step))
-  if not os.path.exists(output_directory): os.mkdir(output_directory)
-  output_pdb = str(str(output_directory)+'/simulation.pdb')
-  output_data = str(str(output_directory)+'/simulation.dat')
+        Run OpenMM() simulation
 
-  simulation = build_mm_simulation(cgmodel.topology,cgmodel.system,cgmodel.positions,total_simulation_time=total_simulation_time,simulation_time_step=simulation_time_step,temperature=temperature,output_pdb=output_pdb,output_data=output_data,print_frequency=print_frequency)
+        Parameters
+        ----------
 
-  potential_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
-  print(potential_energy)
-  positions = simulation.context.getState(getPositions=True).getPositions()
-  kinetic_energy = simulation.context.getState(getEnergy=True).getKineticEnergy()
-  forces = simulation.context.getState(getForces=True).getForces()
+        cgmodel: CGModel() class object
 
-  output_kinetic_energy = str(str(output_directory)+'/kinetic_energy.dat')
-  kinetic_dat = open(output_kinetic_energy,"w")
-  kinetic_dat.write(str(str(kinetic_energy)+"\n"))
-  kinetic_dat.close()
+        output_directory: Output directory within which to place
+        the output files from this simulation run.
 
-  output_forces = str(str(output_directory)+'/forces.dat')
-  forces_dat = open(output_forces,"w")
-  forces_dat.write(str(str(forces)+"\n"))
-  forces_dat.close()
-  for step in range(total_steps):
-      try:
-        simulation.step(1)
-      except:
-        print("Error: simulation attempt failed.")
-        break
-      kinetic_energy = simulation.context.getState(getEnergy=True).getKineticEnergy()
-      output_kinetic_energy = str(str(output_directory)+'/kinetic_energy.dat')
-      kinetic_dat = open(output_kinetic_energy,"a")
-      kinetic_dat.write(str(str(kinetic_energy)+"\n"))
-      kinetic_dat.close()
+        total_simulation_time: The total amount of time for which
+        we will run this simulation
 
-      forces = simulation.context.getState(getForces=True).getForces()
-      output_forces = str(str(output_directory)+'/forces.dat')
-      forces_dat = open(output_forces,"a")
-      forces_dat.write(str(str(forces)+"\n"))
-      forces_dat.close()
+        simulation_time_step: The time step for the simulation run.
 
-  return
+        temperature: The temperature for the simulation run.
 
+        print_frequency: The number of steps to take when writing
+        simulation data to an output file.
+
+        """
+        total_steps = round(total_simulation_time.__div__(simulation_time_step))
+        if not os.path.exists(output_directory): os.mkdir(output_directory)
+        output_pdb = str(str(output_directory)+'/simulation.pdb')
+        output_data = str(str(output_directory)+'/simulation.dat')
+
+        simulation = build_mm_simulation(cgmodel.topology,cgmodel.system,cgmodel.positions,total_simulation_time=total_simulation_time,simulation_time_step=simulation_time_step,temperature=temperature,output_pdb=output_pdb,output_data=output_data,print_frequency=print_frequency)
+
+        for step in range(total_steps):
+          simulation.step(1)
+
+        return

@@ -22,7 +22,10 @@ def add_new_elements(cgmodel):
 
         cgmodel: CGModel() class object
 
-        list_of_masses: List of masses for the particles we want to add to OpenMM
+        Returns
+        -------
+
+        particle_list: List of unique particle names in CGModel()
 
         """
         element_index = 117
@@ -56,6 +59,16 @@ def add_new_elements(cgmodel):
 
 def write_xml_file(cgmodel,xml_file_name):
         """
+        
+        Parameters
+        ----------
+         
+        cgmodel: CGModel() class object.
+
+        xml_file_name: Name of the file to which we will write
+        an xml-formatted version of the forcefield data for
+        cgmodel.
+
         """
         particle_list = add_new_elements(cgmodel)
         xml_object = open(xml_file_name,"w")
@@ -91,16 +104,6 @@ def write_xml_file(cgmodel,xml_file_name):
         external_parent = unique_particle_names[len(unique_particle_names)-cgmodel.monomer_types[0]['sidechain_length']-1]
         xml_object.write('   <ExternalBond atomName="'+str(external_parent)+'"/>\n')
         xml_object.write("  </Residue>\n")
-        #xml_object.write('  <Residue name="MT">\n')
-        #for particle_index in range(len(unique_particle_names)):
-        #  xml_object.write('   <Atom name="'+str(unique_particle_names[particle_index])+'" type="'+str(unique_particle_names[particle_index])+'"/>\n')
-        #for bond in cgmodel.bond_list:
-        #  if all(bond[i]-1 < len(unique_particle_names) for i in range(2)):
-        #    particle_1_name = cgmodel.get_particle_name(bond[0]-1)
-        #    particle_2_name = cgmodel.get_particle_name(bond[1]-1)
-        #    xml_object.write('   <Bond atomName1="'+str(particle_1_name)+'" atomName2="'+str(particle_2_name)+'"/>\n')
-        #xml_object.write('   <ExternalBond atomName="'+str(unique_particle_names[0])+'"/>\n')
-        #xml_object.write("  </Residue>\n")
         xml_object.write('  <Residue name="MT">\n')
         for particle_index in range(len(unique_particle_names)):
           xml_object.write('   <Atom name="'+str(unique_particle_names[particle_index])+'" type="'+str(unique_particle_names[particle_index])+'"/>\n')
@@ -178,46 +181,14 @@ def write_xml_file(cgmodel,xml_file_name):
         xml_object.close()
         return
 
-def build_mm_force(sigma,epsilon,charge,num_beads,cutoff=1*unit.nanometer):
-        """
-
-        Build an OpenMM 'Force' for the non-bonded interactions in our model.
-
-        Parameters
-        ----------
-
-        sigma: Non-bonded bead Lennard-Jones interaction distances,
-        ( float * simtk.unit.distance )
-
-        epsilon: Non-bonded bead Lennard-Jones interaction strength,
-        ( float * simtk.unit.energy )
-
-        charge: Charge for all beads
-        ( float * simtk.unit.charge ) 
-
-        cutoff: Cutoff distance for nonbonded interactions
-        ( float * simtk.unit.distance )
-
-        num_beads: Total number of beads in our coarse grained model
-        ( integer )
-
-        """
-
-        force = mm.NonbondedForce()
-        
-        force.setCutoffDistance(cutoff)
-
-        for particle in range(num_particles):
-          force.addParticle( charge, sigma, epsilon )
-        return(force)
-
 def verify_topology(cgmodel):
         """
 
-        Verify the OpenMM topology for our coarse grained model
-
         Parameters
         ----------
+
+        cgmodel: CGModel() class object.
+
         """
         if cgmodel.num_beads != cgmodel.topology.getNumAtoms():
           print("ERROR: The number of particles in the coarse grained model\n")
@@ -244,14 +215,10 @@ def build_topology(cgmodel,use_pdbfile=False):
         Parameters
         ----------
 
-        polymer_length: Number of monomers in our coarse grained model
-        ( integer )
+        cgmodel: CGModel() class object
 
-        backbone_length: Number of backbone beads on individual monomers
-        in our coarse grained model, ( integer )
-
-        sidechain_length: Number of sidechain beads on individual monomers
-        in our coarse grained model, ( integer )
+        use_pdbfile: Logical variable determining whether or not
+        a pdb file will be used to generate the topology.
 
         """
         if use_pdbfile:
@@ -294,10 +261,19 @@ def build_topology(cgmodel,use_pdbfile=False):
 
 def get_num_forces(cgmodel):
         """
-        Given a coarse grained model class object, this function dtermines how many forces we are including when evaluating its energy.
+        Given a coarse grained model class object, this function determines 
+        how many forces we are including when evaluating its energy.
 
         Parameters
         ----------
+
+        cgmodel: CGModel() class object.
+
+        Returns
+        -------
+
+        total_forces: Integer number of forces in the model
+
         """
         total_forces = 0
         if cgmodel.include_bond_forces: total_forces = total_forces + 1
@@ -308,10 +284,14 @@ def get_num_forces(cgmodel):
 
 def verify_system(cgmodel):
         """
-        Given a coarse grained model class object, this function confirms that its OpenMM system object is configured correctly.
+        Given a coarse grained model class object, this function confirms 
+        that its OpenMM system object is configured correctly.
 
         Parameters
         ----------
+
+        cgmodel: CGModel() class object
+
         """
 
         if get_num_forces(cgmodel) != cgmodel.system.getNumForces():
@@ -337,11 +317,24 @@ def verify_system(cgmodel):
             print("and "+str(cgmodel.ssytem.getNumConstraints())+" constraints in the OpenMM system.")
             exit()
 
-
         return
 
 def test_force(cgmodel,force,force_type=None):
         """
+
+        Given an OpenMM force as input, this function determines if there
+        are any problems with its configuration.
+
+        Parameters
+        ----------
+
+        cgmodel: CGModel() class object.
+
+        force: an OpenMM Force() object.
+
+        force_type: A string variable designating the kind of 'force' provided.
+        Valid options include: "Nonbonded", 
+
         """
         success=True
         if force_type == "Nonbonded":
@@ -385,6 +378,20 @@ def test_force(cgmodel,force,force_type=None):
 
 def add_force(cgmodel,force_type=None):
         """
+
+        Given a 'cgmodel' and 'force_type' as input, this function adds
+        the OpenMM force corresponding to 'force_type' to the 'system' object
+        for the 'cgmodel'.
+
+        Parameters
+        ----------
+
+        cgmodel: CGModel() class object.
+
+        force_type: String input variable designating the kind of
+        force that should be added to the cgmodel's system object.
+        Valid options include: "Bond", "Nonbonded", "Angle", and "Torsion".
+
         """
         if force_type == "Bond":
 
@@ -455,6 +462,24 @@ def add_force(cgmodel,force_type=None):
 
 def test_forces(cgmodel):
         """
+        Given a cgmodel that contains positions, as well as
+        an OpenMM System() object with force definitions,
+        this function tests the forces for the cgmodel.
+
+        More specifically, this function confirms that the
+        model does not have any "NaN" or unphysically large forces.
+
+        Parameters
+        ----------
+
+        cgmodel: CGModel() class object.
+
+        Returns
+        -------
+
+        success: Logical variable indicating whether or not this
+        cgmodel has unphysical forces.
+
         """
         if cgmodel.topology == None:
           cgmodel.topology = build_topology(cgmodel)

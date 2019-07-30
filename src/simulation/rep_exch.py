@@ -15,51 +15,6 @@ from yank.utils import config_root_logger
 # quiet down some citation spam
 MultiStateSampler._global_citation_silence = True
 
-def get_replica_energies(simulation_steps,num_replicas,replica_exchange_storage_file,exchange_attempts):
-        """
-
-        Parameters
-        ----------
-
-        :param simulation_steps: The number of steps to take during each replica exchange simulation
-        :type simulation_steps: integer
-
-        :param num_replicas: The number of temperature replicas for which we will perform molecular dynamics simulations
-        :type num_replicas: integer
-
-        :param replica_exchange_storage_file: The path to a NETCDF file containing the compressed output from all replica exchange simulation runs
-        :type replica_exchange_storage_file: string
-
-        :param exchange_attempts: The number of times that temperature replica exchanges were attempted
-        :type exchange_attempts: integer
-
-        Returns
-        -------
-
-        replica_energies: List( List( float * simtk.unit.energy for simulation_steps ) for num_replicas )
-                          List of dimension num_replicas X simulation_steps, which gives the energies for all replicas at all simulation steps
-
-        """
-
-        replica_energies = np.array([[0.0 for step in range(0,simulation_steps)] for replica in range(0,num_replicas)])
-        energies = np.array([[] for iteration in range(0,exchange_attempts)])
-        for replica in range(0,num_replicas):
-          step = 0
-          for iteration in range(0,exchange_attempts):
-           iteration_data = MultiStateReporter(replica_exchange_storage_file, open_mode='r').read_energies(iteration=iteration)
-           iteration_data = np.array(iteration_data[0])
-           for energy in iteration_data[replica]:
-            print(energy)
-            exit()
-            replica_energies[replica][step] = energy
-            step = step + 1
-        for replica in range(0,num_replicas):
-          data_file = open(str("replica_"+str(replica)+".dat"),"w")
-          for energy in replica_energies[replica]:
-            data_file.write(str(energy)+"\n")
-          data_file.close()
-        return(replica_energies)
-
 def replica_exchange(topology,system,positions,temperature_list=[(300.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(-50,50,10)],simulation_time_step=None,total_simulation_time=1.0 * unit.picosecond,output_data='output.nc',print_frequency=100,verbose=False, verbose_simulation=False,exchange_attempts=None,test_time_step=False):
         """
         Construct an OpenMM simulation object for our coarse grained model.
@@ -93,6 +48,16 @@ def replica_exchange(topology,system,positions,temperature_list=[(300.0 * unit.k
 
         replica_energies: List( List( float * simtk.unit.energy for simulation_steps ) for num_replicas )
                           List of dimension num_replicas X simulation_steps, which gives the energies for all replicas at all simulation steps
+
+        replica_positions: np.array( ( float * simtk.unit.positions for num_beads ) for simulation_steps )
+                           List of positions for all output frames for all replicas
+
+        replica_state_indices: np.array( ( float for num_replicas ) for exchange_attempts )
+                               List of thermodynamic state assignment labels for each replica
+                               during each stage of the replica exchange simulation run.
+
+        temperature_list: List( float * simtk.unit.kelvin  for num_replicas )
+                          List of the temperatures for each replica.
 
         """
         if simulation_time_step == None:
