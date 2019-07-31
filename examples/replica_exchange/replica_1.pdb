@@ -1,4 +1,4 @@
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       2.748   7.031   0.141  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       8.240   3.136  -3.163  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -0.086   7.427   7.073  1.00  0.00          X1  
@@ -32,7 +32,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       2.320   6.884   0.029  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       8.420   3.095  -2.137  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -0.561   6.357   6.934  1.00  0.00          X1  
@@ -66,7 +66,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       4.227   6.901  -0.160  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       8.350   4.423  -5.914  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       0.175   6.337   6.126  1.00  0.00          X1  
@@ -100,7 +100,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       5.319   7.350   0.866  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.733   5.851  -4.104  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       1.107   6.705   7.037  1.00  0.00          X1  
@@ -134,7 +134,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       5.427   6.785  -0.390  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       9.895   1.143  -2.502  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       2.222   6.784   6.390  1.00  0.00          X1  
@@ -168,7 +168,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       6.336   7.420   0.449  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.286   2.243  -3.270  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       3.026   7.449   7.179  1.00  0.00          X1  
@@ -202,7 +202,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       6.850   8.302  -0.033  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       9.665   2.078  -3.130  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       2.779   7.526   6.218  1.00  0.00          X1  
@@ -236,7 +236,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       3.265   6.836  -1.308  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.212   4.140  -2.158  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       1.502   8.187   5.855  1.00  0.00          X1  
@@ -270,7 +270,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       6.041   8.101  -0.244  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.726   4.848  -5.114  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       4.161   9.486   6.884  1.00  0.00          X1  
@@ -304,7 +304,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       7.373   9.628   1.031  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.038   4.904  -4.148  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       6.674   9.125   8.481  1.00  0.00          X1  
@@ -338,7 +338,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       7.047   9.078   0.180  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      11.893   6.079  -4.696  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       5.705   8.705   7.549  1.00  0.00          X1  
@@ -372,7 +372,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       6.571  11.119   0.411  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       9.568   7.732  -5.572  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       4.795   8.523   7.219  1.00  0.00          X1  
@@ -406,7 +406,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       5.150  10.991   0.667  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       9.128   7.890  -4.883  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       4.234   8.840   7.793  1.00  0.00          X1  
@@ -440,7 +440,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       3.996   9.251   1.115  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       9.343  10.019  -4.087  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       2.948   9.297   8.541  1.00  0.00          X1  
@@ -474,7 +474,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       5.352  10.425  -1.167  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.949   8.249  -5.660  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       4.035   9.661   6.177  1.00  0.00          X1  
@@ -508,7 +508,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       3.703  11.389  -1.317  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       7.123  10.386  -7.916  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       2.825  10.821   6.110  1.00  0.00          X1  
@@ -542,7 +542,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       3.436  12.301  -0.348  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       8.703  12.925  -5.651  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       2.974  11.481   7.093  1.00  0.00          X1  
@@ -576,7 +576,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       5.825  13.831   1.348  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       9.941  10.566  -4.005  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       2.952  11.365   7.823  1.00  0.00          X1  
@@ -610,7 +610,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       6.193  13.195   1.037  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.305   9.351  -3.920  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       3.990  11.307   7.953  1.00  0.00          X1  
@@ -644,7 +644,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       3.572  11.542   3.110  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       7.189   8.371  -2.644  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       1.234  11.348  10.234  1.00  0.00          X1  
@@ -678,7 +678,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       6.513  13.297   3.356  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       7.543   8.598  -2.398  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       4.019  11.434  10.180  1.00  0.00          X1  
@@ -712,7 +712,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       5.371  12.985   2.509  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       8.823   8.048  -1.959  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       4.297  12.178   9.888  1.00  0.00          X1  
@@ -746,7 +746,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       6.487   9.056   2.848  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       9.885   5.665  -2.914  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       2.945  10.965   9.178  1.00  0.00          X1  
@@ -780,7 +780,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       6.543  11.149   2.178  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       6.525   6.624  -3.803  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       1.820  11.951   7.949  1.00  0.00          X1  
@@ -814,7 +814,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       5.058  12.452   1.175  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       7.318   6.987  -3.438  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       1.622  11.944   7.822  1.00  0.00          X1  
@@ -848,7 +848,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       3.965  11.666   1.885  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       9.830  10.250  -2.570  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       1.089  11.433   8.808  1.00  0.00          X1  
@@ -882,7 +882,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       6.110  13.319   1.557  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      13.027  10.950  -0.110  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       1.961  11.008   7.362  1.00  0.00          X1  
@@ -916,7 +916,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       4.425  13.445   0.856  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      11.697  11.917  -0.154  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       0.972  11.917   7.337  1.00  0.00          X1  
@@ -950,7 +950,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       5.108  10.895   1.984  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      11.610   8.721  -1.056  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       0.653  11.026   8.016  1.00  0.00          X1  
@@ -984,7 +984,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       4.406  10.637   2.536  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      11.158   9.136  -0.363  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -1.380   9.326   7.124  1.00  0.00          X1  
@@ -1018,7 +1018,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       2.544  11.916   2.424  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       9.340   8.749   2.621  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -2.390   8.696   7.064  1.00  0.00          X1  
@@ -1052,7 +1052,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       3.868   9.568   2.160  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.773  10.932   4.750  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -1.632   8.250   7.085  1.00  0.00          X1  
@@ -1086,7 +1086,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       4.511   8.810   3.463  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      11.240  12.042   2.735  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -0.012   9.055   9.440  1.00  0.00          X1  
@@ -1120,7 +1120,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       5.296   9.322   4.656  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      12.696  10.544   4.569  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       0.525   7.894  10.264  1.00  0.00          X1  
@@ -1154,7 +1154,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       5.195   9.548   4.902  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      12.325   7.674   6.279  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       1.124   8.405  11.097  1.00  0.00          X1  
@@ -1188,7 +1188,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       6.235  10.023   4.834  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      11.290   5.436   1.726  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       1.207   7.656   9.870  1.00  0.00          X1  
@@ -1222,7 +1222,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       4.876   6.866   6.322  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.063   3.100   2.427  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -0.668   6.817  11.373  1.00  0.00          X1  
@@ -1256,7 +1256,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       5.795   6.333   6.105  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      11.297   1.673   4.041  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       0.563   7.056  11.430  1.00  0.00          X1  
@@ -1290,7 +1290,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       7.290   6.932   6.869  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      13.755   3.134   7.064  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       1.448   5.353  11.299  1.00  0.00          X1  
@@ -1324,7 +1324,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       6.115   8.109   8.177  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      13.293   5.945   8.371  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       0.504   7.391  13.102  1.00  0.00          X1  
@@ -1358,7 +1358,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       7.103   6.755  10.473  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      14.552   5.901  10.653  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       0.742   6.515  14.439  1.00  0.00          X1  
@@ -1392,7 +1392,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       5.489   8.416  10.010  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      12.301   7.535  13.022  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -0.885   6.962  13.686  1.00  0.00          X1  
@@ -1426,7 +1426,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       4.307   9.442  11.893  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      11.716   9.801  13.002  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -1.506   6.951  15.924  1.00  0.00          X1  
@@ -1460,7 +1460,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       2.838   8.501  11.231  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       9.913   6.342  12.468  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -3.059   7.170  15.671  1.00  0.00          X1  
@@ -1494,7 +1494,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       2.831   9.814   9.251  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.078   9.209  11.085  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -2.564   7.110  13.706  1.00  0.00          X1  
@@ -1528,7 +1528,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       3.259   8.379  10.098  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.142  11.358  10.135  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -1.507   6.731  15.649  1.00  0.00          X1  
@@ -1562,7 +1562,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       3.146   9.713  11.055  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       9.717  10.616   7.554  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -1.428   6.448  16.021  1.00  0.00          X1  
@@ -1596,7 +1596,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       2.507  11.433  12.044  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       8.824   8.135   9.706  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -2.145   8.537  17.164  1.00  0.00          X1  
@@ -1630,7 +1630,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       3.849   9.612  14.548  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       8.730   9.062   8.881  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -3.150   7.941  16.665  1.00  0.00          X1  
@@ -1664,7 +1664,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       3.169   8.758  13.841  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       9.317   4.531  13.079  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -3.688   7.750  16.708  1.00  0.00          X1  
@@ -1698,7 +1698,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       2.544   8.781  14.243  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       8.867   4.798  13.613  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -4.430   7.153  16.472  1.00  0.00          X1  
@@ -1732,7 +1732,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       3.617   9.461  15.347  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       9.995   8.053  11.660  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -3.347   7.512  17.336  1.00  0.00          X1  
@@ -1766,7 +1766,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       4.246   8.646  13.394  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       9.433   7.555  18.699  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -2.523   6.733  15.996  1.00  0.00          X1  
@@ -1800,7 +1800,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       3.242   7.306  15.708  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.252   5.886  17.965  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -4.041   5.994  16.930  1.00  0.00          X1  
@@ -1834,7 +1834,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       2.644   6.863  15.689  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       9.312   4.457  18.138  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -4.557   6.072  17.631  1.00  0.00          X1  
@@ -1868,7 +1868,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       2.533   5.983  17.548  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       8.507   2.709  20.685  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -4.935   5.300  17.657  1.00  0.00          X1  
@@ -1902,7 +1902,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       1.797   8.608  19.601  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       8.366   5.029  20.132  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -4.783   5.211  18.411  1.00  0.00          X1  
@@ -1936,7 +1936,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       1.014   8.607  18.623  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       7.117   4.382  17.545  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -6.185   6.896  19.847  1.00  0.00          X1  
@@ -1970,7 +1970,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       0.097   9.544  17.467  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       6.492   5.771  16.414  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -6.287   6.842  20.331  1.00  0.00          X1  
@@ -2004,7 +2004,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       2.269   6.832  17.965  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       7.219   4.754  12.728  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -4.820   6.541  20.395  1.00  0.00          X1  
@@ -2038,7 +2038,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       1.718   8.773  18.031  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       8.792   7.548  20.201  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -5.244   6.795  19.995  1.00  0.00          X1  
@@ -2072,7 +2072,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       0.714   8.001  17.811  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       7.074   5.485  20.887  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -6.240   6.718  20.313  1.00  0.00          X1  
@@ -2106,7 +2106,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       0.767   9.782  19.684  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       6.896   5.548  18.811  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -6.355   8.473  21.635  1.00  0.00          X1  
@@ -2140,7 +2140,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -0.193  10.864  21.244  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       5.191   6.591  18.242  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -7.254   8.415  21.869  1.00  0.00          X1  
@@ -2174,7 +2174,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -2.244  10.464  22.365  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       4.337   7.008  21.368  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -8.859   7.145  23.583  1.00  0.00          X1  
@@ -2208,7 +2208,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -1.794   7.281  25.961  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       4.671   3.520  25.414  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -9.092   6.847  24.287  1.00  0.00          X1  
@@ -2242,7 +2242,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -1.848   6.705  26.294  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       4.718   5.113  23.036  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -9.098   6.385  24.403  1.00  0.00          X1  
@@ -2276,7 +2276,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -1.617   6.887  26.042  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       4.791   3.812  23.647  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -8.869   5.017  25.655  1.00  0.00          X1  
@@ -2310,7 +2310,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -0.717   7.514  27.788  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       6.628   6.042  27.415  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -7.679   5.298  26.094  1.00  0.00          X1  
@@ -2344,7 +2344,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       1.514   6.806  29.823  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       7.689   6.916  25.568  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -4.604   6.729  25.486  1.00  0.00          X1  
@@ -2378,7 +2378,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       1.195   8.469  27.682  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       8.528   9.786  26.826  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -5.926   6.126  27.444  1.00  0.00          X1  
@@ -2412,7 +2412,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       0.644   7.724  26.231  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       7.360   9.349  23.315  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -5.683   3.708  25.918  1.00  0.00          X1  
@@ -2446,7 +2446,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       0.602   9.230  26.184  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       7.179  10.417  22.781  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -4.727   3.956  26.383  1.00  0.00          X1  
@@ -2480,7 +2480,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       0.583   6.994  27.995  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       5.232   8.484  22.301  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -6.518   4.862  26.858  1.00  0.00          X1  
@@ -2514,7 +2514,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       0.041   6.712  28.886  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       7.281   7.414  27.060  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -7.206   5.667  27.259  1.00  0.00          X1  
@@ -2548,7 +2548,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -0.791   8.323  29.554  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       6.007   6.914  26.715  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -7.563   6.007  27.312  1.00  0.00          X1  
@@ -2582,7 +2582,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -1.160   6.722  29.007  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       5.073   8.982  25.499  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -8.051   4.395  27.175  1.00  0.00          X1  
@@ -2616,7 +2616,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -3.213   7.920  29.996  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       3.664   9.857  27.715  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -8.933   3.801  27.435  1.00  0.00          X1  
@@ -2650,7 +2650,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -1.128   7.575  28.190  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       5.135  11.642  28.888  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -7.025   3.055  27.171  1.00  0.00          X1  
@@ -2684,7 +2684,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -1.588   7.620  27.827  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       5.746   8.723  28.944  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -7.898   3.805  26.457  1.00  0.00          X1  
@@ -2718,7 +2718,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -1.235   7.432  27.858  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       6.046   8.951  28.823  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -8.031   4.428  26.842  1.00  0.00          X1  
@@ -2752,7 +2752,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -2.714   8.337  30.065  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       4.585   8.624  31.764  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -7.966   3.770  27.271  1.00  0.00          X1  
@@ -2786,7 +2786,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -2.967   9.068  31.667  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       3.043  10.917  35.754  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -8.398   4.722  28.861  1.00  0.00          X1  
@@ -2820,7 +2820,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -2.421   5.903  32.991  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       1.821  10.437  28.784  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -8.149   3.397  28.849  1.00  0.00          X1  
@@ -2854,7 +2854,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -4.107   8.799  31.370  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       3.392   8.854  31.318  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -8.239   2.863  29.385  1.00  0.00          X1  
@@ -2888,7 +2888,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -0.926   6.926  32.236  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       5.797   8.189  29.161  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -6.695   2.460  30.496  1.00  0.00          X1  
@@ -2922,7 +2922,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       0.744   7.906  29.750  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       8.054   6.829  28.465  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -5.632   4.188  28.420  1.00  0.00          X1  
@@ -2956,7 +2956,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       2.018   6.838  28.452  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       7.911  11.228  26.952  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -3.539   1.944  29.646  1.00  0.00          X1  
@@ -2990,7 +2990,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       4.098   4.925  29.483  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       9.434   7.574  24.927  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -2.487   1.347  29.781  1.00  0.00          X1  
@@ -3024,7 +3024,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       3.520   5.763  30.791  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       9.456   7.125  26.414  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -3.346   2.745  30.818  1.00  0.00          X1  
@@ -3058,7 +3058,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       0.932   6.084  30.774  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       8.038   8.056  29.404  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -5.262   1.856  30.730  1.00  0.00          X1  
@@ -3092,7 +3092,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       2.461   5.209  32.542  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       9.392   7.206  30.485  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -4.039   2.878  29.615  1.00  0.00          X1  
@@ -3126,7 +3126,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       3.300   6.804  30.052  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.685   7.899  30.772  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -2.831   2.541  30.748  1.00  0.00          X1  
@@ -3160,7 +3160,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       3.358   5.996  29.675  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.595   7.884  30.223  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -3.492   3.266  31.048  1.00  0.00          X1  
@@ -3194,7 +3194,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       1.802   8.762  30.109  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       8.883   8.125  27.722  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -3.796   4.121  31.947  1.00  0.00          X1  
@@ -3228,7 +3228,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       2.724   6.432  31.487  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       7.946   7.002  26.133  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -4.337   3.930  31.833  1.00  0.00          X1  
@@ -3262,7 +3262,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       2.308   7.322  30.105  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       8.429  10.028  26.721  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -4.751   4.792  29.962  1.00  0.00          X1  
@@ -3296,7 +3296,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       1.762   6.908  29.301  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       5.660   9.822  23.594  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -5.133   4.389  30.838  1.00  0.00          X1  
@@ -3330,7 +3330,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       1.642   7.366  28.778  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       6.804   9.104  23.622  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -5.430   5.133  29.895  1.00  0.00          X1  
@@ -3364,7 +3364,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       0.597   7.303  29.240  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       7.598   8.471  26.816  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -6.203   5.225  31.627  1.00  0.00          X1  
@@ -3398,7 +3398,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       0.093   9.299  27.111  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       7.409   7.773  27.745  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -6.642   6.885  29.360  1.00  0.00          X1  
@@ -3432,7 +3432,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       0.590   9.628  25.890  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       7.540   7.210  24.440  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -6.031   7.500  28.698  1.00  0.00          X1  
@@ -3466,7 +3466,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       2.605   7.483  25.687  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       9.654   5.571  23.980  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -4.281   6.346  28.431  1.00  0.00          X1  
@@ -3500,7 +3500,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       4.390   6.100  24.561  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.912   2.418  24.961  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -2.414   4.973  27.508  1.00  0.00          X1  
@@ -3534,7 +3534,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       3.841   5.885  26.144  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.224   4.025  22.675  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -3.416   4.488  27.423  1.00  0.00          X1  
@@ -3568,7 +3568,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       3.161   7.301  24.677  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       8.970   2.570  25.013  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -4.266   6.499  25.342  1.00  0.00          X1  
@@ -3602,7 +3602,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       3.890   5.899  25.938  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.483   2.368  25.370  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -3.447   7.363  25.421  1.00  0.00          X1  
@@ -3636,7 +3636,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       5.083   6.677  26.495  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      11.971   4.675  28.685  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -2.411   6.448  26.319  1.00  0.00          X1  
@@ -3670,7 +3670,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       2.089   6.086  29.062  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       9.022   3.760  27.395  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -4.984   5.880  26.578  1.00  0.00          X1  
@@ -3704,7 +3704,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -1.523   6.770  28.900  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       5.879   5.565  28.866  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -8.260   4.021  27.083  1.00  0.00          X1  
@@ -3738,7 +3738,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -1.750   6.030  28.069  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       4.505   7.474  31.947  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -9.018   4.430  27.142  1.00  0.00          X1  
@@ -3772,7 +3772,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -4.218   9.277  29.657  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       2.564   6.232  30.647  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -9.107   4.742  26.225  1.00  0.00          X1  
@@ -3806,7 +3806,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -3.821   7.866  29.471  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       2.740   4.266  28.979  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -9.224   5.833  24.682  1.00  0.00          X1  
@@ -3840,7 +3840,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -2.526   6.387  28.738  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       3.620   3.819  32.185  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -9.123   5.623  25.253  1.00  0.00          X1  
@@ -3874,7 +3874,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -2.239   7.364  27.830  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       1.276   3.721  33.364  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -9.405   7.067  25.635  1.00  0.00          X1  
@@ -3908,7 +3908,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -2.401  10.672  27.066  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       1.837   7.797  32.545  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -9.078   7.615  25.543  1.00  0.00          X1  
@@ -3942,7 +3942,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -3.616   9.208  25.373  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       1.418   6.642  30.305  1.00  0.00          A2  
 HETATM    3 X1     2 A   2     -10.895   7.404  25.463  1.00  0.00          X1  
@@ -3976,7 +3976,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -3.644   9.600  28.521  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       2.080   5.692  31.388  1.00  0.00          A2  
 HETATM    3 X1     2 A   2     -10.480   7.070  26.755  1.00  0.00          X1  
@@ -4010,7 +4010,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -3.626  10.927  27.235  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       1.732   9.304  32.225  1.00  0.00          A2  
 HETATM    3 X1     2 A   2     -10.584   8.189  26.657  1.00  0.00          X1  
@@ -4044,7 +4044,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -4.796  10.139  27.383  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       1.296   8.166  31.287  1.00  0.00          A2  
 HETATM    3 X1     2 A   2     -11.682   7.385  26.264  1.00  0.00          X1  
@@ -4078,7 +4078,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -3.793  10.588  28.491  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       3.393   8.892  29.804  1.00  0.00          A2  
 HETATM    3 X1     2 A   2     -10.369   7.490  26.644  1.00  0.00          X1  
@@ -4112,7 +4112,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -2.565   9.963  25.471  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       4.841   8.907  24.940  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -9.870   8.311  25.081  1.00  0.00          X1  
@@ -4146,7 +4146,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -3.559  11.021  22.813  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       2.930   9.644  26.312  1.00  0.00          A2  
 HETATM    3 X1     2 A   2     -10.567   8.693  24.120  1.00  0.00          X1  
@@ -4180,7 +4180,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -3.056  10.996  26.506  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       2.481   8.040  30.612  1.00  0.00          A2  
 HETATM    3 X1     2 A   2     -10.521  10.278  26.377  1.00  0.00          X1  
@@ -4214,7 +4214,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -3.366  12.758  24.136  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       3.576  10.813  26.204  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -9.952   9.705  26.021  1.00  0.00          X1  
@@ -4248,7 +4248,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -2.022  11.614  24.297  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       4.403   8.615  26.743  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -9.374  10.327  25.029  1.00  0.00          X1  
@@ -4282,7 +4282,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -1.910  13.197  24.127  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       4.549  14.662  27.647  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -9.155  11.729  22.862  1.00  0.00          X1  
@@ -4316,7 +4316,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -2.560  15.393  26.808  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       4.585  14.254  28.784  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -9.211  11.955  27.244  1.00  0.00          X1  
@@ -4350,7 +4350,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -2.333  13.474  26.882  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       4.893  12.025  28.272  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -9.621  11.786  26.348  1.00  0.00          X1  
@@ -4384,7 +4384,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -0.930  12.388  28.256  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       5.842   9.166  28.234  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -8.335  11.204  28.378  1.00  0.00          X1  
@@ -4418,7 +4418,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       0.435  12.111  29.439  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       7.468   9.809  30.660  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -7.012  12.460  28.624  1.00  0.00          X1  
@@ -4452,7 +4452,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       1.892  11.783  28.029  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       8.519   8.465  26.879  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -5.588  12.152  28.448  1.00  0.00          X1  
@@ -4486,7 +4486,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       2.075  12.306  28.973  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       9.083   9.980  27.656  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -5.356  11.476  28.382  1.00  0.00          X1  
@@ -4520,7 +4520,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       1.493  13.816  25.852  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       7.652  10.781  22.836  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -5.855  13.031  27.134  1.00  0.00          X1  
@@ -4554,7 +4554,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       1.843  14.196  25.691  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       8.043  13.058  21.628  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -5.205  12.693  27.768  1.00  0.00          X1  
@@ -4588,7 +4588,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       2.100  13.944  27.075  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       6.899  12.983  21.392  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -5.352  13.120  26.887  1.00  0.00          X1  
@@ -4622,7 +4622,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       1.621  14.333  24.740  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       7.342  10.625  21.615  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -5.055  12.531  27.646  1.00  0.00          X1  
@@ -4656,7 +4656,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       2.550  14.800  23.563  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       7.995  12.812  18.805  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -3.471  11.844  26.918  1.00  0.00          X1  
@@ -4690,7 +4690,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       1.393  15.381  21.199  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       8.314  13.062  19.476  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -3.871  13.554  26.220  1.00  0.00          X1  
@@ -4724,7 +4724,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       0.775  15.882  20.007  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       7.715  14.233  17.691  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -3.110  12.908  25.691  1.00  0.00          X1  
@@ -4758,7 +4758,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       1.861  16.564  21.788  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       8.108  13.833  18.663  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -4.705  14.080  24.429  1.00  0.00          X1  
@@ -4792,7 +4792,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       1.333  17.508  21.370  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       7.234  14.969  17.499  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -4.690  13.942  24.064  1.00  0.00          X1  
@@ -4826,7 +4826,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       3.087  15.420  20.051  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       9.357  11.593  18.542  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -3.602  13.296  22.697  1.00  0.00          X1  
@@ -4860,7 +4860,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       2.066  14.051  18.964  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       7.813  10.290  15.951  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -3.949  14.158  23.443  1.00  0.00          X1  
@@ -4894,7 +4894,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       4.058  14.348  20.055  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       9.812  10.327  17.414  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -2.830  14.111  23.011  1.00  0.00          X1  
@@ -4928,7 +4928,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       4.274  16.187  18.649  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      11.089  13.823  16.595  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -2.076  15.116  22.494  1.00  0.00          X1  
@@ -4962,7 +4962,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       4.594  15.724  19.775  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.112  14.180  14.937  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -1.764  14.882  23.664  1.00  0.00          X1  
@@ -4996,7 +4996,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       5.154  17.484  20.522  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.591  16.213  15.514  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -1.417  16.081  23.853  1.00  0.00          X1  
@@ -5030,7 +5030,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       4.281  18.937  19.034  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.140  18.700  14.357  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -0.023  15.886  24.364  1.00  0.00          X1  
@@ -5064,7 +5064,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       4.612  19.114  20.005  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       9.531  18.611  14.366  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -1.111  16.764  24.246  1.00  0.00          X1  
@@ -5098,7 +5098,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       5.076  20.569  19.691  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       8.093  18.111  13.279  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -0.745  17.731  23.474  1.00  0.00          X1  
@@ -5132,7 +5132,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       6.543  19.451  20.011  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.345  16.936  14.056  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -0.197  17.976  22.952  1.00  0.00          X1  
@@ -5166,7 +5166,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       4.616  18.720  17.469  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      11.596  16.301  16.171  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       0.058  17.276  23.247  1.00  0.00          X1  
@@ -5200,7 +5200,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       6.181  17.812  21.107  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      12.423  15.142  17.921  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -0.134  14.283  23.085  1.00  0.00          X1  
@@ -5234,7 +5234,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       5.926  13.975  20.688  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.570  12.001  15.140  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -0.244  13.849  24.951  1.00  0.00          X1  
@@ -5268,7 +5268,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       6.133  13.925  19.841  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      11.222   9.265  16.904  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       0.849  14.943  25.066  1.00  0.00          X1  
@@ -5302,7 +5302,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       8.069  12.072  22.944  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.993   8.707  16.913  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       1.309  13.091  26.029  1.00  0.00          X1  
@@ -5336,7 +5336,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       7.245  13.197  22.755  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      12.240   8.342  19.975  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       0.624  13.653  26.248  1.00  0.00          X1  
@@ -5370,7 +5370,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       8.840  14.358  20.682  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      12.085   8.564  17.197  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       2.286  15.006  24.270  1.00  0.00          X1  
@@ -5404,7 +5404,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       7.445  15.176  19.135  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      12.383  11.553  14.806  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       1.156  14.935  23.214  1.00  0.00          X1  
@@ -5438,7 +5438,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       7.135  16.005  20.313  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      12.335  12.465  16.229  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       1.306  14.794  24.875  1.00  0.00          X1  
@@ -5472,7 +5472,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       8.236  14.539  20.589  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      13.204   9.773  17.614  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       1.582  15.691  23.852  1.00  0.00          X1  
@@ -5506,7 +5506,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       8.007  13.897  21.263  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      13.011   9.759  17.510  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       1.922  15.974  25.125  1.00  0.00          X1  
@@ -5540,7 +5540,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       7.315  15.675  21.238  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.635  12.613  15.250  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -0.025  17.086  21.866  1.00  0.00          X1  
@@ -5574,7 +5574,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       5.295  17.514  20.268  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       9.109  13.124  15.533  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -1.359  17.187  23.714  1.00  0.00          X1  
@@ -5608,7 +5608,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       3.667  19.483  16.692  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.084  15.601  16.767  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -1.234  17.972  22.165  1.00  0.00          X1  
@@ -5642,7 +5642,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       4.720  19.748  16.780  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.180  14.738  15.619  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -1.007  19.166  21.588  1.00  0.00          X1  
@@ -5676,7 +5676,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       4.633  19.298  18.697  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.041  18.891  13.516  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -0.689  19.031  23.975  1.00  0.00          X1  
@@ -5710,7 +5710,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       3.561  22.427  17.648  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       5.867  19.711  11.048  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -1.418  20.006  22.708  1.00  0.00          X1  
@@ -5744,7 +5744,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       4.464  20.303  16.306  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       8.266  23.374  10.618  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       0.334  18.860  22.398  1.00  0.00          X1  
@@ -5778,7 +5778,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       7.061  20.011  16.648  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       9.811  18.806   9.776  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       2.915  17.513  22.377  1.00  0.00          X1  
@@ -5812,7 +5812,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       7.075  18.818  16.659  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.473  18.342   9.990  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       1.614  18.020  21.737  1.00  0.00          X1  
@@ -5846,7 +5846,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       4.875  20.804  18.067  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       9.819  17.514  13.486  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       0.699  18.825  23.974  1.00  0.00          X1  
@@ -5880,7 +5880,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       5.902  20.162  20.638  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      11.465  16.524  17.165  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       0.970  17.574  25.660  1.00  0.00          X1  
@@ -5914,7 +5914,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       4.490  20.290  19.968  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      10.471  16.059  18.362  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       0.653  18.152  26.047  1.00  0.00          X1  
@@ -5948,7 +5948,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       6.996  19.614  20.682  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      13.197  18.075  16.754  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       2.385  16.875  25.925  1.00  0.00          X1  
@@ -5982,7 +5982,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       8.957  17.835  22.769  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      13.837  18.429  17.104  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       2.089  15.998  25.156  1.00  0.00          X1  
@@ -6016,7 +6016,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       9.644  16.850  23.195  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      14.198  14.697  17.638  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       2.624  16.798  25.834  1.00  0.00          X1  
@@ -6050,7 +6050,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       9.361  18.340  21.871  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      14.060  14.660  17.330  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       3.174  16.530  25.704  1.00  0.00          X1  
@@ -6084,7 +6084,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      11.612  17.099  21.979  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      16.675  11.908  20.063  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       4.963  16.291  25.354  1.00  0.00          X1  
@@ -6118,7 +6118,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      10.064  16.854  21.870  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      15.674  12.022  20.675  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       4.799  16.295  27.182  1.00  0.00          X1  
@@ -6152,7 +6152,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      11.834  16.182  22.761  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      15.721  12.669  17.395  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       5.448  15.761  26.671  1.00  0.00          X1  
@@ -6186,7 +6186,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      12.114  15.069  23.611  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      12.987  14.203  16.213  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       5.978  15.476  27.906  1.00  0.00          X1  
@@ -6220,7 +6220,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      12.367  15.358  22.672  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      17.785  14.020  17.661  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       6.538  14.889  27.368  1.00  0.00          X1  
@@ -6254,7 +6254,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      11.910  15.235  22.856  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      17.853  16.148  18.373  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       5.752  16.537  26.934  1.00  0.00          X1  
@@ -6288,7 +6288,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      11.864  15.481  24.555  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      15.531  17.576  18.357  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       5.593  16.488  28.544  1.00  0.00          X1  
@@ -6322,7 +6322,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      11.399  14.411  25.172  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      13.991  16.214  18.369  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       5.560  14.087  29.869  1.00  0.00          X1  
@@ -6356,7 +6356,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      12.771  14.905  27.469  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      15.721  13.478  20.723  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       5.631  14.227  29.663  1.00  0.00          X1  
@@ -6390,7 +6390,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      10.822  17.674  24.747  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      16.205  17.802  19.526  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       5.449  15.698  29.592  1.00  0.00          X1  
@@ -6424,7 +6424,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      10.156  17.887  25.959  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      14.620  15.547  20.405  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       3.694  15.361  28.809  1.00  0.00          X1  
@@ -6458,7 +6458,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      11.200  17.079  27.467  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      15.519  16.743  21.345  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       3.702  17.026  27.657  1.00  0.00          X1  
@@ -6492,7 +6492,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      10.426  17.969  26.450  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      15.273  17.781  20.730  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       3.094  17.935  28.032  1.00  0.00          X1  
@@ -6526,7 +6526,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       9.785  19.485  24.860  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      15.929  16.146  22.150  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       2.761  17.343  26.387  1.00  0.00          X1  
@@ -6560,7 +6560,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       9.893  19.031  25.718  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      16.272  15.558  23.851  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       2.815  18.278  28.082  1.00  0.00          X1  
@@ -6594,7 +6594,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       9.220  18.831  25.413  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      16.105  17.073  23.014  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       2.586  18.154  28.846  1.00  0.00          X1  
@@ -6628,7 +6628,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       9.956  19.225  25.973  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      16.278  16.240  23.258  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       2.842  18.227  28.128  1.00  0.00          X1  
@@ -6662,7 +6662,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       8.824  20.382  25.760  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      15.756  18.005  24.166  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       2.061  18.454  28.368  1.00  0.00          X1  
@@ -6696,7 +6696,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1       9.936  20.000  27.082  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      15.606  16.482  23.657  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       3.183  19.106  30.220  1.00  0.00          X1  
@@ -6730,7 +6730,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      10.789  18.388  27.330  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      17.815  16.167  25.930  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       3.506  18.417  29.119  1.00  0.00          X1  
@@ -6764,7 +6764,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      11.111  18.500  28.529  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      16.377  14.736  24.739  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       3.789  20.123  28.529  1.00  0.00          X1  
@@ -6798,7 +6798,7 @@ CONECT   13   14
 CONECT   13   15
 CONECT   15   16
 END
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      11.448  18.966  27.577  1.00  0.00          X1  
 HETATM    2 A2     1 A   1      17.244  15.776  24.044  1.00  0.00          A2  
 HETATM    3 X1     2 A   2       4.185  19.618  29.330  1.00  0.00          X1  

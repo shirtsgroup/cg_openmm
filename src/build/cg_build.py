@@ -207,7 +207,7 @@ def verify_topology(cgmodel):
         return
 
 
-def build_topology(cgmodel,use_pdbfile=False):
+def build_topology(cgmodel,use_pdbfile=False,pdbfile=None):
         """
 
         Construct an OpenMM topology for our coarse grained model
@@ -221,11 +221,16 @@ def build_topology(cgmodel,use_pdbfile=False):
         a pdb file will be used to generate the topology.
 
         """
-        if use_pdbfile:
-          write_pdbfile_without_topology(cgmodel,"topology_source.pdb")
-          pdb = PDBFile("topology_source.pdb")
-          topology = pdb.getTopology()
-          return(topology)
+        if use_pdbfile == True:
+         if pdbfile == None:
+           write_pdbfile_without_topology(cgmodel,"topology_source.pdb")
+           pdb = PDBFile("topology_source.pdb")
+           topology = pdb.getTopology()
+           return(topology)
+         else:
+           pdb = PDBFile(pdbfile)
+           topology = pdb.getTopology()
+           return(topology)
 
         topology = Topology()
 

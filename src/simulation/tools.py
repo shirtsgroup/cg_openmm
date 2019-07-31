@@ -309,6 +309,21 @@ def run_simulation(cgmodel,output_directory,total_simulation_time,simulation_tim
         simulation = build_mm_simulation(cgmodel.topology,cgmodel.system,cgmodel.positions,total_simulation_time=total_simulation_time,simulation_time_step=simulation_time_step,temperature=temperature,output_pdb=output_pdb,output_data=output_data,print_frequency=print_frequency)
 
         for step in range(total_steps):
-          simulation.step(1)
+          sim = simulation
+          try:
+            sim.step(1)
+            simulation = sim
+          except:
+            attempts = 1
+            while attempts <= 3:
+              try:
+                sim = simulation
+                sim.step(1)
+                simulation = sim
+              except:
+                attempts = attempts + 1
+            if attempts > 3:
+              print("Error: simulation attempt failed.")
+              exit()
 
         return

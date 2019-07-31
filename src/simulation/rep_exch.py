@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import matplotlib.pyplot as pyplot
 from simtk import unit
 import openmmtools as mmtools
 from cg_openmm.src.utilities.util import set_box_vectors, get_box_vectors
@@ -15,7 +16,49 @@ from yank.utils import config_root_logger
 # quiet down some citation spam
 MultiStateSampler._global_citation_silence = True
 
-def replica_exchange(topology,system,positions,temperature_list=[(300.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(-50,50,10)],simulation_time_step=None,total_simulation_time=1.0 * unit.picosecond,output_data='output.nc',print_frequency=100,verbose=False, verbose_simulation=False,exchange_attempts=None,test_time_step=False):
+def read_replica_exchange_data(system=None,topology=None,temperature_list=None,output_data="output.nc",print_frequency=None):
+        """
+        """
+        print(temperature_list)
+        exit()
+        # Read the simulation coordinates for individual temperature replicas
+        reporter = MultiStateReporter(output_data, open_mode='r', checkpoint_interval=print_frequency)
+        analyzer = ReplicaExchangeAnalyzer(reporter)
+
+        mixing_statistics = analyzer.show_mixing_statistics()
+
+        try:
+          Delta_f_ij, dDelta_f_ij = analyzer.get_free_energy()
+
+        except:
+          Delta_f_ij, dDelta_f_ij = 0.0, 0.0
+
+        replica_energies,unsampled_state_energies,neighborhoods,replica_state_indices = analyzer.read_energies()
+
+        total_steps = len(replica_energies[0][0])
+        replica_positions = unit.Quantity(np.zeros([len(temperature_list),len(temperature_list),total_steps,system.getNumParticles(),3]),unit.nanometer)
+
+        for step in range(total_steps):
+          sampler_states = reporter.read_sampler_states(iteration=step)
+          for replica_index in range(len(temperature_list)):
+            for thermodynamic_state_index in range(len(temperature_list)):
+             for particle in range(system.getNumParticles()):
+               for cart in range(3):
+                 print(replica_index)
+                 print(thermodynamic_state_index)
+                 replica_positions[replica_index][thermodynamic_state_index][step][particle][cart] = sampler_states[replica_index].positions[particle][cart]
+
+        replica_index = 1
+        for replica_index in range(len(replica_positions)):
+          replica_trajectory = replica_positions[replica_index][replica_index]
+          file = open(str("replica_"+str(replica_index+1)+".pdb"),"w")
+          for positions in replica_trajectory:
+            PDBFile.writeFile(topology,positions,file=file)
+          file.close()
+
+        return(replica_energies,replica_positions,replica_state_indices)
+
+def run_replica_exchange(topology,system,positions,temperature_list=[(300.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(-50,50,10)],simulation_time_step=None,total_simulation_time=1.0 * unit.picosecond,output_data='output.nc',print_frequency=100,verbose=False, verbose_simulation=False,exchange_attempts=None,test_time_step=False):
         """
         Construct an OpenMM simulation object for our coarse grained model.
 
@@ -135,38 +178,63 @@ def replica_exchange(topology,system,positions,temperature_list=[(300.0 * unit.k
                 print("Please check the model and simulations settings, and try again.")
                 exit()
 
-        # Read the simulation coordinates for individual temperature replicas
-        reporter = MultiStateReporter(output_data, open_mode='r', checkpoint_interval=print_frequency)
-        analyzer = ReplicaExchangeAnalyzer(reporter)
+        replica_energies,replica_positions,replica_state_indices = read_replica_exchange_data(system=system,topology=topology,temperature_list=temperature_list,output_data=output_data,print_frequency=print_frequency)
 
-        mixing_statistics = analyzer.show_mixing_statistics()
+        return(replica_energies,replica_positions,replica_state_indices)
 
-        try:
-          Delta_f_ij, dDelta_f_ij = analyzer.get_free_energy()
-           
-        except:
-          Delta_f_ij, dDelta_f_ij = 0.0, 0.0
+def get_minimum_energy_pose(topology,replica_energies,replica_positions):
+        """
+        """
+        # Get the minimum energy structure sampled during the simulation
+        minimum_energy = 0.0
+        for replica in range(len(replica_energies)):
+          energies = np.array([energy for energy in replica_energies[replica][replica]])
+          for energy in range(len(energies)):
+            if energies[energy] < minimum_energy:
+              minimum_energy = energies[energy]
+              minimum_energy_structure = replica_positions[replica][replica][energy]
+        file = open(str("re_min.pdb"),"w")
+        PDBFile.writeFile(topology,minimum_energy_structure,file=file)
 
-        replica_energies,unsampled_state_energies,neighborhoods,replica_state_indices = analyzer.read_energies()
+        return(minimum_energy_structure)
 
-        total_steps = len(replica_energies[0][0])
-        replica_positions = unit.Quantity(np.zeros([len(temperature_list),len(temperature_list),total_steps,system.getNumParticles(),3]),unit.nanometer)
+def plot_replica_exchange_energies(replica_energies,temperature_list,simulation_time_step,steps_per_stage=1,file_name="replica_exchange_energies.png"):
+        """
+        """
 
-        for step in range(total_steps):
-          sampler_states = reporter.read_sampler_states(iteration=step)
-          for replica_index in range(len(temperature_list)):
-            for thermodynamic_state_index in range(len(thermodynamic_states)):
-             for particle in range(system.getNumParticles()):
-               for cart in range(3):
-                 replica_positions[replica_index][thermodynamic_state_index][step][particle][cart] = sampler_states[replica_index].positions[particle][cart]
+        figure = pyplot.figure(0)
 
-        replica_index = 1
-        for replica_index in range(len(replica_positions)):
-          replica_trajectory = replica_positions[replica_index][replica_index]
-          file = open(str("replica_"+str(replica_index+1)+".pdb"),"w")
-          for positions in replica_trajectory:
-            PDBFile.writeFile(topology,positions,file=file)
-          file.close()
+        for replica in range(len(replica_energies)):
+          simulation_times = np.array([float(int(step*steps_per_stage)*simulation_time_step.in_units_of(unit.picosecond)._value) for step in range(len(replica_energies[replica][replica]))])
+          energies = np.array([float(energy) for energy in replica_energies[replica][replica]])
+          pyplot.plot(simulation_times,energies,figure=figure)
 
-        return(replica_energies,replica_positions,replica_state_indices,temperature_list)
+        pyplot.xlabel("Simulation Time ( Picoseconds )")
+        pyplot.ylabel("Potential Energy ( kJ / mol )")
+        pyplot.title("Replica Exchange Simulation")
+        pyplot.legend([temperature._value for temperature in temperature_list])
+        pyplot.savefig(file_name)
+        pyplot.show()
+        pyplot.close()
 
+        return
+
+def plot_replica_exchange_summary(replica_states,temperature_list,simulation_time_step,steps_per_stage=1,file_name="replica_exchange_state_transitions.png"):
+        """
+        """
+
+        figure = pyplot.figure(1)
+        for replica in range(len(replica_states)):
+          simulation_times = np.array([float(int(step*steps_per_stage)*simulation_time_step.in_units_of(unit.picosecond)._value) for step in range(len(replica_states[replica]))])
+          state_indices = np.array([int(round(state)) for state in replica_states[replica]])
+          pyplot.plot(simulation_times,state_indices,figure=figure)
+
+        pyplot.xlabel("Simulation Time ( Picoseconds )")
+        pyplot.ylabel("Thermodynamic State Index")
+        pyplot.title("State Exchange Summary")
+        pyplot.legend([i for i in range(len(replica_states))])
+        pyplot.savefig(file_name)
+        pyplot.show()
+        pyplot.close()
+
+        return

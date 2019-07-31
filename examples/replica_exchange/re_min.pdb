@@ -1,4 +1,4 @@
-REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-30
+REMARK   1 CREATED WITH OPENMM 7.3.1, 2019-07-31
 HETATM    1 X1     1 A   1      -3.366  12.758  24.136  1.00  0.00          X1  
 HETATM    2 A2     1 A   1       3.576  10.813  26.204  1.00  0.00          A2  
 HETATM    3 X1     2 A   2      -9.952   9.705  26.021  1.00  0.00          X1  
