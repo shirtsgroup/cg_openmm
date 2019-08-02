@@ -19,8 +19,6 @@ MultiStateSampler._global_citation_silence = True
 def read_replica_exchange_data(system=None,topology=None,temperature_list=None,output_data="output.nc",print_frequency=None):
         """
         """
-        print(temperature_list)
-        exit()
         # Read the simulation coordinates for individual temperature replicas
         reporter = MultiStateReporter(output_data, open_mode='r', checkpoint_interval=print_frequency)
         analyzer = ReplicaExchangeAnalyzer(reporter)
@@ -38,15 +36,31 @@ def read_replica_exchange_data(system=None,topology=None,temperature_list=None,o
         total_steps = len(replica_energies[0][0])
         replica_positions = unit.Quantity(np.zeros([len(temperature_list),len(temperature_list),total_steps,system.getNumParticles(),3]),unit.nanometer)
 
-        for step in range(total_steps):
-          sampler_states = reporter.read_sampler_states(iteration=step)
-          for replica_index in range(len(temperature_list)):
-            for thermodynamic_state_index in range(len(temperature_list)):
-             for particle in range(system.getNumParticles()):
-               for cart in range(3):
-                 print(replica_index)
-                 print(thermodynamic_state_index)
-                 replica_positions[replica_index][thermodynamic_state_index][step][particle][cart] = sampler_states[replica_index].positions[particle][cart]
+        #for step in range(total_steps):
+          #print(step)
+          #sampler_states = reporter.read_sampler_states(iteration=step)
+          #for replica_index in range(len(temperature_list)):
+            #for thermodynamic_state_index in range(len(temperature_list)):
+             #for particle in range(system.getNumParticles()):
+               #for cart in range(3):
+                 #replica_positions[replica_index][thermodynamic_state_index][step][particle][cart] = sampler_states[replica_index].positions[particle][cart]
+        #exchange_stages = 0
+        #for step in range(total_steps):
+          #sampler_states = reporter.read_sampler_states(step)
+          #if sampler_states != None:
+          # exchange_stages = exchange_stages + 1
+
+        #for stage in range(exchange_stages):
+          #sampler_states = reporter.read_sampler_states(iteration=stage)
+          #for sampler_state in range(len(sampler_states)):
+            #print(sampler_states)
+
+            #for thermodynamic_state_index in range(len(temperature_list)):
+             #for particle in range(system.getNumParticles()):
+               #for cart in range(3):
+                 #print(sampler_states[replica_index])
+                 #print(sampler_states[replica_index].positions)
+                 #replica_positions[replica_index][thermodynamic_state_index][step][particle][cart] = sampler_states[replica_index].positions[particle][cart]
 
         replica_index = 1
         for replica_index in range(len(replica_positions)):
@@ -126,7 +140,7 @@ def run_replica_exchange(topology,system,positions,temperature_list=[(300.0 * un
           sampler_states.append(mmtools.states.SamplerState(positions,box_vectors=box_vectors))
 
         # Create and configure simulation object.
-        move = mmtools.mcmc.LangevinDynamicsMove(timestep=simulation_time_step,collision_rate=5.0/unit.picosecond,n_steps=round(simulation_steps/exchange_attempts), reassign_velocities=True)
+        move = mmtools.mcmc.LangevinDynamicsMove(timestep=simulation_time_step,collision_rate=5.0/unit.picosecond,n_steps=exchange_attempts, reassign_velocities=True)
         simulation = ReplicaExchangeSampler(mcmc_moves=move, number_of_iterations=exchange_attempts)
 
         if os.path.exists(output_data): os.remove(output_data)
@@ -214,7 +228,7 @@ def plot_replica_exchange_energies(replica_energies,temperature_list,simulation_
         pyplot.title("Replica Exchange Simulation")
         pyplot.legend([temperature._value for temperature in temperature_list])
         pyplot.savefig(file_name)
-        pyplot.show()
+        #pyplot.show()
         pyplot.close()
 
         return
@@ -234,7 +248,7 @@ def plot_replica_exchange_summary(replica_states,temperature_list,simulation_tim
         pyplot.title("State Exchange Summary")
         pyplot.legend([i for i in range(len(replica_states))])
         pyplot.savefig(file_name)
-        pyplot.show()
+        #pyplot.show()
         pyplot.close()
 
         return
