@@ -62,13 +62,13 @@ def read_replica_exchange_data(system=None,topology=None,temperature_list=None,o
                  #print(sampler_states[replica_index].positions)
                  #replica_positions[replica_index][thermodynamic_state_index][step][particle][cart] = sampler_states[replica_index].positions[particle][cart]
 
-        replica_index = 1
-        for replica_index in range(len(replica_positions)):
-          replica_trajectory = replica_positions[replica_index][replica_index]
-          file = open(str("replica_"+str(replica_index+1)+".pdb"),"w")
-          for positions in replica_trajectory:
-            PDBFile.writeFile(topology,positions,file=file)
-          file.close()
+        #replica_index = 1
+        #for replica_index in range(len(replica_positions)):
+          #replica_trajectory = replica_positions[replica_index][replica_index]
+          #file = open(str("replica_"+str(replica_index+1)+".pdb"),"w")
+          #for positions in replica_trajectory:
+            #PDBFile.writeFile(topology,positions,file=file)
+          #file.close()
 
         return(replica_energies,replica_positions,replica_state_indices)
 

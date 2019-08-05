@@ -41,9 +41,9 @@ else:
 ###
 
 # Global definitions
-polymer_length=8
-backbone_lengths=[2]
-sidechain_lengths=[1]
+polymer_length=20
+backbone_lengths=[1]
+sidechain_lengths=[5]
 sidechain_positions=[0]
 include_bond_forces=False
 include_bond_angle_forces=True
