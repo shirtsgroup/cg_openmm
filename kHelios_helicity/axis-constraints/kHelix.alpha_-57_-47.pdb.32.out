@@ -1,0 +1,49 @@
+
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          kHelix  v1.0                                     2015
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+          inputhelix            alpha_-57_-47.pdb                                                                                   
+          coord_type                           1
+             num_grd                         360
+              natoms                          32
+             nframes                           1
+        grid_phi_beg                      0.0000
+        grid_phi_end                    180.0000
+      grid_theta_beg                      0.0000
+      grid_theta_end                    180.0000
+               dsDNA                           0
+        opt_axis_out                           0
+       all_helix_out                           0
+             oradian                           0
+     helix_atom_name            CA  
+       helixout_name            kHelix.alpha_-57_-47.pdb.32.out                                                                     
+          print_sing                           0
+          print_step                           0
+       print_to_plot                           1
+
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          kHelix  execution info                              :::
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+| Run on 07/23/2015 at 15:10:53
+
+| Executable path:   /Users/k/Desktop/Manuscripts/kHelix/Code/kHelix.o
+| Working directory: /Users/k/Desktop/Manuscripts/kHelix/Results/00k.a-helix_test/lEaP_helices_Dagget2003/COnstrained_decreasinglyLongHelices
+
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          kHelix  results                                     :::
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+ ................................................................
+          Phi     Theta  Residual    Radius    Pitch1    Sweep1
+ ................................................................
+
+      84.0000    1.5000    0.1023    2.2764    5.6202 3080.9885
+
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          kHelix  execution timing:                         :::
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Duration of kHelix execution (seconds):            0.560931
