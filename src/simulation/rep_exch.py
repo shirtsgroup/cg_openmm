@@ -194,7 +194,7 @@ def run_replica_exchange(topology,system,positions,temperature_list=[(300.0 * un
 
         return(replica_energies,replica_positions,replica_state_indices)
 
-def get_minimum_energy_pose(topology,replica_energies,replica_positions):
+def get_minimum_energy_pose(topology,replica_energies,replica_positions,file_name=None):
         """
         """
         # Get the minimum energy structure sampled during the simulation
@@ -205,8 +205,12 @@ def get_minimum_energy_pose(topology,replica_energies,replica_positions):
             if energies[energy] < minimum_energy:
               minimum_energy = energies[energy]
               minimum_energy_structure = replica_positions[replica][energy]
-        file = open(str("re_min.pdb"),"w")
-        PDBFile.writeFile(topology,minimum_energy_structure,file=file)
+        if file_name == None:
+          file = open(str("re_min.pdb"),"w")
+          PDBFile.writeFile(topology,minimum_energy_structure,file=file)
+        else:
+          file = open(file_name,"w")
+          PDBFile.writeFile(topology,minimum_energy_structure,file=file)
 
         return(minimum_energy_structure)
 
