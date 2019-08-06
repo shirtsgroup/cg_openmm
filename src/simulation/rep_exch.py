@@ -20,30 +20,28 @@ def read_replica_exchange_data(system=None,topology=None,temperature_list=None,o
         """
         """
         # Read the simulation coordinates for individual temperature replicas
-        reporter = MultiStateReporter(output_data, open_mode='r', checkpoint_interval=print_frequency)
+        reporter = MultiStateReporter(output_data, open_mode='r')
         analyzer = ReplicaExchangeAnalyzer(reporter)
-
-        mixing_statistics = analyzer.show_mixing_statistics()
-
-        try:
-          Delta_f_ij, dDelta_f_ij = analyzer.get_free_energy()
-
-        except:
-          Delta_f_ij, dDelta_f_ij = 0.0, 0.0
 
         replica_energies,unsampled_state_energies,neighborhoods,replica_state_indices = analyzer.read_energies()
 
         total_steps = len(replica_energies[0][0])
-        replica_positions = unit.Quantity(np.zeros([len(temperature_list),len(temperature_list),total_steps,system.getNumParticles(),3]),unit.nanometer)
+        replica_positions = unit.Quantity(np.zeros([len(temperature_list),total_steps,system.getNumParticles(),3]),unit.nanometer)
 
-        #for step in range(total_steps):
-          #print(step)
-          #sampler_states = reporter.read_sampler_states(iteration=step)
-          #for replica_index in range(len(temperature_list)):
-            #for thermodynamic_state_index in range(len(temperature_list)):
-             #for particle in range(system.getNumParticles()):
-               #for cart in range(3):
-                 #replica_positions[replica_index][thermodynamic_state_index][step][particle][cart] = sampler_states[replica_index].positions[particle][cart]
+        #print("Reading data for "+str(total_steps)+" replica exchange steps.")
+        for step in range(total_steps):
+          sampler_states = reporter.read_sampler_states(iteration=step)
+          if type(sampler_states) == None:
+            print("ERROR: no data found for step "+str(step))
+            exit()
+          else:
+           #print("For step "+str(step)+" there are: "+str(len(sampler_states))+" sampler states.")
+           #exit()
+           for replica_index in range(len(temperature_list)):
+             #print("The positions for sampler state "+str(replica_index))
+             #print("are: "+str(sampler_states[replica_index].positions))
+             for particle in range(system.getNumParticles()):
+                   replica_positions[replica_index][step][particle] = sampler_states[replica_index].positions[particle]
         #exchange_stages = 0
         #for step in range(total_steps):
           #sampler_states = reporter.read_sampler_states(step)
@@ -144,7 +142,7 @@ def run_replica_exchange(topology,system,positions,temperature_list=[(300.0 * un
         simulation = ReplicaExchangeSampler(mcmc_moves=move, number_of_iterations=exchange_attempts)
 
         if os.path.exists(output_data): os.remove(output_data)
-        reporter = MultiStateReporter(output_data, checkpoint_interval=print_frequency)
+        reporter = MultiStateReporter(output_data, checkpoint_interval=1)
         simulation.create(thermodynamic_states, sampler_states, reporter)
         config_root_logger(verbose_simulation)
         #print("Running replica exchange simulations with Yank...")
@@ -200,13 +198,13 @@ def get_minimum_energy_pose(topology,replica_energies,replica_positions):
         """
         """
         # Get the minimum energy structure sampled during the simulation
-        minimum_energy = 0.0
+        minimum_energy = 9.9e9
         for replica in range(len(replica_energies)):
           energies = np.array([energy for energy in replica_energies[replica][replica]])
           for energy in range(len(energies)):
             if energies[energy] < minimum_energy:
               minimum_energy = energies[energy]
-              minimum_energy_structure = replica_positions[replica][replica][energy]
+              minimum_energy_structure = replica_positions[replica][energy]
         file = open(str("re_min.pdb"),"w")
         PDBFile.writeFile(topology,minimum_energy_structure,file=file)
 

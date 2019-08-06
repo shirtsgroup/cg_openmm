@@ -27,7 +27,7 @@ def get_simulation_time_step(topology,system,positions,temperature,total_simulat
         step.  If a simulation attempt is successful for this amount of
         time, the time step will be considered suitable for the model.
 
-        time_step_list: List of time steps for which to attempt a simulation in OpenMM.
+        tie_step_list: List of time steps for which to attempt a simulation in OpenMM.
         default = None
 
         Returns
@@ -185,7 +185,9 @@ def get_mm_energy(topology,system,positions):
 
  
         """
-        integrator = LangevinIntegrator(300.0 * unit.kelvin,0.0,1.0)
+        simulation_time_step = 5.0 * unit.femtosecond
+        friction = 1.0 / unit.picosecond
+        integrator = LangevinIntegrator(300.0 * unit.kelvin,friction,simulation_time_step.in_units_of(unit.picosecond))
         simulation = Simulation(topology, system, integrator)
         simulation.context.setPositions(positions)
         potential_energy = simulation.context.getEnergy(potentialEnergy=True).getPotentialEnergy()
