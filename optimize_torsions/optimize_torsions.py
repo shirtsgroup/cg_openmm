@@ -14,15 +14,15 @@ if not os.path.exists(top_directory):
 
 # OpenMM simulation settings
 print_frequency = 5 # Number of steps to skip when printing output
-total_simulation_time = 1.0 * unit.picosecond # Units = picoseconds
+total_simulation_time = 10.0 * unit.picosecond # Units = picoseconds
 simulation_time_step = 5.0 * unit.femtosecond
 total_steps = round(total_simulation_time.__div__(simulation_time_step))
 
 # Yank (replica exchange) simulation settings
 output_data=str(str(top_directory)+"/output.nc")
-number_replicas = 5
+number_replicas = 21
 temperature_increment = 5 # unit.kelvin
-temperature_list = [(50.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(0,number_replicas*temperature_increment,temperature_increment)]
+temperature_list = [(250.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(0,number_replicas*temperature_increment,temperature_increment)]
 if total_steps > 10000:
    exchange_attempts = round(total_steps/1000)
 else:

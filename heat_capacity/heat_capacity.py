@@ -16,13 +16,13 @@ run_simulations = True
 
 # OpenMM simulation settings
 print_frequency = 5 # Number of steps to skip when printing output
-total_simulation_time = 1.0 * unit.nanosecond # Units = picoseconds
+total_simulation_time = 100.0 * unit.picosecond # Units = picoseconds
 simulation_time_step = 5.0 * unit.femtosecond
 total_steps = round(total_simulation_time.__div__(simulation_time_step))
 
 # Yank (replica exchange) simulation settings
 output_data=str(str(top_directory)+"/output.nc")
-number_replicas = 100
+number_replicas = 50
 temperature_increment = 5 # unit.kelvin
 temperature_list = [(50.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(0,number_replicas*temperature_increment,temperature_increment)]
 if total_steps > 10000:
@@ -76,8 +76,8 @@ equil_torsion_angles = {'bb_bb_bb_bb_torsion_0': equil_torsion_angle,'bb_bb_bb_s
 C_v_list = []
 dC_v_list = []
 
-sigma_range = range(round(bond_length._value*1.5),round(bond_length._value*2.5))
-for sigma in [ i * 1.0 * unit.angstrom for i in sigma_range]: 
+sigma_list = [ sigma * bond_length.unit for sigma in range(round(bond_length._value*1.5),round(bond_length._value*2.5))]
+for sigma in sigma_list: 
   print("Performing simulations and heat capacity analysis for a coarse grained model")
   print("with sigma values of "+str(sigma))
   sigmas = {'bb_bb_sigma': sigma,'bb_sc_sigma': sigma,'sc_sc_sigma': sigma}
@@ -97,8 +97,8 @@ for sigma in [ i * 1.0 * unit.angstrom for i in sigma_range]:
   num_intermediate_states = 1
   mbar,E_kn,E_expect,dE_expect,new_temp_list = get_mbar_expectation(replica_energies,temperature_list,num_intermediate_states)
 
-  print(new_temp_list)
-  print(E_kn)
+  #print(new_temp_list)
+  #print(E_kn)
 
   mbar,E_kn,DeltaE_expect,dDeltaE_expect,new_temp_list = get_mbar_expectation(E_kn,temperature_list,num_intermediate_states,mbar=mbar,output='differences')
 
@@ -113,12 +113,14 @@ for sigma in [ i * 1.0 * unit.angstrom for i in sigma_range]:
 
 file_name = "heat_capacity.png"
 figure = pyplot.figure(1)
+original_temperature_list = np.array([temperature._value for temperature in temperature_list])
 temperatures = np.array([temperature._value for temperature in new_temp_list])
 legend_labels = [ str("$\sigma / r_{bond}$= "+str(round(i/bond_length._value,2)))  for i in sigma_range]
 
-for C_v in C_v_list:
+for C_v,dC_v in zip(C_v_list,dC_v_list):
  C_v = np.array([C_v[i][0] for i in range(len(C_v))])
- pyplot.plot(temperatures,C_v,figure=figure)
+ dC_v = np.array([dC_v[i][0] for i in range(len(dC_v))])
+ pyplot.errorbar(temperatures,C_v,yerr=dC_v,figure=figure)
 
 pyplot.xlabel("Temperature ( Kelvin )")
 pyplot.ylabel("C$_v$ ( kcal/mol * Kelvin )")
