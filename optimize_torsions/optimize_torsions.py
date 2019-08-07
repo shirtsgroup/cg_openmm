@@ -14,13 +14,14 @@ if not os.path.exists(top_directory):
 
 # OpenMM simulation settings
 print_frequency = 5 # Number of steps to skip when printing output
-total_simulation_time = 10.0 * unit.picosecond # Units = picoseconds
+total_simulation_time = 100.0 * unit.picosecond # Units = picoseconds
 simulation_time_step = 5.0 * unit.femtosecond
 total_steps = round(total_simulation_time.__div__(simulation_time_step))
 
 # Yank (replica exchange) simulation settings
 output_data=str(str(top_directory)+"/output.nc")
 number_replicas = 21
+ensemble_size = 10
 temperature_increment = 5 # unit.kelvin
 temperature_list = [(250.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(0,number_replicas*temperature_increment,temperature_increment)]
 if total_steps > 10000:
@@ -70,7 +71,7 @@ equil_bond_angles = {'bb_bb_bb_angle_0': equil_bond_angle,'bb_bb_sc_angle_0': eq
 torsion_force_constant = 200
 torsion_force_constants = {'bb_bb_bb_bb_torsion_k': torsion_force_constant,'bb_bb_bb_sc_torsion_k': torsion_force_constant,'bb_bb_sc_sc_torsion_k': torsion_force_constant, 'bb_sc_sc_sc_torsion_k': torsion_force_constant, 'sc_bb_bb_sc_torsion_k': torsion_force_constant, 'bb_sc_sc_bb_torsion_k': torsion_force_constant, 'sc_sc_sc_sc_torsion_k': torsion_force_constant,  'sc_bb_bb_bb_torsion_k': torsion_force_constant}
 
-equil_torsion_angle_range = range(-90,90,10)
+equil_torsion_angle_range = range(-45,45,5)
 equil_torsion_angles = [float(equil_torsion_angle/3.14159) for equil_torsion_angle in equil_torsion_angle_range]
 
 z_scores = []
@@ -89,7 +90,7 @@ for equil_torsion_angle in equil_torsion_angles:
   file_name = str(str(top_directory)+"/re_min_"+str(round(equil_torsion_angle,2))+".pdb")
   native_structure = get_minimum_energy_pose(cgmodel.topology,replica_energies,replica_positions,file_name=file_name)
 
-  nonnative_ensemble,nonnative_ensemble_energies,native_ensemble,native_ensemble_energies = get_ensembles(cgmodel,native_structure)
+  nonnative_ensemble,nonnative_ensemble_energies,native_ensemble,native_ensemble_energies = get_ensembles(cgmodel,native_structure,ensemble_size=ensemble_size)
 
   z_scores.append(z_score(cgmodel.topology,cgmodel.system,nonnative_ensemble_energies,native_ensemble_energies))
 

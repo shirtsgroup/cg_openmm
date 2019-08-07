@@ -3,7 +3,7 @@
           Helios  v1.0                                      2016
           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-          inputhelix            test.pdb                                                                                            
+          inputhelix            cg1.pdb                                                                                             
           coord_type                           1
              num_grd                         360
               natoms                           8
@@ -17,7 +17,7 @@
        all_helix_out                           0
              oradian                           0
      helix_atom_name            X1  
-       helixout_name            kHelix.test.pdb.out                                                                                 
+       helixout_name            kHelix.cg1.pdb.out                                                                                  
           print_sing                           0
           print_step                           0
        print_to_plot                           1
@@ -26,7 +26,7 @@
           Helios  execution info                              :::
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-| Run on 08/06/2019 at 09:55:21
+| Run on 08/06/2019 at 09:55:18
 
 | Executable path:   /home/gmeek/software/kHelios/bin/helios.o
 | Working directory: /home/gmeek/Foldamers/foldamers/examples/kHelios_helicity
@@ -40,10 +40,10 @@
           Phi     Theta  Residual    Radius    Pitch1    Sweep1
  ................................................................
 
-      32.5000    2.0000    0.5557    9.0952   29.9651  283.9244
+     107.0000  121.0000    1.0158   10.6452   26.8146  234.9545
 
           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
           Helios  execution timing:                         :::
           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-   Duration of Helios execution (seconds):            3.370541
+   Duration of Helios execution (seconds):            3.432177
