@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as pyplot
 from simtk import unit
 from foldamers.src.cg_model.cgmodel import CGModel
+from foldamers.src.parameters.reweight import get_temperature_list
+from foldamers.src.ensembles.cluster import *
 from cg_openmm.src.simulation.rep_exch import *
 
 # Job settings
@@ -13,15 +15,16 @@ run_simulations = True
 
 # OpenMM simulation settings
 print_frequency = 5 # Number of steps to skip when printing output
-total_simulation_time = 10.0 * unit.picosecond # Units = picoseconds
+total_simulation_time = 1.0 * unit.nanosecond # Units = picoseconds
 simulation_time_step = 5.0 * unit.femtosecond
 total_steps = round(total_simulation_time.__div__(simulation_time_step))
 
 # Yank (replica exchange) simulation settings
 output_data=str(str(top_directory)+"/output.nc")
-number_replicas = 100
-temperature_increment = 5 # unit.kelvin
-temperature_list = [(5.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(0,number_replicas*temperature_increment,temperature_increment)]
+number_replicas = 10
+min_temp = 300.0 * unit.kelvin
+max_temp = 350.0 * unit.kelvin
+temperature_list = get_temperature_list(min_temp,max_temp,number_replicas)
 if total_steps > 10000:
    exchange_attempts = round(total_steps/1000)
 else:
@@ -73,12 +76,22 @@ equil_torsion_angles = {'bb_bb_bb_bb_torsion_0': equil_torsion_angle,'bb_bb_bb_s
 
 cgmodel = CGModel(polymer_length=polymer_length,backbone_lengths=backbone_lengths,sidechain_lengths=sidechain_lengths,sidechain_positions=sidechain_positions,masses=masses,sigmas=sigmas,epsilons=epsilons,bond_lengths=bond_lengths,bond_force_constants=bond_force_constants,bond_angle_force_constants=bond_angle_force_constants,torsion_force_constants=torsion_force_constants,equil_bond_angles=equil_bond_angles,equil_torsion_angles=equil_torsion_angles,include_nonbonded_forces=include_nonbonded_forces,include_bond_forces=include_bond_forces,include_bond_angle_forces=include_bond_angle_forces,include_torsion_forces=include_torsion_forces,constrain_bonds=constrain_bonds)
 
-replica_energies,replica_positions,replica_states = run_replica_exchange(cgmodel.topology,cgmodel.system,cgmodel.positions,temperature_list=temperature_list,simulation_time_step=simulation_time_step,total_simulation_time=total_simulation_time,print_frequency=print_frequency,output_data=output_data)
+if not os.path.exists(output_data):
+  replica_energies,replica_positions,replica_states = run_replica_exchange(cgmodel.topology,cgmodel.system,cgmodel.positions,temperature_list=temperature_list,simulation_time_step=simulation_time_step,total_simulation_time=total_simulation_time,print_frequency=print_frequency,output_data=output_data)
+
 
 replica_energies,replica_positions,replica_states = read_replica_exchange_data(system=cgmodel.system,topology=cgmodel.topology,temperature_list=temperature_list,output_data=output_data,print_frequency=print_frequency)
 
 steps_per_stage = round(total_steps/exchange_attempts)
 plot_replica_exchange_energies(replica_energies,temperature_list,simulation_time_step,steps_per_stage=steps_per_stage)
 plot_replica_exchange_summary(replica_states,temperature_list,simulation_time_step,steps_per_stage=steps_per_stage)
+
+replica_pdb_files = make_replica_pdb_files(cgmodel.topology,replica_positions)
+
+combined_pdb_file = concatenate_trajectories(replica_pdb_files)
+
+centroid_positions = get_cluster_centroid_positions(combined_pdb_file,cgmodel)
+
+print(centroid_positions)
 
 exit()

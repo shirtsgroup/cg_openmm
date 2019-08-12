@@ -90,7 +90,7 @@ def get_simulation_time_step(topology,system,positions,temperature,total_simulat
 #        print("Simulation successful with a time step of: "+str(time_step))
         return(time_step,tolerance)
 
-def minimize_structure(topology,system,positions,temperature=0.0 * unit.kelvin,simulation_time_step=None,total_simulation_time=1.0 * unit.picosecond,output_pdb='minimum.pdb',output_data='minimization.dat',print_frequency=1):
+def minimize_structure(topology,system,positions,temperature=0.0 * unit.kelvin,simulation_time_step=None,total_simulation_time=1.0 * unit.picosecond,output_pdb=None,output_data=None,print_frequency=1):
         """
         Construct an OpenMM simulation object for our coarse grained model.
 
@@ -142,9 +142,11 @@ def minimize_structure(topology,system,positions,temperature=0.0 * unit.kelvin,s
         simulation.context.setPositions(positions.in_units_of(unit.nanometer))
         simulation.context.setVelocitiesToTemperature(temperature)
         forces = simulation.context.getState(getForces=True).getForces()
-        simulation.reporters.append(PDBReporter(output_pdb,print_frequency))
-        simulation.reporters.append(StateDataReporter(output_data,print_frequency, \
-        step=True, totalEnergy=True, potentialEnergy=True, kineticEnergy=True, temperature=True))
+        if output_pdb != None:
+          simulation.reporters.append(PDBReporter(output_pdb,print_frequency))
+        if output_data != None:
+          simulation.reporters.append(StateDataReporter(output_data,print_frequency, \
+          step=True, totalEnergy=True, potentialEnergy=True, kineticEnergy=True, temperature=True))
 
 
         total_steps = round(total_simulation_time.__div__(time_step))
@@ -194,7 +196,7 @@ def get_mm_energy(topology,system,positions):
 
         return(potential_energy)
 
-def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvin,simulation_time_step=None,total_simulation_time=1.0 * unit.picosecond,output_pdb='output.pdb',output_data='output.dat',print_frequency=100,test_time_step=False):
+def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvin,simulation_time_step=None,total_simulation_time=1.0 * unit.picosecond,output_pdb=None,output_data=None,print_frequency=100,test_time_step=False):
         """
         Construct an OpenMM simulation object for our coarse grained model.
 
@@ -245,10 +247,11 @@ def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvi
 
         simulation.context.setPositions(positions)
 #        simulation.context.setVelocitiesToTemperature(temperature)
-
-        simulation.reporters.append(PDBReporter(output_pdb,print_frequency))
-        simulation.reporters.append(StateDataReporter(output_data,print_frequency, \
-        step=True, totalEnergy=True, potentialEnergy=True, kineticEnergy=True, temperature=True))
+        if output_pdb != None:
+          simulation.reporters.append(PDBReporter(output_pdb,print_frequency))
+        if output_data != None:
+          simulation.reporters.append(StateDataReporter(output_data,print_frequency, \
+          step=True, totalEnergy=True, potentialEnergy=True, kineticEnergy=True, temperature=True))
 
 #        simulation.minimizeEnergy() # Set the simulation type to energy minimization
 

@@ -16,6 +16,26 @@ from yank.utils import config_root_logger
 # quiet down some citation spam
 MultiStateSampler._global_citation_silence = True
 
+def make_replica_pdb_files(topology,replica_positions):
+        """
+        """
+        replica_index = 1
+        file_list = []
+        for replica_index in range(len(replica_positions)):
+          replica_trajectory = replica_positions[replica_index]
+          file_name = str("replica_"+str(replica_index+1)+".pdb")
+          file = open(file_name,"w")
+          PDBFile.writeHeader(topology,file=file)
+#          modelIndex=1
+          for positions in replica_trajectory:
+#            print(positions)
+#            PDBFile.writeModel(topology,positions,file=file,modelIndex=modelIndex)
+#          PDBFile.writeFooter(topology,file=file)
+           PDBFile.writeFile(topology,positions,file=file)
+          file.close()
+          file_list.append(file_name)
+        return(file_list)
+
 def read_replica_exchange_data(system=None,topology=None,temperature_list=None,output_data="output.nc",print_frequency=None):
         """
         """
@@ -70,7 +90,7 @@ def read_replica_exchange_data(system=None,topology=None,temperature_list=None,o
 
         return(replica_energies,replica_positions,replica_state_indices)
 
-def run_replica_exchange(topology,system,positions,temperature_list=[(300.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(-50,50,10)],simulation_time_step=None,total_simulation_time=1.0 * unit.picosecond,output_data='output.nc',print_frequency=100,verbose=False, verbose_simulation=False,exchange_attempts=None,test_time_step=False):
+def run_replica_exchange(topology,system,positions,temperature_list=[(300.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(-50,50,10)],simulation_time_step=None,total_simulation_time=1.0 * unit.picosecond,output_data='output.nc',print_frequency=100,verbose_simulation=False,exchange_attempts=None,test_time_step=False):
         """
         Construct an OpenMM simulation object for our coarse grained model.
 

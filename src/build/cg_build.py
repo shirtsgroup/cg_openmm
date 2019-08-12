@@ -1,3 +1,4 @@
+import os
 import datetime
 import numpy as np
 from simtk import openmm as mm
@@ -226,6 +227,7 @@ def build_topology(cgmodel,use_pdbfile=False,pdbfile=None):
            write_pdbfile_without_topology(cgmodel,"topology_source.pdb")
            pdb = PDBFile("topology_source.pdb")
            topology = pdb.getTopology()
+           os.remove("topology_source.pdb")
            return(topology)
          else:
            pdb = PDBFile(pdbfile)
