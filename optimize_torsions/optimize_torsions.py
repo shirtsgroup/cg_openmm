@@ -2,9 +2,10 @@ import os
 import numpy as np
 import matplotlib.pyplot as pyplot
 from simtk import unit
+from simtk.openmm.app.pdbfile import PDBFile
 from foldamers.src.cg_model.cgmodel import CGModel
-from foldamers.src.parameters.reweight import get_mbar_expectation, get_free_energy_differences
-from foldamers.src.ensembles.ens_build import get_ensembles, z_score
+from foldamers.src.parameters.reweight import get_mbar_expectation, get_free_energy_differences, get_temperature_list
+from foldamers.src.ensembles.ens_build import *
 from cg_openmm.src.simulation.rep_exch import *
 
 # Job settings
@@ -19,11 +20,10 @@ simulation_time_step = 5.0 * unit.femtosecond
 total_steps = round(total_simulation_time.__div__(simulation_time_step))
 
 # Yank (replica exchange) simulation settings
-output_data=str(str(top_directory)+"/output.nc")
-number_replicas = 21
-ensemble_size = 100
-temperature_increment = 5 # unit.kelvin
-temperature_list = [(250.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(0,number_replicas*temperature_increment,temperature_increment)]
+number_replicas = 100
+min_temp = 10.0 * unit.kelvin
+max_temp = 100.0 * unit.kelvin
+temperature_list = get_temperature_list(min_temp,max_temp,number_replicas)
 if total_steps > 10000:
    exchange_attempts = round(total_steps/1000)
 else:
@@ -69,42 +69,69 @@ equil_bond_angles = {'bb_bb_bb_angle_0': equil_bond_angle,'bb_bb_sc_angle_0': eq
 
 # Torsion properties
 torsion_force_constant = 200
-torsion_force_constants = {'bb_bb_bb_bb_torsion_k': torsion_force_constant,'bb_bb_bb_sc_torsion_k': torsion_force_constant,'bb_bb_sc_sc_torsion_k': torsion_force_constant, 'bb_sc_sc_sc_torsion_k': torsion_force_constant, 'sc_bb_bb_sc_torsion_k': torsion_force_constant, 'bb_sc_sc_bb_torsion_k': torsion_force_constant, 'sc_sc_sc_sc_torsion_k': torsion_force_constant,  'sc_bb_bb_bb_torsion_k': torsion_force_constant}
+torsion_force_constants = {'bb_bb_bb_bb_torsion_k': torsion_force_constant,'bb_bb_bb_sc_torsion_k': 0,'bb_bb_sc_sc_torsion_k': 0, 'bb_sc_sc_sc_torsion_k': 0, 'sc_bb_bb_sc_torsion_k': torsion_force_constant, 'bb_sc_sc_bb_torsion_k': 0, 'sc_sc_sc_sc_torsion_k': 0,  'sc_bb_bb_bb_torsion_k': 0}
 
 bb_bb_bb_bb_equil_torsion_angle_range = range(-45,50,5)
-bb_bb_bb_bb_equil_torsion_angles = [float(equil_torsion_angle/3.14159) for equil_torsion_angle in bb_bb_bb_bb_equil_torsion_angle_range]
+bb_bb_bb_bb_equil_torsion_angles = [float(equil_torsion_angle*3.1415/180.0) for equil_torsion_angle in bb_bb_bb_bb_equil_torsion_angle_range]
 sc_bb_bb_sc_equil_torsion_angle_range = range(-45,50,5)
-sc_bb_bb_sc_equil_torsion_angles = [float(equil_torsion_angle/3.14159) for equil_torsion_angle in sc_bb_bb_sc_equil_torsion_angle_range]
+sc_bb_bb_sc_equil_torsion_angles = [float(equil_torsion_angle*3.1415/180.0) for equil_torsion_angle in sc_bb_bb_sc_equil_torsion_angle_range]
 equil_torsion_angle = 0.0
 
-z_scores = []
+z_scores = open(str(top_directory)+"/z_scores.dat","w")
+z_scores.write("bb_bb_bb_bb_equil_torsion_angle,sc_bb_bb_sc_equil_torsion_angle,z_score\n")
+z_scores.close()
 
 for bb_bb_bb_bb_equil_torsion_angle in bb_bb_bb_bb_equil_torsion_angles: 
  for sc_bb_bb_sc_equil_torsion_angle in sc_bb_bb_sc_equil_torsion_angles:
   print("Performing simulations for a coarse grained model")
-  print("with bb_bb_bb_bb torsion angles of "+str(bb_bb_bb_bb_equil_torsion_angle*3.14159)+" degrees")
-  print("and sc_bb_bb_sc torsion angles of "+str(sc_bb_bb_sc_equil_torsion_angle*3.14159)+" of degrees.")
+  print("with bb_bb_bb_bb torsion angles of "+str(round(bb_bb_bb_bb_equil_torsion_angle*180.0/3.1415,1))+" degrees")
+  print("and sc_bb_bb_sc torsion angles of "+str(round(sc_bb_bb_sc_equil_torsion_angle*180.0/3.1415,1))+" degrees.")
   equil_torsion_angles = {'bb_bb_bb_bb_torsion_0': bb_bb_bb_bb_equil_torsion_angle,'bb_bb_bb_sc_torsion_0': equil_torsion_angle,'bb_bb_sc_sc_torsion_0': equil_torsion_angle, 'bb_sc_sc_sc_torsion_0': equil_torsion_angle, 'sc_bb_bb_sc_torsion_0': sc_bb_bb_sc_equil_torsion_angle, 'bb_sc_sc_bb_torsion_0': equil_torsion_angle, 'sc_sc_sc_sc_torsion_0': equil_torsion_angle, 'sc_bb_bb_bb_torsion_0': equil_torsion_angle}
   cgmodel = CGModel(polymer_length=polymer_length,backbone_lengths=backbone_lengths,sidechain_lengths=sidechain_lengths,sidechain_positions=sidechain_positions,masses=masses,sigmas=sigmas,epsilons=epsilons,bond_lengths=bond_lengths,bond_force_constants=bond_force_constants,bond_angle_force_constants=bond_angle_force_constants,torsion_force_constants=torsion_force_constants,equil_bond_angles=equil_bond_angles,equil_torsion_angles=equil_torsion_angles,include_nonbonded_forces=include_nonbonded_forces,include_bond_forces=include_bond_forces,include_bond_angle_forces=include_bond_angle_forces,include_torsion_forces=include_torsion_forces,constrain_bonds=constrain_bonds)
 
   # Run a replica exchange simulation with this cgmodel
-  output_data = str(str(top_directory)+"/torsion_"+str(round(equil_torsion_angle,2))+".nc")
+  output_data = str(str(top_directory)+"/torsions_"+str(round(bb_bb_bb_bb_equil_torsion_angle,2))+"_"+str(round(sc_bb_bb_sc_equil_torsion_angle,2))+".nc")
   if os.path.exists(output_data):
     replica_energies,replica_positions,replica_states = read_replica_exchange_data(system=cgmodel.system,topology=cgmodel.topology,temperature_list=temperature_list,output_data=output_data,print_frequency=print_frequency)
   else:
     replica_energies,replica_positions,replica_states = run_replica_exchange(cgmodel.topology,cgmodel.system,cgmodel.positions,temperature_list=temperature_list,simulation_time_step=simulation_time_step,total_simulation_time=total_simulation_time,print_frequency=print_frequency,output_data=output_data)
-
-  file_name = str(str(top_directory)+"/re_min_"+str(round(equil_torsion_angle,2))+".pdb")
+  file_name = str(str(top_directory)+"/re_min_"+str(round(bb_bb_bb_bb_equil_torsion_angle,2))+"_"+str(round(sc_bb_bb_sc_equil_torsion_angle,2))+".pdb")
   native_structure = get_minimum_energy_pose(cgmodel.topology,replica_energies,replica_positions,file_name=file_name)
 
-  nonnative_ensemble,nonnative_ensemble_energies,native_ensemble,native_ensemble_energies = get_ensembles(cgmodel,native_structure,ensemble_size=ensemble_size)
+  nonnative_ensemble_directory = str(str(top_directory)+"/ens_"+str(round(bb_bb_bb_bb_equil_torsion_angle,2))+"_"+str(round(sc_bb_bb_sc_equil_torsion_angle,2))+"_nonnative")
+  native_ensemble_directory = str(str(top_directory)+"/ens_"+str(round(bb_bb_bb_bb_equil_torsion_angle,2))+"_"+str(round(sc_bb_bb_sc_equil_torsion_angle,2))+"_native")
+  if os.path.exists(nonnative_ensemble_directory):
+    nonnative_ensemble,nonnative_ensemble_energies = get_ensemble_data(cgmodel,nonnative_ensemble_directory)
+    if len(nonnative_ensemble_energies) == 0:
+    print("ERROR: the nonnative ensemble energies were collected incorrectly.")
+    exit()
+  else:
+    os.mkdir(nonnative_ensemble_directory)
+    nonnative_ensemble,nonnative_ensemble_energies = get_nonnative_ensemble(cgmodel,native_structure)
+    for pose in nonnative_ensemble:
+      cgmodel.positions = pose
+      write_ensemble_pdb(cgmodel,ensemble_directory=nonnative_ensemble_directory)
+  if os.path.exists(native_ensemble_directory):
+    native_ensemble,native_ensemble_energies = get_ensemble_data(cgmodel,native_ensemble_directory)
+  else:
+    os.mkdir(native_ensemble_directory)
+    native_ensemble,native_ensemble_energies = get_native_ensemble(cgmodel,native_structure)
+    for pose in native_ensemble:
+      cgmodel.positions = pose
+      write_ensemble_pdb(cgmodel,ensemble_directory=native_ensemble_directory)
+
+  if len(nonnative_ensemble_energies) == 0:
+    print("ERROR: the nonnative ensemble energies were collected incorrectly.")
+    exit()
+  if len(native_ensemble_energies) == 0:
+    print("ERROR: the native ensemble energies were collected incorrectly.")
+    exit()
 
   z = z_score(cgmodel.topology,cgmodel.system,nonnative_ensemble_energies,native_ensemble_energies)
 
-  #print(nonnative_ensemble_energies)
-  #print(native_ensemble_energies)
-  print(z)
-  z_scores.append(z)
+  z_scores = open(str(top_directory)+"/z_scores.dat","a")
+  z_scores.write(str(round(bb_bb_bb_bb_equil_torsion_angle,2))+","+str(round(sc_bb_bb_sc_equil_torsion_angle,2))+","+str(round(z,2))+"\n")
+  z_scores.close()
 
 file_name = "Torsion_equil_angle_Z_scores.png"
 figure = pyplot.figure(1)
@@ -119,8 +146,8 @@ y=np.unique(sc_bb_bb_sc_equil_torsion_angles)
 X,Y = np.meshgrid(x,y)
 Z=z_scores.reshape(len(y),len(x))
 
-pyplot.xlabel("$Alpha_{0}^{BB-BB-BB-BB} $ ( Degrees )")
-pyplot.ylabel("$Alpha_{0}^{SC-BB-BB-SC} $ ( Degrees )")
+pyplot.xlabel(r"$ \alpha_{0}^{BB-BB-BB-BB} $ ( Degrees )")
+pyplot.ylabel(r"$ \alpha_{0}^{SC-BB-BB-SC} $ ( Degrees )")
 pyplot.title("$Z_{score}$ vs equil. torsion angles")
 pyplot.pcolormesh(X,Y,Z)
 pyplot.colorbar()
