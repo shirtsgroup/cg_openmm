@@ -16,6 +16,8 @@ from yank.utils import config_root_logger
 # quiet down some citation spam
 MultiStateSampler._global_citation_silence = True
 
+kB = 0.008314462
+
 def make_replica_pdb_files(topology,replica_positions):
         """
         """
@@ -44,6 +46,11 @@ def read_replica_exchange_data(system=None,topology=None,temperature_list=None,o
         analyzer = ReplicaExchangeAnalyzer(reporter)
 
         replica_energies,unsampled_state_energies,neighborhoods,replica_state_indices = analyzer.read_energies()
+
+        temps = np.array([temp._value for temp in temperature_list])
+        beta_k = 1 / (kB * temps)
+        for k in range(len(replica_energies)):
+          replica_energies[:,k,:]*=beta_k[k]**(-1)
 
         total_steps = len(replica_energies[0][0])
         replica_positions = unit.Quantity(np.zeros([len(temperature_list),total_steps,system.getNumParticles(),3]),unit.nanometer)
@@ -234,7 +241,7 @@ def get_minimum_energy_pose(topology,replica_energies,replica_positions,file_nam
 
         return(minimum_energy_structure)
 
-def plot_replica_exchange_energies(replica_energies,temperature_list,simulation_time_step,steps_per_stage=1,file_name="replica_exchange_energies.png"):
+def plot_replica_exchange_energies(replica_energies,temperature_list,simulation_time_step,steps_per_stage=1,file_name="replica_exchange_energies.png",legend=True):
         """
         """
 
@@ -248,14 +255,15 @@ def plot_replica_exchange_energies(replica_energies,temperature_list,simulation_
         pyplot.xlabel("Simulation Time ( Picoseconds )")
         pyplot.ylabel("Potential Energy ( kJ / mol )")
         pyplot.title("Replica Exchange Simulation")
-        pyplot.legend([temperature._value for temperature in temperature_list])
-        pyplot.savefig(file_name)
+        if legend:
+          pyplot.legend([round(temperature._value,2) for temperature in temperature_list],loc='center left', bbox_to_anchor=(1, 0.5))
+        pyplot.savefig(file_name,bbox_inches='tight')
         #pyplot.show()
         pyplot.close()
 
         return
 
-def plot_replica_exchange_summary(replica_states,temperature_list,simulation_time_step,steps_per_stage=1,file_name="replica_exchange_state_transitions.png"):
+def plot_replica_exchange_summary(replica_states,temperature_list,simulation_time_step,steps_per_stage=1,file_name="replica_exchange_state_transitions.png",legend=True):
         """
         """
 
@@ -268,8 +276,9 @@ def plot_replica_exchange_summary(replica_states,temperature_list,simulation_tim
         pyplot.xlabel("Simulation Time ( Picoseconds )")
         pyplot.ylabel("Thermodynamic State Index")
         pyplot.title("State Exchange Summary")
-        pyplot.legend([i for i in range(len(replica_states))])
-        pyplot.savefig(file_name)
+        if legend:
+          pyplot.legend([i for i in range(len(replica_states))],loc='center left', bbox_to_anchor=(1, 0.5))
+        pyplot.savefig(file_name,bbox_inches='tight')
         #pyplot.show()
         pyplot.close()
 
