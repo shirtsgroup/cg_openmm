@@ -15,7 +15,7 @@ if not os.path.exists(top_directory):
 
 # OpenMM simulation settings
 print_frequency = 5 # Number of steps to skip when printing output
-total_simulation_time = 2.0 * unit.nanosecond # Units = picoseconds
+total_simulation_time = 1.0 * unit.nanosecond # Units = picoseconds
 simulation_time_step = 5.0 * unit.femtosecond
 total_steps = round(total_simulation_time.__div__(simulation_time_step))
 
@@ -56,6 +56,7 @@ bond_lengths = {'bb_bb_bond_length': bond_length,'bb_sc_bond_length': bond_lengt
 bond_force_constant = 1250 * unit.kilojoule_per_mole / unit.nanometer / unit.nanometer
 bond_force_constants = {'bb_bb_bond_k': bond_force_constant, 'bb_sc_bond_k': bond_force_constant, 'sc_sc_bond_k': bond_force_constant}
 
+sigma_range = range(round(bond_length._value*1.5),round(bond_length._value*2.5))
 epsilon = 0.5 * unit.kilocalorie_per_mole
 epsilons = {'bb_bb_eps': epsilon,'bb_sc_eps': epsilon,'sc_sc_eps': 0.5 * epsilon}
 
@@ -74,7 +75,7 @@ equil_torsion_angles = {'bb_bb_bb_bb_torsion_0': equil_torsion_angle,'bb_bb_bb_s
 C_v_list = []
 dC_v_list = []
 
-sigma_list = [ sigma * bond_length.unit for sigma in range(round(bond_length._value*1.5),round(bond_length._value*1.6))]
+sigma_list = [ sigma * bond_length.unit for sigma in range(round(bond_length._value*1.5),round(bond_length._value*2.5))]
 for sigma in sigma_list: 
   print("Performing simulations and heat capacity analysis for a coarse grained model")
   print("with sigma values of "+str(sigma))
@@ -91,6 +92,9 @@ for sigma in sigma_list:
   else:
     replica_energies,replica_positions,replica_states = read_replica_exchange_data(system=cgmodel.system,topology=cgmodel.topology,temperature_list=temperature_list,output_data=output_data,print_frequency=print_frequency)
 
+  steps_per_stage = round(total_steps/exchange_attempts)
+  plot_replica_exchange_energies(replica_energies,temperature_list,simulation_time_step,steps_per_stage=steps_per_stage,legend=False)
+  plot_replica_exchange_summary(replica_states,temperature_list,simulation_time_step,steps_per_stage=steps_per_stage,legend=False)
   num_intermediate_states = 1
   mbar,E_kn,E_expect,dE_expect,new_temp_list = get_mbar_expectation(replica_energies,temperature_list,num_intermediate_states)
 
@@ -112,7 +116,7 @@ try:
   temperatures = np.array([temperature._value for temperature in new_temp_list])
 except:
   temperatures = np.array([temperature for temperature in new_temp_list])
-legend_labels = [ str("$\sigma / r_{bond}$= "+str(round(i._value/bond_length._value,2)))  for i in sigma_list]
+legend_labels = [ str("$\sigma / r_{bond}$= "+str(round(i/bond_length._value,2)))  for i in sigma_range]
 
 for C_v,dC_v in zip(C_v_list,dC_v_list):
  C_v = np.array([C_v[i][0] for i in range(len(C_v))])
@@ -137,8 +141,9 @@ pyplot.xlabel("Temperature ( Kelvin )")
 pyplot.ylabel("C$_v$ ( kcal/mol * Kelvin )")
 pyplot.title("Heat capacity for variable $\sigma / r_{bond}$")
 pyplot.legend(legend_labels)
-pyplot.xlim(1.0,25.0)
+pyplot.xlim(10.0,25.0)
 pyplot.savefig(file_name)
 pyplot.show()
 pyplot.close()
 
+exit()
