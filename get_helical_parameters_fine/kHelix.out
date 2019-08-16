@@ -26,10 +26,10 @@
           Helios  execution info                              :::
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-| Run on 08/14/2019 at 10:40:53
+| Run on 08/16/2019 at 04:01:33
 
-| Executable path:   /mnt/d/Foldamers/foldamers/src/parameters/helios.o
-| Working directory: /mnt/d/Foldamers/foldamers/examples/get_helical_parameters
+| Executable path:   /home/gmeek/Foldamers/foldamers/src/parameters/helios.o
+| Working directory: /home/gmeek/Foldamers/foldamers/examples/get_helical_parameters_fine
 
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
           Helios  results                                     :::
@@ -40,10 +40,10 @@
           Phi     Theta  Residual    Radius    Pitch1    Sweep1
  ................................................................
 
-     132.5000   80.5000    1.4302    4.9822   14.7413  558.7668
+     124.0000   21.5000    0.6888    7.3659   31.2802  326.1837
 
           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
           Helios  execution timing:                         :::
           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-   Duration of Helios execution (seconds):           77.046875
+   Duration of Helios execution (seconds):            8.772143

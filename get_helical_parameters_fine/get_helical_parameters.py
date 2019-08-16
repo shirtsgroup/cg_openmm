@@ -48,7 +48,7 @@ pitch_list = []
 radius_list = []
 monomers_per_turn_list = []
 data = open("helical_data.dat","w")
-data.write("Sigma (nm) Epsilon (kcal/mol) Pitch (Angstroms) Radius (Angstroms) Monomers-per-turn")
+data.write("Sigma (nm) Epsilon (kcal/mol) Pitch (Angstroms) Radius (Angstroms) Monomers-per-turn\n")
 data.close()
 
 sigma_list = [ (1.5 + i*0.1) * bond_length for i in range(grid_size)]

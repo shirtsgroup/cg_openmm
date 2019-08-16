@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import matplotlib.pyplot as pyplot
+from statistics import mean
 from simtk import unit
 from foldamers.src.cg_model.cgmodel import CGModel
 from foldamers.src.parameters.reweight import get_mbar_expectation, get_free_energy_differences, get_temperature_list
@@ -18,13 +19,13 @@ if not os.path.exists(top_directory):
 
 # OpenMM simulation settings
 print_frequency = 20 # Number of steps to skip when printing output
-total_simulation_time = 1.0 * unit.nanosecond # Units = picoseconds
+total_simulation_time = 0.2 * unit.nanosecond # Units = picoseconds
 simulation_time_step = 5.0 * unit.femtosecond
 total_steps = round(total_simulation_time.__div__(simulation_time_step))
 
 # Yank (replica exchange) simulation settings
 output_data=str(str(top_directory)+"/output.nc")
-number_replicas = 20
+number_replicas = 10
 min_temp = 100.0 * unit.kelvin
 max_temp = 150.0 * unit.kelvin
 temperature_list = get_temperature_list(min_temp,max_temp,number_replicas)
@@ -42,18 +43,19 @@ else:
 
 pitch_list = []
 radius_list = []
-monomers_per_turn_list = []
-data = open("helical_data.dat","w")
-data.write("BB-BB-BB-BB Torsion (Degrees) SC-BB-BB-SC (Degrees) Pitch (Angstroms) Radius (Angstroms) Monomers-per-turn")
-data.close()
+data_file = "helical_data.dat"
+if not os.path.exists(data_file):
+  data = open(data_file,"w")
+  data.write("BB-BB-BB-BB Torsion (Degrees) SC-BB-BB-SC (Degrees) Pitch (Angstroms) Radius (Angstroms) Monomers-per-turn\n")
+  data.close()
 
 torsion_force_constant = 200
 torsion_force_constants = {'bb_bb_bb_bb_torsion_k': torsion_force_constant,'bb_bb_bb_sc_torsion_k': 0,'bb_bb_sc_sc_torsion_k': 0, 'bb_sc_sc_sc_torsion_k': 0, 'sc_bb_bb_sc_torsion_k': torsion_force_constant, 'bb_sc_sc_bb_torsion_k': 0, 'sc_sc_sc_sc_torsion_k': 0,  'sc_bb_bb_bb_torsion_k': 0
 }
 
-bb_bb_bb_bb_equil_torsion_angle_range = range(-25,25,5)
+bb_bb_bb_bb_equil_torsion_angle_range = range(-25,30,5)
 bb_bb_bb_bb_equil_torsion_angles = [float(equil_torsion_angle*3.1415/180.0) for equil_torsion_angle in bb_bb_bb_bb_equil_torsion_angle_range]
-sc_bb_bb_sc_equil_torsion_angle_range = range(-25,25,5)
+sc_bb_bb_sc_equil_torsion_angle_range = range(-25,30,5)
 sc_bb_bb_sc_equil_torsion_angles = [float(equil_torsion_angle*3.1415/180.0) for equil_torsion_angle in sc_bb_bb_sc_equil_torsion_angle_range]
 equil_torsion_angle = 0.0
 
@@ -78,11 +80,22 @@ for bb_bb_bb_bb_equil_torsion_angle in bb_bb_bb_bb_equil_torsion_angles:
 
   steps_per_stage = round(total_steps/exchange_attempts)
 
-  minimum_energy_structure = get_minimum_energy_pose(cgmodel.topology,replica_energies,replica_positions)
+  #if not os.path.exists(output_data):
 
-  cgmodel.positions = minimum_energy_structure
+  minimum_energy_structures = get_minimum_energy_pose(cgmodel.topology,replica_energies,replica_positions)
 
-  pitch,radius,monomers_per_turn = get_helical_parameters(cgmodel)
+  p_list = []
+  r_list = []
+  mpt_list = []
+  for structure in minimum_energy_structures:
+    cgmodel.positions = structure
+    pitch,radius,monomers_per_turn = get_helical_parameters(cgmodel)
+    p_list.append(pitch)
+    r_list.append(radius)
+    mpt_list.append(monomers_per_turn)
+  pitch = mean(np.array([float(p) for p in p_list]))
+  radius = mean(np.array([float(r) for r in r_list]))
+  monomers_per_turn = mean(np.array([float(mpt) for mpt in mpt_list]))
 
   data = open("helical_data.dat","a")
   data.write(str(round(bb_bb_bb_bb_equil_torsion_angle,2))+"_"+str(round(sc_bb_bb_sc_equil_torsion_angle,2))+" "+str(round(float(pitch),3))+" "+str(round(float(radius),3))+" "+str(round(float(monomers_per_turn),3))+"\n")
