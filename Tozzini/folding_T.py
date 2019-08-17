@@ -9,7 +9,7 @@ from foldamers.src.utilities.util import random_positions
 from cg_openmm.src.build.cg_build import build_topology
 from cg_openmm.src.simulation.rep_exch import *
 
-grid_size = 1
+grid_size = 4
 
 # Job settings
 top_directory = 'output'
@@ -65,13 +65,13 @@ bond_force_constants = {'bb_bb_bond_k': bond_force_constant, 'bb_sc_bond_k': bon
 # Bond angle properties
 bond_angle_force_constant = 200 * unit.kilojoule_per_mole / unit.radian / unit.radian
 bond_angle_force_constants = {'bb_bb_bb_angle_k': bond_angle_force_constant,'bb_bb_sc_angle_k': bond_angle_force_constant,'bb_sc_sc_angle_k': bond_angle_force_constant,'sc_sc_sc_angle_k': bond_angle_force_constant, 'sc_bb_sc_angle_k': bond_angle_force_constant, 'sc_sc_bb_angle_k': bond_angle_force_constant}
-equil_bond_angle = 85
+equil_bond_angle = 92
 equil_bond_angles = {'bb_bb_bb_angle_0': equil_bond_angle,'bb_bb_sc_angle_0': equil_bond_angle,'bb_sc_sc_angle_0': equil_bond_angle,'sc_sc_sc_angle_0': equil_bond_angle, 'sc_bb_sc_angle_0': equil_bond_angle,'sc_sc_bb_angle_0': equil_bond_angle}
 
 # Torsion properties
 torsion_force_constant = 200
 torsion_force_constants = {'bb_bb_bb_bb_torsion_k': torsion_force_constant,'bb_bb_bb_sc_torsion_k': torsion_force_constant,'bb_bb_sc_sc_torsion_k': torsion_force_constant, 'bb_sc_sc_sc_torsion_k': torsion_force_constant, 'sc_bb_bb_sc_torsion_k': torsion_force_constant, 'bb_sc_sc_bb_torsion_k': torsion_force_constant, 'sc_sc_sc_sc_torsion_k': torsion_force_constant,  'sc_bb_bb_bb_torsion_k': torsion_force_constant}
-equil_torsion_angle = -80
+equil_torsion_angle = 52
 equil_torsion_angles = {'bb_bb_bb_bb_torsion_0': equil_torsion_angle,'bb_bb_bb_sc_torsion_0': equil_torsion_angle,'bb_bb_sc_sc_torsion_0': equil_torsion_angle, 'bb_sc_sc_sc_torsion_0': equil_torsion_angle, 'sc_bb_bb_sc_torsion_0': equil_torsion_angle, 'bb_sc_sc_bb_torsion_0': equil_torsion_angle, 'sc_sc_sc_sc_torsion_0': equil_torsion_angle, 'sc_bb_bb_bb_torsion_0': equil_torsion_angle}
 
 file = open(str("Cv_data.dat"),"w")
@@ -88,7 +88,7 @@ folding_T_list = []
 
 sigma_list = [2.0 * bond_length]
 #sigma_list = [ (1.5 + i*0.1) * bond_length for i in range(grid_size)]
-epsilon_list = [ unit.Quantity((2.5 + i*0.25),unit.kilocalorie_per_mole) for i in range(grid_size)]
+epsilon_list = [ unit.Quantity((2.0 + i*0.25),unit.kilocalorie_per_mole) for i in range(grid_size)]
 for sigma in sigma_list: 
  for epsilon in epsilon_list:
   print("Performing simulations and heat capacity analysis for a coarse grained model")
@@ -101,7 +101,7 @@ for sigma in sigma_list:
   output_data = str(str(top_directory)+"/sig_"+str(sigma._value)+"_eps_"+str(epsilon._value)+".nc")
 #  if not os.path.exists:
 #    print("Running simulations.")
-  skip = False
+  skip = True
   if not skip:
    success = False
    while not success:
@@ -120,6 +120,7 @@ for sigma in sigma_list:
 
   if skip:
    replica_energies,replica_positions,replica_states = read_replica_exchange_data(system=cgmodel.system,topology=cgmodel.topology,temperature_list=temperature_list,output_data=output_data,print_frequency=print_frequency)
+   get_minimum_energy_pose(cgmodel.topology,replica_energies,replica_positions,file_name=str(str(top_directory)+"/sig_"+str(sigma._value)+"_eps_"+str(epsilon._value)+"_re_min.dat"))
   num_intermediate_states = 1
   print("Calling pymbar.")
   mbar,E_kn,E_expect,dE_expect,new_temp_list = get_mbar_expectation(replica_energies,temperature_list,num_intermediate_states)
