@@ -4,6 +4,8 @@ from simtk.openmm import *
 from simtk import unit
 import simtk.openmm.app.element as elem
 from simtk.openmm.app import *
+import matplotlib.pyplot as pyplot
+import csv
 
 def get_simulation_time_step(topology,system,positions,temperature,total_simulation_time,time_step_list=None):
         """
@@ -331,4 +333,55 @@ def run_simulation(cgmodel,output_directory,total_simulation_time,simulation_tim
               print("Error: simulation attempt failed.")
               exit()
 
+        plot_simulation_results(output_data,output_directory,simulation_time_step)
+        return
+
+def plot_simulation_data(simulation_times,y_data,plot_type=None):
+        """
+        """
+        figure = pyplot.figure(1)
+        pyplot.xlabel("Simulation Time (Picoseconds)")
+        if plot_type == "Potential Energy":
+          file_name = "Potential_Energy.png"
+          pyplot.ylabel("Potential Energy (kJ/mole)")
+          pyplot.title("Simulation Potential Energy")
+        pyplot.xlabel("Simulation Time (Picoseconds)")
+        if plot_type == "Kinetic Energy":
+          file_name = "Kinetic_Energy.png"
+          pyplot.ylabel("Kinetic Energy (kJ/mole)")
+          pyplot.title("Simulation Kinetic Energy")
+        pyplot.xlabel("Simulation Time (Picoseconds)")
+        if plot_type == "Total Energy":
+          file_name = "Total_Energy.png"
+          pyplot.ylabel("Total Energy (kJ/mole)")
+          pyplot.title("Simulation Total Energy")
+        pyplot.xlabel("Simulation Time (Picoseconds)")
+        if plot_type == "Temperature":
+          file_name = "Temperature.png"
+          pyplot.ylabel("Temperature (Kelvin)")
+          pyplot.title("Simulation Temperature")
+
+        pyplot.plot(simulation_times,y_data)
+        pyplot.savefig(file_name)
+        pyplot.close()
+        return
+
+def plot_simulation_results(simulation_data_file,plot_output_directory,simulation_time_step):
+        """
+        """
+        data = {"Simulation Time":[],"Potential Energy":[],"Kinetic Energy":[],"Total Energy":[],"Temperature":[]}
+        with open(simulation_data_file,newline='') as csvfile:
+          reader = csv.reader(csvfile, delimiter=',')
+          next(reader)
+          for row in reader:
+            data["Simulation Time"].append(float(simulation_time_step.in_units_of(unit.picosecond)._value)*float(row[0]))
+            data["Potential Energy"].append(float(row[1]))
+            data["Kinetic Energy"].append(float(row[2]))
+            data["Total Energy"].append(float(row[3]))
+            data["Temperature"].append(float(row[4]))
+        
+        plot_simulation_data(data["Simulation Time"],data["Potential Energy"],plot_type="Potential Energy")
+        plot_simulation_data(data["Simulation Time"],data["Kinetic Energy"],plot_type="Kinetic Energy")
+        plot_simulation_data(data["Simulation Time"],data["Total Energy"],plot_type="Total Energy")
+        plot_simulation_data(data["Simulation Time"],data["Temperature"],plot_type="Temperature")
         return

@@ -1,4 +1,5 @@
 import os
+import subprocess
 import numpy as np
 import matplotlib.pyplot as pyplot
 from simtk import unit
@@ -28,12 +29,12 @@ def make_replica_pdb_files(topology,replica_positions):
           file_name = str("replica_"+str(replica_index+1)+".pdb")
           file = open(file_name,"w")
           PDBFile.writeHeader(topology,file=file)
-#          modelIndex=1
+          modelIndex=1
           for positions in replica_trajectory:
 #            print(positions)
-#            PDBFile.writeModel(topology,positions,file=file,modelIndex=modelIndex)
-#          PDBFile.writeFooter(topology,file=file)
-           PDBFile.writeFile(topology,positions,file=file)
+            PDBFile.writeModel(topology,positions,file=file,modelIndex=modelIndex)
+          PDBFile.writeFooter(topology,file=file)
+#           PDBFile.writeFile(topology,positions,file=file)
           file.close()
           file_list.append(file_name)
         return(file_list)
@@ -62,38 +63,9 @@ def read_replica_exchange_data(system=None,topology=None,temperature_list=None,o
             print("ERROR: no data found for step "+str(step))
             exit()
           else:
-           #print("For step "+str(step)+" there are: "+str(len(sampler_states))+" sampler states.")
-           #exit()
            for replica_index in range(len(temperature_list)):
-             #print("The positions for sampler state "+str(replica_index))
-             #print("are: "+str(sampler_states[replica_index].positions))
              for particle in range(system.getNumParticles()):
                    replica_positions[replica_index][step][particle] = sampler_states[replica_index].positions[particle]
-        #exchange_stages = 0
-        #for step in range(total_steps):
-          #sampler_states = reporter.read_sampler_states(step)
-          #if sampler_states != None:
-          # exchange_stages = exchange_stages + 1
-
-        #for stage in range(exchange_stages):
-          #sampler_states = reporter.read_sampler_states(iteration=stage)
-          #for sampler_state in range(len(sampler_states)):
-            #print(sampler_states)
-
-            #for thermodynamic_state_index in range(len(temperature_list)):
-             #for particle in range(system.getNumParticles()):
-               #for cart in range(3):
-                 #print(sampler_states[replica_index])
-                 #print(sampler_states[replica_index].positions)
-                 #replica_positions[replica_index][thermodynamic_state_index][step][particle][cart] = sampler_states[replica_index].positions[particle][cart]
-
-        #replica_index = 1
-        #for replica_index in range(len(replica_positions)):
-          #replica_trajectory = replica_positions[replica_index][replica_index]
-          #file = open(str("replica_"+str(replica_index+1)+".pdb"),"w")
-          #for positions in replica_trajectory:
-            #PDBFile.writeFile(topology,positions,file=file)
-          #file.close()
 
         return(replica_energies,replica_positions,replica_state_indices)
 
@@ -219,27 +191,43 @@ def run_replica_exchange(topology,system,positions,temperature_list=[(300.0 * un
 
         replica_energies,replica_positions,replica_state_indices = read_replica_exchange_data(system=system,topology=topology,temperature_list=temperature_list,output_data=output_data,print_frequency=print_frequency)
 
+        steps_per_stage = round(simulation_steps/exchange_attempts)
+        plot_replica_exchange_energies(replica_energies,temperature_list,simulation_time_step,steps_per_stage=steps_per_stage)
+        plot_replica_exchange_summary(replica_state_indices,temperature_list,simulation_time_step,steps_per_stage=steps_per_stage)
+
         return(replica_energies,replica_positions,replica_state_indices)
 
 def get_minimum_energy_pose(topology,replica_energies,replica_positions,file_name=None):
         """
         """
+        ensemble_size = 5
         # Get the minimum energy structure sampled during the simulation
-        minimum_energy = 9.9e9
+        ensemble = []
+        ensemble_energies = []
         for replica in range(len(replica_energies)):
           energies = np.array([energy for energy in replica_energies[replica][replica]])
           for energy in range(len(energies)):
-            if energies[energy] < minimum_energy:
-              minimum_energy = energies[energy]
-              minimum_energy_structure = replica_positions[replica][energy]
+            if len(ensemble) < ensemble_size:
+              ensemble.append(replica_positions[replica][energy])
+              ensemble_energies.append(energies[energy])
+            else:
+
+             for comparison in range(len(ensemble_energies)):
+              if energies[energy] < ensemble_energies[comparison]:
+               ensemble_energies[comparison] = energies[energy]
+               ensemble[comparison] = replica_positions[replica][energy]
+
         if file_name == None:
-          file = open(str("re_min.pdb"),"w")
-          PDBFile.writeFile(topology,minimum_energy_structure,file=file)
+         index = 1
+         for pose in ensemble:
+          file = open(str("re_min_"+str(index)+".pdb"),"w")
+          PDBFile.writeFile(topology,pose,file=file)
         else:
           file = open(file_name,"w")
-          PDBFile.writeFile(topology,minimum_energy_structure,file=file)
+          for pose in ensemble:
+            PDBFile.writeFile(topology,pose,file=file)
 
-        return(minimum_energy_structure)
+        return(ensemble)
 
 def plot_replica_exchange_energies(replica_energies,temperature_list,simulation_time_step,steps_per_stage=1,file_name="replica_exchange_energies.png",legend=True):
         """
@@ -256,7 +244,10 @@ def plot_replica_exchange_energies(replica_energies,temperature_list,simulation_
         pyplot.ylabel("Potential Energy ( kJ / mol )")
         pyplot.title("Replica Exchange Simulation")
         if legend:
-          pyplot.legend([round(temperature._value,2) for temperature in temperature_list],loc='center left', bbox_to_anchor=(1, 0.5))
+         if len(temperature_list) > 10:
+          pyplot.legend([round(temperature._value,1) for temperature in temperature_list[0:9]],loc='center left', bbox_to_anchor=(1, 0.5),title='T (K)')
+         else:
+          pyplot.legend([round(temperature._value,1) for temperature in temperature_list],loc='center left', bbox_to_anchor=(1, 0.5),title='T (K)')
         pyplot.savefig(file_name,bbox_inches='tight')
         #pyplot.show()
         pyplot.close()
@@ -277,7 +268,10 @@ def plot_replica_exchange_summary(replica_states,temperature_list,simulation_tim
         pyplot.ylabel("Thermodynamic State Index")
         pyplot.title("State Exchange Summary")
         if legend:
-          pyplot.legend([i for i in range(len(replica_states))],loc='center left', bbox_to_anchor=(1, 0.5))
+         if len(replica_states) > 10:
+          pyplot.legend([i for i in range(len(replica_states[0:9]))],loc='center left', bbox_to_anchor=(1, 0.5),title='Replica Index')
+         else:
+          pyplot.legend([i for i in range(len(replica_states))],loc='center left', bbox_to_anchor=(1, 0.5),title='Replica Index')
         pyplot.savefig(file_name,bbox_inches='tight')
         #pyplot.show()
         pyplot.close()

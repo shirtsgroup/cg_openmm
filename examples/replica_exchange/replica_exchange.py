@@ -4,7 +4,7 @@ import matplotlib.pyplot as pyplot
 from simtk import unit
 from foldamers.src.cg_model.cgmodel import CGModel
 from foldamers.src.parameters.reweight import get_temperature_list
-from foldamers.src.ensembles.cluster import *
+#from foldamers.src.ensembles.cluster import *
 from cg_openmm.src.simulation.rep_exch import *
 
 # Job settings
@@ -15,7 +15,7 @@ run_simulations = True
 
 # OpenMM simulation settings
 print_frequency = 5 # Number of steps to skip when printing output
-total_simulation_time = 1.0 * unit.nanosecond # Units = picoseconds
+total_simulation_time = 0.2 * unit.nanosecond # Units = picoseconds
 simulation_time_step = 5.0 * unit.femtosecond
 total_steps = round(total_simulation_time.__div__(simulation_time_step))
 
@@ -78,20 +78,11 @@ cgmodel = CGModel(polymer_length=polymer_length,backbone_lengths=backbone_length
 
 if not os.path.exists(output_data):
   replica_energies,replica_positions,replica_states = run_replica_exchange(cgmodel.topology,cgmodel.system,cgmodel.positions,temperature_list=temperature_list,simulation_time_step=simulation_time_step,total_simulation_time=total_simulation_time,print_frequency=print_frequency,output_data=output_data)
+else:
+  replica_energies,replica_positions,replica_states = read_replica_exchange_data(system=cgmodel.system,topology=cgmodel.topology,temperature_list=temperature_list,output_data=output_data,print_frequency=print_frequency)
 
-
-replica_energies,replica_positions,replica_states = read_replica_exchange_data(system=cgmodel.system,topology=cgmodel.topology,temperature_list=temperature_list,output_data=output_data,print_frequency=print_frequency)
-
-steps_per_stage = round(total_steps/exchange_attempts)
-plot_replica_exchange_energies(replica_energies,temperature_list,simulation_time_step,steps_per_stage=steps_per_stage)
-plot_replica_exchange_summary(replica_states,temperature_list,simulation_time_step,steps_per_stage=steps_per_stage)
-
-replica_pdb_files = make_replica_pdb_files(cgmodel.topology,replica_positions)
-
-combined_pdb_file = concatenate_trajectories(replica_pdb_files)
-
-centroid_positions = get_cluster_centroid_positions(combined_pdb_file,cgmodel)
-
-print(centroid_positions)
-
+#replica_pdb_files = make_replica_pdb_files(cgmodel.topology,replica_positions)
+#combined_pdb_file = concatenate_trajectories(replica_pdb_files)
+#centroid_positions = get_cluster_centroid_positions(combined_pdb_file,cgmodel)
+#print(centroid_positions)
 exit()
