@@ -3,7 +3,7 @@
           Helios  v1.0                                      2016
           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-          inputhelix            helix.pdb                                                                                           
+          inputhelix            temp_pitch.pdb                                                                                      
           coord_type                           1
              num_grd                         360
               natoms                           8
@@ -26,10 +26,10 @@
           Helios  execution info                              :::
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-| Run on 08/20/2019 at 15:27:06
+| Run on 08/16/2019 at 04:01:33
 
-| Executable path:   /home/gmeek/software/kHelios/bin/helios.o
-| Working directory: /home/gmeek/Foldamers/foldamers/examples/kHelios_helicity
+| Executable path:   /home/gmeek/Foldamers/foldamers/src/parameters/helios.o
+| Working directory: /home/gmeek/Foldamers/foldamers/examples/get_helical_parameters_fine
 
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
           Helios  results                                     :::
@@ -40,10 +40,10 @@
           Phi     Theta  Residual    Radius    Pitch1    Sweep1
  ................................................................
 
-      98.5000    7.0000    1.2586   10.9609   24.3074  245.3825
+     124.0000   21.5000    0.6888    7.3659   31.2802  326.1837
 
           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
           Helios  execution timing:                         :::
           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-   Duration of Helios execution (seconds):            8.044702
+   Duration of Helios execution (seconds):            8.772143

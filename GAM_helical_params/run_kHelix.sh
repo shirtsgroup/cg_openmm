@@ -1,4 +1,7 @@
-inputhelix helix.pdb
+#!/bin/bash
+
+cat > input << EOF
+inputhelix $1
 helixout_name kHelix.out
 coord_type 1
 num_grid 360
@@ -10,3 +13,5 @@ grid_theta_beg 0
 grid_theta_end 180
 helix_atom_names X1
 print_to_plot 1
+EOF
+/home/gmeek/Foldamers/foldamers/src/parameters/helios.o input

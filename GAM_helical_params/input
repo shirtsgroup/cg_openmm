@@ -1,4 +1,4 @@
-inputhelix helix.pdb
+inputhelix temp_pitch.pdb
 helixout_name kHelix.out
 coord_type 1
 num_grid 360
