@@ -32,6 +32,7 @@ def add_new_elements(cgmodel):
         element_index = 117
         cg_particle_index = 1
         particle_list = []
+
         for monomer_type in cgmodel.monomer_types:
          for backbone_bead in range(monomer_type['backbone_length']):
           particle_name = str("X"+str(cg_particle_index))
