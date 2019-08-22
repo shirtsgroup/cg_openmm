@@ -19,7 +19,7 @@ simulation_time_step = 5.0 * unit.femtosecond
 total_steps = round(total_simulation_time.__div__(simulation_time_step))
 
 # Yank (replica exchange) simulation settings
-output_data=str(str(top_directory)+"/output.nc")
+output_data=str(str(top_directory)+"/read.nc")
 number_replicas = 30
 min_temp = 5.0 * unit.kelvin
 max_temp = 400.0 * unit.kelvin
