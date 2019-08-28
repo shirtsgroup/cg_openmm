@@ -16,17 +16,18 @@ from foldamers.src.utilities.iotools import write_pdbfile_without_topology
 
 def add_new_elements(cgmodel):
         """
-        Adds new coarse grained particle types to OpenMM
+        Add coarse grained particle types to OpenMM.
 
-        Parameters
-        ----------
+        :param cgmodel: CGModel object (contains all attributes for a coarse grained model).
+        :type cgmodel: class
+        :returns: particle_list: a list of the particles that were added to OpenMM's 'Element' List.
+        :rtype: list
 
-        cgmodel: CGModel() class object
+        :Example:
 
-        Returns
-        -------
+        >>> particle_types = add_new_elements(cgmodel)
 
-        particle_list: List of unique particle names in CGModel()
+        .. warning:: If the particle names were user defined, and any of the names conflict with existing element names in OpenMM, OpenMM will issue an error exit.
 
         """
         element_index = 117
@@ -61,15 +62,13 @@ def add_new_elements(cgmodel):
 
 def write_xml_file(cgmodel,xml_file_name):
         """
-        
-        Parameters
-        ----------
+        Write an XML-formatted forcefield file for a coarse grained model.
          
-        cgmodel: CGModel() class object.
+        :param cgmodel: CGModel() class object.
+        :type cgmodel: class
 
-        xml_file_name: Name of the file to which we will write
-        an xml-formatted version of the forcefield data for
-        cgmodel.
+        :param xml_file_name: Path to XML output file.
+        :type xml_file_name: str
 
         """
         particle_list = add_new_elements(cgmodel)
@@ -186,10 +185,12 @@ def write_xml_file(cgmodel,xml_file_name):
 def verify_topology(cgmodel):
         """
 
-        Parameters
-        ----------
+        Given a coarse grained model that contains a Topology() (cgmodel.topology), this function verifies the validity of the topology.
 
-        cgmodel: CGModel() class object.
+        :param cgmodel: CGModel() class object.
+        :type cgmodel: class
+
+        .. warning:: The function will force an error exit if the topology is invalid, and will proceed as normal if the topology is valid. 
 
         """
         if cgmodel.num_beads != cgmodel.topology.getNumAtoms():
@@ -212,15 +213,15 @@ def verify_topology(cgmodel):
 def build_topology(cgmodel,use_pdbfile=False,pdbfile=None):
         """
 
-        Construct an OpenMM topology for our coarse grained model
+        Construct an OpenMM `Topology() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1topology_1_1Topology.html>`_ class object for our coarse grained model,
 
-        Parameters
-        ----------
+        :param cgmodel: CGModel() class object
+        :type cgmodel: class
 
-        cgmodel: CGModel() class object
+        :param use_pdbfile: Determines whether or not to use a PDB file in order to generate the Topology().
+        :type use_pdbfile: Logical
 
-        use_pdbfile: Logical variable determining whether or not
-        a pdb file will be used to generate the topology.
+        .. warning:: When 'use_pdbfile'=True, this function will use the `PDBFile() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1pdbfile_1_1PDBFile.html>`_ class object from OpenMM to build the Topology().  In order for this approach to function correctly, the particle names in the PDB file must match the particle names in the coarse grained model.
 
         """
         if use_pdbfile == True:
@@ -269,18 +270,13 @@ def build_topology(cgmodel,use_pdbfile=False,pdbfile=None):
 
 def get_num_forces(cgmodel):
         """
-        Given a coarse grained model class object, this function determines 
-        how many forces we are including when evaluating its energy.
+        Given a CGModel() class object, this function determines how many forces we are including when evaluating the energy.
 
-        Parameters
-        ----------
+        :param cgmodel: CGModel() class object
+        :type cgmodel: class
 
-        cgmodel: CGModel() class object.
-
-        Returns
-        -------
-
-        total_forces: Integer number of forces in the model
+        :returns: Number of forces
+        :rtype: int
 
         """
         total_forces = 0
@@ -292,13 +288,12 @@ def get_num_forces(cgmodel):
 
 def verify_system(cgmodel):
         """
-        Given a coarse grained model class object, this function confirms 
-        that its OpenMM system object is configured correctly.
+        Given a CGModel() class object, this function confirms that its OpenMM `System() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1System.html>`_ object is configured correctly.
 
-        Parameters
-        ----------
+        :param cgmodel: CGModel() class object
+        :type cgmodel: class
 
-        cgmodel: CGModel() class object
+        .. warning:: The function will force an error exit if the system is invalid, and will proceed as normal if the system is valid.
 
         """
 
@@ -330,18 +325,19 @@ def verify_system(cgmodel):
 def test_force(cgmodel,force,force_type=None):
         """
 
-        Given an OpenMM force as input, this function determines if there
-        are any problems with its configuration.
+        Given an OpenMM `Force() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1Force.html>`_, this function determines if there are any problems with its configuration.
 
-        Parameters
-        ----------
+        :param cgmodel: CGModel() class object.
+        :type cgmodel: class
 
-        cgmodel: CGModel() class object.
+        :param force: An OpenMM Force() object.
+        :type force: class
 
-        force: an OpenMM Force() object.
+        :param force_type: Designates the kind of 'force' provided. (Valid options include: "Nonbonded")
+        :type force_type: str
 
-        force_type: A string variable designating the kind of 'force' provided.
-        Valid options include: "Nonbonded", 
+        :returns: 'success', a variable designating whether or not the force test passed.
+        :rtype: Logical
 
         """
         success=True
@@ -388,17 +384,19 @@ def add_force(cgmodel,force_type=None):
         """
 
         Given a 'cgmodel' and 'force_type' as input, this function adds
-        the OpenMM force corresponding to 'force_type' to the 'system' object
-        for the 'cgmodel'.
+        the OpenMM force corresponding to 'force_type' to 'cgmodel.system'.
 
-        Parameters
-        ----------
+        :param cgmodel: CGModel() class object.
+        :param type: class
 
-        cgmodel: CGModel() class object.
+        :param force_type: Designates the kind of 'force' provided. (Valid options include: "Bond", "Nonbonded", "Angle", and "Torsion")
+        :type force_type: str
 
-        force_type: String input variable designating the kind of
-        force that should be added to the cgmodel's system object.
-        Valid options include: "Bond", "Nonbonded", "Angle", and "Torsion".
+        :returns: CGModel() class object
+        :rtype: class
+
+        :returns: An OpenMM `Force() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1Force.html>`_ object.
+        :rtype: 
 
         """
         if force_type == "Bond":
@@ -470,23 +468,18 @@ def add_force(cgmodel,force_type=None):
 
 def test_forces(cgmodel):
         """
-        Given a cgmodel that contains positions, as well as
-        an OpenMM System() object with force definitions,
-        this function tests the forces for the cgmodel.
+        Given a cgmodel that contains positions and an
+        an OpenMM System() object, this function tests 
+        the forces for cgmodel.system.
 
         More specifically, this function confirms that the
         model does not have any "NaN" or unphysically large forces.
 
-        Parameters
-        ----------
+        :param cgmodel: CGModel() class object.
+        :param type: class
 
-        cgmodel: CGModel() class object.
-
-        Returns
-        -------
-
-        success: Logical variable indicating whether or not this
-        cgmodel has unphysical forces.
+        :returns: success: Indicates if this cgmodel has unphysical forces.
+        :rtype: Logical
 
         """
         if cgmodel.topology == None:
@@ -511,17 +504,12 @@ def test_forces(cgmodel):
 
 def build_system(cgmodel):
         """
-        Builds an OpenMM System() class object, given a CGModel() class object as input.
+        Builds an OpenMM `System() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1System.html>`_ object, given a CGModel() as input.
 
-        Parameters
-        ----------
+        :param cgmodel: CGModel() class object
+        :type cgmodel: class
 
-        cgmodel: CGModel() class object
-
-        Returns
-        -------
-
-        system: OpenMM System() class object
+        :returns: OpenMM System() object
 
         """
         # Create system

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=pdflatex 2019.4.22)  30 JUL 2019 14:07
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=pdflatex 2019.4.22)  27 AUG 2019 11:33
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -7,7 +7,7 @@ entering extended mode
 LaTeX2e <2017-04-15>
 Babel <3.18> and hyphenation patterns for 84 language(s) loaded.
 (./sphinxmanual.cls
-Document Class: sphinxmanual 2018/12/22 v1.8.3 Document class (Sphinx manual)
+Document Class: sphinxmanual 2018/12/23 v2.0 Document class (Sphinx manual)
 (/usr/share/texlive/texmf-dist/tex/latex/base/report.cls
 Document Class: report 2014/09/29 v1.4h Standard LaTeX document class
 (/usr/share/texlive/texmf-dist/tex/latex/base/size12.clo
@@ -465,7 +465,7 @@ Package: fncychap 2007/07/30 v1.34 LaTeX package (Revised chapters)
 \c@AlphaCnt=\count102
 \c@AlphaDecCnt=\count103
 ) (./sphinx.sty
-Package: sphinx 2019/01/12 v1.8.4 LaTeX package (Sphinx markup)
+Package: sphinx 2019/06/04 v2.1.1 LaTeX package (Sphinx markup)
 
 (/usr/share/texlive/texmf-dist/tex/generic/oberdiek/ltxcmds.sty
 Package: ltxcmds 2016/05/16 v1.23 LaTeX kernel commands for general use (HO)
@@ -830,12 +830,12 @@ Package etexcmds Info: Could not find \expanded.
 \sphinxshadowsize=\dimen140
 \sphinxshadowrule=\dimen141
 \spx@notice@border=\dimen142
-\spx@image@box=\box39
 \spx@image@maxheight=\dimen143
+\spx@image@box=\dimen144
 \c@literalblock=\count116
-\sphinxcontinuationbox=\box40
-\sphinxvisiblespacebox=\box41
-\sphinxVerbatim@TitleBox=\box42
+\sphinxcontinuationbox=\box39
+\sphinxvisiblespacebox=\box40
+\sphinxVerbatim@TitleBox=\box41
 \py@argswidth=\skip71
 \lineblockindentation=\skip72
 \DUlineblockindent=\skip73
@@ -856,14 +856,14 @@ Package: ifxetex 2010/09/12 v0.6 Provides ifxetex conditional
 \Gm@cnth=\count117
 \Gm@cntv=\count118
 \c@Gm@tempcnt=\count119
-\Gm@bindingoffset=\dimen144
-\Gm@wd@mp=\dimen145
-\Gm@odd@mp=\dimen146
-\Gm@even@mp=\dimen147
-\Gm@layoutwidth=\dimen148
-\Gm@layoutheight=\dimen149
-\Gm@layouthoffset=\dimen150
-\Gm@layoutvoffset=\dimen151
+\Gm@bindingoffset=\dimen145
+\Gm@wd@mp=\dimen146
+\Gm@odd@mp=\dimen147
+\Gm@even@mp=\dimen148
+\Gm@layoutwidth=\dimen149
+\Gm@layoutheight=\dimen150
+\Gm@layouthoffset=\dimen151
+\Gm@layoutvoffset=\dimen152
 \Gm@dimlist=\toks28
 )
 (/usr/share/texlive/texmf-dist/tex/latex/hyperref/hyperref.sty
@@ -910,7 +910,7 @@ Package: hycolor 2016/05/16 v1.8 Color options for hyperref/bookmark (HO)
 (/usr/share/texlive/texmf-dist/tex/latex/oberdiek/auxhook.sty
 Package: auxhook 2016/05/16 v1.4 Hooks for auxiliary files (HO)
 )
-\@linkdim=\dimen152
+\@linkdim=\dimen153
 \Hy@linkcounter=\count120
 \Hy@pagecounter=\count121
 
@@ -947,10 +947,10 @@ Package hyperref Info: Bookmarks ON on input line 4762.
 Package: url 2013/09/16  ver 3.4  Verb mode for urls, etc.
 )
 LaTeX Info: Redefining \url on input line 5115.
-\XeTeXLinkMargin=\dimen153
+\XeTeXLinkMargin=\dimen154
 \Fld@menulength=\count124
-\Field@Width=\dimen154
-\Fld@charsize=\dimen155
+\Field@Width=\dimen155
+\Fld@charsize=\dimen156
 Package hyperref Info: Hyper figures OFF on input line 6369.
 Package hyperref Info: Link nesting OFF on input line 6374.
 Package hyperref Info: Hyper index ON on input line 6377.
@@ -981,37 +981,56 @@ Package uniquecounter Info: New unique counter `rerunfilecheck' on input line 2
 (/usr/share/texlive/texmf-dist/tex/latex/oberdiek/hypcap.sty
 Package: hypcap 2016/05/16 v1.12 Adjusting the anchors of captions (HO)
 )
+(./sphinxmessages.sty
+Package: sphinxmessages 2019/01/04 v2.0 Localized LaTeX macros (Sphinx team)
+)
 \@indexfile=\write4
 \openout4 = `cgopenmm.idx'.
 
 
 Writing index file cgopenmm.idx
-(./cgopenmm.aux)
+(./cgopenmm.aux
+
+LaTeX Warning: Label `build:module-build.cg_build' multiply defined.
+
+
+LaTeX Warning: Label `simulation:module-simulation.rep_exch' multiply defined.
+
+
+LaTeX Warning: Label `simulation:module-simulation.tools' multiply defined.
+
+
+LaTeX Warning: Label `simulation:module-simulation.tools' multiply defined.
+
+
+LaTeX Warning: Label `simulation:module-simulation.rep_exch' multiply defined.
+
+)
 \openout1 = `cgopenmm.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 67.
-LaTeX Font Info:    ... okay on input line 67.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 67.
-LaTeX Font Info:    ... okay on input line 67.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 67.
-LaTeX Font Info:    ... okay on input line 67.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 67.
-LaTeX Font Info:    ... okay on input line 67.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 67.
-LaTeX Font Info:    ... okay on input line 67.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 67.
-LaTeX Font Info:    ... okay on input line 67.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 67.
-LaTeX Font Info:    Try loading font information for TS1+cmr on input line 67.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 80.
+LaTeX Font Info:    ... okay on input line 80.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 80.
+LaTeX Font Info:    ... okay on input line 80.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 80.
+LaTeX Font Info:    ... okay on input line 80.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 80.
+LaTeX Font Info:    ... okay on input line 80.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 80.
+LaTeX Font Info:    ... okay on input line 80.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 80.
+LaTeX Font Info:    ... okay on input line 80.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 80.
+LaTeX Font Info:    Try loading font information for TS1+cmr on input line 80.
  (/usr/share/texlive/texmf-dist/tex/latex/base/ts1cmr.fd
 File: ts1cmr.fd 2014/09/29 v2.5h Standard LaTeX font definitions
 )
-LaTeX Font Info:    ... okay on input line 67.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 67.
-LaTeX Font Info:    ... okay on input line 67.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 67.
-LaTeX Font Info:    ... okay on input line 67.
-LaTeX Font Info:    Try loading font information for T1+ptm on input line 67.
+LaTeX Font Info:    ... okay on input line 80.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 80.
+LaTeX Font Info:    ... okay on input line 80.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 80.
+LaTeX Font Info:    ... okay on input line 80.
+LaTeX Font Info:    Try loading font information for T1+ptm on input line 80.
 
 (/usr/share/texlive/texmf-dist/tex/latex/psnfss/t1ptm.fd
 File: t1ptm.fd 2001/06/04 font definitions for T1/ptm.
@@ -1019,13 +1038,13 @@ File: t1ptm.fd 2001/06/04 font definitions for T1/ptm.
 (/usr/share/texlive/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
 \scratchcounter=\count130
-\scratchdimen=\dimen156
-\scratchbox=\box43
+\scratchdimen=\dimen157
+\scratchbox=\box42
 \nofMPsegments=\count131
 \nofMParguments=\count132
 \everyMPshowfont=\toks29
 \MPscratchCnt=\count133
-\MPscratchDim=\dimen157
+\MPscratchDim=\dimen158
 \MPnumerator=\count134
 \makeMPintoPDFobject=\count135
 \everyMPtoPDFconversion=\toks30
@@ -1080,8 +1099,8 @@ e
 * \@reversemarginfalse
 * (1in=72.27pt=25.4mm, 1cm=28.453pt)
 
-\AtBeginShipoutBox=\box44
-Package hyperref Info: Link coloring ON on input line 67.
+\AtBeginShipoutBox=\box43
+Package hyperref Info: Link coloring ON on input line 80.
 (/usr/share/texlive/texmf-dist/tex/latex/hyperref/nameref.sty
 Package: nameref 2016/05/21 v2.44 Cross-referencing by name of section
 
@@ -1090,56 +1109,56 @@ Package: gettitlestring 2016/05/16 v1.5 Cleanup title references (HO)
 )
 \c@section@level=\count136
 )
-LaTeX Info: Redefining \ref on input line 67.
-LaTeX Info: Redefining \pageref on input line 67.
-LaTeX Info: Redefining \nameref on input line 67.
+LaTeX Info: Redefining \ref on input line 80.
+LaTeX Info: Redefining \pageref on input line 80.
+LaTeX Info: Redefining \nameref on input line 80.
 
 (./cgopenmm.out) (./cgopenmm.out)
 \@outlinefile=\write5
 \openout5 = `cgopenmm.out'.
 
-Package hyperref Info: Option `pageanchor' set `false' on input line 70.
-LaTeX Font Info:    Try loading font information for T1+phv on input line 70.
+Package hyperref Info: Option `pageanchor' set `false' on input line 83.
+LaTeX Font Info:    Try loading font information for T1+phv on input line 83.
 
 (/usr/share/texlive/texmf-dist/tex/latex/psnfss/t1phv.fd
 File: t1phv.fd 2001/06/04 scalable font definitions for T1/phv.
 )
 LaTeX Font Info:    Font shape `T1/phv/bx/n' in size <12> not available
-(Font)              Font shape `T1/phv/b/n' tried instead on input line 70.
+(Font)              Font shape `T1/phv/b/n' tried instead on input line 83.
 LaTeX Font Info:    Font shape `T1/phv/bx/n' in size <24.88> not available
-(Font)              Font shape `T1/phv/b/n' tried instead on input line 70.
+(Font)              Font shape `T1/phv/b/n' tried instead on input line 83.
 LaTeX Font Info:    Font shape `T1/phv/bx/it' in size <12> not available
-(Font)              Font shape `T1/phv/b/it' tried instead on input line 70.
+(Font)              Font shape `T1/phv/b/it' tried instead on input line 83.
 LaTeX Font Info:    Font shape `T1/phv/b/it' in size <12> not available
-(Font)              Font shape `T1/phv/b/sl' tried instead on input line 70.
+(Font)              Font shape `T1/phv/b/sl' tried instead on input line 83.
 LaTeX Font Info:    Font shape `T1/phv/bx/it' in size <20.74> not available
-(Font)              Font shape `T1/phv/b/it' tried instead on input line 70.
+(Font)              Font shape `T1/phv/b/it' tried instead on input line 83.
 LaTeX Font Info:    Font shape `T1/phv/b/it' in size <20.74> not available
-(Font)              Font shape `T1/phv/b/sl' tried instead on input line 70.
+(Font)              Font shape `T1/phv/b/sl' tried instead on input line 83.
 LaTeX Font Info:    Font shape `T1/phv/bx/n' in size <20.74> not available
-(Font)              Font shape `T1/phv/b/n' tried instead on input line 70.
+(Font)              Font shape `T1/phv/b/n' tried instead on input line 83.
 <<ot1.cmap>><<oml.cmap>><<oms.cmap>><<omx.cmap>>
-LaTeX Font Info:    Try loading font information for U+msa on input line 70.
+LaTeX Font Info:    Try loading font information for U+msa on input line 83.
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Try loading font information for U+msb on input line 70.
+LaTeX Font Info:    Try loading font information for U+msb on input line 83.
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
 LaTeX Font Info:    Font shape `T1/phv/bx/n' in size <14.4> not available
-(Font)              Font shape `T1/phv/b/n' tried instead on input line 70.
+(Font)              Font shape `T1/phv/b/n' tried instead on input line 83.
  [1
 
 {/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}]
 
 Package Fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
-less on input line 71.
+less on input line 84.
 
 LaTeX Font Info:    Font shape `T1/phv/bx/n' in size <17.28> not available
-(Font)              Font shape `T1/phv/b/n' tried instead on input line 72.
+(Font)              Font shape `T1/phv/b/n' tried instead on input line 85.
 (./cgopenmm.toc
 LaTeX Font Info:    Font shape `T1/ptm/bx/n' in size <12> not available
 (Font)              Font shape `T1/ptm/b/n' tried instead on input line 2.
@@ -1150,7 +1169,7 @@ LaTeX Font Info:    Font shape `T1/ptm/bx/n' in size <12> not available
 
 
 Package Fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
-less on input line 72.
+less on input line 85.
 
 [1
 
@@ -1159,15 +1178,15 @@ less on input line 72.
 ]
 
 Package Fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
-less on input line 73.
+less on input line 86.
 
 
 Package Fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
-less on input line 73.
+less on input line 86.
 
 
 Package Fancyhdr Warning: \fancyhead's `E' option without twoside option is use
-less on input line 73.
+less on input line 86.
 
 
 Package Fancyhdr Warning: \headheight is too small (12.0pt): 
@@ -1179,171 +1198,226 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
 
 ]
 Chapter 1.
-LaTeX Font Info:    Try loading font information for T1+pcr on input line 87.
+LaTeX Font Info:    Try loading font information for T1+pcr on input line 105.
 (/usr/share/texlive/texmf-dist/tex/latex/psnfss/t1pcr.fd
 File: t1pcr.fd 2001/06/04 font definitions for T1/pcr.
 )
 LaTeX Font Info:    Font shape `T1/pcr/bx/n' in size <12> not available
-(Font)              Font shape `T1/pcr/b/n' tried instead on input line 87.
+(Font)              Font shape `T1/pcr/b/n' tried instead on input line 105.
+LaTeX Font Info:    Font shape `T1/pcr/m/it' in size <12> not available
+(Font)              Font shape `T1/pcr/m/sl' tried instead on input line 109.
+LaTeX Font Info:    Try loading font information for TS1+ptm on input line 125.
 
-
-Package Fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
-less on input line 151.
-
-[2
-
-] [3]
-Chapter 2.
-
-Underfull \hbox (badness 10000) in paragraph at lines 207--207
-[]\T1/ptm/m/it/12 simulation_steps\T1/ptm/m/n/12 ,
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 207--207
-\T1/ptm/m/it/12 num_replicas\T1/ptm/m/n/12 ,
- []
-
-
-Overfull \hbox (4.38644pt too wide) in paragraph at lines 207--207
-\T1/ptm/m/it/12 replica_exchange_storage_file\T1/ptm/m/n/12 ,
- []
-
-LaTeX Font Info:    Try loading font information for TS1+ptm on input line 209.
 
 (/usr/share/texlive/texmf-dist/tex/latex/psnfss/ts1ptm.fd
 File: ts1ptm.fd 2001/06/04 font definitions for TS1/ptm.
 )
-LaTeX Font Info:    Font shape `T1/pcr/m/it' in size <12> not available
-(Font)              Font shape `T1/pcr/m/sl' tried instead on input line 210.
 
-Overfull \hbox (45.23717pt too wide) in paragraph at lines 225--227
-[]
+Package Fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
+less on input line 150.
+
+[2
+
+]
+LaTeX Font Info:    Font shape `T1/pcr/bx/n' in size <10.95> not available
+(Font)              Font shape `T1/pcr/b/n' tried instead on input line 201.
+ [3] [4] [5]
+Chapter 2.
+
+Underfull \hbox (badness 10000) in paragraph at lines 354--354
+\T1/ptm/m/it/12 a-ture=Quantity(value=300.0\T1/ptm/m/n/12 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 235--235
-\T1/ptm/m/it/12 a-ture_list=[Quantity(value=250.0,
+Underfull \hbox (badness 10000) in paragraph at lines 354--354
+\T1/ptm/m/it/12 unit=kelvin)\T1/ptm/m/n/12 , \T1/ptm/m/it/12 sim-u-la-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 235--235
-\T1/ptm/m/it/12 unit=kelvin), Quan-
+Underfull \hbox (badness 10000) in paragraph at lines 354--354
+\T1/ptm/m/it/12 tion_time_step=None\T1/ptm/m/n/12 , \T1/ptm/m/it/12 to-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 235--235
-\T1/ptm/m/it/12 tity(value=260.0, unit=kelvin),
+Overfull \hbox (28.21747pt too wide) in paragraph at lines 354--354
+\T1/ptm/m/it/12 tal_simulation_time=Quantity(value=1.0\T1/ptm/m/n/12 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 235--235
-\T1/ptm/m/it/12 Quan-tity(value=270.0,
+Underfull \hbox (badness 10000) in paragraph at lines 354--354
+\T1/ptm/m/it/12 unit=picosecond)\T1/ptm/m/n/12 , \T1/ptm/m/it/12 out-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 235--235
-\T1/ptm/m/it/12 unit=kelvin), Quan-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 235--235
-\T1/ptm/m/it/12 tity(value=280.0, unit=kelvin),
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 235--235
-\T1/ptm/m/it/12 Quan-tity(value=290.0,
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 235--235
-\T1/ptm/m/it/12 unit=kelvin), Quan-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 235--235
-\T1/ptm/m/it/12 tity(value=300.0, unit=kelvin),
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 235--235
-\T1/ptm/m/it/12 Quan-tity(value=310.0,
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 235--235
-\T1/ptm/m/it/12 unit=kelvin), Quan-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 235--235
-\T1/ptm/m/it/12 tity(value=320.0, unit=kelvin),
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 235--235
-\T1/ptm/m/it/12 Quan-tity(value=330.0,
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 235--235
-\T1/ptm/m/it/12 unit=kelvin), Quan-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 235--235
-\T1/ptm/m/it/12 tity(value=340.0, unit=kelvin)],
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 235--235
-\T1/ptm/m/it/12 sim-u-la-tion_time_step=None, to-
- []
-
-
-Overfull \hbox (28.21747pt too wide) in paragraph at lines 235--235
-\T1/ptm/m/it/12 tal_simulation_time=Quantity(value=1.0,
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 235--235
-\T1/ptm/m/it/12 unit=picosecond), out-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 235--235
-\T1/ptm/m/it/12 put_data='output.nc',
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 235--235
-\T1/ptm/m/it/12 print_frequency=100,
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 235--235
-\T1/ptm/m/it/12 ver-bose=False, ver-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 235--235
-\T1/ptm/m/it/12 bose_simulation=False, ex-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 235--235
-\T1/ptm/m/it/12 change_attempts=None,
+Underfull \hbox (badness 10000) in paragraph at lines 354--354
+\T1/ptm/m/it/12 print_frequency=100\T1/ptm/m/n/12 ,
  []
 
 
 Package Fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
-less on input line 237.
+less on input line 380.
 
-[4
+[6
 
 ]
-Underfull \hbox (badness 10000) in paragraph at lines 240--241
+Underfull \hbox (badness 10000) in paragraph at lines 390--390
+[]\T1/ptm/m/it/12 cgmodel\T1/ptm/m/n/12 , \T1/ptm/m/it/12 out-put_directory\T1/
+ptm/m/n/12 , \T1/ptm/m/it/12 to-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 390--390
+\T1/ptm/m/it/12 tem-per-a-ture\T1/ptm/m/n/12 , \T1/ptm/m/it/12 print_frequency\
+T1/ptm/m/n/12 , \T1/ptm/m/it/12 out-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 421--421
+[]\T1/ptm/m/it/12 topology, sys-tem, po-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 421--421
+\T1/ptm/m/it/12 si-tions, tem-per-a-
+ []
+
+
+Overfull \hbox (17.2378pt too wide) in paragraph at lines 421--421
+\T1/ptm/m/it/12 ture_list=[Quantity(value=250.0,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 421--421
+\T1/ptm/m/it/12 unit=kelvin), Quan-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 421--421
+\T1/ptm/m/it/12 tity(value=260.0,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 421--421
+\T1/ptm/m/it/12 unit=kelvin), Quan-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 421--421
+\T1/ptm/m/it/12 tity(value=270.0,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 421--421
+\T1/ptm/m/it/12 unit=kelvin), Quan-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 421--421
+\T1/ptm/m/it/12 tity(value=280.0,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 421--421
+\T1/ptm/m/it/12 unit=kelvin), Quan-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 421--421
+\T1/ptm/m/it/12 tity(value=290.0,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 421--421
+\T1/ptm/m/it/12 unit=kelvin), Quan-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 421--421
+\T1/ptm/m/it/12 tity(value=300.0,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 421--421
+\T1/ptm/m/it/12 unit=kelvin), Quan-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 421--421
+\T1/ptm/m/it/12 tity(value=310.0,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 421--421
+\T1/ptm/m/it/12 unit=kelvin), Quan-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 421--421
+\T1/ptm/m/it/12 tity(value=320.0,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 421--421
+\T1/ptm/m/it/12 unit=kelvin), Quan-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 421--421
+\T1/ptm/m/it/12 tity(value=330.0,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 421--421
+\T1/ptm/m/it/12 unit=kelvin), Quan-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 421--421
+\T1/ptm/m/it/12 tity(value=340.0,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 421--421
+\T1/ptm/m/it/12 unit=kelvin)], sim-u-la-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 421--421
+\T1/ptm/m/it/12 tion_time_step=None, to-
+ []
+
+
+Overfull \hbox (57.01746pt too wide) in paragraph at lines 421--421
+\T1/ptm/m/it/12 tal_simulation_time=Quantity(value=1.0,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 421--421
+\T1/ptm/m/it/12 unit=picosecond), out-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 421--421
+\T1/ptm/m/it/12 put_data='output.nc',
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 421--421
+\T1/ptm/m/it/12 print_frequency=100, ver-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 421--421
+\T1/ptm/m/it/12 bose_simulation=False,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 421--421
+\T1/ptm/m/it/12 ex-change_attempts=None,
+ []
+
+[7]
+Underfull \hbox (badness 10000) in paragraph at lines 426--427
 []\T1/pcr/b/n/12 topology \T1/ptm/m/n/12 (\T1/pcr/m/sl/12 OpenMM Topology() cla
 ss object\T1/ptm/m/n/12 ) ^^U An
  []
@@ -1355,131 +1429,258 @@ File: ts1pcr.fd 2001/06/04 font definitions for TS1/pcr.
 LaTeX Font Info:    Font shape `TS1/pcr/m/it' in size <12> not available
 (Font)              Font shape `TS1/pcr/m/sl' tried instead on input line 1.
 
-Underfull \hbox (badness 7344) in paragraph at lines 246--247
+Underfull \hbox (badness 7344) in paragraph at lines 432--433
 []\T1/pcr/b/n/12 positions \T1/ptm/m/n/12 (\T1/pcr/m/sl/12 np.array( \TS1/pcr/m
 /sl/12 '\T1/pcr/m/sl/12 num_beads\TS1/pcr/m/sl/12 ' \T1/pcr/m/sl/12 x 3 , ( flo
 at *
  []
 
-[5]
-Overfull \hbox (45.23717pt too wide) in paragraph at lines 264--266
+[8]
+Overfull \hbox (45.23717pt too wide) in paragraph at lines 450--452
 []
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 277--277
-\T1/ptm/m/it/12 a-ture=Quantity(value=300.0\T1/ptm/m/n/12 ,
+Overfull \hbox (54.08136pt too wide) in paragraph at lines 453--455
+[]
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 277--277
-\T1/ptm/m/it/12 unit=kelvin)\T1/ptm/m/n/12 , \T1/ptm/m/it/12 sim-u-la-
+Underfull \hbox (badness 10000) in paragraph at lines 456--459
+[]
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 277--277
-\T1/ptm/m/it/12 tion_time_step=None\T1/ptm/m/n/12 , \T1/ptm/m/it/12 to-
+Overfull \hbox (4.78287pt too wide) in paragraph at lines 470--470
+\T1/ptm/m/it/12 put_data='output.nc'\T1/ptm/m/n/12 ,
  []
 
 
-Overfull \hbox (28.21747pt too wide) in paragraph at lines 277--277
-\T1/ptm/m/it/12 tal_simulation_time=Quantity(value=1.0\T1/ptm/m/n/12 ,
+Overfull \hbox (14.86244pt too wide) in paragraph at lines 470--470
+\T1/ptm/m/it/12 print_frequency=None\T1/pcr/m/n/12 ) 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 277--277
-\T1/ptm/m/it/12 unit=picosecond)\T1/ptm/m/n/12 , \T1/ptm/m/it/12 out-
+Underfull \hbox (badness 10000) in paragraph at lines 476--476
+[]\T1/ptm/m/it/12 topology\T1/ptm/m/n/12 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 277--277
-\T1/ptm/m/it/12 put_pdb='output.pdb'\T1/ptm/m/n/12 , \T1/ptm/m/it/12 out-
+Overfull \hbox (9.58241pt too wide) in paragraph at lines 488--488
+[]\T1/ptm/m/it/12 replica_energies\T1/ptm/m/n/12 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 277--277
-\T1/ptm/m/it/12 put_data='output.dat'\T1/ptm/m/n/12 ,
+Underfull \hbox (badness 10000) in paragraph at lines 488--488
+\T1/ptm/m/it/12 tem-per-a-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 277--277
-\T1/ptm/m/it/12 print_frequency=100\T1/ptm/m/n/12 ,
+Underfull \hbox (badness 10000) in paragraph at lines 488--488
+\T1/ptm/m/it/12 ture_list\T1/ptm/m/n/12 ,
  []
 
-[6]
-Underfull \hbox (badness 10000) in paragraph at lines 322--322
+
+Underfull \hbox (badness 10000) in paragraph at lines 488--488
+\T1/ptm/m/it/12 sim-u-la-
+ []
+
+
+Overfull \hbox (21.00659pt too wide) in paragraph at lines 488--488
+\T1/ptm/m/it/12 steps_per_stage=1\T1/ptm/m/n/12 ,
+ []
+
+
+Overfull \hbox (143.8019pt too wide) in paragraph at lines 488--488
+\T1/ptm/m/it/12 file_name='replica_exchange_energies.png'\T1/ptm/m/n/12 ,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 494--494
+[]\T1/ptm/m/it/12 replica_states\T1/ptm/m/n/12 ,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 494--494
+\T1/ptm/m/it/12 tem-per-a-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 494--494
+\T1/ptm/m/it/12 ture_list\T1/ptm/m/n/12 ,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 494--494
+\T1/ptm/m/it/12 sim-u-la-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 494--494
+\T1/ptm/m/it/12 tion_time_step\T1/ptm/m/n/12 ,
+ []
+
+
+Overfull \hbox (13.8066pt too wide) in paragraph at lines 494--494
+\T1/ptm/m/it/12 steps_per_stage=1\T1/ptm/m/n/12 ,
+ []
+
+
+Overfull \hbox (176.2253pt too wide) in paragraph at lines 494--494
+\T1/ptm/m/it/12 file_name='replica_exchange_state_transitions.png'\T1/ptm/m/n/1
+2 ,
+ []
+
+[9]
+Underfull \hbox (badness 10000) in paragraph at lines 500--500
+[]\T1/ptm/m/it/12 simulation_times\T1/ptm/m/n/12 , \T1/ptm/m/it/12 y_data\T1/pt
+m/m/n/12 ,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 506--506
+[]\T1/ptm/m/it/12 simulation_data_file\T1/ptm/m/n/12 ,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 534--534
 []\T1/ptm/m/it/12 topology\T1/ptm/m/n/12 , \T1/ptm/m/it/12 sys-tem\T1/ptm/m/n/1
 2 , \T1/ptm/m/it/12 po-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 322--322
+Underfull \hbox (badness 10000) in paragraph at lines 534--534
 \T1/ptm/m/it/12 si-tions\T1/ptm/m/n/12 , \T1/ptm/m/it/12 tem-per-a-ture\T1/ptm/
 m/n/12 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 322--322
+Underfull \hbox (badness 10000) in paragraph at lines 534--534
 \T1/ptm/m/it/12 to-tal_simulation_time\T1/ptm/m/n/12 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 336--336
+Underfull \hbox (badness 10000) in paragraph at lines 545--546
+[]\T1/pcr/b/n/12 positions \T1/ptm/m/n/12 ([]\T1/ptm/b/n/12 `[]\T1/ptm/m/n/12 u
+nit.Quantity() <[][]$http : / / docs . openmm . org /
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 545--546
+\T1/ptm/m/n/12 development / api-[]python / generated / simtk . unit . quantity
+ . Quantity .
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 545--546
+\T1/ptm/m/n/12 html$[][]>`_(np.array([cgmodel.num_beads,3]),simtk.unit)) ^^U Po
+-si-tions
+ []
+
+[10]
+Underfull \hbox (badness 10000) in paragraph at lines 573--573
 \T1/ptm/m/it/12 per-a-ture=Quantity(value=0.0\T1/ptm/m/n/12 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 336--336
+Underfull \hbox (badness 10000) in paragraph at lines 573--573
 \T1/ptm/m/it/12 unit=kelvin)\T1/ptm/m/n/12 , \T1/ptm/m/it/12 sim-u-la-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 336--336
+Underfull \hbox (badness 10000) in paragraph at lines 573--573
 \T1/ptm/m/it/12 tion_time_step=None\T1/ptm/m/n/12 , \T1/ptm/m/it/12 to-
  []
 
 
-Overfull \hbox (21.01747pt too wide) in paragraph at lines 336--336
+Overfull \hbox (21.01747pt too wide) in paragraph at lines 573--573
 \T1/ptm/m/it/12 tal_simulation_time=Quantity(value=1.0\T1/ptm/m/n/12 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 336--336
+Underfull \hbox (badness 10000) in paragraph at lines 573--573
 \T1/ptm/m/it/12 unit=picosecond)\T1/ptm/m/n/12 , \T1/ptm/m/it/12 out-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 336--336
-\T1/ptm/m/it/12 put_pdb='minimum.pdb'\T1/ptm/m/n/12 , \T1/ptm/m/it/12 out-
+Underfull \hbox (badness 10000) in paragraph at lines 584--585
+[]\T1/pcr/b/n/12 positions \T1/ptm/m/n/12 ([]\T1/ptm/b/n/12 `[]\T1/ptm/m/n/12 u
+nit.Quantity() <[][]$http : / / docs . openmm . org /
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 336--336
-\T1/ptm/m/it/12 put_data='minimization.dat'\T1/ptm/m/n/12 ,
+Underfull \hbox (badness 10000) in paragraph at lines 584--585
+\T1/ptm/m/n/12 development / api-[]python / generated / simtk . unit . quantity
+ . Quantity .
  []
 
-[7]
+
+Underfull \hbox (badness 10000) in paragraph at lines 584--585
+\T1/ptm/m/n/12 html$[][]>`_(np.array([cgmodel.num_beads,3]),simtk.unit)) ^^U Po
+-si-tions
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 606--608
+[]\T1/ptm/m/n/12 positions: []\T1/ptm/b/n/12 `[]\T1/ptm/m/n/12 unit.Quantity() 
+<[][]$http : / / docs . openmm . org /
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 606--608
+\T1/ptm/m/n/12 development / api-[]python / generated / simtk . unit . quantity
+ . Quantity .
+ []
+
+[11]
+Underfull \hbox (badness 10000) in paragraph at lines 612--614
+[]\T1/ptm/m/n/12 potential_energy: []\T1/ptm/b/n/12 `[]\T1/ptm/m/n/12 unit.Quan
+tity() <[][]$http : / / docs . openmm .
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 612--614
+\T1/ptm/m/n/12 org / development / api-[]python / generated / simtk . unit . qu
+antity . Quantity .
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 622--622
+[]\T1/ptm/m/it/12 topology\T1/ptm/m/n/12 ,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 622--622
+\T1/ptm/m/it/12 replica_energies\T1/ptm/m/n/12 ,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 622--622
+\T1/ptm/m/it/12 replica_positions\T1/ptm/m/n/12 ,
+ []
+
+[12]
 Chapter 3.
 
 Package Fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
-less on input line 407.
+less on input line 683.
 
-[8
+[13
 
 ]
 Chapter 4.
 
 Package Fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
-less on input line 422.
+less on input line 698.
 
-[9
+[14
 
 ]
 
 Package Fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
-less on input line 433.
+less on input line 709.
 
-[10
+[15
 
 
 
@@ -1489,90 +1690,119 @@ Underfull \hbox (badness 10000) in paragraph at lines 9--10
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 14--15
-[]\T1/pcr/m/n/12 build_mm_force() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-ule
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 16--17
+Underfull \hbox (badness 10000) in paragraph at lines 15--16
 []\T1/pcr/m/n/12 build_system() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-ule
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 17--18
+Underfull \hbox (badness 10000) in paragraph at lines 16--17
 []\T1/pcr/m/n/12 build_topology() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-ule
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 25--26
+Underfull \hbox (badness 10000) in paragraph at lines 24--25
 []\T1/pcr/m/n/12 get_box_vectors() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-ule u
 til-i-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 26--27
+Underfull \hbox (badness 10000) in paragraph at lines 27--28
 []\T1/pcr/m/n/12 get_mm_energy() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-ule sim
 -u-la-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 27--28
+Underfull \hbox (badness 10000) in paragraph at lines 28--29
 []\T1/pcr/m/n/12 get_num_forces() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-ule
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 28--29
-[]\T1/pcr/m/n/12 get_replica_energies() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-
+Overfull \hbox (0.5224pt too wide) in paragraph at lines 44--46
+[]\T1/pcr/m/n/12 plot_replica_exchange_energies()
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 46--48
+[]\T1/pcr/m/n/12 plot_replica_exchange_summary()
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 48--49
+[]\T1/pcr/m/n/12 plot_simulation_data() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-
 ule
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 42--43
+Underfull \hbox (badness 10000) in paragraph at lines 53--55
+[]\T1/pcr/m/n/12 read_replica_exchange_data() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 i
+n
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 55--56
+[]\T1/pcr/m/n/12 run_replica_exchange() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-
+ule
+ []
+
+
+Underfull \hbox (badness 5893) in paragraph at lines 56--57
+[]\T1/pcr/m/n/12 run_simulation() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-ule si
+m-u-la-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 60--61
 []\T1/pcr/m/n/12 set_box_vectors() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-ule u
 til-i-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 57--58
+Underfull \hbox (badness 10000) in paragraph at lines 76--77
 []\T1/pcr/m/n/12 verify_system() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-ule
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 58--59
+Package Fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
+less on input line 77.
+
+[16
+
+
+
+]
+Underfull \hbox (badness 10000) in paragraph at lines 77--78
 []\T1/pcr/m/n/12 verify_topology() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-ule
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 62--63
+Underfull \hbox (badness 10000) in paragraph at lines 81--82
 []\T1/pcr/m/n/12 write_xml_file() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-ule
  []
 
-
-Package Fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
-less on input line 64.
-
-[11
-
-
+[17
 
 ])
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 437.
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 437.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 713.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 713.
  (./cgopenmm.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 437.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 437.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 713.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 713.
 Package rerunfilecheck Info: File `cgopenmm.out' has not changed.
-(rerunfilecheck)             Checksum: B48FABAB19C94E230AAD7E3ABB8B404D;2031.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 437.
+(rerunfilecheck)             Checksum: 96A799F7FCA35FCD227F067F34914C13;2910.
+
+
+LaTeX Warning: There were multiply-defined labels.
+
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 713.
  ) 
 Here is how much of TeX's memory you used:
- 13702 strings out of 492982
- 190293 string characters out of 6134896
- 279638 words of memory out of 5000000
- 16909 multiletter control sequences out of 15000+600000
- 47590 words of font info for 76 fonts, out of 8000000 for 9000
+ 13773 strings out of 492982
+ 191611 string characters out of 6134896
+ 282068 words of memory out of 5000000
+ 16941 multiletter control sequences out of 15000+600000
+ 51443 words of font info for 85 fonts, out of 8000000 for 9000
  1142 hyphenation exceptions out of 8191
- 37i,11n,45p,912b,597s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 37i,12n,45p,907b,597s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texlive/texmf-dist/fonts/enc/dvips/base/8r.enc}</usr/share/texliv
 e/texmf-dist/fonts/type1/urw/courier/ucrb8a.pfb></usr/share/texlive/texmf-dist/
 fonts/type1/urw/courier/ucrr8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/u
@@ -1582,10 +1812,10 @@ uhvb8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/helvetic/uhvbo8a.pfb>
 texlive/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/share/texlive/texmf-d
 ist/fonts/type1/urw/times/utmr8a.pfb></usr/share/texlive/texmf-dist/fonts/type1
 /urw/times/utmri8a.pfb>
-Output written on cgopenmm.pdf (13 pages, 120334 bytes).
+Output written on cgopenmm.pdf (19 pages, 136881 bytes).
 PDF statistics:
- 209 PDF objects out of 1000 (max. 8388607)
- 178 compressed objects within 2 object streams
- 45 named destinations out of 1000 (max. 500000)
- 85 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 320 PDF objects out of 1000 (max. 8388607)
+ 282 compressed objects within 3 object streams
+ 69 named destinations out of 1000 (max. 500000)
+ 117 words of extra memory for PDF output out of 10000 (max. 10000000)
 

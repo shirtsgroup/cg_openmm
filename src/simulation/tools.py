@@ -9,33 +9,28 @@ import csv
 
 def get_simulation_time_step(topology,system,positions,temperature,total_simulation_time,time_step_list=None):
         """
-        Determine a suitable simulation time step for an OpenMM system.
+        Determine a suitable simulation time step.
 
-        Parameters
-        ----------
+        :param topology: OpenMM Topology
+        :type topology: `Topology() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1topology_1_1Topology.html>`_
 
-        topology: OpenMM Topology() object (with associated data)
+        :param system: OpenMM System()
+        :type system: `System() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1System.html>`_
 
-        system: OpenMM System() object (with associated data)
+        :param positions: Positions array for the model we would like to test
+        :type positions: `unit.Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_(np.array([cgmodel.num_beads,3]),simtk.unit)
 
-        positions: A set of intial positions for the model we would like to test
-        when identifying an appropriate time step.
-        ( np.array( [ cgmodel.num_beads, 3 ] ) * simtk.unit
+        :param temperature: Simulation temperature
+        :type temperature: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
 
-        temperature: Temperature for which to test (NVT) simulations.
+        :param total_simulation_time: Total run time for individual simulations
+        :type total_simulation_time: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
 
-        total_simulation_time: The total amount of time that we will run
-        test simulations when attempting to identify an appropriate time
-        step.  If a simulation attempt is successful for this amount of
-        time, the time step will be considered suitable for the model.
+        :param time_step_list: List of time steps for which to attempt a simulation in OpenMM.
+        :type time_step_list: List, default = None
 
-        tie_step_list: List of time steps for which to attempt a simulation in OpenMM.
-        default = None
-
-        Returns
-        -------
-
-        time_step: A time step that was successful for our simulation object.
+        :returns: A successfully-tested time step
+        :rtype: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
 
         """
         tolerance = 10.0
@@ -65,65 +60,54 @@ def get_simulation_time_step(topology,system,positions,temperature,total_simulat
           except:
             continue
         if not success:
-#          print("ERROR: unable to find a suitable simulation time step for this coarse grained model.")
-#          print("Attempting to identify a suitable time step by adjusting the force tolerance.")
-#          print("with a constant time step of: "+str(time_step))
           for tolerance in [10 ** exponent for exponent in range(2,10)]:
-#            print("Running test simulation with a force tolerance of: "+str(tolerance))
             try:
 #            simulation.context.applyConstraints(1.0e-8)
              integrator = LangevinIntegrator(temperature._value,1.0 / unit.picoseconds, time_step.in_units_of(unit.picosecond)._value)
              simulation = Simulation(topology, system, integrator)
              simulation.context.setPositions(positions)
              simulation.minimizeEnergy(tolerance=tolerance)
-#             print("Simulation successful with a tolerance of: "+str(tolerance))
              success = True
              break
             except:
              continue
         if not success:
-#          print("ERROR: unable to find a suitable simulation time step for this coarse grained model.")
-#          print("Check the model parameters, and the range of time step options,")
-#          print(str(time_step_list))
-#          print("to see if either of these settings are the source of the problem.")
           tolerance = None
-#          exit()
-#        print(time_step)
-#        print("Simulation successful with a time step of: "+str(time_step))
         return(time_step,tolerance)
 
 def minimize_structure(topology,system,positions,temperature=0.0 * unit.kelvin,simulation_time_step=None,total_simulation_time=1.0 * unit.picosecond,output_pdb=None,output_data=None,print_frequency=1):
         """
-        Construct an OpenMM simulation object for our coarse grained model.
+        Perform a minimization of the potential energy for our coarse grained model.
 
-        Parameters
-        ----------
+        :param topology: OpenMM topology for the coarse grained model
+        :type topology: Topology()
 
-        topology: OpenMM topology object
+        :param system: OpenMM system
+        :type system: System()
 
-        system: OpenMM system object
+        :param positions: Positions array for the model we would like to test
+        :type positions: `unit.Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_(np.array([cgmodel.num_beads,3]),simtk.unit)
 
-        positions: Array containing the positions of all beads
-        in the coarse grained model
-        ( np.array( 'num_beads' x 3 , ( float * simtk.unit.distance ) )
+        :param temperature: Simulation temperature
+        :type temperature: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
 
-        temperature: Simulation temperature ( float * simtk.unit.temperature )
+        :param total_simulation_time: Total run time for individual simulations
+        :type total_simulation_time: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
 
-        simulation_time_step: Simulation integration time step
-        ( float * simtk.unit.time )
+        :param output_pdb: Output destinaton for PDB-formatted coordinates during the simulation
+        :type output_pdb: str
 
-        total_simulation_time: Total amount of simulation time allowed for this
-        minimization run.
-        ( float * simtk.unit.time )
+        :param output_data: Output destination for simulation data
+        :type output_data: str
 
-        output_pdb: Name of output file where we will write the coordinates
-        during a simulation run ( string )
+        :param print_frequency: Number of simulation steps to skip when writing data
+        :type print_frequency: int
 
-        output_data: Name of output file where we will write the data from this
-        simulation ( string )
+        :returns: positions: Minimized positions
+        :rtype: positions: `unit.Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_(np.array([cgmodel.num_beads,3]),simtk.unit)
 
-        print_frequency: Number of simulation steps to skip when writing data
-        to 'output_data' ( integer )
+        :returns: potential_energy: Potential energy for the minimized structure. 
+        :rtype: potential_energy: `unit.Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_(np.array([cgmodel.num_beads,3]),simtk.unit)
 
         """
         if simulation_time_step == None:
@@ -284,7 +268,7 @@ def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvi
         return(simulation)
 
 
-def run_simulation(cgmodel,output_directory,total_simulation_time,simulation_time_step,temperature,print_frequency):
+def run_simulation(cgmodel,output_directory,total_simulation_time,simulation_time_step,temperature,print_frequency,output_pdb=None,output_data=None):
         """
 
         Run OpenMM() simulation
@@ -310,8 +294,14 @@ def run_simulation(cgmodel,output_directory,total_simulation_time,simulation_tim
         """
         total_steps = round(total_simulation_time.__div__(simulation_time_step))
         if not os.path.exists(output_directory): os.mkdir(output_directory)
-        output_pdb = str(str(output_directory)+'/simulation.pdb')
-        output_data = str(str(output_directory)+'/simulation.dat')
+        if output_pdb == None:
+          output_pdb = str(str(output_directory)+'/simulation.pdb')
+        else:
+          output_pdb = str(str(output_directory)+"/"+str(output_pdb))
+        if output_data == None:
+          output_data = str(str(output_directory)+'/simulation.dat')
+        else:
+          output_pdb = str(str(output_directory)+"/"+str(output_data))
 
         simulation = build_mm_simulation(cgmodel.topology,cgmodel.system,cgmodel.positions,total_simulation_time=total_simulation_time,simulation_time_step=simulation_time_step,temperature=temperature,output_pdb=output_pdb,output_data=output_data,print_frequency=print_frequency)
 
