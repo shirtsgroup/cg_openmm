@@ -17,15 +17,15 @@ if not os.path.exists(top_directory):
 
 # OpenMM simulation settings
 print_frequency = 5 # Number of steps to skip when printing output
-total_simulation_time = 2.0 * unit.nanosecond # Units = picoseconds
+total_simulation_time = 10.0 * unit.nanosecond # Units = picoseconds
 simulation_time_step = 5.0 * unit.femtosecond
 total_steps = round(total_simulation_time.__div__(simulation_time_step))
 
 # Yank (replica exchange) simulation settings
 output_data=str(str(top_directory)+"/output.nc")
-number_replicas = 40
-min_temp = 10.0 * unit.kelvin
-max_temp = 500.0 * unit.kelvin
+number_replicas = 30
+min_temp = 5.0 * unit.kelvin
+max_temp = 100.0 * unit.kelvin
 temperature_list = get_temperature_list(min_temp,max_temp,number_replicas)
 print("Using "+str(len(temperature_list))+" replicas.")
 if total_steps > 10000:
@@ -38,8 +38,8 @@ else:
 # Global coarse grained model definitions
 #
 ###
-backbone_length=int(1)
-sidechain_length=int(1)
+backbone_length=1
+sidechain_length=1
 sidechain_positions=0
 include_bond_forces=False
 include_bond_angle_forces=True
@@ -58,21 +58,20 @@ bond_force_constant = 1250 * unit.kilojoule_per_mole / unit.nanometer / unit.nan
 bond_force_constants = {'bb_bb_bond_k': bond_force_constant, 'bb_sc_bond_k': bond_force_constant, 'sc_sc_bond_k': bond_force_constant}
 
 # Bond angle properties
-bond_angle_force_constant = 2000 * unit.kilojoule_per_mole / unit.radian / unit.radian
+bond_angle_force_constant = 0.0002 * unit.kilojoule_per_mole / unit.radian / unit.radian
 bond_angle_force_constants = {'bb_bb_bb_angle_k': bond_angle_force_constant,'bb_bb_sc_angle_k': bond_angle_force_constant,'bb_sc_sc_angle_k': bond_angle_force_constant,'sc_sc_sc_angle_k': bond_angle_force_constant, 'sc_bb_sc_angle_k': bond_angle_force_constant, 'sc_sc_bb_angle_k': bond_angle_force_constant}
 equil_bond_angle = 92
 equil_bond_angles = {'bb_bb_bb_angle_0': equil_bond_angle,'bb_bb_sc_angle_0': equil_bond_angle,'bb_sc_sc_angle_0': equil_bond_angle,'sc_sc_sc_angle_0': equil_bond_angle, 'sc_bb_sc_angle_0': equil_bond_angle,'sc_sc_bb_angle_0': equil_bond_angle}
 
 # Torsion properties
-torsion_force_constant = 2000
+torsion_force_constant = 0.0002
 torsion_force_constants = {'bb_bb_bb_bb_torsion_k': torsion_force_constant,'bb_bb_bb_sc_torsion_k': torsion_force_constant,'bb_bb_sc_sc_torsion_k': torsion_force_constant, 'bb_sc_sc_sc_torsion_k': torsion_force_constant, 'sc_bb_bb_sc_torsion_k': torsion_force_constant, 'bb_sc_sc_bb_torsion_k': torsion_force_constant, 'sc_sc_sc_sc_torsion_k': torsion_force_constant,  'sc_bb_bb_bb_torsion_k': torsion_force_constant}
 equil_torsion_angle = 52
 equil_torsion_angles = {'bb_bb_bb_bb_torsion_0': equil_torsion_angle,'bb_bb_bb_sc_torsion_0': equil_torsion_angle,'bb_bb_sc_sc_torsion_0': equil_torsion_angle, 'bb_sc_sc_sc_torsion_0': equil_torsion_angle, 'sc_bb_bb_sc_torsion_0': equil_torsion_angle, 'bb_sc_sc_bb_torsion_0': equil_torsion_angle, 'sc_sc_sc_sc_torsion_0': equil_torsion_angle, 'sc_bb_bb_bb_torsion_0': equil_torsion_angle}
 
 sigma = 2.0 * bond_length
-#sigma_list = [ (1.5 + i*0.1) * bond_length for i in range(grid_size)]
+sigmas = {'bb_bb_sigma': sigma,'sc_sc_sigma': sigma}
 epsilon = 0.2 * unit.kilocalorie_per_mole
-sigmas = {'bb_bb_sigma': sigma,'bb_sc_sigma': sigma,'sc_sc_sigma': sigma}
 epsilons = {'bb_bb_eps': epsilon,'bb_sc_eps': epsilon,'sc_sc_eps': epsilon}
 
 # Heteropolymer definitions
