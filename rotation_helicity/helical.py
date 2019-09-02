@@ -8,18 +8,22 @@ length = 80  # length: can be determined from end-to-end distance, doesn't need 
 npoints = 16 # number of beads
 noise = 0.2 # noise
 points = np.arange(0,1,1.0/npoints)   # parameterized path from 0 to 1
-radius = 2  # radius to generate data
-pitch = 20 # pitch to generate data
-c = np.zeros([npoints,3])
+radius = 2  # radius to generate data # radius
+pitch = 20 # pitch of the helix
+c = np.zeros([npoints,3]) #coodinates
 
-#c[:,0] = radius*np.cos(pitch*points)  # r*cos(t)
-#c[:,1] = radius*np.sin(pitch*points)  # r*sin(t)
-#c[:,2] = length*points                # c*t
+direction = 'inx' # also inx and iny.  Could do a more general rotation at some point.
+if direction == 'inx':
+    xi = [2,1,0]
+if direction == 'iny':
+    xi = [1,2,0]
+if direction == 'inz':
+    xi = [0,1,2]
 
 # start rotated to make sure it still works
-c[:,2] = radius*np.cos(pitch*points)  # r*cos(t)
-c[:,0] = radius*np.sin(pitch*points)  # r*sin(t)
-c[:,1] = length*points                # c*t
+c[:,xi[0]] = radius*np.cos(pitch*points)  # r*cos(t)
+c[:,xi[1]] = radius*np.sin(pitch*points)  # r*sin(t)
+c[:,xi[2]] = length*points                # c*t
 
 # add some noise
 c += noise*np.random.normal(size=[npoints,3])
