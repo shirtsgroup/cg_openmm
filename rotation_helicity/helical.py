@@ -4,17 +4,22 @@ import numpy as np
 import pdb
 import scipy.optimize
 
-length = 100  # length: can be determined from end-to-end distance, doesn't need to be parameterized.
+length = 80  # length: can be determined from end-to-end distance, doesn't need to be parameterized.
 npoints = 16 # number of beads
-noise = 0.5 # noise
+noise = 0.2 # noise
 points = np.arange(0,1,1.0/npoints)   # parameterized path from 0 to 1
 radius = 2  # radius to generate data
 pitch = 20 # pitch to generate data
 c = np.zeros([npoints,3])
 
-c[:,0] = radius*np.cos(pitch*points)  # r*cos(t)
-c[:,1] = radius*np.sin(pitch*points)  # r*sin(t)
-c[:,2] = length*points                # c*t
+#c[:,0] = radius*np.cos(pitch*points)  # r*cos(t)
+#c[:,1] = radius*np.sin(pitch*points)  # r*sin(t)
+#c[:,2] = length*points                # c*t
+
+# start rotated to make sure it still works
+c[:,2] = radius*np.cos(pitch*points)  # r*cos(t)
+c[:,0] = radius*np.sin(pitch*points)  # r*sin(t)
+c[:,1] = length*points                # c*t
 
 # add some noise
 c += noise*np.random.normal(size=[npoints,3])
@@ -44,7 +49,7 @@ vals, vecs = np.linalg.eig(Q)
 #Compute the three p2's 
 p2 = np.mean(np.dot(u,vecs),axis=0)
 
-dirindices = np.argsort(p2)
+dirindices = np.argsort(np.abs(p2))
 
 h = vecs[:,dirindices[2]]
 l = vecs[:,dirindices[1]]
@@ -176,7 +181,7 @@ def obj_for_cpv(x,up,z):
 
     return min  
 
-def root_for_cpk(x,up,z):
+def root_for_cpk(x,up,z):  # might have broken at some point? Not currently using.
     c = x[0]
     p = x[1]
     k = x[2]
@@ -254,31 +259,22 @@ print("phase:",results.x[0])
 print("length/radius:",results.x[1])
 print("radius:",newradius)
 print("objective function:",obj_for_cpv(results.x,up,z))
-print("objective function with original parameters:", obj_for_cpv([0,pitch,length/radius],u,z))
+print("objective function with original parameters:", obj_for_cpv([0,pitch,length/radius],up,z))
 
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 
-fig = plt.figure(1)
-ax = fig.gca(projection='3d')
-ax.plot(c[:,0], c[:,1], c[:,2], label='helix (unrotated)')
-ax.legend()
-plt.show()
+curves = [c,cp,u,up,upr]
+labels = ['helix (unrotated)', 'helix (rotated)', 'directors (unrotated)', 'directors (rotated)', 'directors (rotated to helix)']
+for i in range(len(curves)):
+    fig = plt.figure(i)
+    curve = curves[i]
+    label = labels[i]
+    ax = fig.gca(projection='3d')
+    ax.plot(curve[:,0], curve[:,1], curve[:,2], label=label)
+    ax.legend()
+    plt.xlabel('x')
+    plt.ylabel('y')
+    #plt.zlabel('z') # not defined?
+    plt.show()
 
-fig = plt.figure(2)
-ax = fig.gca(projection='3d')
-ax.plot(cp[:,0], cp[:,1], c[:,2], label='helix (rotated)')
-ax.legend()
-plt.show()
-
-fig = plt.figure(3)
-ax = fig.gca(projection='3d')
-ax.plot(u[:,0], u[:,1], u[:,2], label='directors (unrotated)')
-ax.legend()
-plt.show()
-
-fig = plt.figure(4)
-ax = fig.gca(projection='3d')
-ax.plot(up[:,0], up[:,1], up[:,2], label='directors (rotated)')
-ax.legend()
-plt.show()
