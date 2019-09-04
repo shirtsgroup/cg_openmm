@@ -28,7 +28,7 @@ if not os.path.exists(top_directory):
 
 # OpenMM simulation settings
 print_frequency = 20 # Number of steps to skip when printing output
-total_simulation_time = 5.0 * unit.nanosecond # Units = picoseconds
+total_simulation_time = 0.5 * unit.nanosecond # Units = picoseconds
 simulation_time_step = 5.0 * unit.femtosecond
 total_steps = round(total_simulation_time.__div__(simulation_time_step))
 

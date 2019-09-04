@@ -13,8 +13,6 @@ from foldamers.src.utilities.util import random_positions
 from cg_openmm.src.build.cg_build import build_topology
 from cg_openmm.src.simulation.rep_exch import *
 
-grid_size = 1
-
 native_structure_file = str(str(os.getcwd().split('examples/native_contacts')[0])+"ensembles/12_1_1_0/helix.pdb")
 
 native_structure = PDBFile(native_structure_file).getPositions()
@@ -26,15 +24,15 @@ if not os.path.exists(top_directory):
 
 # OpenMM simulation settings
 print_frequency = 20 # Number of steps to skip when printing output
-total_simulation_time = 2.0 * unit.nanosecond # Units = picoseconds
+total_simulation_time = 5.0 * unit.nanosecond # Units = picoseconds
 simulation_time_step = 5.0 * unit.femtosecond
 total_steps = round(total_simulation_time.__div__(simulation_time_step))
 
 # Yank (replica exchange) simulation settings
 output_data=str(str(top_directory)+"/output.nc")
 number_replicas = 30
-min_temp = 50.0 * unit.kelvin
-max_temp = 400.0 * unit.kelvin
+min_temp = 10.0 * unit.kelvin
+max_temp = 200.0 * unit.kelvin
 temperature_list = get_temperature_list(min_temp,max_temp,number_replicas)
 print("Using "+str(len(temperature_list))+" replicas.")
 
@@ -42,53 +40,50 @@ Q_list = []
 F_list = []
 T_list = []
 
-if not os.path.exists("F_Q_T.dat"):
 
- epsilon_list = [ unit.Quantity((0.25 + i*0.25),unit.kilocalorie_per_mole) for i in range(grid_size)]
- for epsilon in epsilon_list:
-  print("Calculating the free energy as a function of native contacts")
-  print("for a coarse grained model with epsilon values of "+str(epsilon))
-  epsilons = {'bb_bb_eps': epsilon,'bb_sc_eps': epsilon,'sc_sc_eps': epsilon}
-  cgmodel = CGModel(epsilons=epsilons)
+cgmodel = CGModel()
 
-  output_data = str(str(top_directory)+"/eps_"+str(epsilon._value)+".nc")
-  if not os.path.exists(output_data):
+output_data = str(str(top_directory)+"/output.nc")
+if not os.path.exists(output_data):
      replica_energies,replica_positions,replica_states = run_replica_exchange(cgmodel.topology,cgmodel.system,cgmodel.positions,temperature_list=temperature_list,simulation_time_step=simulation_time_step,total_simulation_time=total_simulation_time,print_frequency=print_frequency,output_data=output_data)
-  else:
+else:
+     print("Reading simulation data.")
      replica_energies,replica_positions,replica_states = read_replica_exchange_data(system=cgmodel.system,topology=cgmodel.topology,temperature_list=temperature_list,output_data=output_data,print_frequency=print_frequency)
 
-  native_contacts = np.zeros((len(replica_positions),len(replica_positions[0])))
-  for replica_index in range(len(replica_positions)):
+print("Building an array of the fraction of native contacts for each pose.")
+native_contacts = np.zeros((len(replica_positions),len(replica_positions[0])))
+for replica_index in range(len(replica_positions)):
      trajectory = replica_positions[replica_index]
      for pose_index in range(len(trajectory)):
        pose = trajectory[pose_index]
        native_contacts[replica_index][pose_index] = fraction_native_contacts(cgmodel,pose,native_structure)
 
-  Q_kn = np.zeros((len(temperature_list),len(native_contacts[replica_index])))
-  for k in range(len(temperature_list)):
+print("Reshaping the array for MBAR.")
+Q_kn = np.zeros((len(temperature_list),len(native_contacts[replica_index])))
+for k in range(len(temperature_list)):
     Q_kn[k] = native_contacts[k]
 
-  mbar,E_kn,result,dresult,new_temp_list = get_mbar_expectation(replica_energies,temperature_list,0)
+mbar,E_kn,result,dresult,new_temp_list = get_mbar_expectation(replica_energies,temperature_list,0)
 
-  F_expect,dF_expect = get_free_energy_differences(mbar)  
+F_expect,dF_expect = get_free_energy_differences(mbar)  
 #  Q_expect,dQ_expect = mbar.computeExpectations(Q_kn)
 
-  for k in range(len(F_expect)):
+for k in range(len(F_expect)):
     for l in range(len(F_expect[k])):
       F_list.append(F_expect[k][l])
       Q_list.append(native_contacts[k][l])
       T_list.append(temperature_list[k]._value)
 
- data_file = open("F_Q_T.dat","w")
- data_file.write("Temperature (Kelvin),Fraction of Native Contacts (Dimensionless),Free Energy (Dimensionless)\n")
- for index in range(len(T_list)):
+data_file = open("F_Q_T.dat","w")
+data_file.write("Temperature (Kelvin),Fraction of Native Contacts (Dimensionless),Free Energy (Dimensionless)\n")
+for index in range(len(T_list)):
   data_file.write(str(T_list[index])+","+str(Q_list[index])+","+str(F_list[index])+"\n")
- data_file.close()
-else:
-  T_list = []
-  F_list = []
-  Q_list = []
-  with open("F_Q_T.dat",newline='') as csvfile:
+data_file.close()
+
+T_list = []
+F_list = []
+Q_list = []
+with open("F_Q_T.dat",newline='') as csvfile:
           reader = csv.reader(csvfile, delimiter=',')
           next(reader)
           for row in reader:
@@ -117,6 +112,7 @@ bins = [[[] for j in range(n_bins+1)] for i in range(n_bins+1)]
 
 bin_counts = np.zeros((n_bins+1,n_bins+1),dtype=int)
 
+print("Binning samples.")
 for index in range(len(z)):
   for Q_range_index in range(len(Q_ranges)):
    Q_range = Q_ranges[Q_range_index]
