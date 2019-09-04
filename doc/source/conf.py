@@ -14,14 +14,14 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../../src'))
+sys.path.insert(0, os.path.abspath('../../cg_openmm'))
 
 
 # -- Project information -----------------------------------------------------
 
 project = 'Coarse grained OpenMM'
 copyright = '2019, Shirts research group'
-author = "Garrett A. Meek\\\ \\\Research group of Michael R. Shirts\\\ \\\Dept. of Chemical and Biological Engineering\\\University of Colorado Boulder"
+author = "Garrett A. Meek\\\ \\\Michael R. Shirts\\\ \\\Dept. of Chemical and Biological Engineering\\\University of Colorado Boulder"
 
 # The short X.Y version
 version = ''
