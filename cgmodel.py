@@ -379,7 +379,7 @@ for all bond types, default = 200 * kJ/mol/rad^2
               self.positions = util.random_positions(self)
            else:
             if polymer_length == 12:
-              positions_file = str(str(__file__.split('src/cg_model/cgmodel.py')[0])+"ensembles/12_1_1_0/helix.pdb")
+              positions_file = str(str(__file__.split('foldamers/cg_model/cgmodel.py')[0])+"ensembles/12_1_1_0/helix.pdb")
               self.positions = PDBFile(positions_file).getPositions()
             else:
               self.positions = util.random_positions(self,use_library=False)
