@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=pdflatex 2019.4.22)  4 SEP 2019 16:03
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=pdflatex 2019.4.22)  5 SEP 2019 10:27
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -991,6 +991,9 @@ Package: sphinxmessages 2019/01/04 v2.0 Localized LaTeX macros (Sphinx team)
 Writing index file cgopenmm.idx
 (./cgopenmm.aux
 
+LaTeX Warning: Label `build:module-build.cg_build' multiply defined.
+
+
 LaTeX Warning: Label `simulation:module-simulation.rep_exch' multiply defined.
 
 
@@ -1195,823 +1198,648 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
 
 ]
 Chapter 1.
-
-Package Fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
-less on input line 108.
-
-[2
-
-]
-Chapter 2.
-LaTeX Font Info:    Try loading font information for T1+pcr on input line 120.
+LaTeX Font Info:    Try loading font information for T1+pcr on input line 105.
 (/usr/share/texlive/texmf-dist/tex/latex/psnfss/t1pcr.fd
 File: t1pcr.fd 2001/06/04 font definitions for T1/pcr.
 )
 LaTeX Font Info:    Font shape `T1/pcr/bx/n' in size <12> not available
-(Font)              Font shape `T1/pcr/b/n' tried instead on input line 120.
+(Font)              Font shape `T1/pcr/b/n' tried instead on input line 105.
+LaTeX Font Info:    Font shape `T1/pcr/m/it' in size <12> not available
+(Font)              Font shape `T1/pcr/m/sl' tried instead on input line 109.
+LaTeX Font Info:    Font shape `T1/pcr/bx/n' in size <10.95> not available
+(Font)              Font shape `T1/pcr/b/n' tried instead on input line 123.
+LaTeX Font Info:    Try loading font information for TS1+ptm on input line 138.
 
-Underfull \hbox (badness 10000) in paragraph at lines 120--120
-\T1/ptm/m/it/12 a-ture=Quantity(value=300.0\T1/ptm/m/n/12 ,
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 120--120
-\T1/ptm/m/it/12 unit=kelvin)\T1/ptm/m/n/12 , \T1/ptm/m/it/12 sim-u-la-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 120--120
-\T1/ptm/m/it/12 tion_time_step=None\T1/ptm/m/n/12 , \T1/ptm/m/it/12 to-
- []
-
-
-Overfull \hbox (28.21747pt too wide) in paragraph at lines 120--120
-\T1/ptm/m/it/12 tal_simulation_time=Quantity(value=1.0\T1/ptm/m/n/12 ,
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 120--120
-\T1/ptm/m/it/12 unit=picosecond)\T1/ptm/m/n/12 , \T1/ptm/m/it/12 out-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 120--120
-\T1/ptm/m/it/12 print_frequency=100\T1/ptm/m/n/12 ,
- []
-
-LaTeX Font Info:    Try loading font information for TS1+ptm on input line 124.
 
 (/usr/share/texlive/texmf-dist/tex/latex/psnfss/ts1ptm.fd
 File: ts1ptm.fd 2001/06/04 font definitions for TS1/ptm.
 )
-Underfull \hbox (badness 10000) in paragraph at lines 131--132
-[]\T1/pcr/b/n/12 positions \T1/ptm/m/n/12 ([]\T1/ptm/b/n/12 `[]\T1/ptm/m/n/12 u
-nit.Quantity() <[][]$https : / / docs . openmm . org /
+
+Package Fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
+less on input line 147.
+
+[2
+
+] [3] [4] [5] [6]
+Chapter 2.
+
+Underfull \hbox (badness 10000) in paragraph at lines 445--445
+\T1/ptm/m/it/12 a-ture=Quantity(value=300.0\T1/ptm/m/n/12 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 131--132
-\T1/ptm/m/n/12 development / api-[]python / generated / simtk . unit . quantity
- . Quantity .
+Underfull \hbox (badness 10000) in paragraph at lines 445--445
+\T1/ptm/m/it/12 unit=kelvin)\T1/ptm/m/n/12 , \T1/ptm/m/it/12 sim-u-la-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 131--132
-\T1/ptm/m/n/12 html$[][]>`_(np.array([cgmodel.num_beads,3]),simtk.unit)) ^^U Po
--si-tions
+Underfull \hbox (badness 10000) in paragraph at lines 445--445
+\T1/ptm/m/it/12 tion_time_step=None\T1/ptm/m/n/12 , \T1/ptm/m/it/12 to-
+ []
+
+
+Overfull \hbox (28.21747pt too wide) in paragraph at lines 445--445
+\T1/ptm/m/it/12 tal_simulation_time=Quantity(value=1.0\T1/ptm/m/n/12 ,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 445--445
+\T1/ptm/m/it/12 unit=picosecond)\T1/ptm/m/n/12 , \T1/ptm/m/it/12 out-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 445--445
+\T1/ptm/m/it/12 print_frequency=100\T1/ptm/m/n/12 ,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 456--457
+[]\T1/pcr/b/n/12 positions \T1/ptm/m/n/12 ([][]Quan-tity()[][] ( np.array( [cg-
+model.num_beads,3] ),
  []
 
 
 Package Fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
-less on input line 142.
+less on input line 469.
 
-[3
+[7
 
 ]
-LaTeX Font Info:    Font shape `T1/pcr/m/it' in size <12> not available
-(Font)              Font shape `T1/pcr/m/sl' tried instead on input line 2.
-LaTeX Font Info:    Font shape `T1/pcr/bx/n' in size <10.95> not available
-(Font)              Font shape `T1/pcr/b/n' tried instead on input line 168.
-
-Underfull \hbox (badness 10000) in paragraph at lines 188--188
+Underfull \hbox (badness 10000) in paragraph at lines 513--513
 []\T1/ptm/m/it/12 cgmodel\T1/ptm/m/n/12 , \T1/ptm/m/it/12 out-put_directory\T1/
 ptm/m/n/12 , \T1/ptm/m/it/12 to-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 188--188
+Underfull \hbox (badness 10000) in paragraph at lines 513--513
 \T1/ptm/m/it/12 tem-per-a-ture\T1/ptm/m/n/12 , \T1/ptm/m/it/12 print_frequency\
 T1/ptm/m/n/12 , \T1/ptm/m/it/12 out-
  []
 
-[4]
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
+[8]
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
 []\T1/ptm/m/it/12 topology, sys-tem, po-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
 \T1/ptm/m/it/12 si-tions, tem-per-a-
  []
 
 
-Overfull \hbox (17.2378pt too wide) in paragraph at lines 250--250
+Overfull \hbox (17.2378pt too wide) in paragraph at lines 575--575
 \T1/ptm/m/it/12 ture_list=[Quantity(value=250.0,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
 \T1/ptm/m/it/12 unit=kelvin), Quan-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
 \T1/ptm/m/it/12 tity(value=260.0,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
 \T1/ptm/m/it/12 unit=kelvin), Quan-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
 \T1/ptm/m/it/12 tity(value=270.0,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
 \T1/ptm/m/it/12 unit=kelvin), Quan-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
 \T1/ptm/m/it/12 tity(value=280.0,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
 \T1/ptm/m/it/12 unit=kelvin), Quan-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
 \T1/ptm/m/it/12 tity(value=290.0,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
 \T1/ptm/m/it/12 unit=kelvin), Quan-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
 \T1/ptm/m/it/12 tity(value=300.0,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
 \T1/ptm/m/it/12 unit=kelvin), Quan-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
 \T1/ptm/m/it/12 tity(value=310.0,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
 \T1/ptm/m/it/12 unit=kelvin), Quan-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
 \T1/ptm/m/it/12 tity(value=320.0,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
 \T1/ptm/m/it/12 unit=kelvin), Quan-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
 \T1/ptm/m/it/12 tity(value=330.0,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
 \T1/ptm/m/it/12 unit=kelvin), Quan-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
 \T1/ptm/m/it/12 tity(value=340.0,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
 \T1/ptm/m/it/12 unit=kelvin)], sim-u-la-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
 \T1/ptm/m/it/12 tion_time_step=None, to-
  []
 
 
-Overfull \hbox (57.01746pt too wide) in paragraph at lines 250--250
+Overfull \hbox (57.01746pt too wide) in paragraph at lines 575--575
 \T1/ptm/m/it/12 tal_simulation_time=Quantity(value=1.0,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
 \T1/ptm/m/it/12 unit=picosecond), out-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
 \T1/ptm/m/it/12 put_data='output.nc',
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
 \T1/ptm/m/it/12 print_frequency=100, ver-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
 \T1/ptm/m/it/12 bose_simulation=False,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 250--250
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
 \T1/ptm/m/it/12 ex-change_attempts=None,
  []
 
-[5]
-Underfull \hbox (badness 10000) in paragraph at lines 261--262
-[]\T1/pcr/b/n/12 positions \T1/ptm/m/n/12 ([]\T1/ptm/b/n/12 `[]\T1/ptm/m/n/12 u
-nit.Quantity() <[][]$http : / / docs . openmm . org /
+
+Underfull \hbox (badness 10000) in paragraph at lines 575--575
+\T1/ptm/m/it/12 test_time_step=False, out-
+ []
+
+[9] [10]
+Underfull \hbox (badness 10000) in paragraph at lines 622--623
+[]\T1/ptm/m/n/12 replica_energies: [][]Quan-tity()[][] ( np.float( [num-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 261--262
-\T1/ptm/m/n/12 development / api-[]python / generated / simtk . unit . quantity
- . Quantity .
+Underfull \hbox (badness 10000) in paragraph at lines 630--631
+[]\T1/ptm/m/n/12 replica_positions: [][]Quan-tity()[][] ( np.float( [num-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 261--262
-\T1/ptm/m/n/12 html$[][]>`_(np.array([cgmodel.num_beads,3]),simtk.unit)) ^^U Po
--si-tions
- []
-
-[6]
-Underfull \hbox (badness 10000) in paragraph at lines 292--294
-[]\T1/ptm/m/n/12 replica_energies: []\T1/ptm/b/n/12 `[]\T1/ptm/m/n/12 unit.Quan
-tity() <[][]$http : / / docs . openmm .
+Underfull \hbox (badness 10000) in paragraph at lines 638--639
+[]\T1/ptm/m/n/12 replica_state_indices: [][]Quan-tity()[][] ( np.int64( [num-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 292--294
-\T1/ptm/m/n/12 org / development / api-[]python / generated / simtk . unit . qu
-antity . Quantity .
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 298--300
-[]\T1/ptm/m/n/12 replica_positions: []\T1/ptm/b/n/12 `[]\T1/ptm/m/n/12 unit.Qua
-ntity() <[][]$http : / / docs . openmm .
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 298--300
-\T1/ptm/m/n/12 org / development / api-[]python / generated / simtk . unit . qu
-antity . Quantity .
- []
-
-
-Overfull \hbox (101.02228pt too wide) in paragraph at lines 298--300
-\T1/ptm/m/n/12 html$[][]>`_(np.float([number_replicas,number_simulation_steps,c
-gmodel.num_beads,3]),simtk.unit) 
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 304--306
-[]\T1/ptm/m/n/12 replica_state_indices: []\T1/ptm/b/n/12 `[]\T1/ptm/m/n/12 unit
-.Quantity() <[][]$http : / / docs . openmm .
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 304--306
-\T1/ptm/m/n/12 org / development / api-[]python / generated / simtk . unit . qu
-antity . Quantity .
- []
-
-
-Overfull \hbox (4.78287pt too wide) in paragraph at lines 322--322
+Overfull \hbox (4.78287pt too wide) in paragraph at lines 656--656
 \T1/ptm/m/it/12 put_data='output.nc'\T1/ptm/m/n/12 ,
  []
 
 
-Overfull \hbox (14.86244pt too wide) in paragraph at lines 322--322
+Overfull \hbox (14.86244pt too wide) in paragraph at lines 656--656
 \T1/ptm/m/it/12 print_frequency=None\T1/pcr/m/n/12 ) 
  []
 
-[7]
-Underfull \hbox (badness 10000) in paragraph at lines 346--348
-[]\T1/ptm/m/n/12 replica_energies: []\T1/ptm/b/n/12 `[]\T1/ptm/m/n/12 unit.Quan
-tity() <[][]$http : / / docs . openmm .
+[11]
+Underfull \hbox (badness 10000) in paragraph at lines 682--683
+[]\T1/ptm/m/n/12 replica_energies: [][]Quan-tity()[][] ( np.float( [num-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 346--348
-\T1/ptm/m/n/12 org / development / api-[]python / generated / simtk . unit . qu
-antity . Quantity .
+Underfull \hbox (badness 10000) in paragraph at lines 690--691
+[]\T1/ptm/m/n/12 replica_positions: [][]Quan-tity()[][] ( np.float( [num-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 352--354
-[]\T1/ptm/m/n/12 replica_positions: []\T1/ptm/b/n/12 `[]\T1/ptm/m/n/12 unit.Qua
-ntity() <[][]$http : / / docs . openmm .
+Underfull \hbox (badness 10000) in paragraph at lines 698--699
+[]\T1/ptm/m/n/12 replica_state_indices: [][]Quan-tity()[][] ( np.int64( [num-
  []
 
-
-Underfull \hbox (badness 10000) in paragraph at lines 352--354
-\T1/ptm/m/n/12 org / development / api-[]python / generated / simtk . unit . qu
-antity . Quantity .
- []
-
-
-Overfull \hbox (101.02228pt too wide) in paragraph at lines 352--354
-\T1/ptm/m/n/12 html$[][]>`_(np.float([number_replicas,number_simulation_steps,c
-gmodel.num_beads,3]),simtk.unit) 
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 358--360
-[]\T1/ptm/m/n/12 replica_state_indices: []\T1/ptm/b/n/12 `[]\T1/ptm/m/n/12 unit
-.Quantity() <[][]$http : / / docs . openmm .
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 358--360
-\T1/ptm/m/n/12 org / development / api-[]python / generated / simtk . unit . qu
-antity . Quantity .
- []
-
-
-Overfull \vbox (10.45468pt too high) detected at line 370
- []
-
-[8]
-Underfull \hbox (badness 10000) in paragraph at lines 377--377
+[12]
+Underfull \hbox (badness 10000) in paragraph at lines 717--717
 []\T1/ptm/m/it/12 topology\T1/ptm/m/n/12 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 385--386
-[]\T1/pcr/b/n/12 replica_positions \T1/ptm/m/n/12 ([]\T1/ptm/b/n/12 `[]\T1/ptm/
-m/n/12 unit.Quantity() <[][]$http : / / docs . openmm .
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 385--386
-\T1/ptm/m/n/12 org / development / api-[]python / generated / simtk . unit . qu
-antity . Quantity .
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 385--386
-\T1/ptm/m/n/12 html$[][]>`_(np.array([n_replicas,cgmodel.num_beads,3]),simtk.un
-it)) ^^U
- []
-
-
-Overfull \hbox (9.58241pt too wide) in paragraph at lines 417--417
+Overfull \hbox (9.58241pt too wide) in paragraph at lines 757--757
 []\T1/ptm/m/it/12 replica_energies\T1/ptm/m/n/12 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 417--417
+Underfull \hbox (badness 10000) in paragraph at lines 757--757
 \T1/ptm/m/it/12 tem-per-a-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 417--417
+Underfull \hbox (badness 10000) in paragraph at lines 757--757
 \T1/ptm/m/it/12 ture_list\T1/ptm/m/n/12 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 417--417
+Underfull \hbox (badness 10000) in paragraph at lines 757--757
 \T1/ptm/m/it/12 sim-u-la-
  []
 
 
-Overfull \hbox (21.00659pt too wide) in paragraph at lines 417--417
+Overfull \hbox (21.00659pt too wide) in paragraph at lines 757--757
 \T1/ptm/m/it/12 steps_per_stage=1\T1/ptm/m/n/12 ,
  []
 
 
-Overfull \hbox (143.8019pt too wide) in paragraph at lines 417--417
+Overfull \hbox (143.8019pt too wide) in paragraph at lines 757--757
 \T1/ptm/m/it/12 file_name='replica_exchange_energies.png'\T1/ptm/m/n/12 ,
  []
 
-[9]
-Underfull \hbox (badness 10000) in paragraph at lines 422--423
+
+Underfull \hbox (badness 10000) in paragraph at lines 757--757
+\T1/ptm/m/it/12 leg-end=True\T1/ptm/m/n/12 ,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 757--757
+\T1/ptm/m/it/12 out-
+ []
+
+
+Overfull \hbox (32.3345pt too wide) in paragraph at lines 757--757
+\T1/ptm/m/it/12 put_directory=None\T1/pcr/m/n/12 ) 
+ []
+
+[13]
+Underfull \hbox (badness 10000) in paragraph at lines 762--763
 \T1/pcr/m/sl/12 energy for simulation_steps ) for num_replicas
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 450--450
+Underfull \hbox (badness 10000) in paragraph at lines 793--793
 []\T1/ptm/m/it/12 replica_states\T1/ptm/m/n/12 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 450--450
+Underfull \hbox (badness 10000) in paragraph at lines 793--793
 \T1/ptm/m/it/12 tem-per-a-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 450--450
+Underfull \hbox (badness 10000) in paragraph at lines 793--793
 \T1/ptm/m/it/12 ture_list\T1/ptm/m/n/12 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 450--450
+Underfull \hbox (badness 10000) in paragraph at lines 793--793
 \T1/ptm/m/it/12 sim-u-la-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 450--450
+Underfull \hbox (badness 10000) in paragraph at lines 793--793
 \T1/ptm/m/it/12 tion_time_step\T1/ptm/m/n/12 ,
  []
 
 
-Overfull \hbox (13.8066pt too wide) in paragraph at lines 450--450
+Overfull \hbox (13.8066pt too wide) in paragraph at lines 793--793
 \T1/ptm/m/it/12 steps_per_stage=1\T1/ptm/m/n/12 ,
  []
 
 
-Overfull \hbox (176.2253pt too wide) in paragraph at lines 450--450
+Overfull \hbox (176.2253pt too wide) in paragraph at lines 793--793
 \T1/ptm/m/it/12 file_name='replica_exchange_state_transitions.png'\T1/ptm/m/n/1
 2 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 455--456
+Underfull \hbox (badness 10000) in paragraph at lines 793--793
+\T1/ptm/m/it/12 leg-end=True\T1/ptm/m/n/12 ,
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 793--793
+\T1/ptm/m/it/12 out-
+ []
+
+
+Overfull \hbox (25.1345pt too wide) in paragraph at lines 793--793
+\T1/ptm/m/it/12 put_directory=None\T1/pcr/m/n/12 ) 
+ []
+
+[14]
+Underfull \hbox (badness 10000) in paragraph at lines 798--799
 []\T1/pcr/b/n/12 replica_states \T1/ptm/m/n/12 (\T1/pcr/m/sl/12 List( List( flo
 at * simtk.unit.
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 455--456
+Underfull \hbox (badness 10000) in paragraph at lines 798--799
 \T1/pcr/m/sl/12 energy for simulation_steps ) for num_replicas
  []
 
-[10]
-Underfull \hbox (badness 10000) in paragraph at lines 483--483
+
+Underfull \hbox (badness 10000) in paragraph at lines 829--829
 []\T1/ptm/m/it/12 simulation_times\T1/ptm/m/n/12 , \T1/ptm/m/it/12 y_data\T1/pt
 m/m/n/12 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 518--518
+Underfull \hbox (badness 10000) in paragraph at lines 829--829
+\T1/ptm/m/it/12 plot_type=None\T1/ptm/m/n/12 , \T1/ptm/m/it/12 out-
+ []
+
+[15]
+Underfull \hbox (badness 10000) in paragraph at lines 864--864
 []\T1/ptm/m/it/12 simulation_data_file\T1/ptm/m/n/12 ,
  []
 
-[11]
-Underfull \hbox (badness 10000) in paragraph at lines 567--568
-[]\T1/pcr/b/n/12 positions \T1/ptm/m/n/12 ([]\T1/ptm/b/n/12 `[]\T1/ptm/m/n/12 u
-nit.Quantity() <[][]$http : / / docs . openmm . org /
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 567--568
-\T1/ptm/m/n/12 development / api-[]python / generated / simtk . unit . quantity
- . Quantity .
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 567--568
-\T1/ptm/m/n/12 html$[][]>`_(np.array([cgmodel.num_beads,3]),simtk.unit)) ^^U Po
--si-tions
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 574--576
-[][]\T1/ptm/b/n/12 `[]\T1/ptm/m/n/12 unit.Quantity() <[][]$http : / / docs . op
-enmm . org / development /
- []
-
-[12]
-Underfull \hbox (badness 10000) in paragraph at lines 594--594
+[16]
+Underfull \hbox (badness 10000) in paragraph at lines 942--942
 []\T1/ptm/m/it/12 topology\T1/ptm/m/n/12 , \T1/ptm/m/it/12 sys-tem\T1/ptm/m/n/1
 2 , \T1/ptm/m/it/12 po-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 594--594
+Underfull \hbox (badness 10000) in paragraph at lines 942--942
 \T1/ptm/m/it/12 si-tions\T1/ptm/m/n/12 , \T1/ptm/m/it/12 tem-per-a-ture\T1/ptm/
 m/n/12 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 594--594
+Underfull \hbox (badness 10000) in paragraph at lines 942--942
 \T1/ptm/m/it/12 to-tal_simulation_time\T1/ptm/m/n/12 ,
  []
 
-
-Underfull \hbox (badness 10000) in paragraph at lines 605--606
-[]\T1/pcr/b/n/12 positions \T1/ptm/m/n/12 ([]\T1/ptm/b/n/12 `[]\T1/ptm/m/n/12 u
-nit.Quantity() <[][]$http : / / docs . openmm . org /
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 605--606
-\T1/ptm/m/n/12 development / api-[]python / generated / simtk . unit . quantity
- . Quantity .
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 605--606
-\T1/ptm/m/n/12 html$[][]>`_(np.array([cgmodel.num_beads,3]),simtk.unit)) ^^U Po
--si-tions
- []
-
-
-Overfull \vbox (18.54953pt too high) detected at line 640
- []
-
-[13]
-Underfull \hbox (badness 10000) in paragraph at lines 647--647
+[17]
+Underfull \hbox (badness 10000) in paragraph at lines 995--995
 \T1/ptm/m/it/12 per-a-ture=Quantity(value=0.0\T1/ptm/m/n/12 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 647--647
+Underfull \hbox (badness 10000) in paragraph at lines 995--995
 \T1/ptm/m/it/12 unit=kelvin)\T1/ptm/m/n/12 , \T1/ptm/m/it/12 sim-u-la-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 647--647
+Underfull \hbox (badness 10000) in paragraph at lines 995--995
 \T1/ptm/m/it/12 tion_time_step=None\T1/ptm/m/n/12 , \T1/ptm/m/it/12 to-
  []
 
 
-Overfull \hbox (21.01747pt too wide) in paragraph at lines 647--647
+Overfull \hbox (21.01747pt too wide) in paragraph at lines 995--995
 \T1/ptm/m/it/12 tal_simulation_time=Quantity(value=1.0\T1/ptm/m/n/12 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 647--647
+Underfull \hbox (badness 10000) in paragraph at lines 995--995
 \T1/ptm/m/it/12 unit=picosecond)\T1/ptm/m/n/12 , \T1/ptm/m/it/12 out-
  []
 
-
-Underfull \hbox (badness 10000) in paragraph at lines 658--659
-[]\T1/pcr/b/n/12 positions \T1/ptm/m/n/12 ([]\T1/ptm/b/n/12 `[]\T1/ptm/m/n/12 u
-nit.Quantity() <[][]$http : / / docs . openmm . org /
+[18]
+Underfull \hbox (badness 8019) in paragraph at lines 1038--1039
+[]\T1/ptm/m/n/12 potential_energy: [][]Quan-tity()[][] ( np.array( [cg-model.nu
+m_beads,3] ),
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 658--659
-\T1/ptm/m/n/12 development / api-[]python / generated / simtk . unit . quantity
- . Quantity .
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 658--659
-\T1/ptm/m/n/12 html$[][]>`_(np.array([cgmodel.num_beads,3]),simtk.unit)) ^^U Po
--si-tions
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 680--682
-[]\T1/ptm/m/n/12 positions: []\T1/ptm/b/n/12 `[]\T1/ptm/m/n/12 unit.Quantity() 
-<[][]$http : / / docs . openmm . org /
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 680--682
-\T1/ptm/m/n/12 development / api-[]python / generated / simtk . unit . quantity
- . Quantity .
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 686--688
-[]\T1/ptm/m/n/12 potential_energy: []\T1/ptm/b/n/12 `[]\T1/ptm/m/n/12 unit.Quan
-tity() <[][]$http : / / docs . openmm .
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 686--688
-\T1/ptm/m/n/12 org / development / api-[]python / generated / simtk . unit . qu
-antity . Quantity .
- []
-
-[14]
-Underfull \hbox (badness 10000) in paragraph at lines 713--713
+Underfull \hbox (badness 10000) in paragraph at lines 1065--1065
 []\T1/ptm/m/it/12 simulation_data_file\T1/ptm/m/n/12 , \T1/ptm/m/it/12 sim-u-la
 -
  []
 
-
-Underfull \hbox (badness 10000) in paragraph at lines 740--740
+[19]
+Underfull \hbox (badness 10000) in paragraph at lines 1092--1092
 []\T1/ptm/m/it/12 topology\T1/ptm/m/n/12 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 740--740
+Underfull \hbox (badness 10000) in paragraph at lines 1092--1092
 \T1/ptm/m/it/12 replica_energies\T1/ptm/m/n/12 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 740--740
+Underfull \hbox (badness 10000) in paragraph at lines 1092--1092
 \T1/ptm/m/it/12 replica_positions\T1/ptm/m/n/12 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 740--740
+Underfull \hbox (badness 10000) in paragraph at lines 1092--1092
 \T1/ptm/m/it/12 en-sem-ble_size=5\T1/ptm/m/n/12 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 748--749
+Underfull \hbox (badness 10000) in paragraph at lines 1100--1101
 \T1/pcr/m/sl/12 energy for simulation_steps ) for num_replicas
  []
 
-[15]
-Underfull \hbox (badness 10000) in paragraph at lines 751--752
+
+Underfull \hbox (badness 10000) in paragraph at lines 1103--1104
 []\T1/pcr/b/n/12 replica_positions \T1/ptm/m/n/12 (\T1/pcr/m/sl/12 np.array( ( 
 float *
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 751--752
+Underfull \hbox (badness 10000) in paragraph at lines 1103--1104
 \T1/pcr/m/sl/12 simtk.unit.positions for num_beads ) for
  []
 
-[16]
+[20]
 Chapter 3.
 
-Underfull \hbox (badness 10000) in paragraph at lines 793--794
-[]\T1/pcr/b/n/12 positions_1 \T1/ptm/m/n/12 ([]\T1/ptm/b/n/12 `[]\T1/ptm/m/n/12
- unit.Quantity() <[][]$http : / / docs . openmm . org /
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 793--794
-\T1/ptm/m/n/12 development / api-[]python / generated / simtk . unit . quantity
- . Quantity .
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 796--797
-[]\T1/pcr/b/n/12 positions_2 \T1/ptm/m/n/12 ([]\T1/ptm/b/n/12 `[]\T1/ptm/m/n/12
- unit.Quantity() <[][]$http : / / docs . openmm . org /
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 796--797
-\T1/ptm/m/n/12 development / api-[]python / generated / simtk . unit . quantity
- . Quantity .
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 803--805
-[][]\T1/ptm/b/n/12 `[]\T1/ptm/m/n/12 unit.Quantity() <[][]$http : / / docs . op
-enmm . org / development /
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 825--827
-[]\T1/pcr/b/n/12 box_size \T1/ptm/m/n/12 ([]\T1/ptm/b/n/12 `[]\T1/ptm/m/n/12 un
-it.Quantity() <[][]$http : / / docs . openmm . org /
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 825--827
-\T1/ptm/m/n/12 development / api-[]python / generated / simtk . unit . quantity
- . Quantity .
- []
-
-
 Package Fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
-less on input line 831.
+less on input line 1198.
 
-[17
+[21
 
-]
-Underfull \hbox (badness 10000) in paragraph at lines 831--833
-[]\T1/ptm/m/n/12 box_vectors: List( []\T1/ptm/b/n/12 `[]\T1/ptm/m/n/12 unit.Qua
-ntity() <[][]$http : / / docs . openmm .
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 831--833
-\T1/ptm/m/n/12 org / development / api-[]python / generated / simtk . unit . qu
-antity . Quantity .
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 855--856
-[]\T1/pcr/b/n/12 box_size \T1/ptm/m/n/12 ([]\T1/ptm/b/n/12 `[]\T1/ptm/m/n/12 un
-it.Quantity() <[][]$http : / / docs . openmm . org /
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 855--856
-\T1/ptm/m/n/12 development / api-[]python / generated / simtk . unit . quantity
- . Quantity .
- []
-
-[18]
+] [22]
 Chapter 4.
 
 Package Fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
-less on input line 888.
+less on input line 1244.
 
-[19
+[23
 
 ]
 
 Package Fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
-less on input line 896.
+less on input line 1255.
 
-[20
+[24
 
 
 
 ] (./cgopenmm.ind
+Underfull \hbox (badness 10000) in paragraph at lines 9--10
+[]\T1/pcr/m/n/12 add_new_elements() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-ule
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 15--16
+[]\T1/pcr/m/n/12 build_system() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-ule
+ []
+
+
 Underfull \hbox (badness 10000) in paragraph at lines 16--17
+[]\T1/pcr/m/n/12 build_topology() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-ule
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 24--25
 []\T1/pcr/m/n/12 get_box_vectors() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-ule u
 til-i-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 19--20
+Underfull \hbox (badness 10000) in paragraph at lines 27--28
 []\T1/pcr/m/n/12 get_mm_energy() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-ule sim
 -u-la-
  []
 
 
-Overfull \hbox (0.5224pt too wide) in paragraph at lines 35--37
+Underfull \hbox (badness 10000) in paragraph at lines 28--29
+[]\T1/pcr/m/n/12 get_num_forces() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-ule
+ []
+
+
+Overfull \hbox (0.5224pt too wide) in paragraph at lines 44--46
 []\T1/pcr/m/n/12 plot_replica_exchange_energies()
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 37--39
+Underfull \hbox (badness 10000) in paragraph at lines 46--48
 []\T1/pcr/m/n/12 plot_replica_exchange_summary()
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 39--40
+Underfull \hbox (badness 10000) in paragraph at lines 48--49
 []\T1/pcr/m/n/12 plot_simulation_data() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-
 ule
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 44--46
+Underfull \hbox (badness 10000) in paragraph at lines 53--55
 []\T1/pcr/m/n/12 read_replica_exchange_data() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 i
 n
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 46--47
+Underfull \hbox (badness 10000) in paragraph at lines 55--56
 []\T1/pcr/m/n/12 read_simulation_data() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-
 ule
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 47--48
+Underfull \hbox (badness 10000) in paragraph at lines 56--57
 []\T1/pcr/m/n/12 run_replica_exchange() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-
 ule
  []
 
 
-Underfull \hbox (badness 5893) in paragraph at lines 48--49
+Underfull \hbox (badness 5893) in paragraph at lines 57--58
 []\T1/pcr/m/n/12 run_simulation() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-ule si
 m-u-la-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 52--53
+Underfull \hbox (badness 10000) in paragraph at lines 61--62
 []\T1/pcr/m/n/12 set_box_vectors() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-ule u
 til-i-
  []
 
 
+Underfull \hbox (badness 10000) in paragraph at lines 77--78
+[]\T1/pcr/m/n/12 verify_system() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-ule
+ []
+
+
 Package Fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
-less on input line 61.
+less on input line 78.
 
-[21
+[25
 
 
+
+]
+Underfull \hbox (badness 10000) in paragraph at lines 78--79
+[]\T1/pcr/m/n/12 verify_topology() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-ule
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 82--83
+[]\T1/pcr/m/n/12 write_xml_file() \T1/ptm/m/n/12 (\T1/ptm/m/it/12 in mod-ule
+ []
+
+[26
 
 ])
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 900.
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 900.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1259.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 1259.
  (./cgopenmm.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 900.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 900.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1259.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1259.
+
 Package rerunfilecheck Info: File `cgopenmm.out' has not changed.
-(rerunfilecheck)             Checksum: 3E0F13CB83279012874AA805D92C4205;2910.
+(rerunfilecheck)             Checksum: 634F350C6415CE9186E8163F579FDD4A;2910.
 
 
 LaTeX Warning: There were multiply-defined labels.
 
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 900.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 1259.
  ) 
 Here is how much of TeX's memory you used:
- 13738 strings out of 492982
- 190890 string characters out of 6134896
- 300064 words of memory out of 5000000
- 16915 multiletter control sequences out of 15000+600000
+ 13766 strings out of 492982
+ 191444 string characters out of 6134896
+ 299105 words of memory out of 5000000
+ 16926 multiletter control sequences out of 15000+600000
  53853 words of font info for 86 fonts, out of 8000000 for 9000
  1142 hyphenation exceptions out of 8191
- 37i,11n,45p,907b,597s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 37i,11n,45p,931b,595s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texlive/texmf-dist/fonts/enc/dvips/base/8r.enc}</usr/share/texliv
 e/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/share/texlive/texmf
 -dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></usr/share/texlive/texmf-dist/f
@@ -2023,10 +1851,10 @@ xlive/texmf-dist/fonts/type1/urw/helvetic/uhvr8a.pfb></usr/share/texlive/texmf-
 dist/fonts/type1/urw/times/utmb8a.pfb></usr/share/texlive/texmf-dist/fonts/type
 1/urw/times/utmr8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utm
 ri8a.pfb>
-Output written on cgopenmm.pdf (23 pages, 165630 bytes).
+Output written on cgopenmm.pdf (28 pages, 174530 bytes).
 PDF statistics:
- 378 PDF objects out of 1000 (max. 8388607)
- 333 compressed objects within 4 object streams
- 62 named destinations out of 1000 (max. 500000)
+ 397 PDF objects out of 1000 (max. 8388607)
+ 347 compressed objects within 4 object streams
+ 79 named destinations out of 1000 (max. 500000)
  117 words of extra memory for PDF output out of 10000 (max. 10000000)
 

@@ -11,13 +11,13 @@ def distance(positions_1,positions_2):
         Calculate the distance between two particles, given their positions.
 
         :param positions_1: Positions for the first particle
-        :type positions_1: `unit.Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_(np.array([3]),simtk.unit)
+        :type positions_1: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [3] ), simtk.unit )
 
         :param positions_2: Positions for the first particle
-        :type positions_2: `unit.Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_(np.array([3]),simtk.unit)
+        :type positions_2: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [3] ), simtk.unit )
 
         :returns: distance: Distance between two particles
-        :rtype: `unit.Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_(float,simtk.unit)
+        :rtype: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( float, simtk.unit )
 
         :Example:
 
@@ -51,10 +51,10 @@ def get_box_vectors(box_size):
         Given a simulation box length, construct a vector.
 
         :param box_size: Length of individual sides of a simulation box
-        :type box_size: `unit.Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_(float,simtk.unit)
+        :type box_size: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( float, simtk.unit )
 
         :returns: box_vectors: Vectors to use when defining an OpenMM simulation box.
-        :rtype: box_vectors: List( `unit.Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_(float,simtk.unit) ) 
+        :rtype: box_vectors: List( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ float , simtk.unit) ) 
 
         """
 
@@ -76,7 +76,7 @@ def set_box_vectors(system,box_size):
         :type system: `System() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1System.html>`_
 
         :param box_size: Length of individual sides of a simulation box
-        :type box_size: `unit.Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_(float,simtk.unit)
+        :type box_size: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( float, simtk.unit )
 
         :returns: system: OpenMM system object
         :rtype: `System() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1System.html>`_

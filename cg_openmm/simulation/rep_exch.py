@@ -27,7 +27,7 @@ def make_replica_pdb_files(topology,replica_positions):
         :type topology: `Topology() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1topology_1_1Topology.html>`_
 
         :param replica_positions: Positions array for the replica exchange data for which we will write PDB files
-        :type replica_positions: `unit.Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_(np.array([n_replicas,cgmodel.num_beads,3]),simtk.unit)
+        :type replica_positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [n_replicas,cgmodel.num_beads,3] ), simtk.unit )
 
         :returns: file_list: A list of names for the files that were written.
         :rtype: List( str )
@@ -50,10 +50,8 @@ def make_replica_pdb_files(topology,replica_positions):
           PDBFile.writeHeader(topology,file=file)
           modelIndex=1
           for positions in replica_trajectory:
-#            print(positions)
             PDBFile.writeModel(topology,positions,file=file,modelIndex=modelIndex)
           PDBFile.writeFooter(topology,file=file)
-#           PDBFile.writeFile(topology,positions,file=file)
           file.close()
           file_list.append(file_name)
         return(file_list)
@@ -78,13 +76,13 @@ def read_replica_exchange_data(system=None,topology=None,temperature_list=None,o
         :type print_frequency: int
 
         :returns: replica_energies: The potential energies for all replicas at all (printed) time steps
-        :rtype: replica_energies: `unit.Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_(np.float([number_replicas,number_simulation_steps]),simtk.unit)
+        :rtype: replica_energies: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.float( [number_replicas,number_simulation_steps] ), simtk.unit )
 
         :returns: replica_positions: The positions for all replicas at all (printed) time steps
-        :rtype: replica_positions: `unit.Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_(np.float([number_replicas,number_simulation_steps,cgmodel.num_beads,3]),simtk.unit)
+        :rtype: replica_positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.float( [number_replicas,number_simulation_steps,cgmodel.num_beads,3] ), simtk.unit )
  
         :returns: replica_state_indices: The thermodynamic state assignments for all replicas at all (printed) time steps
-        :rtype: replica_state_indices: `unit.Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_(np.int64([number_replicas,number_simulation_steps]),simtk.unit)
+        :rtype: replica_state_indices: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.int64( [number_replicas,number_simulation_steps] ), simtk.unit )
 
         :Example:
 
@@ -110,7 +108,6 @@ def read_replica_exchange_data(system=None,topology=None,temperature_list=None,o
         total_steps = len(replica_energies[0][0])
         replica_positions = unit.Quantity(np.zeros([len(temperature_list),total_steps,system.getNumParticles(),3]),unit.nanometer)
 
-        #print("Reading data for "+str(total_steps)+" replica exchange steps.")
         for step in range(total_steps):
           sampler_states = reporter.read_sampler_states(iteration=step)
           if type(sampler_states) == None:
@@ -123,7 +120,7 @@ def read_replica_exchange_data(system=None,topology=None,temperature_list=None,o
 
         return(replica_energies,replica_positions,replica_state_indices)
 
-def run_replica_exchange(topology,system,positions,temperature_list=[(300.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(-50,50,10)],simulation_time_step=None,total_simulation_time=1.0 * unit.picosecond,output_data='output.nc',print_frequency=100,verbose_simulation=False,exchange_attempts=None,test_time_step=False):
+def run_replica_exchange(topology,system,positions,temperature_list=[(300.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(-50,50,10)],simulation_time_step=None,total_simulation_time=1.0 * unit.picosecond,output_data='output.nc',print_frequency=100,verbose_simulation=False,exchange_attempts=None,test_time_step=False,output_directory=None):
         """
         Run a Yank replica exchange simulation using an OpenMM coarse grained model.
 
@@ -134,7 +131,7 @@ def run_replica_exchange(topology,system,positions,temperature_list=[(300.0 * un
         :type system: `System() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1System.html>`_
 
         :param positions: Positions array for the model we would like to test
-        :type positions: `unit.Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_(np.array([cgmodel.num_beads,3]),simtk.unit)
+        :type positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit )
 
         :param temperature_list: List of temperatures for which to perform replica exchange simulations, default = [(300.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(-20,100,10)] 
         :type temperature: List( float * simtk.unit.temperature )
@@ -160,14 +157,17 @@ def run_replica_exchange(topology,system,positions,temperature_list=[(300.0 * un
         :param test_time_step: Logical variable determining if a test of the time step will be performed, Default = False
         :type test_time_step: Logical
 
+        :param output_directory: Path to which we will write the output from simulation runs.
+        :type output_directory: str
+
         :returns: replica_energies: The potential energies for all replicas at all (printed) time steps
-        :rtype: replica_energies: `unit.Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_(np.float([number_replicas,number_simulation_steps]),simtk.unit)
+        :rtype: replica_energies: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.float( [number_replicas,number_simulation_steps] ), simtk.unit )
 
         :returns: replica_positions: The positions for all replicas at all (printed) time steps
-        :rtype: replica_positions: `unit.Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_(np.float([number_replicas,number_simulation_steps,cgmodel.num_beads,3]),simtk.unit)
+        :rtype: replica_positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.float( [number_replicas,number_simulation_steps,cgmodel.num_beads,3] ), simtk.unit )
  
         :returns: replica_state_indices: The thermodynamic state assignments for all replicas at all (printed) time steps
-        :rtype: replica_state_indices: `unit.Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_(np.int64([number_replicas,number_simulation_steps]),simtk.unit)
+        :rtype: replica_state_indices: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.int64( [number_replicas,number_simulation_steps] ), simtk.unit )
 
         :Example:
 
@@ -207,10 +207,6 @@ def run_replica_exchange(topology,system,positions,temperature_list=[(300.0 * un
         reporter = MultiStateReporter(output_data, checkpoint_interval=1)
         simulation.create(thermodynamic_states, sampler_states, reporter)
         config_root_logger(verbose_simulation)
-        #print("Running replica exchange simulations with Yank...")
-        #print("Using a time step of "+str(simulation_time_step))
-        #print("There are "+str(len(thermodynamic_states))+" replicas.")
-        #print("with the following simulation temperatures:"+str([temperature._value for temperature in temperature_list]))
        
         if not test_time_step:
            num_attempts = 0
@@ -255,8 +251,12 @@ def run_replica_exchange(topology,system,positions,temperature_list=[(300.0 * un
         replica_energies,replica_positions,replica_state_indices = read_replica_exchange_data(system=system,topology=topology,temperature_list=temperature_list,output_data=output_data,print_frequency=print_frequency)
 
         steps_per_stage = round(simulation_steps/exchange_attempts)
-        plot_replica_exchange_energies(replica_energies,temperature_list,simulation_time_step,steps_per_stage=steps_per_stage)
-        plot_replica_exchange_summary(replica_state_indices,temperature_list,simulation_time_step,steps_per_stage=steps_per_stage)
+        if output_directory != None:
+          plot_replica_exchange_energies(replica_energies,temperature_list,simulation_time_step,steps_per_stage=steps_per_stage,output_directory=output_directory)
+          plot_replica_exchange_summary(replica_state_indices,temperature_list,simulation_time_step,steps_per_stage=steps_per_stage,output_directory=output_directory)
+        else:
+          plot_replica_exchange_energies(replica_energies,temperature_list,simulation_time_step,steps_per_stage=steps_per_stage)
+          plot_replica_exchange_summary(replica_state_indices,temperature_list,simulation_time_step,steps_per_stage=steps_per_stage)
 
         return(replica_energies,replica_positions,replica_state_indices)
 
@@ -317,7 +317,7 @@ def get_minimum_energy_ensemble(topology,replica_energies,replica_positions,ense
 
         return(ensemble)
 
-def plot_replica_exchange_energies(replica_energies,temperature_list,simulation_time_step,steps_per_stage=1,file_name="replica_exchange_energies.png",legend=True):
+def plot_replica_exchange_energies(replica_energies,temperature_list,simulation_time_step,steps_per_stage=1,file_name="replica_exchange_energies.png",legend=True,output_directory=None):
         """
         Plot the potential energies for a batch of replica exchange trajectories
 
@@ -335,6 +335,9 @@ def plot_replica_exchange_energies(replica_energies,temperature_list,simulation_
 
         :param file_name: The pathname of the output file for plotting results, default = "replica_exchange_energies.png"
         :type file_name: str
+
+        :param output_directory: Path to which we will write the output from simulation runs, Default = None
+        :type output_directory: str
 
         :param legend: Controls whether a legend is added to the plot
         :type legend: Logical
@@ -358,13 +361,17 @@ def plot_replica_exchange_energies(replica_energies,temperature_list,simulation_
           pyplot.legend([round(temperature._value,1) for temperature in temperature_list[0:9]],loc='center left', bbox_to_anchor=(1, 0.5),title='T (K)')
          else:
           pyplot.legend([round(temperature._value,1) for temperature in temperature_list],loc='center left', bbox_to_anchor=(1, 0.5),title='T (K)')
-        pyplot.savefig(file_name,bbox_inches='tight')
+        if output_directory != None:
+          output_file = str(str(output_directory)+"/"+str(file_name))
+          pyplot.savefig(output_file,bbox_inches='tight')
+        else:
+          pyplot.savefig(file_name,bbox_inches='tight')
         #pyplot.show()
         pyplot.close()
 
         return
 
-def plot_replica_exchange_summary(replica_states,temperature_list,simulation_time_step,steps_per_stage=1,file_name="replica_exchange_state_transitions.png",legend=True):
+def plot_replica_exchange_summary(replica_states,temperature_list,simulation_time_step,steps_per_stage=1,file_name="replica_exchange_state_transitions.png",legend=True,output_directory=None):
         """
         Plot the thermodynamic state assignments for individual temperature replicas as a function of the simulation time, in order to obtain a visual summary of the replica exchanges from a Yank simulation.
 
@@ -386,6 +393,9 @@ def plot_replica_exchange_summary(replica_states,temperature_list,simulation_tim
         :param legend: Controls whether a legend is added to the plot
         :type legend: Logical
 
+        :param output_directory: Path to which we will write the output from simulation runs, default = None
+        :type output_directory: str
+
         ..warning:: If more than 10 replica exchange trajectories are provided as input data, by default, this function will only plot the first 10 thermodynamic states.  These thermodynamic states are chosen based upon their indices, not their instantaneous temperature (ensemble) assignment.
 
         """
@@ -404,7 +414,11 @@ def plot_replica_exchange_summary(replica_states,temperature_list,simulation_tim
           pyplot.legend([i for i in range(len(replica_states[0:9]))],loc='center left', bbox_to_anchor=(1, 0.5),title='Replica Index')
          else:
           pyplot.legend([i for i in range(len(replica_states))],loc='center left', bbox_to_anchor=(1, 0.5),title='Replica Index')
-        pyplot.savefig(file_name,bbox_inches='tight')
+        if output_directory != None:
+          output_file = str(str(output_directory)+"/"+str(file_name))
+          pyplot.savefig(output_file,bbox_inches='tight')
+        else:
+          pyplot.savefig(file_name,bbox_inches='tight')
         #pyplot.show()
         pyplot.close()
 

@@ -18,7 +18,7 @@ def get_simulation_time_step(topology,system,positions,temperature,total_simulat
         :type system: `System() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1System.html>`_
 
         :param positions: Positions array for the model we would like to test
-        :type positions: `unit.Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_(np.array([cgmodel.num_beads,3]),simtk.unit)
+        :type positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit )
 
         :param temperature: Simulation temperature
         :type temperature: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
@@ -99,7 +99,7 @@ def minimize_structure(topology,system,positions,temperature=0.0 * unit.kelvin,s
         :type system: System()
 
         :param positions: Positions array for the model we would like to test
-        :type positions: `unit.Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_(np.array([cgmodel.num_beads,3]),simtk.unit)
+        :type positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit )
 
         :param temperature: Simulation temperature
         :type temperature: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
@@ -117,10 +117,10 @@ def minimize_structure(topology,system,positions,temperature=0.0 * unit.kelvin,s
         :type print_frequency: int
 
         :returns: positions: Minimized positions
-        :rtype: positions: `unit.Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_(np.array([cgmodel.num_beads,3]),simtk.unit)
+        :rtype: positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit )
 
         :returns: potential_energy: Potential energy for the minimized structure. 
-        :rtype: potential_energy: `unit.Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_(np.array([cgmodel.num_beads,3]),simtk.unit)
+        :rtype: potential_energy: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit )
 
         :Example:
 
@@ -196,10 +196,10 @@ def get_mm_energy(topology,system,positions):
         :type system: `System() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1System.html>`_
 
         :param positions: Positions array for the model we would like to test
-        :type positions: `unit.Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_(np.array([cgmodel.num_beads,3]),simtk.unit)
+        :type positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit )
 
         :returns: potential_energy: The potential energy for the model with the provided positions.
-        :rtype: `unit.Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_(float,simtk.unit)
+        :rtype: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( float, simtk.unit )
  
         :Example:
 
@@ -231,7 +231,7 @@ def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvi
         :type system: `System() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1System.html>`_
 
         :param positions: Positions array for the model we would like to test
-        :type positions: `unit.Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_(np.array([cgmodel.num_beads,3]),simtk.unit)
+        :type positions: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit )
 
         :param temperature: Simulation temperature, default = 300.0 K
         :type temperature: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
@@ -433,7 +433,7 @@ def read_simulation_data(simulation_data_file,simulation_time_step):
 
         return(data)
 
-def plot_simulation_data(simulation_times,y_data,plot_type=None):
+def plot_simulation_data(simulation_times,y_data,plot_type=None,output_directory=None):
         """
         Plot simulation data.
 
@@ -482,7 +482,11 @@ def plot_simulation_data(simulation_times,y_data,plot_type=None):
           pyplot.title("Simulation Temperature")
 
         pyplot.plot(simulation_times,y_data)
-        pyplot.savefig(file_name)
+        if output_directory == None:
+          pyplot.savefig(file_name)
+        else:
+          output_file = str(str(output_directory)+"/"+str(file_name))
+          pyplot.savefig(output_file)
         pyplot.close()
         return
 
@@ -511,8 +515,8 @@ def plot_simulation_results(simulation_data_file,plot_output_directory,simulatio
         """
         data = read_simulation_data(simulation_data_file,simulation_time_step)
         
-        plot_simulation_data(data["Simulation Time"],data["Potential Energy"],plot_type="Potential Energy")
-        plot_simulation_data(data["Simulation Time"],data["Kinetic Energy"],plot_type="Kinetic Energy")
-        plot_simulation_data(data["Simulation Time"],data["Total Energy"],plot_type="Total Energy")
-        plot_simulation_data(data["Simulation Time"],data["Temperature"],plot_type="Temperature")
+        plot_simulation_data(data["Simulation Time"],data["Potential Energy"],plot_type="Potential Energy",output_directory=plot_output_directory)
+        plot_simulation_data(data["Simulation Time"],data["Kinetic Energy"],plot_type="Kinetic Energy",output_directory=plot_output_directory)
+        plot_simulation_data(data["Simulation Time"],data["Total Energy"],plot_type="Total Energy",output_directory=plot_output_directory)
+        plot_simulation_data(data["Simulation Time"],data["Temperature"],plot_type="Temperature",output_directory=plot_output_directory)
         return
