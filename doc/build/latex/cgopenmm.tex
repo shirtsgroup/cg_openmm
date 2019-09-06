@@ -71,7 +71,7 @@
 
 
 \title{Coarse-grained OpenMM Documentation}
-\date{Sep 05, 2019}
+\date{Sep 06, 2019}
 \release{0.0.1}
 \author{Garrett A. Meek\\ \\Michael R. Shirts\\ \\Dept. of Chemical and Biological Engineering\\University of Colorado Boulder}
 \newcommand{\sphinxlogo}{\vbox{}}
@@ -92,12 +92,14 @@ This documentation is generated automatically using Sphinx, which reads all docs
 
 \chapter{Building OpenMM objects for coarse grained modeling}
 \label{\detokenize{build:building-openmm-objects-for-coarse-grained-modeling}}\label{\detokenize{build::doc}}
+All \sphinxhref{http://openmm.org}{OpenMM} simulations require a \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1openmm\_1\_1System.html}{System()} and a \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1app\_1\_1topology\_1\_1Topology.html}{Topology()}.  This chapter details procedures for building those objects for coarse grained models with user-defined properties.
 
-\section{Building an OpenMM System() and Topology()}
-\label{\detokenize{build:building-an-openmm-system-and-topology}}
-All OpenMM simulations require a \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1openmm\_1\_1System.html}{System()} and a \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1app\_1\_1topology\_1\_1Topology.html}{Topology()}.
 
-Listed below are functions and classes that aid the building of OpenMM System() and Topology() class objects for coarse grained models with user-defined properties:
+\section{Building an OpenMM System() for a coarse grained model.}
+\label{\detokenize{build:building-an-openmm-system-for-a-coarse-grained-model}}
+An OpenMM \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1openmm\_1\_1System.html}{System()} object contains force definitions for a molecular model.  The ‘cg\_openmm’ repository applies default definitions for all forces (see \sphinxhref{http://docs.openmm.org/development/userguide/theory.html}{OpenMM user guide} for detailed definitions).
+
+Shown below are tools and functions needed to build and verify an OpenMM \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1openmm\_1\_1System.html}{System()} .
 
 \phantomsection\label{\detokenize{build:module-build.cg_build}}\index{build.cg\_build (module)@\spxentry{build.cg\_build}\spxextra{module}}\index{build\_system() (in module build.cg\_build)@\spxentry{build\_system()}\spxextra{in module build.cg\_build}}
 
@@ -109,11 +111,11 @@ Builds an OpenMM \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/c
 \sphinxstyleliteralstrong{\sphinxupquote{cgmodel}} (\sphinxstyleliteralemphasis{\sphinxupquote{class}}) \textendash{} CGModel() class object
 
 \item[{Returns}] \leavevmode
-OpenMM System() object
+\begin{itemize}
+\item {} 
+system ( \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1openmm\_1\_1System.html}{System()} ) - OpenMM System() object
 
-\item[{Return type}] \leavevmode
-
-\sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1openmm\_1\_1System.html}{System()}
+\end{itemize}
 
 
 \item[{Example}] \leavevmode
@@ -128,7 +130,41 @@ OpenMM System() object
 
 \end{fulllineitems}
 
-\index{build\_topology() (in module build.cg\_build)@\spxentry{build\_topology()}\spxextra{in module build.cg\_build}}
+\index{verify\_system() (in module build.cg\_build)@\spxentry{verify\_system()}\spxextra{in module build.cg\_build}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{build:build.cg_build.verify_system}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{build.cg\_build.}}\sphinxbfcode{\sphinxupquote{verify\_system}}}{\emph{cgmodel}}{}
+Given a CGModel() class object, this function confirms that its OpenMM \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1openmm\_1\_1System.html}{System()} object is configured correctly.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode
+\sphinxstyleliteralstrong{\sphinxupquote{cgmodel}} (\sphinxstyleliteralemphasis{\sphinxupquote{class}}) \textendash{} CGModel() class object
+
+\item[{Example}] \leavevmode
+\end{description}\end{quote}
+
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{foldamers}\PYG{n+nn}{.}\PYG{n+nn}{cg\PYGZus{}model}\PYG{n+nn}{.}\PYG{n+nn}{cgmodel} \PYG{k}{import} \PYG{n}{CGModel}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{cgmodel} \PYG{o}{=} \PYG{n}{CGModel}\PYG{p}{(}\PYG{p}{)}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{verify\PYGZus{}system}\PYG{p}{(}\PYG{n}{cgmodel}\PYG{p}{)}
+\end{sphinxVerbatim}
+
+\begin{sphinxadmonition}{warning}{Warning:}
+The function will force an error exit if the system is invalid, and will proceed as normal if the system is valid.
+\end{sphinxadmonition}
+
+\end{fulllineitems}
+
+
+\newpage
+
+
+\section{Building an OpenMM Topology() for a coarse grained model.}
+\label{\detokenize{build:building-an-openmm-topology-for-a-coarse-grained-model}}
+An OpenMM \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1app\_1\_1topology\_1\_1Topology.html}{Topology()} object contains structural definitions for a molecular model (bond assignments, residue assignments, etc.).
+
+Shown below are tools and functions needed to build and verify an OpenMM \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1app\_1\_1topology\_1\_1Topology.html}{Topology()} .
+
+\phantomsection\label{\detokenize{build:module-build.cg_build}}\index{build.cg\_build (module)@\spxentry{build.cg\_build}\spxextra{module}}\index{build\_topology() (in module build.cg\_build)@\spxentry{build\_topology()}\spxextra{in module build.cg\_build}}
 
 \begin{fulllineitems}
 \phantomsection\label{\detokenize{build:build.cg_build.build_topology}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{build.cg\_build.}}\sphinxbfcode{\sphinxupquote{build\_topology}}}{\emph{cgmodel}, \emph{use\_pdbfile=False}, \emph{pdbfile=None}}{}
@@ -147,11 +183,11 @@ Construct an OpenMM \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/pytho
 \end{itemize}
 
 \item[{Returns}] \leavevmode
-OpenMM Topology()
+\begin{itemize}
+\item {} 
+topology (\sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1app\_1\_1topology\_1\_1Topology.html}{Topology()} ) - OpenMM Topology() object
 
-\item[{Return type}] \leavevmode
-
-\sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1app\_1\_1topology\_1\_1Topology.html}{Topology()}
+\end{itemize}
 
 
 \item[{Example}] \leavevmode
@@ -173,11 +209,37 @@ When ‘use\_pdbfile’=True, this function will use the \sphinxhref{https://sim
 
 \end{fulllineitems}
 
+\index{verify\_topology() (in module build.cg\_build)@\spxentry{verify\_topology()}\spxextra{in module build.cg\_build}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{build:build.cg_build.verify_topology}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{build.cg\_build.}}\sphinxbfcode{\sphinxupquote{verify\_topology}}}{\emph{cgmodel}}{}
+Given a coarse grained model that contains a Topology() (cgmodel.topology), this function verifies the validity of the topology.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode
+\sphinxstyleliteralstrong{\sphinxupquote{cgmodel}} (\sphinxstyleliteralemphasis{\sphinxupquote{class}}) \textendash{} CGModel() class object.
+
+\item[{Example}] \leavevmode
+\end{description}\end{quote}
+
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{foldamers}\PYG{n+nn}{.}\PYG{n+nn}{cg\PYGZus{}model}\PYG{n+nn}{.}\PYG{n+nn}{cgmodel} \PYG{k}{import} \PYG{n}{CGModel}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{cgmodel} \PYG{o}{=} \PYG{n}{CGModel}\PYG{p}{(}\PYG{p}{)}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{verify\PYGZus{}topology}\PYG{p}{(}\PYG{n}{cgmodel}\PYG{p}{)}
+\end{sphinxVerbatim}
+
+\begin{sphinxadmonition}{warning}{Warning:}
+The function will force an error exit if the topology is invalid, and will proceed as normal if the topology is valid.
+\end{sphinxadmonition}
+
+\end{fulllineitems}
 
 
-\section{Other tools for building and verifying the OpenMM System() and Topology()}
-\label{\detokenize{build:other-tools-for-building-and-verifying-the-openmm-system-and-topology}}
-Shown below are other functions/tools to build and verify the System/Topology:
+\newpage
+
+
+\section{Configuring OpenMM Forces() for a coarse grained model.}
+\label{\detokenize{build:configuring-openmm-forces-for-a-coarse-grained-model}}
+The ‘cg\_openmm’ package contains multiple tools for verifying the validity of forces that are added to an OpenMM System().  These tools are shown below:
 
 \phantomsection\label{\detokenize{build:module-build.cg_build}}\index{build.cg\_build (module)@\spxentry{build.cg\_build}\spxextra{module}}\index{add\_force() (in module build.cg\_build)@\spxentry{add\_force()}\spxextra{in module build.cg\_build}}
 
@@ -199,16 +261,15 @@ the OpenMM force corresponding to ‘force\_type’ to ‘cgmodel.system’.
 \end{itemize}
 
 \item[{Returns}] \leavevmode
-CGModel() class object
+\begin{itemize}
+\item {} 
+cgmodel (class) - ‘foldamers’ CGModel() class object
 
-\item[{Return type}] \leavevmode
-class
+\item {} 
+force (class) - An OpenMM \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1openmm\_1\_1Force.html}{Force()} object.
 
-\item[{Returns}] \leavevmode
-An OpenMM Force() object.
+\end{itemize}
 
-\item[{Return type}] \leavevmode
-\sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1openmm\_1\_1Force.html}{Force()}
 
 \item[{Example}] \leavevmode
 \end{description}\end{quote}
@@ -218,62 +279,6 @@ An OpenMM Force() object.
 \PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{cgmodel} \PYG{o}{=} \PYG{n}{CGModel}\PYG{p}{(}\PYG{p}{)}
 \PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{force\PYGZus{}type} \PYG{o}{=} \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{Bond}\PYG{l+s+s2}{\PYGZdq{}}
 \PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{cgmodel}\PYG{p}{,}\PYG{n}{force} \PYG{o}{=} \PYG{n}{add\PYGZus{}force}\PYG{p}{(}\PYG{n}{cgmodel}\PYG{p}{,}\PYG{n}{force\PYGZus{}type}\PYG{o}{=}\PYG{n}{force\PYGZus{}type}\PYG{p}{)}
-\end{sphinxVerbatim}
-
-\end{fulllineitems}
-
-\index{add\_new\_elements() (in module build.cg\_build)@\spxentry{add\_new\_elements()}\spxextra{in module build.cg\_build}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{build:build.cg_build.add_new_elements}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{build.cg\_build.}}\sphinxbfcode{\sphinxupquote{add\_new\_elements}}}{\emph{cgmodel}}{}
-Add coarse grained particle types to OpenMM.
-\begin{quote}\begin{description}
-\item[{Parameters}] \leavevmode
-\sphinxstyleliteralstrong{\sphinxupquote{cgmodel}} (\sphinxstyleliteralemphasis{\sphinxupquote{class}}) \textendash{} CGModel object (contains all attributes for a coarse grained model).
-
-\item[{Returns}] \leavevmode
-particle\_list: a list of the particles that were added to OpenMM’s ‘Element’ List.
-
-\item[{Return type}] \leavevmode
-\sphinxhref{https://docs.python.org/3/library/stdtypes.html\#list}{list}
-
-\item[{Example}] \leavevmode
-\end{description}\end{quote}
-
-\begin{sphinxVerbatim}[commandchars=\\\{\}]
-\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{foldamers}\PYG{n+nn}{.}\PYG{n+nn}{cg\PYGZus{}model}\PYG{n+nn}{.}\PYG{n+nn}{cgmodel} \PYG{k}{import} \PYG{n}{CGModel}
-\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{cgmodel} \PYG{o}{=} \PYG{n}{CGModel}\PYG{p}{(}\PYG{p}{)}
-\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{particle\PYGZus{}types} \PYG{o}{=} \PYG{n}{add\PYGZus{}new\PYGZus{}elements}\PYG{p}{(}\PYG{n}{cgmodel}\PYG{p}{)}
-\end{sphinxVerbatim}
-
-\begin{sphinxadmonition}{warning}{Warning:}
-If the particle names were user defined, and any of the names conflict with existing element names in OpenMM, OpenMM will issue an error exit.
-\end{sphinxadmonition}
-
-\end{fulllineitems}
-
-\index{get\_num\_forces() (in module build.cg\_build)@\spxentry{get\_num\_forces()}\spxextra{in module build.cg\_build}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{build:build.cg_build.get_num_forces}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{build.cg\_build.}}\sphinxbfcode{\sphinxupquote{get\_num\_forces}}}{\emph{cgmodel}}{}
-Given a CGModel() class object, this function determines how many forces we are including when evaluating the energy.
-\begin{quote}\begin{description}
-\item[{Parameters}] \leavevmode
-\sphinxstyleliteralstrong{\sphinxupquote{cgmodel}} (\sphinxstyleliteralemphasis{\sphinxupquote{class}}) \textendash{} CGModel() class object
-
-\item[{Returns}] \leavevmode
-Number of forces
-
-\item[{Return type}] \leavevmode
-\sphinxhref{https://docs.python.org/3/library/functions.html\#int}{int}
-
-\item[{Example}] \leavevmode
-\end{description}\end{quote}
-
-\begin{sphinxVerbatim}[commandchars=\\\{\}]
-\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{foldamers}\PYG{n+nn}{.}\PYG{n+nn}{cg\PYGZus{}model}\PYG{n+nn}{.}\PYG{n+nn}{cgmodel} \PYG{k}{import} \PYG{n}{CGModel}
-\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{cgmodel} \PYG{o}{=} \PYG{n}{CGModel}\PYG{p}{(}\PYG{p}{)}
-\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{total\PYGZus{}number\PYGZus{}forces} \PYG{o}{=} \PYG{n}{get\PYGZus{}num\PYGZus{}forces}\PYG{p}{(}\PYG{n}{cgmodel}\PYG{p}{)}
 \end{sphinxVerbatim}
 
 \end{fulllineitems}
@@ -297,10 +302,12 @@ Given an OpenMM \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/cl
 \end{itemize}
 
 \item[{Returns}] \leavevmode
-‘success’, a variable designating whether or not the force test passed.
+\begin{itemize}
+\item {} 
+‘success’ (Logical) - a variable indicating if the force test passed.
 
-\item[{Return type}] \leavevmode
-Logical
+\end{itemize}
+
 
 \item[{Example}] \leavevmode
 \end{description}\end{quote}
@@ -337,10 +344,12 @@ model does not have any “NaN” or unphysically large forces.
 \end{itemize}
 
 \item[{Returns}] \leavevmode
-success: Indicates if this cgmodel has unphysical forces.
+\begin{itemize}
+\item {} 
+success (Logical) - Indicates if this cgmodel has unphysical forces.
 
-\item[{Return type}] \leavevmode
-Logical
+\end{itemize}
+
 
 \item[{Example}] \leavevmode
 \end{description}\end{quote}
@@ -353,38 +362,58 @@ Logical
 
 \end{fulllineitems}
 
-\index{verify\_system() (in module build.cg\_build)@\spxentry{verify\_system()}\spxextra{in module build.cg\_build}}
+\index{get\_num\_forces() (in module build.cg\_build)@\spxentry{get\_num\_forces()}\spxextra{in module build.cg\_build}}
 
 \begin{fulllineitems}
-\phantomsection\label{\detokenize{build:build.cg_build.verify_system}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{build.cg\_build.}}\sphinxbfcode{\sphinxupquote{verify\_system}}}{\emph{cgmodel}}{}
-Given a CGModel() class object, this function confirms that its OpenMM \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1openmm\_1\_1System.html}{System()} object is configured correctly.
+\phantomsection\label{\detokenize{build:build.cg_build.get_num_forces}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{build.cg\_build.}}\sphinxbfcode{\sphinxupquote{get\_num\_forces}}}{\emph{cgmodel}}{}
+Given a CGModel() class object, this function determines how many forces we are including when evaluating the energy.
 \begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode
 \sphinxstyleliteralstrong{\sphinxupquote{cgmodel}} (\sphinxstyleliteralemphasis{\sphinxupquote{class}}) \textendash{} CGModel() class object
 
+\item[{Returns}] \leavevmode
+\begin{itemize}
+\item {} 
+total\_forces (int) - Number of forces in the coarse grained model
+
+\end{itemize}
+
+
 \item[{Example}] \leavevmode
 \end{description}\end{quote}
 
 \begin{sphinxVerbatim}[commandchars=\\\{\}]
 \PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{foldamers}\PYG{n+nn}{.}\PYG{n+nn}{cg\PYGZus{}model}\PYG{n+nn}{.}\PYG{n+nn}{cgmodel} \PYG{k}{import} \PYG{n}{CGModel}
 \PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{cgmodel} \PYG{o}{=} \PYG{n}{CGModel}\PYG{p}{(}\PYG{p}{)}
-\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{verify\PYGZus{}system}\PYG{p}{(}\PYG{n}{cgmodel}\PYG{p}{)}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{total\PYGZus{}number\PYGZus{}forces} \PYG{o}{=} \PYG{n}{get\PYGZus{}num\PYGZus{}forces}\PYG{p}{(}\PYG{n}{cgmodel}\PYG{p}{)}
 \end{sphinxVerbatim}
-
-\begin{sphinxadmonition}{warning}{Warning:}
-The function will force an error exit if the system is invalid, and will proceed as normal if the system is valid.
-\end{sphinxadmonition}
 
 \end{fulllineitems}
 
-\index{verify\_topology() (in module build.cg\_build)@\spxentry{verify\_topology()}\spxextra{in module build.cg\_build}}
+
+\newpage
+
+
+\section{Other tools for building and verifying the OpenMM System() and Topology()}
+\label{\detokenize{build:other-tools-for-building-and-verifying-the-openmm-system-and-topology}}
+Shown below are other utilities to build and verify a coarse grained model System()/Topology() for OpenMM:
+
+\phantomsection\label{\detokenize{build:module-build.cg_build}}\index{build.cg\_build (module)@\spxentry{build.cg\_build}\spxextra{module}}\index{add\_new\_elements() (in module build.cg\_build)@\spxentry{add\_new\_elements()}\spxextra{in module build.cg\_build}}
 
 \begin{fulllineitems}
-\phantomsection\label{\detokenize{build:build.cg_build.verify_topology}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{build.cg\_build.}}\sphinxbfcode{\sphinxupquote{verify\_topology}}}{\emph{cgmodel}}{}
-Given a coarse grained model that contains a Topology() (cgmodel.topology), this function verifies the validity of the topology.
+\phantomsection\label{\detokenize{build:build.cg_build.add_new_elements}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{build.cg\_build.}}\sphinxbfcode{\sphinxupquote{add\_new\_elements}}}{\emph{cgmodel}}{}
+Add coarse grained particle types to OpenMM.
 \begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode
-\sphinxstyleliteralstrong{\sphinxupquote{cgmodel}} (\sphinxstyleliteralemphasis{\sphinxupquote{class}}) \textendash{} CGModel() class object.
+\sphinxstyleliteralstrong{\sphinxupquote{cgmodel}} (\sphinxstyleliteralemphasis{\sphinxupquote{class}}) \textendash{} CGModel object (contains all attributes for a coarse grained model).
+
+\item[{Returns}] \leavevmode
+\begin{itemize}
+\item {} 
+particle\_list (list) - a list of the particles that were added to OpenMM’s ‘Element’ List.
+
+\end{itemize}
+
 
 \item[{Example}] \leavevmode
 \end{description}\end{quote}
@@ -392,11 +421,11 @@ Given a coarse grained model that contains a Topology() (cgmodel.topology), this
 \begin{sphinxVerbatim}[commandchars=\\\{\}]
 \PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{foldamers}\PYG{n+nn}{.}\PYG{n+nn}{cg\PYGZus{}model}\PYG{n+nn}{.}\PYG{n+nn}{cgmodel} \PYG{k}{import} \PYG{n}{CGModel}
 \PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{cgmodel} \PYG{o}{=} \PYG{n}{CGModel}\PYG{p}{(}\PYG{p}{)}
-\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{verify\PYGZus{}topology}\PYG{p}{(}\PYG{n}{cgmodel}\PYG{p}{)}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{particle\PYGZus{}types} \PYG{o}{=} \PYG{n}{add\PYGZus{}new\PYGZus{}elements}\PYG{p}{(}\PYG{n}{cgmodel}\PYG{p}{)}
 \end{sphinxVerbatim}
 
 \begin{sphinxadmonition}{warning}{Warning:}
-The function will force an error exit if the topology is invalid, and will proceed as normal if the topology is valid.
+If the particle names were user defined, and any of the names conflict with existing element names in OpenMM, OpenMM will issue an error exit.
 \end{sphinxadmonition}
 
 \end{fulllineitems}
@@ -433,7 +462,7 @@ Write an XML-formatted forcefield file for a coarse grained model.
 \chapter{OpenMM simulation tools for coarse grained modeling}
 \label{\detokenize{simulation:openmm-simulation-tools-for-coarse-grained-modeling}}\label{\detokenize{simulation::doc}}
 
-\section{Building OpenMM simulation objects}
+\section{Building OpenMM Simulation() objects}
 \label{\detokenize{simulation:building-openmm-simulation-objects}}
 OpenMM simulations are propagated using a \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1app\_1\_1simulation\_1\_1Simulation.html}{Simulation()} object.
 
@@ -479,11 +508,11 @@ Build an OpenMM Simulation()
 \end{itemize}
 
 \item[{Returns}] \leavevmode
-OpenMM Simulation() object
+\begin{itemize}
+\item {} 
+simulation ( \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1app\_1\_1simulation\_1\_1Simulation.html}{Simulation()} ) - OpenMM Simulation() object
 
-\item[{Return type}] \leavevmode
-
-\sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1app\_1\_1simulation\_1\_1Simulation.html}{Simulation()}
+\end{itemize}
 
 
 \item[{Example}] \leavevmode
@@ -562,9 +591,11 @@ When run with default options this subroutine is capable of producing a large nu
 \end{fulllineitems}
 
 
+\newpage
 
-\section{Building and running Yank replica exchange simulations}
-\label{\detokenize{simulation:building-and-running-yank-replica-exchange-simulations}}
+
+\section{Running Yank replica exchange simulations}
+\label{\detokenize{simulation:running-yank-replica-exchange-simulations}}
 The \sphinxhref{http://getyank.org/0.23.4/index.html}{Yank} python package is used to perform replica exchange sampling with OpenMM simulations.
 
 Shown below are the main functions and tools necessary to conduct Yank replica exchange simulations with a coarse grained model in OpenMM.
@@ -572,7 +603,7 @@ Shown below are the main functions and tools necessary to conduct Yank replica e
 \phantomsection\label{\detokenize{simulation:module-simulation.rep_exch}}\index{simulation.rep\_exch (module)@\spxentry{simulation.rep\_exch}\spxextra{module}}\index{run\_replica\_exchange() (in module simulation.rep\_exch)@\spxentry{run\_replica\_exchange()}\spxextra{in module simulation.rep\_exch}}
 
 \begin{fulllineitems}
-\phantomsection\label{\detokenize{simulation:simulation.rep_exch.run_replica_exchange}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{simulation.rep\_exch.}}\sphinxbfcode{\sphinxupquote{run\_replica\_exchange}}}{\emph{topology, system, positions, temperature\_list={[}Quantity(value=250.0, unit=kelvin), Quantity(value=260.0, unit=kelvin), Quantity(value=270.0, unit=kelvin), Quantity(value=280.0, unit=kelvin), Quantity(value=290.0, unit=kelvin), Quantity(value=300.0, unit=kelvin), Quantity(value=310.0, unit=kelvin), Quantity(value=320.0, unit=kelvin), Quantity(value=330.0, unit=kelvin), Quantity(value=340.0, unit=kelvin){]}, simulation\_time\_step=None, total\_simulation\_time=Quantity(value=1.0, unit=picosecond), output\_data='output.nc', print\_frequency=100, verbose\_simulation=False, exchange\_attempts=None, test\_time\_step=False, output\_directory=None}}{}
+\phantomsection\label{\detokenize{simulation:simulation.rep_exch.run_replica_exchange}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{simulation.rep\_exch.}}\sphinxbfcode{\sphinxupquote{run\_replica\_exchange}}}{\emph{topology}, \emph{system}, \emph{positions}, \emph{temperature\_list=None}, \emph{simulation\_time\_step=None}, \emph{total\_simulation\_time=Quantity(value=1.0}, \emph{unit=picosecond)}, \emph{output\_data='output.nc'}, \emph{print\_frequency=100}, \emph{verbose\_simulation=False}, \emph{exchange\_attempts=None}, \emph{test\_time\_step=False}, \emph{output\_directory=None}}{}
 Run a Yank replica exchange simulation using an OpenMM coarse grained model.
 \begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode\begin{itemize}
@@ -586,7 +617,7 @@ Run a Yank replica exchange simulation using an OpenMM coarse grained model.
 \sphinxstyleliteralstrong{\sphinxupquote{positions}} \textendash{} Positions array for the model we would like to test
 
 \item {} 
-\sphinxstyleliteralstrong{\sphinxupquote{temperature\_list}} \textendash{} List of temperatures for which to perform replica exchange simulations, default = {[}(300.0 * unit.kelvin).\_\_add\_\_(i * unit.kelvin) for i in range(-20,100,10){]}
+\sphinxstyleliteralstrong{\sphinxupquote{temperature\_list}} \textendash{} List of temperatures for which to perform replica exchange simulations, default = None
 
 \item {} 
 \sphinxstyleliteralstrong{\sphinxupquote{simulation\_time\_step}} \textendash{} Simulation integration time step
@@ -615,27 +646,17 @@ Run a Yank replica exchange simulation using an OpenMM coarse grained model.
 \end{itemize}
 
 \item[{Returns}] \leavevmode
-replica\_energies: The potential energies for all replicas at all (printed) time steps
+\begin{itemize}
+\item {} 
+replica\_energies ( \sphinxhref{http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html}{Quantity()} ( np.float( {[}number\_replicas,number\_simulation\_steps{]} ), simtk.unit ) ) - The potential energies for all replicas at all (printed) time steps
 
-\item[{Return type}] \leavevmode
+\item {} 
+replica\_positions ( \sphinxhref{http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html}{Quantity()} ( np.float( {[}number\_replicas,number\_simulation\_steps,cgmodel.num\_beads,3{]} ), simtk.unit ) ) - The positions for all replicas at all (printed) time steps
 
-replica\_energies: \sphinxhref{http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html}{Quantity()} ( np.float( {[}number\_replicas,number\_simulation\_steps{]} ), simtk.unit )
+\item {} 
+replica\_state\_indices ( np.int64( {[}number\_replicas,number\_simulation\_steps{]} ), simtk.unit ) - The thermodynamic state assignments for all replicas at all (printed) time steps
 
-
-\item[{Returns}] \leavevmode
-replica\_positions: The positions for all replicas at all (printed) time steps
-
-\item[{Return type}] \leavevmode
-
-replica\_positions: \sphinxhref{http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html}{Quantity()} ( np.float( {[}number\_replicas,number\_simulation\_steps,cgmodel.num\_beads,3{]} ), simtk.unit )
-
-
-\item[{Returns}] \leavevmode
-replica\_state\_indices: The thermodynamic state assignments for all replicas at all (printed) time steps
-
-\item[{Return type}] \leavevmode
-
-replica\_state\_indices: \sphinxhref{http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html}{Quantity()} ( np.int64( {[}number\_replicas,number\_simulation\_steps{]} ), simtk.unit )
+\end{itemize}
 
 
 \item[{Example}] \leavevmode
@@ -675,27 +696,17 @@ Read replica exchange simulation data.
 \end{itemize}
 
 \item[{Returns}] \leavevmode
-replica\_energies: The potential energies for all replicas at all (printed) time steps
+\begin{itemize}
+\item {} 
+replica\_energies ( \sphinxhref{http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html}{Quantity()} ( np.float( {[}number\_replicas,number\_simulation\_steps{]} ), simtk.unit ) ) - The potential energies for all replicas at all (printed) time steps
 
-\item[{Return type}] \leavevmode
+\item {} 
+replica\_positions ( \sphinxhref{http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html}{Quantity()} ( np.float( {[}number\_replicas,number\_simulation\_steps,cgmodel.num\_beads,3{]} ), simtk.unit ) ) - The positions for all replicas at all (printed) time steps
 
-replica\_energies: \sphinxhref{http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html}{Quantity()} ( np.float( {[}number\_replicas,number\_simulation\_steps{]} ), simtk.unit )
+\item {} 
+replica\_state\_indices ( np.int64( {[}number\_replicas,number\_simulation\_steps{]} ), simtk.unit ) - The thermodynamic state assignments for all replicas at all (printed) time steps
 
-
-\item[{Returns}] \leavevmode
-replica\_positions: The positions for all replicas at all (printed) time steps
-
-\item[{Return type}] \leavevmode
-
-replica\_positions: \sphinxhref{http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html}{Quantity()} ( np.float( {[}number\_replicas,number\_simulation\_steps,cgmodel.num\_beads,3{]} ), simtk.unit )
-
-
-\item[{Returns}] \leavevmode
-replica\_state\_indices: The thermodynamic state assignments for all replicas at all (printed) time steps
-
-\item[{Return type}] \leavevmode
-
-replica\_state\_indices: \sphinxhref{http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html}{Quantity()} ( np.int64( {[}number\_replicas,number\_simulation\_steps{]} ), simtk.unit )
+\end{itemize}
 
 
 \item[{Example}] \leavevmode
@@ -727,10 +738,12 @@ Make PDB files from replica exchange simulation trajectory data
 \end{itemize}
 
 \item[{Returns}] \leavevmode
-file\_list: A list of names for the files that were written.
+\begin{itemize}
+\item {} 
+file\_list ( List( str ) ) - A list of names for the files that were written
 
-\item[{Return type}] \leavevmode
-List( \sphinxhref{https://docs.python.org/3/library/stdtypes.html\#str}{str} )
+\end{itemize}
+
 
 \item[{Example}] \leavevmode
 \end{description}\end{quote}
@@ -746,15 +759,25 @@ List( \sphinxhref{https://docs.python.org/3/library/stdtypes.html\#str}{str} )
 \end{fulllineitems}
 
 
+\newpage
 
-\section{Plotting tools}
-\label{\detokenize{simulation:plotting-tools}}
+
+\section{Tools to plot coarse grained model simulation results}
+\label{\detokenize{simulation:tools-to-plot-coarse-grained-model-simulation-results}}
+The ‘cg\_openmm’ package contains multiple functions to plot OpenMM and Yank simulation results using \sphinxhref{https://matplotlib.org/}{matplotlib} .
+
+Shown below is example output from a Yank replica exchange simulation run:
+
+\noindent\sphinxincludegraphics{{replica_exchange_energies}.png}
+
+\noindent\sphinxincludegraphics{{replica_exchange_transitions}.png}
+
 Shown below are functions which allow plotting of simulation results.
 
 \phantomsection\label{\detokenize{simulation:module-simulation.rep_exch}}\index{simulation.rep\_exch (module)@\spxentry{simulation.rep\_exch}\spxextra{module}}\index{plot\_replica\_exchange\_energies() (in module simulation.rep\_exch)@\spxentry{plot\_replica\_exchange\_energies()}\spxextra{in module simulation.rep\_exch}}
 
 \begin{fulllineitems}
-\phantomsection\label{\detokenize{simulation:simulation.rep_exch.plot_replica_exchange_energies}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{simulation.rep\_exch.}}\sphinxbfcode{\sphinxupquote{plot\_replica\_exchange\_energies}}}{\emph{replica\_energies}, \emph{temperature\_list}, \emph{simulation\_time\_step}, \emph{steps\_per\_stage=1}, \emph{file\_name='replica\_exchange\_energies.png'}, \emph{legend=True}, \emph{output\_directory=None}}{}
+\phantomsection\label{\detokenize{simulation:simulation.rep_exch.plot_replica_exchange_energies}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{simulation.rep\_exch.}}\sphinxbfcode{\sphinxupquote{plot\_replica\_exchange\_energies}}}{\emph{replica\_energies}, \emph{temperature\_list}, \emph{simulation\_time\_step}, \emph{steps\_per\_stage=1}, \emph{file\_name='rep\_ex\_ener.png'}, \emph{legend=True}, \emph{output\_directory=None}}{}
 Plot the potential energies for a batch of replica exchange trajectories
 \begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode\begin{itemize}
@@ -790,7 +813,7 @@ Plot the potential energies for a batch of replica exchange trajectories
 \index{plot\_replica\_exchange\_summary() (in module simulation.rep\_exch)@\spxentry{plot\_replica\_exchange\_summary()}\spxextra{in module simulation.rep\_exch}}
 
 \begin{fulllineitems}
-\phantomsection\label{\detokenize{simulation:simulation.rep_exch.plot_replica_exchange_summary}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{simulation.rep\_exch.}}\sphinxbfcode{\sphinxupquote{plot\_replica\_exchange\_summary}}}{\emph{replica\_states}, \emph{temperature\_list}, \emph{simulation\_time\_step}, \emph{steps\_per\_stage=1}, \emph{file\_name='replica\_exchange\_state\_transitions.png'}, \emph{legend=True}, \emph{output\_directory=None}}{}
+\phantomsection\label{\detokenize{simulation:simulation.rep_exch.plot_replica_exchange_summary}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{simulation.rep\_exch.}}\sphinxbfcode{\sphinxupquote{plot\_replica\_exchange\_summary}}}{\emph{replica\_states}, \emph{temperature\_list}, \emph{simulation\_time\_step}, \emph{steps\_per\_stage=1}, \emph{file\_name='rep\_ex\_states.png'}, \emph{legend=True}, \emph{output\_directory=None}}{}
 Plot the thermodynamic state assignments for individual temperature replicas as a function of the simulation time, in order to obtain a visual summary of the replica exchanges from a Yank simulation.
 \begin{quote}\begin{description}
 \item[{Parameters}] \leavevmode\begin{itemize}
@@ -891,6 +914,8 @@ Plot all data from an OpenMM output file
 \end{fulllineitems}
 
 
+\newpage
+
 
 \section{Other simulation tools}
 \label{\detokenize{simulation:other-simulation-tools}}
@@ -915,11 +940,11 @@ Get the OpenMM potential energy for a system, given a topology and set of positi
 \end{itemize}
 
 \item[{Returns}] \leavevmode
-potential\_energy: The potential energy for the model with the provided positions.
+\begin{itemize}
+\item {} 
+potential\_energy ( \sphinxhref{http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html}{Quantity()} ) - The potential energy for the model with the provided positions.
 
-\item[{Return type}] \leavevmode
-
-\sphinxhref{http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html}{Quantity()} ( float, simtk.unit )
+\end{itemize}
 
 
 \item[{Example}] \leavevmode
@@ -964,11 +989,14 @@ Determine a suitable simulation time step.
 \end{itemize}
 
 \item[{Returns}] \leavevmode
-A successfully-tested time step
+\begin{itemize}
+\item {} 
+time\_step ( \sphinxhref{https://simtk.org/}{SIMTK} \sphinxhref{http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html}{Unit()} ) - A successfully-tested simulation time-step for the provided coarse grained model
 
-\item[{Return type}] \leavevmode
+\item {} 
+tolerance ( \sphinxhref{https://simtk.org/}{SIMTK} \sphinxhref{http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html}{Unit()} ) - The maximum change in forces that will be tolerated when testing the time step.
 
-\sphinxhref{https://simtk.org/}{SIMTK} \sphinxhref{http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html}{Unit()}
+\end{itemize}
 
 
 \item[{Example}] \leavevmode
@@ -1023,19 +1051,14 @@ Minimize the potential energy
 \end{itemize}
 
 \item[{Returns}] \leavevmode
-positions: Minimized positions
+\begin{itemize}
+\item {} 
+positions ( \sphinxhref{http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html}{Quantity()} ( np.array( {[}cgmodel.num\_beads,3{]} ), simtk.unit ) ) - Minimized positions
 
-\item[{Return type}] \leavevmode
+\item {} 
+potential\_energy ( \sphinxhref{http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html}{Quantity()} - Potential energy for the minimized structure.
 
-positions: \sphinxhref{http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html}{Quantity()} ( np.array( {[}cgmodel.num\_beads,3{]} ), simtk.unit )
-
-
-\item[{Returns}] \leavevmode
-potential\_energy: Potential energy for the minimized structure.
-
-\item[{Return type}] \leavevmode
-
-potential\_energy: \sphinxhref{http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html}{Quantity()} ( np.array( {[}cgmodel.num\_beads,3{]} ), simtk.unit )
+\end{itemize}
 
 
 \item[{Example}] \leavevmode
@@ -1074,6 +1097,14 @@ Read OpenMM simulation data
 
 \end{itemize}
 
+\item[{Returns}] \leavevmode
+\begin{itemize}
+\item {} 
+data ( dict( “Simulation Time”: list,”Potential Energy”: list,”Kinetic Energy”: list,”Total Energy”: list,”Temperature”: list ) ) - A dictionary containing the simulation times, potential energies, kinetic energies, and total energies from an OpenMM simulation trajectory.
+
+\end{itemize}
+
+
 \item[{Example}] \leavevmode
 \end{description}\end{quote}
 
@@ -1108,10 +1139,12 @@ Get an ensemble of low (potential) energy poses, and write the lowest energy str
 \end{itemize}
 
 \item[{Returns}] \leavevmode
-ensemble: A list of poses that are in the minimum energy ensemble.
+\begin{itemize}
+\item {} 
+ensemble ( List() ) - A list of poses that are in the minimum energy ensemble.
 
-\item[{Return type}] \leavevmode
-List ( np.array( ( float * simtk.unit.positions for num\_beads ) for simulation\_steps ) )
+\end{itemize}
+
 
 \item[{Example}] \leavevmode
 \end{description}\end{quote}
@@ -1150,11 +1183,11 @@ Calculate the distance between two particles, given their positions.
 \end{itemize}
 
 \item[{Returns}] \leavevmode
-distance: Distance between two particles
+\begin{itemize}
+\item {} 
+distance ( \sphinxhref{http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html}{Quantity()}) - Distance between two particles
 
-\item[{Return type}] \leavevmode
-
-\sphinxhref{http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html}{Quantity()} ( float, simtk.unit )
+\end{itemize}
 
 
 \item[{Example}] \leavevmode
@@ -1180,11 +1213,11 @@ Given a simulation box length, construct a vector.
 \sphinxstyleliteralstrong{\sphinxupquote{box\_size}} \textendash{} Length of individual sides of a simulation box
 
 \item[{Returns}] \leavevmode
-box\_vectors: Vectors to use when defining an OpenMM simulation box.
+\begin{itemize}
+\item {} 
+box\_vectors ( List( \sphinxhref{http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html}{Quantity()} ) ) - Vectors to use when defining an OpenMM simulation box.
 
-\item[{Return type}] \leavevmode
-
-box\_vectors: List( \sphinxhref{http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html}{Quantity()} float , simtk.unit) )
+\end{itemize}
 
 
 \end{description}\end{quote}
@@ -1195,6 +1228,33 @@ box\_vectors: List( \sphinxhref{http://docs.openmm.org/development/api-python/ge
 
 \begin{fulllineitems}
 \phantomsection\label{\detokenize{utilities:utilities.util.lj_v}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{utilities.util.}}\sphinxbfcode{\sphinxupquote{lj\_v}}}{\emph{positions\_1}, \emph{positions\_2}, \emph{sigma}, \emph{epsilon}}{}
+Calculate the Lennard-Jones interaction energy between two particles, given their positions and definitions for their equilbrium interaction distance (sigma) and strength (epsilon).
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode\begin{itemize}
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{positions\_1}} \textendash{} Positions for the first particle
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{positions\_2}} \textendash{} Positions for the first particle
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{sigma}} \textendash{} Lennard-Jones equilibrium interaction distance for two non-bonded particles
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{epsilon}} \textendash{} Lennard-Jones equilibrium interaction energy for two non-bonded particles.
+
+\end{itemize}
+
+\item[{Returns}] \leavevmode
+\begin{itemize}
+\item {} 
+v ( \sphinxhref{http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html}{Quantity()} ) - Lennard-Jones interaction energy
+
+\end{itemize}
+
+
+\end{description}\end{quote}
+
 \end{fulllineitems}
 
 \index{set\_box\_vectors() (in module utilities.util)@\spxentry{set\_box\_vectors()}\spxextra{in module utilities.util}}
@@ -1213,11 +1273,11 @@ Impose a set of simulation box vectors on an OpenMM simulation object.
 \end{itemize}
 
 \item[{Returns}] \leavevmode
-system: OpenMM system object
+\begin{itemize}
+\item {} 
+system (\sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1openmm\_1\_1System.html}{System()}) - OpenMM system object
 
-\item[{Return type}] \leavevmode
-
-\sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1openmm\_1\_1System.html}{System()}
+\end{itemize}
 
 
 \end{description}\end{quote}

@@ -29,8 +29,9 @@ def get_simulation_time_step(topology,system,positions,temperature,total_simulat
         :param time_step_list: List of time steps for which to attempt a simulation in OpenMM.
         :type time_step_list: List, default = None
 
-        :returns: A successfully-tested time step
-        :rtype: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
+        :returns: 
+             - time_step ( `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_ ) - A successfully-tested simulation time-step for the provided coarse grained model
+             - tolerance ( `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_ ) - The maximum change in forces that will be tolerated when testing the time step.
 
         :Example:
 
@@ -116,11 +117,9 @@ def minimize_structure(topology,system,positions,temperature=0.0 * unit.kelvin,s
         :param print_frequency: Number of simulation steps to skip when writing data, default = 1
         :type print_frequency: int
 
-        :returns: positions: Minimized positions
-        :rtype: positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit )
-
-        :returns: potential_energy: Potential energy for the minimized structure. 
-        :rtype: potential_energy: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit )
+        :returns: 
+             - positions ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit ) ) - Minimized positions
+             - potential_energy ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ - Potential energy for the minimized structure. 
 
         :Example:
 
@@ -198,8 +197,8 @@ def get_mm_energy(topology,system,positions):
         :param positions: Positions array for the model we would like to test
         :type positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit )
 
-        :returns: potential_energy: The potential energy for the model with the provided positions.
-        :rtype: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( float, simtk.unit )
+        :returns: 
+             - potential_energy ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The potential energy for the model with the provided positions.
  
         :Example:
 
@@ -254,8 +253,8 @@ def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvi
         :param test_time_step: Logical variable determining if a test of the time step will be performed, Default = False
         :type test_time_step: Logical
 
-        :returns: OpenMM Simulation() object
-        :rtype: `Simulation() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1simulation_1_1Simulation.html>`_
+        :returns: 
+             - simulation ( `Simulation() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1simulation_1_1Simulation.html>`_ ) - OpenMM Simulation() object
 
         :Example:
 
@@ -411,6 +410,9 @@ def read_simulation_data(simulation_data_file,simulation_time_step):
 
         :param simulation_time_step: Time step to apply for the simulation data
         :type simulation_time_step: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
+
+        :returns:
+          - data ( dict( "Simulation Time": list,"Potential Energy": list,"Kinetic Energy": list,"Total Energy": list,"Temperature": list ) ) - A dictionary containing the simulation times, potential energies, kinetic energies, and total energies from an OpenMM simulation trajectory.
 
         :Example:
 

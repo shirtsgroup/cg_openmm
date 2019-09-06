@@ -7,8 +7,8 @@ def read_mm_energies(openmm_data_file):
           :param openmm_data_file: The path to an OpenMM data file (CSV format)
           :type openmm_data_file: str
 
-          :returns: energies: An array containing all data in 'openmm_data_file'
-          :rtype: energies: np.array( float * simtk.unit )
+          :returns: 
+              - energies ( np.array( float * simtk.unit ) ) - An array containing all data in 'openmm_data_file'
 
           """
 

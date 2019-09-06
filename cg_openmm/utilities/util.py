@@ -16,8 +16,8 @@ def distance(positions_1,positions_2):
         :param positions_2: Positions for the first particle
         :type positions_2: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [3] ), simtk.unit )
 
-        :returns: distance: Distance between two particles
-        :rtype: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( float, simtk.unit )
+        :returns:
+            - distance ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_) - Distance between two particles
 
         :Example:
 
@@ -53,8 +53,8 @@ def get_box_vectors(box_size):
         :param box_size: Length of individual sides of a simulation box
         :type box_size: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( float, simtk.unit )
 
-        :returns: box_vectors: Vectors to use when defining an OpenMM simulation box.
-        :rtype: box_vectors: List( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ float , simtk.unit) ) 
+        :returns: 
+             - box_vectors ( List( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) ) - Vectors to use when defining an OpenMM simulation box.
 
         """
 
@@ -78,9 +78,8 @@ def set_box_vectors(system,box_size):
         :param box_size: Length of individual sides of a simulation box
         :type box_size: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( float, simtk.unit )
 
-        :returns: system: OpenMM system object
-        :rtype: `System() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1System.html>`_
-
+        :returns: 
+            - system (`System() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1System.html>`_) - OpenMM system object
 
         """
 
@@ -90,6 +89,22 @@ def set_box_vectors(system,box_size):
 
 def lj_v(positions_1,positions_2,sigma,epsilon):
         """
+        Calculate the Lennard-Jones interaction energy between two particles, given their positions and definitions for their equilbrium interaction distance (sigma) and strength (epsilon).
+
+        :param positions_1: Positions for the first particle
+        :type positions_1: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [3] ), simtk.unit )
+
+        :param positions_2: Positions for the first particle
+        :type positions_2: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [3] ), simtk.unit )
+
+        :param sigma: Lennard-Jones equilibrium interaction distance for two non-bonded particles
+        :type sigma: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
+
+        :param epsilon: Lennard-Jones equilibrium interaction energy for two non-bonded particles.
+        :type epsilon: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
+
+        :returns:
+           - v ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - Lennard-Jones interaction energy
 
         """
 

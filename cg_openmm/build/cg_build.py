@@ -2,15 +2,11 @@ import os
 import datetime
 import numpy as np
 from simtk import openmm as mm
-from simtk.openmm.openmm import LangevinIntegrator
 from simtk import unit
 from simtk.openmm.app.pdbfile import PDBFile
-from simtk.openmm.app.pdbreporter import PDBReporter
-from simtk.openmm.app.statedatareporter import StateDataReporter
-from simtk.openmm.app.simulation import Simulation
 from simtk.openmm.app.topology import Topology
 import simtk.openmm.app.element as elem
-from cg_openmm.simulation.tools import get_simulation_time_step, build_mm_simulation
+from cg_openmm.simulation.tools import build_mm_simulation
 from cg_openmm.utilities.util import lj_v
 from foldamers.utilities.iotools import write_pdbfile_without_topology
 
@@ -21,8 +17,8 @@ def add_new_elements(cgmodel):
         :param cgmodel: CGModel object (contains all attributes for a coarse grained model).
         :type cgmodel: class
 
-        :returns: particle_list: a list of the particles that were added to OpenMM's 'Element' List.
-        :rtype: list
+        :returns: 
+           - particle_list (list) - a list of the particles that were added to OpenMM's 'Element' List.
 
         :Example:
 
@@ -238,8 +234,8 @@ def build_topology(cgmodel,use_pdbfile=False,pdbfile=None):
         :param pdbfile: Name of a PDB file to use when building the topology.
         :type pdbfile: str
 
-        :returns: OpenMM Topology()
-        :rtype: `Topology() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1topology_1_1Topology.html>`_
+        :returns:
+            - topology (`Topology() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1topology_1_1Topology.html>`_ ) - OpenMM Topology() object
 
         :Example:
 
@@ -305,8 +301,8 @@ def get_num_forces(cgmodel):
         :param cgmodel: CGModel() class object
         :type cgmodel: class
 
-        :returns: Number of forces
-        :rtype: int
+        :returns: 
+            - total_forces (int) - Number of forces in the coarse grained model
 
         :Example:
 
@@ -378,8 +374,8 @@ def test_force(cgmodel,force,force_type=None):
         :param force_type: Designates the kind of 'force' provided. (Valid options include: "Nonbonded")
         :type force_type: str
 
-        :returns: 'success', a variable designating whether or not the force test passed.
-        :rtype: Logical
+        :returns: 
+            - 'success' (Logical) - a variable indicating if the force test passed.
 
         :Example:
 
@@ -443,11 +439,9 @@ def add_force(cgmodel,force_type=None):
         :param force_type: Designates the kind of 'force' provided. (Valid options include: "Bond", "Nonbonded", "Angle", and "Torsion")
         :type force_type: str
 
-        :returns: CGModel() class object
-        :rtype: class
-
-        :returns: An OpenMM Force() object.
-        :rtype: `Force() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1Force.html>`_
+        :returns: 
+             - cgmodel (class) - 'foldamers' CGModel() class object
+             - force (class) - An OpenMM `Force() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1Force.html>`_ object.
 
         :Example:
 
@@ -536,8 +530,8 @@ def test_forces(cgmodel):
         :param cgmodel: CGModel() class object.
         :param type: class
 
-        :returns: success: Indicates if this cgmodel has unphysical forces.
-        :rtype: Logical
+        :returns:
+            - success (Logical) - Indicates if this cgmodel has unphysical forces.
 
         :Example:
 
@@ -573,8 +567,8 @@ def build_system(cgmodel):
         :param cgmodel: CGModel() class object
         :type cgmodel: class
 
-        :returns: OpenMM System() object
-        :rtype: `System() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1System.html>`_ 
+        :returns: 
+            - system ( `System() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1System.html>`_ ) - OpenMM System() object
 
         :Example:
 
