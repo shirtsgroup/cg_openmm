@@ -10,52 +10,11 @@ import simtk.openmm.app.element as elem
 from cg_openmm.build.cg_build import add_new_elements, build_topology, build_system
 from itertools import chain, combinations, product
 
-def get_parent_bead(cgmodel,monomer_index,bead_index,backbone_bead_index=None,sidechain_bead=False):
-        """
-        Determines if a particle is bonded to any other particles (Used for coarse grained model construction.)
-
-        :param cgmodel: CGModel() class object
-        :type cgmodel: class
-
-        :param monomer_index: Index of the monomer containing the bead we are interested in
-        :type monomer_index: int
-
-        :param bead_index: Index of the particle we are interested in identifying bonds for
-        :type bead_index: int
-
-        :param backbone_bead_index: If this bead is a backbone bead, and the monomer it belongs to contains multiple backbone beads, this will provide the position of the backbone bead
-        :type backbone_bead_index: int
-
-        :param sidechain_bead: Indicates whether or not this bead is part of a sidechain.
-        :type sidechain_bead: Logical
-
-        :returns: parent_bead: Index for particle(s) that the target particle is bonded to
-        :rtype: int
-
-        """
-
-        parent_bead = -1
-        if bead_index != 1:
-               if sidechain_bead == True:
-                parent_bead = bead_index - 1
-                return(parent_bead)
-               else:
-                 monomer_type = cgmodel.sequence[monomer_index]
-                 if int(backbone_bead_index) in [monomer_type['sidechain_positions']]:
-                  parent_bead = bead_index - monomer_type['sidechain_length'] - 1
-                 else:
-                  parent_bead = bead_index - 1
-        if parent_bead == -1:
-         print("ERROR: Not assigning particle indices correctly in get_parent_bead()")
-         print("The bead index is: "+str(bead_index))
-         exit()
-        return(parent_bead)
-
 def basic_cgmodel(polymer_length=12,backbone_length=1,sidechain_length=1,sidechain_positions=[0],mass=100.0 * unit.amu,bond_length=0.75 * unit.nanometer,sigma=1.85*unit.nanometer,epsilon=0.5 * unit.kilocalorie_per_mole,positions=None):
 
         """
         :param polymer_length: Number of monomer units, default = 8
-        :type polymer_length: integer
+        :type polymer_length: int
 
         :param backbone_length: Number of beads in the backbone for individual monomers within a coarse grained model, default = 1
         :type backbone_length: int
@@ -64,7 +23,7 @@ def basic_cgmodel(polymer_length=12,backbone_length=1,sidechain_length=1,sidecha
         :type sidechain_length: int
 
         :param sidechain_positions: Designates the indices of backbone beads upon which we will place sidechains, default = [0] (add a sidechain to the first backbone bead in each monomer)
-        :type sidechain_positions: List( integer )
+        :type sidechain_positions: List( int )
 
         :param mass: Mass for all coarse grained beads, default = 100.0 * unit.amu
         :type mass: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
@@ -82,6 +41,7 @@ def basic_cgmodel(polymer_length=12,backbone_length=1,sidechain_length=1,sidecha
         :type positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit )
 
         :returns: cgmodel: CGModel() class object
+        :rtype: class
 
         ..warning:: this function has significant limitations, in comparison with building a coarse grained model with the CGModel() class.  In particular, this function makes it more difficult to build heteropolymers, and is best-suited for the simulation of homopolymers.
 
