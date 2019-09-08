@@ -4,10 +4,12 @@
 # =============================================================================================
 
 # System packages
+import sys
 import numpy as np
 import math, random, statistics
 from simtk import unit
 from simtk.openmm.app.pdbfile import PDBFile
+print(sys.path)
 from cg_openmm.build.cg_build import build_system, build_topology
 from cg_openmm.simulation.tools import *
 from foldamers.cg_model.cgmodel import *
@@ -21,13 +23,7 @@ def random_sign(number):
         """
         Returns 'number' with a random sign.
 
-        Parameters
-        ----------
-
         number: float
-
-        Returns
-        -------
 
         number
 
@@ -42,12 +38,8 @@ def random_sign(number):
 def first_bead(positions):
         """
         Determine if we have any particles in 'positions'
-        Parameters
-        ----------
         positions: Positions for all beads in the coarse-grained model.
         ( np.array( float * unit ( shape = num_beads x 3 ) ) )
-        Returns
-        -------
         first_bead: Logical variable stating if this is the first particle.
         """
 
@@ -69,8 +61,6 @@ def get_move(trial_coordinates,move_direction,distance,bond_length,finish_bond=F
         target 'bond_length' ( Index denoting x,y,z Cartesian 
         direction), update the coordinates for the particle.
 
-        Parameters
-        ----------
 
         trial_coordinates: positions for a particle
         ( np.array( float * unit.angstrom ( length = 3 ) ) )
@@ -87,9 +77,6 @@ def get_move(trial_coordinates,move_direction,distance,bond_length,finish_bond=F
 
         finish_bond: Logical variable determining how we will
         update the coordinates for this particle.
-
-        Returns
-        -------
 
         trial_coordinates: Updated positions for the particle
         ( np.array( float * unit.angstrom ( length = 3 ) ) )
@@ -139,9 +126,6 @@ def attempt_lattice_move(parent_coordinates,bond_length,move_direction_list):
         Given a set of cartesian coordinates, assign a new particle
         a distance of 'bond_length' away in a random direction.
 
-        Parameters
-        ----------
-
         parent_coordinates: Positions for a single particle,
         away from which we will place a new particle a distance
         of 'bond_length' away.
@@ -150,9 +134,6 @@ def attempt_lattice_move(parent_coordinates,bond_length,move_direction_list):
         bond_length: Bond length for all beads that are bonded,
         ( float * simtk.unit.distance )
         default = 1.0 * unit.angstrom
-
-        Returns
-        -------
 
         trial_coordinates: Positions for a new trial particle
         ( np.array( float * unit.angstrom ( length = 3 ) ) )
@@ -207,9 +188,6 @@ def attempt_move(parent_coordinates,bond_length):
         Given a set of cartesian coordinates, assign a new particle
         a distance of 'bond_length' away in a random direction.
 
-        Parameters
-        ----------
-
         parent_coordinates: Positions for a single particle,
         away from which we will place a new particle a distance
         of 'bond_length' away.
@@ -218,9 +196,6 @@ def attempt_move(parent_coordinates,bond_length):
         bond_length: Bond length for all beads that are bonded,
         ( float * simtk.unit.distance )
         default = 1.0 * unit.angstrom
-
-        Returns
-        -------
 
         trial_coordinates: Positions for a new trial particle
         ( np.array( float * unit.angstrom ( length = 3 ) ) )
@@ -288,17 +263,12 @@ def distances(interaction_list,positions):
         Calculate the distances between a trial particle ('new_coordinates')
         and all existing particles ('existing_coordinates').
 
-        Parameters
-        ----------
-
         new_coordinates: Positions for a single trial particle
         ( np.array( float * unit.angstrom ( length = 3 ) ) )
 
         existing_coordinates: Positions for a single trial particle
         ( np.array( float * unit.angstrom ( shape = num_particles x 3 ) ) )
 
-        Returns
-        -------
 
         distances: List of the distances between all nonbonded particles.
         ( list ( float * simtk.unit.distance ( length = # nonbonded_interactions ) ) )
@@ -322,18 +292,12 @@ def collisions(positions,distance_list,distance_cutoff):
         particles, where a "collision" is defined as a distance shorter
         than the user-provided 'bond_length'.
 
-        Parameters
-        ----------
-
         distances: List of the distances between all nonbonded particles.
         ( list ( float * simtk.unit.distance ( length = # nonbonded_interactions ) ) )
 
         bond_length: Bond length for all beads that are bonded,
         ( float * simtk.unit.distance )
         default = 1.0 * unit.angstrom
-
-        Returns
-        -------
 
         collision: Logical variable stating whether or not the model has
         bead collisions.
@@ -366,18 +330,12 @@ def assign_position_lattice_style(cgmodel,positions,distance_cutoff,parent_bead_
         """
         Assign random position for a bead
 
-        Parameters
-        ----------
-
         positions: Positions for all beads in the coarse-grained model.
         ( np.array( num_beads x 3 ) )
 
         bond_length: Bond length for all beads that are bonded,
         ( float * simtk.unit.distance )
         default = 1.0 * unit.angstrom
-
-        Returns
-        -------
 
         positions: Positions for all beads in the coarse-grained model.
         ( np.array( num_beads x 3 ) )
@@ -453,18 +411,12 @@ def assign_position(positions,bond_length,sigma,bead_index,parent_index):
         """
         Assign random position for a bead
 
-        Parameters
-        ----------
-
         positions: Positions for all beads in the coarse-grained model.
         ( np.array( num_beads x 3 ) )
 
         bond_length: Bond length for all beads that are bonded,
         ( float * simtk.unit.distance )
         default = 1.0 * unit.angstrom
-
-        Returns
-        -------
 
         positions: Positions for all beads in the coarse-grained model.
         ( np.array( num_beads x 3 ) )
@@ -512,9 +464,6 @@ def get_structure_from_library( cgmodel, high_energy=False, low_energy=False ):
         error message will be returned and we will attempt to assign 
         positions at random with 'random_positions()'.
 
-        Parameters
-        ----------
-
         cgmodel: CGModel() class object.
 
         :param high_energy: If set to 'True', this function will generate an ensemble of high-energy structures, default = False
@@ -523,9 +472,6 @@ def get_structure_from_library( cgmodel, high_energy=False, low_energy=False ):
         :param low_energy: If set to 'True', this function will generate an ensemble of low-energy structures, default = False
         :type low_energy: Logical
 
-        Returns
-        -------
-        
         positions: Positions for all beads in the coarse-grained model.
         ( np.array( num_beads x 3 ) )
 
@@ -675,9 +621,6 @@ def random_positions( cgmodel,max_attempts=1000,use_library=False,high_energy=Fa
         """
         Assign random positions for all beads in a coarse-grained polymer.
 
-        Parameters
-        ----------
-
         cgmodel: CGModel() class object.
 
         max_attempts: The maximum number of times that we will attempt to build
@@ -698,9 +641,6 @@ def random_positions( cgmodel,max_attempts=1000,use_library=False,high_energy=Fa
         :param low_energy: If set to 'True', this function will generate an ensemble of low-energy structures, default = False
         :type low_energy: Logical
 
-        Returns
-        -------
-        
         positions: Positions for all beads in the coarse-grained model.
         ( np.array( num_beads x 3 ) )
 
@@ -807,17 +747,11 @@ def distance(positions_1,positions_2):
         """
         Construct a matrix of the distances between all particles.
 
-        Parameters
-        ----------
-
         positions_1: Positions for a particle
         ( np.array( length = 3 ) )
 
         positions_2: Positions for a particle
         ( np.array( length = 3 ) )
-
-        Returns
-        -------
 
         distance
         ( float * unit )
@@ -845,14 +779,8 @@ def distance_matrix(positions):
         """
         Construct a matrix of the distances between all particles.
 
-        Parameters
-        ----------
-
         positions: Positions for an array of particles.
         ( np.array( num_particles x 3 ) )
-
-        Returns
-        -------
 
         distance_matrix: Matrix containing the distances between all beads.
         ( np.array( num_particles x 3 ) )
