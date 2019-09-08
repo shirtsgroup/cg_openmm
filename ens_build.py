@@ -10,15 +10,11 @@ from foldamers.src.utilities.iotools import write_pdbfile_without_topology
 from foldamers.src.utilities.util import random_positions
 from foldamers.src.parameters.secondary_structure import fraction_native_contacts
 
-
 def get_ensemble(cgmodel,ensemble_size=100,high_energy=False,low_energy=False):
         """
         Given a coarse grained model, this function generates an ensemble of high energy configurations and, by default, saves this ensemble to the foldamers/ensembles database for future reference/use, if a high-energy ensemble with these settings does not already exist.
 
-        Parameters
-        ----------
-
-        gparam cgmodel: CGModel() class object.
+        :param cgmodel: CGModel() class object.
         :type cgmodel: class
 
         :param ensemble_size: Number of structures to generate for this ensemble, default = 100
@@ -30,11 +26,8 @@ def get_ensemble(cgmodel,ensemble_size=100,high_energy=False,low_energy=False):
         :param low_energy: If set to 'True', this function will generate an ensemble of low-energy structures, default = False
         :type low_energy: Logical
 
-        Returns
-        -------
-
-        ensemble: List( positions( np.array( float * simtk.unit ( shape = num_beads x 3 ) ) )
-                  A list of the positions for all members in the high_energy ensemble.
+        :returns:
+           - ensemble (List(positions(np.array(float*simtk.unit (shape = num_beads x 3))))) - A list of the positions for all members in the ensemble.
 
         """
         if high_energy and low_energy:
@@ -65,6 +58,14 @@ def get_ensemble(cgmodel,ensemble_size=100,high_energy=False,low_energy=False):
 
 def get_pdb_list(ensemble_directory):
         """
+        Given an 'ensemble_directory', this function retrieves a list of the PDB files within it.
+
+        :param ensemble_directory: Path to a folder containing PDB files
+        :type ensemble_directory: str
+
+        :returns:
+         - pdb_list ( List(str) ) - A list of the PDB files in the provided 'ensemble_directory'.
+
         """
         pdb_list = []
         for file in os.listdir(ensemble_directory):
@@ -74,6 +75,16 @@ def get_pdb_list(ensemble_directory):
 
 def write_ensemble_pdb(cgmodel,ensemble_directory=None):
         """
+        Given a CGModel() class object that contains positions, this function writes a PDB file for the coarse grained model, using those positions.
+
+        :param cgmodel: CGModel() class object
+        :type cgmodel: class
+
+        :param ensemble_directory: Path to a folder containing PDB files, default = None
+        :type ensemble_directory: str
+
+        ..warning:: If no 'ensemble_directory' is provided, the  
+        
         """
         if ensemble_directory == None:
           ensemble_directory = get_ensemble_directory(cgmodel)
@@ -88,6 +99,19 @@ def write_ensemble_pdb(cgmodel,ensemble_directory=None):
 
 def get_ensemble_directory(cgmodel,ensemble_type=None):
         """
+        Given a CGModel() class object, this function uses its attributes to assign an ensemble directory name.
+
+        For example, the directory name for a model with 20 monomers, all of which contain one backbone bead and one sidechain bead, and whose bond lengths are all 7.5 Angstroms, would be: "foldamers/ensembles/20_1_1_0_7.5_7.5_7.5".
+
+        :param cgmodel: CGModel() class object
+        :type cgmodel: class
+
+        :param ensemble_type: Designates the type of ensemble for which we will assign a directory name.  default = None.  Valid options include: "native" and "nonnative"
+        :type ensemble_type: str
+
+        :returns:
+          - ensemble_directory ( str ) - The path/name for the ensemble directory.
+
         """
         monomer_type = cgmodel.monomer_types[0]
         ensembles_directory = str(str(__file__.split('src/ensembles/ens_build.py')[0])+"ensembles")
@@ -110,6 +134,21 @@ def get_ensemble_directory(cgmodel,ensemble_type=None):
 
 def get_ensemble_data(cgmodel,ensemble_directory):
         """
+        Given a CGModel() class object and an 'ensemble_directory', this function reads the PDB files within that directory, as well as any energy data those files contain.
+
+        :param cgmodel: CGModel() class object
+        :type cgmodel: class
+
+        :param ensemble_directory: The path/name of the directory where PDB files for this ensemble are stored
+        :type ensemble_directory: str
+
+        :returns:
+           - ensemble (List(positions(np.array(float*simtk.unit (shape = num_beads x 3))))) - A list of the positions for all members in the ensemble.
+
+           - ensemble_energies ( List(`Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )) - A list of the energies that were stored in the PDB files for the ensemble, if any.
+
+        ..warning:: When energies are written to a PDB file, only the sigma and epsilon values for the model are written to the file with the positions.  Unless the user is confident about the model parameters that were used to generate the energies in the PDB files, it is probably best to re-calculate their energies.  This can be done with the 'cg_openmm' package.  More specifically, one can compute an updated energy for individual ensemble members, with the current coarse grained model parameters, with 'get_mm_energy', a function in 'cg_openmm/cg_openmm/simulation/tools.py'.
+
         """
         ensemble_energies = []
         ensemble = []
@@ -129,6 +168,14 @@ def get_ensemble_data(cgmodel,ensemble_directory):
 
 def test_energy(energy):
         """
+        Given an energy, this function determines if that energy is too large to be "physical".  This function is used to determine if the user-defined input parameters for a coarse grained model give a reasonable potential function.
+
+        :param energy: The energy to test.
+        :type energy: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ or float        
+
+        :returns:
+          - pass_energy_test ( Logical ) - A variable indicating if the energy passed ("True") or failed ("False") a "sanity" test for the model's energy.
+
         """
         try:
           pass_energy_test = energy.__lt__(9.9e5*unit.kilojoule_per_mole)
@@ -142,6 +189,31 @@ def test_energy(energy):
 
 def improve_ensemble(energy,positions,ensemble,ensemble_energies,unchanged_iterations):
         """
+
+        Given an energy and positions for a single pose, as well as the same data for a reference ensemble, this function "improves" the quality of the ensemble by identifying poses with the lowest potential energy.
+
+        :param energy: The energy for a pose.
+        :type energy: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ 
+
+        :param positions: Positions for coarse grained particles in the model, default = None
+        :type positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit )
+
+        :param ensemble: A group of similar poses.
+        :type ensemble: List(positions(np.array(float*simtk.unit (shape = num_beads x 3))))
+
+        :param ensemble_energies: A list of energies for a conformational ensemble.
+        :type ensemble_energies: List(`Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )
+
+        :param unchanged_iterations: The number of iterations for which the ensemble has gone unchanged.
+        :type unchanged_iterations: int
+
+        :returns:
+           - ensemble (List(positions(np.array(float*simtk.unit (shape = num_beads x 3))))) - A list of the positions for all members in the ensemble.
+
+           - ensemble_energies ( List(`Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )) - A list of the energies that were stored in the PDB files for the ensemble, if any.
+
+           - unchanged_iterations ( int ) - The number of iterations for which the ensemble has gone unchanged.
+
         """
         if any([energy < ensemble_energies[i] for i in range(len(ensemble_energies))]):
           ensemble_energies[ensemble_energies.index(max(ensemble_energies))] = energy
