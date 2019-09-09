@@ -1,9 +1,3 @@
-
-# =============================================================================================
-# 1) PYTHON PACKAGE IMPORTS
-# =============================================================================================
-
-# System packages
 import sys
 import numpy as np
 import math, random, statistics
@@ -15,17 +9,15 @@ from cg_openmm.simulation.tools import *
 from foldamers.cg_model.cgmodel import *
 from foldamers.utilities.iotools import *
 
-# =============================================================================================
-# 2) ENVIRONMENT/JOB SETTINGS
-# =============================================================================================
-
 def random_sign(number):
         """
-        Returns 'number' with a random sign.
+        Returns the provided 'number' with a random sign.
 
-        number: float
+        :param number: The number to add a random sign (positive or negative) to
+        :type number: float
 
-        number
+        :returns:
+          - number (float) - The provided number with a random sign added
 
         """
 
@@ -37,10 +29,14 @@ def random_sign(number):
 
 def first_bead(positions):
         """
-        Determine if we have any particles in 'positions'
-        positions: Positions for all beads in the coarse-grained model.
-        ( np.array( float * unit ( shape = num_beads x 3 ) ) )
-        first_bead: Logical variable stating if this is the first particle.
+        Determine if the provided 'positions' contain any particles (are the coordinates non-zero).
+
+        :param positions: Positions for all beads in the coarse-grained model.
+        :type positions: np.array( float * unit ( shape = num_beads x 3 ) )
+        
+        :returns:
+         - first_bead (Logical) - Variable stating if the positions are all non-zero.
+
         """
 
         first_bead = True
@@ -57,29 +53,26 @@ def first_bead(positions):
 
 def get_move(trial_coordinates,move_direction,distance,bond_length,finish_bond=False):
         """
-        Given a 'move_direction', a current distance, and a
-        target 'bond_length' ( Index denoting x,y,z Cartesian 
-        direction), update the coordinates for the particle.
+        Used to build random structures.  Given a set of input coordinates, this function attempts to add a new particle.
 
+        :param trial_coordinates: Positions for a particle
+        :type trial_coordinates: np.array( float * unit.angstrom ( length = 3 ) )
 
-        trial_coordinates: positions for a particle
-        ( np.array( float * unit.angstrom ( length = 3 ) ) )
-
-        move_direction: Cartesian direction in which we will
+        :param move_direction: Cartesian direction in which we will
         attempt a particle placement, where: x=0, y=1, z=2. 
-        ( integer )
+        :type move_direction: int
 
-        distance: Current distance from parent particle
-        ( float * simtk.unit.distance )
+        :param distance: Current distance between the trial coordinates for the particle this function is positioning and the particle that it is branched from (bonded to).
+        :type distance: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
 
-        bond_length: Target bond_length for particle placement.
-        ( float * simtk.unit.distance )
+        :param bond_length: The distance to step before placing a new particle.
+        :type bond_length: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
 
-        finish_bond: Logical variable determining how we will
-        update the coordinates for this particle.
+        :param finish_bond: Logical variable determining how we will update the coordinates for this particle, default = False.  If set to "True", the "move" length will be the difference between "distance" and "bond_length".
+        :type finish_bond: 
 
-        trial_coordinates: Updated positions for the particle
-        ( np.array( float * unit.angstrom ( length = 3 ) ) )
+        :returns:
+         - trial_coordinates (np.array( float * unit.angstrom (length=3) )) - Updated positions for the particle.
 
         """
 
@@ -123,32 +116,26 @@ def get_move(trial_coordinates,move_direction,distance,bond_length,finish_bond=F
 
 def attempt_lattice_move(parent_coordinates,bond_length,move_direction_list):
         """
-        Given a set of cartesian coordinates, assign a new particle
-        a distance of 'bond_length' away in a random direction.
+        Given a set of cartesian coordinates this function positions a new particle a distance of 'bond_length' away in a random direction.
 
-        parent_coordinates: Positions for a single particle,
-        away from which we will place a new particle a distance
-        of 'bond_length' away.
-        ( np.array( float * unit.angstrom ( length = 3 ) ) )
+        :param parent_coordinates: Positions for a single particle, away from which we will place a new particle a distance of 'bond_length' away.
+        :type parent_coordinates: np.array( float * unit.angstrom ( length = 3 ) )
 
-        bond_length: Bond length for all beads that are bonded,
-        ( float * simtk.unit.distance )
-        default = 1.0 * unit.angstrom
+        :param bond_length: Bond length for all beads that are bonded.
+        :type bond_length: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Q
+uantity.html>`_
 
-        trial_coordinates: Positions for a new trial particle
-        ( np.array( float * unit.angstrom ( length = 3 ) ) )
+        :param move_direction_list: A list of cartesian directions (denoted by integers) that tracks the directions in which a particle placement has been attempted.
+        :type move_direction_list: List( int )
+
+        :returns:
+          - trial_coordinates ( np.array( float * unit.angstrom ( length = 3 ) ) ) - The coordinates for a new, trial particle.
+          - move_direction_list ( List(int) ) - A list of cartesian directions (denoted by integers) that tracks the directions in which a particle placement has been attempted.
 
         """
 
-        """ 'dist' tracks the distance between the new trial particle
-        and the parent particle """
-
         units = bond_length.unit
         dist = unit.Quantity(0.0,units)
-
-        """ 'move_direction_list' tracks the Cartesian
-        directions in which we have attempted a particle placement,
-        where: x=0,y=1,z=2. """
 
         # Assign the parent coordinates as the initial coordinates for a trial particle
         trial_coordinates = np.zeros([3]) * units
@@ -188,29 +175,20 @@ def attempt_move(parent_coordinates,bond_length):
         Given a set of cartesian coordinates, assign a new particle
         a distance of 'bond_length' away in a random direction.
 
-        parent_coordinates: Positions for a single particle,
-        away from which we will place a new particle a distance
-        of 'bond_length' away.
-        ( np.array( float * unit.angstrom ( length = 3 ) ) )
+        :param parent_coordinates: Positions for a single particle, away from which we will place a new particle a distance of 'bond_length' away.
+        :type parent_coordinates: np.array( float * unit.angstrom ( length = 3 ) )
 
-        bond_length: Bond length for all beads that are bonded,
-        ( float * simtk.unit.distance )
-        default = 1.0 * unit.angstrom
+        :param bond_length: Bond length for all beads that are bonded.
+        :type bond_length: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
 
-        trial_coordinates: Positions for a new trial particle
-        ( np.array( float * unit.angstrom ( length = 3 ) ) )
+        :returns:
+          - trial_coordinates ( np.array( float * unit.angstrom ( length = 3 ) ) ) - The coordinates for a new, trial
+particle.
 
         """
 
-        """ 'dist' tracks the distance between the new trial particle
-        and the parent particle """
-
         units = bond_length.unit
         dist = unit.Quantity(0.0,units)
-
-        """ 'move_direction_list' tracks the Cartesian
-        directions in which we have attempted a particle placement,
-        where: x=0,y=1,z=2. """
 
         move_direction_list = []
 
@@ -260,18 +238,16 @@ def attempt_move(parent_coordinates,bond_length):
 
 def distances(interaction_list,positions):
         """
-        Calculate the distances between a trial particle ('new_coordinates')
-        and all existing particles ('existing_coordinates').
+        Calculate the distances between all non-bonded particles in a model, given a list of particle interactions and particle positions.
 
-        new_coordinates: Positions for a single trial particle
-        ( np.array( float * unit.angstrom ( length = 3 ) ) )
+        :param interaction_list: A list of non-bonded particle interactions
+        :type interaction_list: List( [ int, int ] )
 
-        existing_coordinates: Positions for a single trial particle
-        ( np.array( float * unit.angstrom ( shape = num_particles x 3 ) ) )
+        :param positions: Positions for the particles in a coarse grained model.
+        :type positions: np.array( float * unit.angstrom ( num_particles x 3 ) )
 
-
-        distances: List of the distances between all nonbonded particles.
-        ( list ( float * simtk.unit.distance ( length = # nonbonded_interactions ) ) )
+        :returns:
+           - distance_list ( List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) ) - A list of distances for the non-bonded interactions in the coarse grained model.
 
         """
 
@@ -288,20 +264,20 @@ def distances(interaction_list,positions):
 
 def collisions(positions,distance_list,distance_cutoff):
         """
-        Determine whether there are any collisions between non-bonded
-        particles, where a "collision" is defined as a distance shorter
-        than the user-provided 'bond_length'.
+        Determine if there are any collisions between non-bonded
+        particles, where a "collision" is defined as a distance shorter than 'distance_cutoff'.
 
-        distances: List of the distances between all nonbonded particles.
-        ( list ( float * simtk.unit.distance ( length = # nonbonded_interactions ) ) )
+        :param positions: Positions for the particles in a coarse grained model.
+        :type positions: np.array( float * unit.angstrom ( num_particles x 3 ) )
 
-        bond_length: Bond length for all beads that are bonded,
-        ( float * simtk.unit.distance )
-        default = 1.0 * unit.angstrom
+        :param distance_list: A list of distances.
+        :type distance_list: List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )
 
-        collision: Logical variable stating whether or not the model has
-        bead collisions.
-        default = False
+        :param distance_cutoff: The distance below which particles will be considered to have "collisions".
+        :type distance_cutoff: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
+
+        :returns:
+          - collision (Logical) - A variable indicating whether or not the model contains particle collisions.
 
         """
 
@@ -328,17 +304,27 @@ def collisions(positions,distance_list,distance_cutoff):
 
 def assign_position_lattice_style(cgmodel,positions,distance_cutoff,parent_bead_index,bead_index):
         """
-        Assign random position for a bead
+        Assign random position for a particle
 
-        positions: Positions for all beads in the coarse-grained model.
-        ( np.array( num_beads x 3 ) )
+        :param cgmodel: CGModel() class object.
+        :type cgmodel: class
 
-        bond_length: Bond length for all beads that are bonded,
-        ( float * simtk.unit.distance )
-        default = 1.0 * unit.angstrom
+        :param positions: Positions for the particles in a coarse grained model.
+        :type positions: np.array( float * unit.angstrom ( num_particles x 3 ) )
 
-        positions: Positions for all beads in the coarse-grained model.
-        ( np.array( num_beads x 3 ) )
+        :param distance_cutoff: The distance below which particles will be considered to have "collisions".
+        :type distance_cutoff: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quanti
+ty.Quantity.html>`_
+
+        :param parent_bead_index: The index of the particle from which we will bond a new particle, when assigning positions.
+        :type parent_bead_index: int
+
+        :param bead_index: The index of the particle for which the function will assign positions.
+        :type bead_index: int
+
+        :returns:
+          - test_positions ( np.array( float * unit.angstrom ( num_particles x 3 ) ) ) - A set of positions for the updated model, including the particle that was just added.
+          - success ( Logical ) - Indicates whether or not a particle was placed successfully.
 
         """
         #print("The first line positions are: "+str(positions))
@@ -407,19 +393,30 @@ def assign_position_lattice_style(cgmodel,positions,distance_cutoff,parent_bead_
         #print(test_positions)
         return(test_positions,success)
 
-def assign_position(positions,bond_length,sigma,bead_index,parent_index):
+def assign_position(positions,bond_length,distance_cutoff,parent_index,bead_index):
         """
         Assign random position for a bead
 
-        positions: Positions for all beads in the coarse-grained model.
-        ( np.array( num_beads x 3 ) )
+        :param positions: Positions for the particles in a coarse grained model.
+        :type positions: np.array( float * unit.angstrom ( num_particles x 3 ) )
 
-        bond_length: Bond length for all beads that are bonded,
-        ( float * simtk.unit.distance )
-        default = 1.0 * unit.angstrom
+        :param bond_length: The distance to step when placing new particles.
+        :type bond_length: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
 
-        positions: Positions for all beads in the coarse-grained model.
-        ( np.array( num_beads x 3 ) )
+        :param distance_cutoff: The distance below which particles will be considered to have "collisions".
+        :type distance_cutoff: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quanti
+ty.Quantity.html>`_
+
+        :param parent_bead_index: The index of the particle from which we will bond a new particle, when assigning pos
+itions.
+        :type parent_bead_index: int
+
+        :param bead_index: The index of the particle for which the function will assign positions.
+        :type bead_index: int
+
+        :returns:
+          - positions ( np.array( float * unit.angstrom ( num_particles x 3 ) ) ) - A set of positions for the updated model, including the particle that was just added.
+          - success ( Logical ) - Indicates whether or not a particle was placed successfully.
 
         """
         if bead_index == 1:
@@ -458,11 +455,10 @@ def assign_position(positions,bond_length,sigma,bead_index,parent_index):
 def get_structure_from_library( cgmodel, high_energy=False, low_energy=False ):
         """
         Given a coarse grained model class object, this function retrieves
-        a set of positions for the model from the ensemble library, in:
-        '../foldamers/ensembles/${backbone_length}_${sidechain_length}_${sidechain_positions}'
+        a set of positions for the model from the 'foldamers' ensemble library, in:
+        'foldamers/ensembles/${backbone_length}_${sidechain_length}_${sidechain_positions}'
         If this coarse grained model does not have an ensemble library, an 
-        error message will be returned and we will attempt to assign 
-        positions at random with 'random_positions()'.
+        error message will be returned and positions at random with 'random_positions()'.
 
         cgmodel: CGModel() class object.
 
@@ -472,8 +468,8 @@ def get_structure_from_library( cgmodel, high_energy=False, low_energy=False ):
         :param low_energy: If set to 'True', this function will generate an ensemble of low-energy structures, default = False
         :type low_energy: Logical
 
-        positions: Positions for all beads in the coarse-grained model.
-        ( np.array( num_beads x 3 ) )
+        :returns:
+           - positions ( np.array( float * unit.angstrom ( num_particles x 3 ) ) ) - A set of coarse grained model positions.
 
         """
         ensemble_size = 10
@@ -549,22 +545,10 @@ def get_structure_from_library( cgmodel, high_energy=False, low_energy=False ):
                 pdb_mm_obj = PDBFile(file_name)
                 cgmodel.topology = pdb_mm_obj.getTopology()
                 cgmodel.system = build_system(cgmodel)
-                #print("Minimizing the structure.")
                 simulation_time_step = 5.0 * unit.femtosecond
-               #,tolerance = get_simulation_time_step(cgmodel.topology,cgmodel.system,cgmodel.positions,temperature=300.0 * unit.kelvin,total_simulation_time=0.1 * unit.picosecond,time_step_list=[ 5.0 * unit.femtosecond ])
                 positions_after,energy,simulation = minimize_structure(cgmodel.topology,cgmodel.system,cgmodel.positions,temperature=300.0 * unit.kelvin,simulation_time_step=5.0 * unit.femtosecond,total_simulation_time=0.1 * unit.picosecond,print_frequency=10)
                 cgmodel.positions = positions_after
                 write_pdbfile_without_topology(cgmodel,file_name)
-                #print(positions_after)
-                #cgmodel.positions = positions_after.in_units_of(unit.angstrom)
-#                if all([all(positions_before[i] == positions_after[i]) for i in range(0,len(positions_before))]):
-#                  print("ERROR: these random positions were not suitable for an initial minimization attempt.")
-#                  print("NOTE: this routine will run continuously, unless the user interrupts with the keyboard.")
-#                  print("If we are attempting to build a file with the same name index, repeatedly, then there is probably")
-#                  print("something wrong with our model/parameter settings.")
-#                  continue
-
-                #else:
 
                 if low_energy and any(energy._value < energy_list['energy'][i] for i in range(len(energy_list['energy']))) and len(energy_list['energy']) <= ensemble_size:
                     highest_energy_index = energy_list['energy'].index(max(energy_list['energy']))
@@ -576,8 +560,6 @@ def get_structure_from_library( cgmodel, high_energy=False, low_energy=False ):
 
                 else:
 
-#                    print("Adding a configuration to the ensemble library:")
-#                    print(file_name)
                     if len(energy_list['energy']) <= ensemble_size:
                       for step in range(len(energy_list['energy'])):
                         file_name = str(ensemble_directory+"/cg"+str(step+1)+".pdb")
@@ -602,13 +584,9 @@ def get_structure_from_library( cgmodel, high_energy=False, low_energy=False ):
             pdb_list.append(str(str(ensemble_directory)+"/"+str(file)))
         if len(pdb_list) > 0:
           random_file = pdb_list[random.randint(0,len(pdb_list)-1)]
-        #print("Using the positions found in:")
-        #print(str(random_file)+"\n")
         pdb_mm_obj = PDBFile(random_file)
         positions = pdb_mm_obj.getPositions()
         cgmodel.positions = positions
-        #print(positions)
-        #exit()
         try:
          cgmodel.simulation = simulation
         except:
@@ -623,17 +601,11 @@ def random_positions( cgmodel,max_attempts=1000,use_library=False,high_energy=Fa
 
         cgmodel: CGModel() class object.
 
-        max_attempts: The maximum number of times that we will attempt to build
-        a coarse grained model with the settings in 'cgmodel'.
-        default = 1000
-
-        use_library: A logical variable determining if we will generate a new
-        random structure, or take a random structure from the library in the following path:
-        '../foldamers/ensembles/${backbone_length}_${sidechain_length}_${sidechain_positions}'
-        default = True
-        ( NOTE: By default, if use_library = False, new structures will be added to the
-          ensemble library for the relevant coarse grained model.  If that model does not
-          have an ensemble library, one will be created. )
+        :param max_attempts: The maximum number of attempts to generate random positions a coarse grained model with the current parameters, default = 1000
+        :type max_attempts: int
+       
+        :param use_library: A logical variable determining if a new random structure will be generated, or if an ensemble will be read from the 'foldamers' database, default = False
+        :param use_library: Logical
 
         :param high_energy: If set to 'True', this function will generate an ensemble of high-energy structures, default = False
         :type high_energy: Logical
@@ -641,8 +613,11 @@ def random_positions( cgmodel,max_attempts=1000,use_library=False,high_energy=Fa
         :param low_energy: If set to 'True', this function will generate an ensemble of low-energy structures, default = False
         :type low_energy: Logical
 
-        positions: Positions for all beads in the coarse-grained model.
-        ( np.array( num_beads x 3 ) )
+        :param generate_library: If set to 'True', this function will save the poses that are generated to the 'foldamers' ensemble database.
+        :type generate_libary: False
+
+        :returns:
+           - positions ( np.array( float * unit.angstrom ( num_particles x 3 ) ) ) - A set of coarse grained model positions.
 
         """
 
@@ -745,16 +720,17 @@ def random_positions( cgmodel,max_attempts=1000,use_library=False,high_energy=Fa
 
 def distance(positions_1,positions_2):
         """
-        Construct a matrix of the distances between all particles.
+        Calculate the distance between two particles.
 
-        positions_1: Positions for a particle
-        ( np.array( length = 3 ) )
+        :param positions_1: Positions for a particle
+        :type positions_1: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
 
-        positions_2: Positions for a particle
-        ( np.array( length = 3 ) )
+        :param positions_2: Positions for a particle
+        :type positions_2: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
 
-        distance
-        ( float * unit )
+        :returns:
+           - distance ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The distance between the provided particles.
+
         """
 
         direction_comp = np.zeros(3) * positions_1.unit
@@ -777,13 +753,13 @@ def distance(positions_1,positions_2):
 
 def distance_matrix(positions):
         """
-        Construct a matrix of the distances between all particles.
+        Construct a matrix of the distances between an input array of particles.
 
-        positions: Positions for an array of particles.
-        ( np.array( num_particles x 3 ) )
+        :param positions: Positions for an array of particles.
+        :type positions: np.array( float * unit.angstrom ( num_particles x 3 ) )
 
-        distance_matrix: Matrix containing the distances between all beads.
-        ( np.array( num_particles x 3 ) )
+        :returns:
+         - distance_matrix (np.array(num_particles x num_particles)) - Matrix containing the distances between all beads.
         """
 
         distance_matrix = np.array([[0.0 for index in range(0,len(positions))] for index in range(0,len(positions))])
