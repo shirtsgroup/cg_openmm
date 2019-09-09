@@ -9,7 +9,7 @@ import numpy as np
 import math, random, statistics
 from simtk import unit
 from simtk.openmm.app.pdbfile import PDBFile
-print(sys.path)
+import cg_openmm
 from cg_openmm.build.cg_build import build_system, build_topology
 from cg_openmm.simulation.tools import *
 from foldamers.cg_model.cgmodel import *
@@ -489,7 +489,7 @@ def get_structure_from_library( cgmodel, high_energy=False, low_energy=False ):
         else:
 
           monomer_type = cgmodel.monomer_types[0]
-          ensembles_directory = str(str(__file__.split('src/utilities/util.py')[0])+"ensembles")
+          ensembles_directory = str(str(__file__.split('foldamers/utilities/util.py')[0])+"ensembles")
           if not os.path.exists(ensembles_directory):
             os.mkdir(ensembles_directory)
           model_directory = str(str(ensembles_directory)+"/"+str(cgmodel.polymer_length)+"_"+str(monomer_type['backbone_length'])+"_"+str(monomer_type['sidechain_length'])+"_"+str(monomer_type['sidechain_positions']))

@@ -3,9 +3,9 @@ import numpy as np
 import math, random, statistics
 from simtk import unit
 from simtk.openmm.app.pdbfile import PDBFile
-from cg_openmm.src.simulation.tools import minimize_structure
-from foldamers.src.cg_model.cgmodel import *
-from foldamers.src.utilities.iotools import *
+from cg_openmm.simulation.tools import minimize_structure
+from foldamers.cg_model.cgmodel import *
+from foldamers.utilities.iotools import *
 
 def theta(cgmodel,bond_angle):
         """
