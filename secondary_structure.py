@@ -5,8 +5,8 @@ from statistics import mean
 from scipy.stats import linregress
 from scipy import spatial
 #from spatial.transform import Rotation as R
-from foldamers.src.utilities.util import *
-from foldamers.src.utilities.iotools import write_pdbfile_without_topology
+from foldamers.utilities.util import *
+from foldamers.utilities.iotools import write_pdbfile_without_topology
 
 def fraction_native_contacts(cgmodel,positions,native_structure,cutoff_distance=None):
         """

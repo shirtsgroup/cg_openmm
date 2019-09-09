@@ -7,8 +7,8 @@ import mdtraj as md
 from simtk import unit
 # foldamers utilities
 from statistics import mean
-from foldamers.src.cg_model.cgmodel import basic_cgmodel
-from cg_openmm.src.simulation.tools import *
+from foldamers.cg_model.cgmodel import basic_cgmodel
+from cg_openmm.simulation.tools import *
 from genetic_selection import GeneticSelectionCV
 
 
