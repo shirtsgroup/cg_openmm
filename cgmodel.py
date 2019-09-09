@@ -40,10 +40,10 @@ def basic_cgmodel(polymer_length=12,backbone_length=1,sidechain_length=1,sidecha
         :param positions: Positions for coarse grained particles in the model, default = None
         :type positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit )
 
-        :returns: cgmodel: CGModel() class object
-        :rtype: class
+        :returns: 
+          - cgmodel (class) - CGModel() class object
 
-        ..warning:: this function has significant limitations, in comparison with building a coarse grained model with the CGModel() class.  In particular, this function makes it more difficult to build heteropolymers, and is best-suited for the simulation of homopolymers.
+        ..warning :: this function has significant limitations, in comparison with building a coarse grained model with the CGModel() class.  In particular, this function makes it more difficult to build heteropolymers, and is best-suited for the simulation of homopolymers.
 
         :Example:
 
@@ -329,8 +329,12 @@ for all bond types, default = 200 * kJ/mol/rad^2
           :param CGModel: CGModel() class object
           :type CGModel: class
 
-          :returns: monomer_types: A list of unique monomer types in the coarse grained model
-          :rtype: monomer_types: List( dict( 'monomer_name': str, 'backbone_length': int, 'sidechain_length': int, 'sidechain_positions': List( int ), 'num_beads': int, 'bond_lengths': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ), 'epsilons': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ), 'sigmas': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) ) )
+          :returns: 
+             - monomer_types ( List( dict( 'monomer_name': str, 'backbone_length': int, 'sidechain_length': int, 'si
+dechain_positions': List( int ), 'num_beads': int, 'bond_lengths': List( `Quantity() <https://docs.openmm.org/developm
+ent/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ), 'epsilons': List( `Quantity() <https://docs.openmm.or
+g/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ), 'sigmas': List( `Quantity() <https://docs.o
+penmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) ) ) ) - A list of unique monomer types in the coarse grained model
 
           """
           monomer_name_modifier = ['A','B','C','D','E','F','G','H']
@@ -357,8 +361,8 @@ for all bond types, default = 200 * kJ/mol/rad^2
           :param CGModel: CGModel() class object
           :type CGModel: class
 
-          :returns: num_beads: The total number of beads in the coarse grained model
-          :rtype: num_beads: int
+          :returns: 
+            - num_beads (int) - The total number of beads in the coarse grained model
 
           """
           num_beads = 0
@@ -373,8 +377,8 @@ for all bond types, default = 200 * kJ/mol/rad^2
           :param CGModel: CGModel() class object
           :type CGModel: class
 
-          :returns: particle_list: A list of unique particles in the coarse grained model
-          :rtype: particle_list: List( str )
+          :returns: 
+            - particle_list ( List( str ) ) - A list of unique particles in the coarse grained model
 
           """
           particle_list = []
@@ -403,8 +407,8 @@ for all bond types, default = 200 * kJ/mol/rad^2
           :param CGModel: CGModel() class object
           :type CGModel: class
 
-          :returns: bond_list: A list of the bonds in the coarse grained model.
-          :rtype: bond_list: List( List( int, int ) )
+          :returns: 
+             - bond_list ( List( List( int, int ) ) ) - A list of the bonds in the coarse grained model.
 
           """
           bond_list = []
@@ -440,8 +444,8 @@ for all bond types, default = 200 * kJ/mol/rad^2
           :param CGModel: CGModel() class object
           :type CGModel: class
 
-          :returns: interaction_list: A list of the nonbonded interactions (which don't violate exclusion rules) in the coarse grained model
-          :rtype: interaction_list: List( List( int, int ) )
+          :returns: 
+             - interaction_list ( List( List( int, int ) ) ) - A list of the nonbonded interactions (which don't violate exclusion rules) in the coarse grained model
 
           """
 
@@ -471,8 +475,8 @@ for all bond types, default = 200 * kJ/mol/rad^2
           :param CGModel: CGModel() class object
           :type CGModel: class
 
-          :returns: exclusion_list: A list of the nonbonded particle interaction exclusions for the coarse grained model
-          :rtype: List( List( int, int ) )
+          :returns: 
+             - exclusion_list ( List( List( int, int ) ) ) - A list of the nonbonded particle interaction exclusions for the coarse grained model
 
           """
           bond_list = self.bond_list
@@ -495,8 +499,8 @@ for all bond types, default = 200 * kJ/mol/rad^2
           :param CGModel: CGModel() class object
           :type CGModel: class
 
-          :returns: A list of indices for all of the bond angles in the coarse grained model
-          :rtype: List( List( int, int, int ) )
+          :returns: 
+             - bond_angles ( List( List( int, int, int ) ) ) - A list of indices for all of the bond angles in the coarse grained model
 
           """
 
@@ -539,8 +543,8 @@ for all bond types, default = 200 * kJ/mol/rad^2
           :param CGModel: CGModel() class object
           :type CGModel: class
 
-          :returns: torsions: A list of the particle indices for the torsions in the coarse grained model
-          :rtype: torsions: List( List( int, int, int, int ) )
+          :returns: 
+            - torsions ( List( List( int, int, int, int ) ) ) - A list of the particle indices for the torsions in the coarse grained model
 
           """
 
@@ -639,8 +643,8 @@ for all bond types, default = 200 * kJ/mol/rad^2
           :param particle_index: Index of the particle for which we would like to determine the type
           :type particle_index: int
 
-          :returns: particle_name: The name of the particle
-          :rtype: particle_name: str
+          :returns: 
+            - particle_name ( str ) - The name of the particle
 
           """
           particle_name = self.particle_list[particle_index]
@@ -659,8 +663,8 @@ for all bond types, default = 200 * kJ/mol/rad^2
           :param particle_name: Name of the particle that we would like to "type".
           :type particle_name: str
 
-          :returns: particle_type: 'backbone' or 'sidechain'
-          :rtype: particle_type: str
+          :returns: 
+             - particle_type (str) - 'backbone' or 'sidechain'
 
           """
           if particle_name == None: particle_name = self.particle_list[particle_index]
@@ -679,8 +683,9 @@ for all bond types, default = 200 * kJ/mol/rad^2
           :param particle_index: Index of the particle for which we would like to determine the type
           :type particle_index: int
 
-          :returns: particle_mass: The mass for the provided particle index
-          :rtype: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
+          :returns: 
+            - particle_mass ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.h
+tml>`_ ) - The mass for the provided particle index
 
           """
           particle_type = self.get_particle_type(particle_index)
@@ -698,8 +703,9 @@ for all bond types, default = 200 * kJ/mol/rad^2
           :param particle_index: Index of the particle for which we would like to determine the type
           :type particle_index: int
 
-          :returns: particle_charge: The charge for the provided particle index
-          :rtype: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
+          :returns: 
+            - particle_charge ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.h
+tml>`_ ) - The charge for the provided particle index
 
           """
           particle_type = self.get_particle_type(particle_index)
@@ -720,8 +726,8 @@ for all bond types, default = 200 * kJ/mol/rad^2
           :param particle_type: Designates a particle as "backbone" or "sidechain"
           :type particle_type: str
 
-          :returns: sigma: The assigned Lennard-Jones sigma value for the provided particle index
-          :rtype: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
+          :returns: 
+            - sigma ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The assigned Lennard-Jones sigma value for the provided particle index
 
           """
 
@@ -743,8 +749,9 @@ for all bond types, default = 200 * kJ/mol/rad^2
           :param particle_type: Designates a particle as "backbone" or "sidechain"
           :type particle_type: str
 
-          :returns: epsilon: The assigned Lennard-Jones epsilon value for the provided particle index
-          :rtype: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
+          :returns: 
+             - epsilon ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.h
+tml>`_ ) - The assigned Lennard-Jones epsilon value for the provided particle index
 
 
           """
@@ -760,8 +767,8 @@ for all bond types, default = 200 * kJ/mol/rad^2
           :param CGModel: CGModel() class object
           :type CGModel: class
 
-          :returns: list_of_masses: List of unique particle masses
-          :rtype: List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )
+          :returns: 
+            - list_of_masses ( List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) ) - List of unique particle masses
 
           """
           list_of_masses = []
@@ -782,8 +789,9 @@ for all bond types, default = 200 * kJ/mol/rad^2
           :param particle_2_name: Name for the second particle
           :type particle_2_name: str
 
-          :returns: bond_length: The assigned bond length for the provided particles
-          :rtype: bond_length: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
+          :returns: 
+             - bond_length ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quanti
+ty.Quantity.html>`_ ) - The assigned bond length for the provided particles
 
           """
           if 'B' in particle_1_name: particle_1_type = 'backbone'
@@ -812,8 +820,9 @@ for all bond types, default = 200 * kJ/mol/rad^2
           :param particle_2_index: Index for the second particle
           :type particle_2_index: int
 
-          :returns: bond_length: The assigned bond length for the provided particles
-          :rtype: bond_length: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
+          :returns: 
+             - bond_length ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quanti
+ty.Quantity.html>`_ ) - The assigned bond length for the provided particles
 
           """
           if 'B' in self.particle_list[particle_1_index]: particle_1_type = 'backbone'
@@ -846,9 +855,8 @@ for all bond types, default = 200 * kJ/mol/rad^2
           :param particle_2_index: Index for the second particle
           :type particle_2_index: int
 
-          :returns: bond_force_constant: The assigned bond force constant for the provided particles
-          :rtype: bond_length: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
-
+          :returns: 
+             - bond_force_constant ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The assigned bond force constant for the provided particles
 
           """
           if 'B' in self.particle_list[particle_1_index]: particle_1_type = 'backbone'
@@ -884,8 +892,8 @@ for all bond types, default = 200 * kJ/mol/rad^2
           :param particle_3_index: Index for the third particle
           :type particle_3_index: int
 
-          :returns: equil_bond_angle: The assigned equilibrium bond angle for the provided particles
-          :rtype: equil_bond_angle: float
+          :returns: 
+            - equil_bond_angle (float) - The assigned equilibrium bond angle for the provided particles
 
           """
           particle_1_type = self.get_particle_type(particle_1_index)
@@ -924,8 +932,9 @@ for all bond types, default = 200 * kJ/mol/rad^2
           :param particle_3_index: Index for the third particle
           :type particle_3_index: int
 
-          :returns: bond_angle_force_constant: The assigned bond angle force constant for the provided particles
-          :rtype: bond_angle_force_constant: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
+          :returns: 
+             - bond_angle_force_constant ( `Quantity() <https://docs.openmm.org/development/api-python/generated/sim
+tk.unit.quantity.Quantity.html>`_ ) - The assigned bond angle force constant for the provided particles
 
 
           """
@@ -959,8 +968,9 @@ for all bond types, default = 200 * kJ/mol/rad^2
           :param torsion: A list of the indices for the particles in a torsion
           :type torsion: List( int )
 
-          :returns: torsion_force_constant: The assigned torsion force constant for the provided particles
-          :rtype: torsion_force_constant: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
+          :returns: 
+             - torsion_force_constant ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.
+unit.quantity.Quantity.html>`_ ) - The assigned torsion force constant for the provided particles
 
           """
           particle_types = ['','','','']
@@ -1034,8 +1044,8 @@ for all bond types, default = 200 * kJ/mol/rad^2
           :param torsion: A list of the indices for the particles in a torsion
           :type torsion: List( int )
 
-          :returns: equil_torsion_angle: The assigned equilibrium torsion angle for the provided particles
-          :rtype: equil_torsion_angle: float
+          :returns: 
+             - equil_torsion_angle (float) - The assigned equilibrium torsion angle for the provided particles
 
           """
           particle_types = ['','','','']
