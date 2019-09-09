@@ -3,12 +3,12 @@ import os, statistics, random
 from simtk import unit
 from simtk.openmm.app.pdbfile import PDBFile
 #import mdtraj, msmbuilder
-from foldamers.src.cg_model.cgmodel import basic_cgmodel
-from cg_openmm.src.build.cg_build import build_topology, build_system
-from cg_openmm.src.simulation.tools import get_mm_energy, build_mm_simulation
-from foldamers.src.utilities.iotools import write_pdbfile_without_topology
-from foldamers.src.utilities.util import random_positions
-from foldamers.src.parameters.secondary_structure import fraction_native_contacts
+from foldamers.cg_model.cgmodel import basic_cgmodel
+from cg_openmm.build.cg_build import build_topology, build_system
+from cg_openmm.simulation.tools import get_mm_energy, build_mm_simulation
+from foldamers.utilities.iotools import write_pdbfile_without_topology
+from foldamers.utilities.util import random_positions
+from foldamers.parameters.secondary_structure import fraction_native_contacts
 
 def get_ensemble(cgmodel,ensemble_size=100,high_energy=False,low_energy=False):
         """
@@ -83,7 +83,7 @@ def write_ensemble_pdb(cgmodel,ensemble_directory=None):
         :param ensemble_directory: Path to a folder containing PDB files, default = None
         :type ensemble_directory: str
 
-        ..warning:: If no 'ensemble_directory' is provided, the  
+        .. warning:: If no 'ensemble_directory' is provided, the  
         
         """
         if ensemble_directory == None:
@@ -114,7 +114,7 @@ def get_ensemble_directory(cgmodel,ensemble_type=None):
 
         """
         monomer_type = cgmodel.monomer_types[0]
-        ensembles_directory = str(str(__file__.split('src/ensembles/ens_build.py')[0])+"ensembles")
+        ensembles_directory = str(str(__file__.split('foldamers/ensembles/ens_build.py')[0])+"ensembles")
         if not os.path.exists(ensembles_directory):
             os.mkdir(ensembles_directory)
         model_directory = str(str(ensembles_directory)+"/"+str(cgmodel.polymer_length)+"_"+str(monomer_type['backbone_length'])+"_"+str(monomer_type['sidechain_length'])+"_"+str(monomer_type['sidechain_positions']))
@@ -147,7 +147,7 @@ def get_ensemble_data(cgmodel,ensemble_directory):
 
            - ensemble_energies ( List(`Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )) - A list of the energies that were stored in the PDB files for the ensemble, if any.
 
-        ..warning:: When energies are written to a PDB file, only the sigma and epsilon values for the model are written to the file with the positions.  Unless the user is confident about the model parameters that were used to generate the energies in the PDB files, it is probably best to re-calculate their energies.  This can be done with the 'cg_openmm' package.  More specifically, one can compute an updated energy for individual ensemble members, with the current coarse grained model parameters, with 'get_mm_energy', a function in 'cg_openmm/cg_openmm/simulation/tools.py'.
+        .. warning:: When energies are written to a PDB file, only the sigma and epsilon values for the model are written to the file with the positions.  Unless the user is confident about the model parameters that were used to generate the energies in the PDB files, it is probably best to re-calculate their energies.  This can be done with the 'cg_openmm' package.  More specifically, one can compute an updated energy for individual ensemble members, with the current coarse grained model parameters, with 'get_mm_energy', a function in 'cg_openmm/cg_openmm/simulation/tools.py'.
 
         """
         ensemble_energies = []
