@@ -1,5 +1,5 @@
 import numpy as np
-from foldamers.src.parameters.reweight import *
+from foldamers.parameters.reweight import *
 import matplotlib.pyplot as pyplot
 
 kB = 0.008314462  #Boltzmann constant (Gas constant) in kJ/(mol*K)
