@@ -5,13 +5,13 @@ import matplotlib.pyplot as pyplot
 from statistics import mean
 from simtk import unit
 from simtk.openmm.app.pdbfile import PDBFile
-from foldamers.src.cg_model.cgmodel import CGModel
-from foldamers.src.parameters.reweight import *
-from foldamers.src.parameters.secondary_structure import *
-from foldamers.src.thermo.calc import *
-from foldamers.src.utilities.util import random_positions
-from cg_openmm.src.build.cg_build import build_topology
-from cg_openmm.src.simulation.rep_exch import *
+from foldamers.cg_model.cgmodel import CGModel
+from foldamers.parameters.reweight import *
+from foldamers.parameters.secondary_structure import *
+from foldamers.thermo.calc import *
+from foldamers.utilities.util import random_positions
+from cg_openmm.build.cg_build import build_topology
+from cg_openmm.simulation.rep_exch import *
 
 native_structure_file = str(str(os.getcwd().split('examples/native_contacts')[0])+"ensembles/12_1_1_0/helix.pdb")
 

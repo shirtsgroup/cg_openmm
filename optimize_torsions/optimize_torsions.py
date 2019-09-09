@@ -3,10 +3,10 @@ import numpy as np
 import matplotlib.pyplot as pyplot
 from simtk import unit
 from simtk.openmm.app.pdbfile import PDBFile
-from foldamers.src.cg_model.cgmodel import CGModel
-from foldamers.src.parameters.reweight import get_mbar_expectation, get_free_energy_differences, get_temperature_list
-from foldamers.src.ensembles.ens_build import *
-from cg_openmm.src.simulation.rep_exch import *
+from foldamers.cg_model.cgmodel import CGModel
+from foldamers.parameters.reweight import get_mbar_expectation, get_free_energy_differences, get_temperature_list
+from foldamers.ensembles.ens_build import *
+from cg_openmm.simulation.rep_exch import *
 
 # Job settings
 top_directory = 'output'

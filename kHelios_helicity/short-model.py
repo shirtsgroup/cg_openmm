@@ -3,13 +3,13 @@ import numpy as np
 import matplotlib.pyplot as pyplot
 from simtk import unit
 from simtk.openmm.app.pdbfile import PDBFile
-from foldamers.src.cg_model.cgmodel import CGModel
-from foldamers.src.parameters.reweight import get_mbar_expectation, get_free_energy_differences,get_temperature_list
-from foldamers.src.parameters.secondary_structure import get_helical_parameters
-from foldamers.src.thermo.calc import calculate_heat_capacity
-from foldamers.src.utilities.iotools import write_pdbfile_without_topology
-from cg_openmm.src.build.cg_build import build_topology
-from cg_openmm.src.simulation.rep_exch import *
+from foldamers.cg_model.cgmodel import CGModel
+from foldamers.parameters.reweight import get_mbar_expectation, get_free_energy_differences,get_temperature_list
+from foldamers.parameters.secondary_structure import get_helical_parameters
+from foldamers.thermo.calc import calculate_heat_capacity
+from foldamers.utilities.iotools import write_pdbfile_without_topology
+from cg_openmm.build.cg_build import build_topology
+from cg_openmm.simulation.rep_exch import *
 
 # Job settings
 top_directory = 'output'

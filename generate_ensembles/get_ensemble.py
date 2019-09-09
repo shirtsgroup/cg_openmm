@@ -2,13 +2,13 @@ import os
 import numpy as np
 import matplotlib.pyplot as pyplot
 from simtk import unit
-from foldamers.src.cg_model.cgmodel import CGModel
-from foldamers.src.parameters.reweight import *
-from foldamers.src.thermo.calc import calculate_heat_capacity
-from foldamers.src.utilities.util import random_positions
-from cg_openmm.src.build.cg_build import build_topology
-from cg_openmm.src.simulation.rep_exch import *
-from foldamers.src.ensembles.ens_build import *
+from foldamers.cg_model.cgmodel import CGModel
+from foldamers.parameters.reweight import *
+from foldamers.thermo.calc import calculate_heat_capacity
+from foldamers.utilities.util import random_positions
+from cg_openmm.build.cg_build import build_topology
+from cg_openmm.simulation.rep_exch import *
+from foldamers.ensembles.ens_build import *
 
 grid_size = 1
 
