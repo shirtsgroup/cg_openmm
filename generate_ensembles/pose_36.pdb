@@ -1,0 +1,52 @@
+## The OpenMM potential energy for this structure is: 18.111348614199063 kJ/mol
+## with the following parameter settings:
+## sigma = 18.75 A, epsilon = 0.05 kcal/mol
+ATOM      1 X1    MT A   1        6.29   -8.85   -1.17  1.00  0.00
+ATOM      2 A2    MT A   1        0.95   -13.6    1.11  1.00  0.00
+ATOM      3 X1     M A   2        10.9   -2.94   -1.31  1.00  0.00
+ATOM      4 A2     M A   2       16.38   -7.94   -2.46  1.00  0.00
+ATOM      5 X1     M A   3       11.44    3.49    2.51  1.00  0.00
+ATOM      6 A2     M A   3       16.57    8.37    0.02  1.00  0.00
+ATOM      7 X1     M A   4        6.68    6.78    7.28  1.00  0.00
+ATOM      8 A2     M A   4        8.11    3.81   14.01  1.00  0.00
+ATOM      9 X1     M A   5        0.16   10.48    7.05  1.00  0.00
+ATOM     10 A2     M A   5        2.56   17.41     5.5  1.00  0.00
+ATOM     11 X1     M A   6       -7.09    8.71    7.81  1.00  0.00
+ATOM     12 A2     M A   6      -12.98   13.23     8.9  1.00  0.00
+ATOM     13 X1     M A   7      -10.17    2.12    5.98  1.00  0.00
+ATOM     14 A2     M A   7       -9.77   -2.67   11.74  1.00  0.00
+ATOM     15 X1     M A   8      -12.25   -0.49   -0.74  1.00  0.00
+ATOM     16 A2     M A   8      -19.71   -1.21   -0.97  1.00  0.00
+ATOM     17 X1     M A   9       -9.33   -0.15   -7.64  1.00  0.00
+ATOM     18 A2     M A   9       -8.64   -6.37  -11.78  1.00  0.00
+ATOM     19 X1     M A  10       -6.53    5.25  -12.03  1.00  0.00
+ATOM     20 A2     M A  10       -0.27    8.72   -9.77  1.00  0.00
+ATOM     21 X1     M A  11       -7.98    9.42  -18.09  1.00  0.00
+ATOM     22 A2     M A  11       -5.68    9.96  -25.21  1.00  0.00
+ATOM     23 X1    MT A  12       -15.2   10.88  -19.54  1.00  0.00
+ATOM     24 A2    MT A  12      -21.95    8.08   -21.2  1.00  0.00
+TER
+CONECT    1    2
+CONECT    1    3
+CONECT    3    4
+CONECT    3    5
+CONECT    5    6
+CONECT    5    7
+CONECT    7    8
+CONECT    7    9
+CONECT    9   10
+CONECT    9   11
+CONECT   11   12
+CONECT   11   13
+CONECT   13   14
+CONECT   13   15
+CONECT   15   16
+CONECT   15   17
+CONECT   17   18
+CONECT   17   19
+CONECT   19   20
+CONECT   19   21
+CONECT   21   22
+CONECT   21   23
+CONECT   23   24
+END
