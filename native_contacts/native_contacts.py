@@ -24,7 +24,7 @@ if not os.path.exists(top_directory):
 
 # OpenMM simulation settings
 print_frequency = 20 # Number of steps to skip when printing output
-total_simulation_time = 5.0 * unit.nanosecond # Units = picoseconds
+total_simulation_time = 0.2 * unit.nanosecond # Units = picoseconds
 simulation_time_step = 5.0 * unit.femtosecond
 total_steps = round(total_simulation_time.__div__(simulation_time_step))
 
@@ -99,7 +99,7 @@ x = np.array([float(T) for T in T_list])
 y = np.array([float(Q) for Q in Q_list])
 z = np.array([float(F) for F in F_list])
 
-n_bins = 20
+n_bins = 100
 max_Q = 1.0
 min_Q = y[np.argmin(y)]
 min_T = x[np.argmin(x)]
