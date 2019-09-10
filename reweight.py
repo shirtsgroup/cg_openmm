@@ -9,9 +9,14 @@ import pymbar
 
 def get_decorrelated_samples(replica_positions,replica_energies,temperature_list):
         """
+        Given a set of replica exchange trajectories, energies, and associated temperatures, this function returns decorrelated samples, as obtained from pymbar.
+
+        
+
         """
         configurations = []
         energies = []
+        temperatures = []
         K = len(temperature_list)
         g = np.zeros(K,np.float64)
         for k in range(K):  # subsample the energies

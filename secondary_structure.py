@@ -10,6 +10,8 @@ from foldamers.utilities.iotools import write_pdbfile_without_topology
 
 def fraction_native_contacts(cgmodel,positions,native_structure,cutoff_distance=None):
         """
+        
+
         """
         cutoff_distance = 1.1 * cgmodel.get_sigma(0)
 
