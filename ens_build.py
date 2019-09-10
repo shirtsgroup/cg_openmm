@@ -2,9 +2,7 @@ import numpy as np
 import os, statistics, random
 from simtk import unit
 from simtk.openmm.app.pdbfile import PDBFile
-#import mdtraj, msmbuilder
 from foldamers.cg_model.cgmodel import basic_cgmodel
-from cg_openmm.build.cg_build import build_topology, build_system
 from cg_openmm.simulation.tools import get_mm_energy, build_mm_simulation
 from foldamers.utilities.iotools import write_pdbfile_without_topology
 from foldamers.utilities.util import random_positions
