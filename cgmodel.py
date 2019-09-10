@@ -1,13 +1,12 @@
 from simtk import unit
 import sys, os
 from collections import Counter
-from foldamers.utilities import util
 from simtk import openmm as mm
 from simtk.openmm.app.pdbfile import PDBFile
 from simtk.openmm.app.topology import Topology
 from simtk.openmm.app.topology import Residue
 import simtk.openmm.app.element as elem
-from cg_openmm.build.cg_build import add_new_elements, build_topology, build_system
+from cg_openmm.build.cg_build import *
 from itertools import chain, combinations, product
 
 def basic_cgmodel(polymer_length=12,backbone_length=1,sidechain_length=1,sidechain_positions=[0],mass=100.0 * unit.amu,bond_length=0.75 * unit.nanometer,sigma=1.85*unit.nanometer,epsilon=0.5 * unit.kilocalorie_per_mole,positions=None):
