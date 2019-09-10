@@ -1,5 +1,7 @@
 import os
 from simtk import unit
+import foldamers
+import cg_openmm
 from foldamers.cg_model.cgmodel import CGModel
 from cg_openmm.simulation.tools import run_simulation
 
