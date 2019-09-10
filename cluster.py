@@ -4,11 +4,20 @@ import mdtraj as md
 from simtk.openmm.app.pdbfile import PDBFile
 from foldamers.utilities.iotools import write_pdbfile_without_topology
 
-def concatenate_trajectories(pdb_file_list,combined_pdb_file=None):
+def concatenate_trajectories(pdb_file_list,combined_pdb_file="combined.pdb"):
         """
+        Given a list of PDB files, this function reads their coordinates, concatenates them, and saves the combined coordinates to a new file (useful for clustering with MSMBuilder).
+
+        :param pdb_file_list: A list of PDB files to read and concatenate
+        :type pdb_file_list: List( str )
+
+        :param combined_pdb_file: The name of file/path in which to save a combined version of the PDB files, default = "combined.pdb"
+        :type combined_pdb_file: str
+
+        :returns:
+          - combined_pdb_file ( str ) - The name/path for a file within which the concatenated coordinates will be written.
+
         """
-        if combined_pdb_file == None:
-          combined_pdb_file = "combined.pdb"
         file = open(combined_pdb_file,mode="w")
         for pdb_file in pdb_file_list:
           pdb_obj = PDBFile(pdb_file)
@@ -27,6 +36,20 @@ def concatenate_trajectories(pdb_file_list,combined_pdb_file=None):
 
 def get_cluster_centroid_positions(pdb_file,cgmodel,n_clusters=None):
         """
+        Given a PDB file and coarse grained model as input, this function performs K-means clustering on the poses in the PDB file, and returns a list of the coordinates for the "centroid" pose of each cluster.
+
+        :param pdb_file: The path/name of a file from which to read trajectory data
+        :type pdb_file: str
+
+        :param cgmodel: A CGModel() class object
+        :type cgmodel: class
+
+        :param n_clusters: The number of "bins" within which to cluster the poses from the input trajectory.
+        :type n_clusters: int
+
+        :returns:
+          - centroid_positions ( List ( np.array( float * unit.angstrom ( num_particles x 3 ) ) ) ) - A list of the poses corresponding to the centroids of all trajectory clusters.
+
         """
         centroid_positions = []
         traj = md.load(pdb_file)
@@ -48,6 +71,17 @@ def get_cluster_centroid_positions(pdb_file,cgmodel,n_clusters=None):
 
 def align_structures(reference_traj,target_traj):
         """
+        Given a reference trajectory, this function performs a structural alignment for a second input trajectory, with respect to the reference.
+
+        :param reference_traj: The trajectory to use as a reference for alignment.
+        :type reference_traj: `MDTraj() trajectory <http://mdtraj.org/1.6.2/api/generated/mdtraj.Trajectory.html>`_
+
+        :param target_traj: The trajectory to align with the reference.
+        :type target_traj: `MDTraj() trajectory <http://mdtraj.org/1.6.2/api/generated/mdtraj.Trajectory.html>`_
+
+        :returns:
+          - aligned_target_traj ( `MDTraj() trajectory <http://mdtraj.org/1.6.2/api/generated/mdtraj.Trajectory.html>`_ ) - The coordinates for the aligned trajectory.
+
         """
 
         aligned_target_traj = target_traj.superpose(reference_traj)

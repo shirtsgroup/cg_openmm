@@ -223,8 +223,33 @@ def improve_ensemble(energy,positions,ensemble,ensemble_energies,unchanged_itera
           unchanged_iterations = unchanged_iterations + 1
         return(ensemble,ensemble_energies,unchanged_iterations)
 
-def get_nonnative_ensemble(cgmodel,native_structure,ensemble_size=100,native_fraction_cutoff=0.75,rmsd_cutoff=10.0,ensemble_build_method="native_contacts"):
+def get_nonnative_ensemble(cgmodel,native_structure,ensemble_size=100,native_fraction_cutoff=0.75,rmsd_cutoff=10.0,ensemble_build_method="mbar"):
         """
+        Given a native structure as input, this function builds a "nonnative" ensemble of structures.
+
+        :param cgmodel: CGModel() class object
+        :type cgmodel: class
+
+        :param native_structure: The positions for the model's native structure
+        :type native_structure: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit )
+
+        :param ensemble_size: The number of poses to generate for the nonnative ensemble, default = 100
+        :type ensemble_size: int
+
+        :param native_fraction_cutoff: The fraction of native contacts below which a pose will be considered "nonnative", default = 0.75
+        :type native_fraction_cutoff: float
+
+        :param rmsd_cutoff: The distance beyond which non-bonded interactions will be ignored, default = 10.0 x bond_length
+        :type rmsd_cutoff: float
+
+        :param ensemble_build_method: The method that will be used to generate a nonnative ensemble.  Valid options include "mbar" and "native_contacts".  If the "mbar" approach is chosen, decorrelated replica exchange simulation data is used to generate the nonnative ensemble.  If the "native_contacts" approach is chosen, individual NVT simulations are used to generate the nonnative ensemble, default = "mbar"
+        :type ensemble_build_method: str
+
+        :returns:
+           - ensemble (List(positions(np.array(float*simtk.unit (shape = num_beads x 3))))) - A list of the positions for all members in the ensemble.
+
+           - ensemble_energies ( List(`Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )) - A list of the energies that were stored in the PDB files for the ensemble, if any.
+
         """
         library_ensemble = []
         print("Building/retrieving nonnative ensemble.")
@@ -286,8 +311,34 @@ def get_nonnative_ensemble(cgmodel,native_structure,ensemble_size=100,native_fra
 
         return(ensemble,ensemble_energies)
 
-def get_native_ensemble(cgmodel,native_structure,ensemble_size=10,native_fraction_cutoff=0.9,rmsd_cutoff=10.0,ensemble_build_method="native_contacts"):
+def get_native_ensemble(cgmodel,native_structure,ensemble_size=10,native_fraction_cutoff=0.9,rmsd_cutoff=10.0,ensemble_build_method="mbar"):
         """
+        Given a native structure as input, this function builds a "native" ensemble of structures.
+
+        :param cgmodel: CGModel() class object
+        :type cgmodel: class
+
+        :param native_structure: The positions for the model's native structure
+        :type native_structure: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit )
+
+        :param ensemble_size: The number of poses to generate for the nonnative ensemble, default = 10
+        :type ensemble_size: int
+
+        :param native_fraction_cutoff: The fraction of native contacts above which a pose will be considered "native", default = 0.9
+        :type native_fraction_cutoff: float
+
+        :param rmsd_cutoff: The distance beyond which non-bonded interactions will be ignored, default = 10.0 x bond_length
+        :type rmsd_cutoff: float
+
+        :param ensemble_build_method: The method that will be used to generate a nonnative ensemble.  Valid options include "mbar" and "native_contacts".  If the "mbar" approach is chosen, decorrelated replica exchange simulation data is used to generate the nonnative ensemble.  If the "native_contacts" approach is chosen, individual NVT simulations are used to generate the nonnative ensemble, default = "mbar"
+        :type ensemble_build_method: str
+
+        :returns:
+           - ensemble (List(positions(np.array(float*simtk.unit (shape = num_beads x 3))))) - A list of the positions for all members in the ensemble.
+
+           - ensemble_energies ( List(`Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )) - A list of the energies that were stored in the PDB files for the ensemble, if any.
+
+
         """
         print("Building/retrieving native ensemble.")
         ensemble_directory = get_ensemble_directory(cgmodel,ensemble_type="native")
@@ -366,6 +417,26 @@ def get_native_ensemble(cgmodel,native_structure,ensemble_size=10,native_fractio
 
 def get_ensembles(cgmodel,native_structure,ensemble_size=None):
         """
+        Given a native structure as input, this function builds both native and nonnative ensembles.
+
+        :param cgmodel: CGModel() class object
+        :type cgmodel: class
+
+        :param native_structure: The positions for the model's native structure
+        :type native_structure: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit )
+
+        :param ensemble_size: The number of poses to generate for the nonnative ensemble, default = None
+        :type ensemble_size: int
+
+        :returns:
+           - nonnative_ensemble (List(positions(np.array(float*simtk.unit (shape = num_beads x 3))))) - A list of the positions for all members in the nonnative ensemble
+
+           - nonnative_ensemble_energies ( List(`Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )) - A list of the energies for all members of the nonnative ensemble
+
+           - native_ensemble (List(positions(np.array(float*simtk.unit (shape = num_beads x 3))))) - A list of the positions for all members in the native ensemble
+
+           - native_ensemble_energies ( List(`Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )) - A list of the energies for the native ensemble
+
         """
         if ensemble_size == None:
           nonnative_ensemble,nonnative_ensemble_energies = get_nonnative_ensemble(cgmodel,native_structure)
@@ -375,18 +446,18 @@ def get_ensembles(cgmodel,native_structure,ensemble_size=None):
           native_ensemble,native_ensemble_energies = get_native_ensemble(cgmodel,native_structure,ensemble_size=round(ensemble_size/10))
         return(nonnative_ensemble,nonnative_ensemble_energies,native_ensemble,native_ensemble_energies)
 
-def z_score(topology,system,nonnative_ensemble_energies,native_ensemble_energies):
+def z_score(nonnative_ensemble_energies,native_ensemble_energies):
         """
-        Given an ensemble of nonnative structures, and a low-energy ("native") structure, this subroutine will calculate the Z-score.
+        Given a set of nonnative and native ensemble energies, this function computes the Z-score (for a set of model parameters).
 
-        Parameters
-        ----------
+        :param nonnative_ensemble_energies: A list of the energies for all members of the nonnative ensemble
+        :type nonnative_ensemble_energies: List( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )
 
-        nonnative_ensemble: List( positions( np.array( float * simtk.unit ( shape = num_beads x 3 ) ) )
-                  A list of the positions for all members in the high_energy ensemble.
+        :param native_ensemble_energies: A list of the energies for the native ensemble 
+        :type native_ensemble_energies: List( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )
 
-        native_structure: positions( np.array( float * simtk.unit ( shape = num_beads x 3 ) )
-                          The positions for a low energy structure.
+        :returns:
+          - z_score ( float ) - The Z-score for the input ensembles.
 
         """
 
@@ -399,11 +470,6 @@ def z_score(topology,system,nonnative_ensemble_energies,native_ensemble_energies
 
         native_energy = statistics.mean(native_ensemble_energies)
 
-        print(native_ensemble_energies)
-        print(nonnative_ensemble_energies)
-        print(average_nonnative_energy)
-        print(stdev_nonnative_energy)
         z_score = ( average_nonnative_energy - native_energy ) / stdev_nonnative_energy
-        print(z_score)
 
         return(z_score)
