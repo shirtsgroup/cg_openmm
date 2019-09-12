@@ -57,8 +57,7 @@ def get_move(trial_coordinates,move_direction,distance,bond_length,finish_bond=F
         :param trial_coordinates: Positions for a particle
         :type trial_coordinates: np.array( float * unit.angstrom ( length = 3 ) )
 
-        :param move_direction: Cartesian direction in which we will
-        attempt a particle placement, where: x=0, y=1, z=2. 
+        :param move_direction: Cartesian direction in which we will attempt a particle placement, where: x=0, y=1, z=2. 
         :type move_direction: int
 
         :param distance: Current distance between the trial coordinates for the particle this function is positioning and the particle that it is branched from (bonded to).
@@ -121,8 +120,7 @@ def attempt_lattice_move(parent_coordinates,bond_length,move_direction_list):
         :type parent_coordinates: np.array( float * unit.angstrom ( length = 3 ) )
 
         :param bond_length: Bond length for all beads that are bonded.
-        :type bond_length: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Q
-uantity.html>`_
+        :type bond_length: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
 
         :param move_direction_list: A list of cartesian directions (denoted by integers) that tracks the directions in which a particle placement has been attempted.
         :type move_direction_list: List( int )
@@ -312,8 +310,7 @@ def assign_position_lattice_style(cgmodel,positions,distance_cutoff,parent_bead_
         :type positions: np.array( float * unit.angstrom ( num_particles x 3 ) )
 
         :param distance_cutoff: The distance below which particles will be considered to have "collisions".
-        :type distance_cutoff: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quanti
-ty.Quantity.html>`_
+        :type distance_cutoff: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
 
         :param parent_bead_index: The index of the particle from which we will bond a new particle, when assigning positions.
         :type parent_bead_index: int
@@ -403,8 +400,7 @@ def assign_position(positions,bond_length,distance_cutoff,parent_index,bead_inde
         :type bond_length: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
 
         :param distance_cutoff: The distance below which particles will be considered to have "collisions".
-        :type distance_cutoff: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quanti
-ty.Quantity.html>`_
+        :type distance_cutoff: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
 
         :param parent_bead_index: The index of the particle from which we will bond a new particle, when assigning pos
 itions.
