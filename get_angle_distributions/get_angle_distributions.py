@@ -19,6 +19,10 @@ grid_size = 6
 
 native_structure_file = str(str(os.getcwd().split('examples/')[0])+"ensembles/12_1_1_0/helix.pdb")
 
+if not os.path.exists(native_structure_file):
+  print("Error: file "+str(native_structure_file)+" not found.")
+  exit()
+
 native_structure = PDBFile(native_structure_file).getPositions()
 
 # Job settings
@@ -40,7 +44,7 @@ max_temp = 200.0 * unit.kelvin
 temperature_list = get_temperature_list(min_temp,max_temp,number_replicas)
 print("Using "+str(len(temperature_list))+" replicas.")
 
-cgmodel = CGModel()
+cgmodel = CGModel(positions=native_structure)
 model_angle_list = cgmodel.bond_angle_list
 
 angle_list = []
@@ -54,7 +58,7 @@ bin_counts_list = []
 bond_angle_force_constant_list = [ unit.Quantity((0.001*10**i),unit.kilocalorie_per_mole/unit.radian/unit.radian) for i in range(grid_size)]
 for constant in bond_angle_force_constant_list:
   bond_angle_force_constants={'bb_bb_bb_angle_k': constant}
-  cgmodel = CGModel(bond_angle_force_constants=bond_angle_force_constants)
+  cgmodel = CGModel(positions=native_structure,bond_angle_force_constants=bond_angle_force_constants)
 
   output_data = str(str(top_directory)+"/eps_"+str(round(constant._value,3))+".nc")
   if not os.path.exists(output_data):
