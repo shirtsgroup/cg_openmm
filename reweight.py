@@ -6,17 +6,28 @@ from math import exp, log
 import mdtraj as md
 from simtk import unit
 import pymbar
+kB = unit.Quantity(0.008314462,unit.kilojoule_per_mole)  #Boltzmann constant (Gas constant) in kJ/(mol*K)
 
 def get_decorrelated_samples(replica_positions,replica_energies,temperature_list):
         """
-        Given a set of replica exchange trajectories, energies, and associated temperatures, this function returns decorrelated samples, as obtained from pymbar.
+        Given a set of replica exchange trajectories, energies, and associated temperatures, this function returns decorrelated samples, as obtained from pymbar with timeseries.subsampleCorrelatedData.
 
-        
+        :param replica_positions: Positions array for the replica exchange data for which we will write PDB files
+        :type replica_positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [n_replicas,cgmodel.num_beads,3] ), simtk.unit )
+
+        :param replica_energies: List of dimension num_replicas X simulation_steps, which gives the energies for all replicas at all simulation steps 
+        :type replica_energies: List( List( float * simtk.unit.energy for simulation_steps ) for num_replicas )
+
+        :param temperature_list: List of temperatures for the simulation data.
+        :type temperature_list: List( float * simtk.unit.temperature )
+
+        :returns:
+           - configurations ( List( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [n_decorrelated_samples,cgmodel.num_beads,3] ), simtk.unit ) ) - A list of decorrelated samples
+           - energies ( List( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) ) - The energies for the decorrelated samples (configurations)
 
         """
         configurations = []
         energies = []
-        temperatures = []
         K = len(temperature_list)
         g = np.zeros(K,np.float64)
         for k in range(K):  # subsample the energies
@@ -25,11 +36,19 @@ def get_decorrelated_samples(replica_positions,replica_energies,temperature_list
           indices = np.array(pymbar.timeseries.subsampleCorrelatedData(replica_energies[k][k],g=g[k])) # indices of uncorre
           configurations.append(replica_positions[k][k][g[k]])
           energies.append(replica_energies[k][k][g[k]])
-          temperatures.append(temperature)
-        return(configurations,energies,temperatures)
+        return(configurations,energies)
 
 def get_entropy_differences(mbar):
         """
+        Given an `MBAR <https://pymbar.readthedocs.io/en/latest/mbar.html>`_ class object, this function computes the entropy differences for the states defined within.
+
+        :param mbar: An MBAR() class object (from the 'pymbar' package)
+        :type mbar: `MBAR <https://pymbar.readthedocs.io/en/latest/mbar.html>`_ class object
+
+        :returns:
+          - Delta_s ( np.array( n_mbar_states x n_thermo_states ) - Entropy differences for the thermodynamic states in 'mbar'
+          - dDelta_s ( np.array( n_mbar_states x n_thermo_states ) - Uncertainty in the entropy differences for the thermodynamic states in 'mbar'
+
         """
         results = mbar.computeEntropyAndEnthalpy()
         results = {'Delta_f': results[0], 'dDelta_f': results[1], 'Delta_u': results[2], 'dDelta_u': results[3], 'Delta_s': results[4], 'dDelta_s': results[5]}
@@ -39,6 +58,15 @@ def get_entropy_differences(mbar):
 
 def get_enthalpy_differences(mbar):
         """
+        Given an `MBAR <https://pymbar.readthedocs.io/en/latest/mbar.html>`_ class object, this function computes the enthalpy differences for the states defined within.
+
+        :param mbar: An MBAR() class object (from the 'pymbar' package)
+        :type mbar: `MBAR <https://pymbar.readthedocs.io/en/latest/mbar.html>`_ class object
+
+        :returns:
+          - Delta_u ( np.array( n_mbar_states x n_thermo_states ) - Enthalpy differences for the thermodynamic states in 'mbar'
+          - dDelta_u ( np.array( n_mbar_states x n_thermo_states ) - Uncertainty in the enthalpy differences for the thermodynamic states in 'mbar'
+
         """
         results = mbar.computeEntropyAndEnthalpy()
         results = {'Delta_f': results[0], 'dDelta_f': results[1], 'Delta_u': results[2], 'dDelta_u': results[3], 'Delta_s': results[4], 'dDelta_s': results[5]}
@@ -48,8 +76,16 @@ def get_enthalpy_differences(mbar):
 
 def get_free_energy_differences(mbar):
         """
-        """
+        Given an `MBAR <https://pymbar.readthedocs.io/en/latest/mbar.html>`_ class object, this function computes the free energy differences for the states defined within.
 
+        :param mbar: An MBAR() class object (from the 'pymbar' package)
+        :type mbar: `MBAR <https://pymbar.readthedocs.io/en/latest/mbar.html>`_ class object
+
+        :returns:
+          - df_ij ( np.array( n_mbar_states x n_thermo_states ) - Free energy differences for the thermodynamic states in 'mbar'
+          - ddf_ij ( np.array( n_mbar_states x n_thermo_states ) - Uncertainty in the free energy differences for the thermodynamic states in 'mbar'
+
+        """
         results = mbar.getFreeEnergyDifferences()
         results = {'Delta_f': results[0], 'dDelta_f': results[1]}
         df_ij = results['Delta_f']
@@ -58,6 +94,22 @@ def get_free_energy_differences(mbar):
 
 def calc_temperature_spacing(min_temp,max_temp,num_replicas,replica_index):
         """
+        Given the parameters to define a temperature range as input, as well as the current temperature index, this function uses logarithmic scaling to calculate the temperature spacing.
+
+        :param min_temp: The minimum temperature in the temperature list.
+        :type min_temp: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
+
+        :param max_temp: The maximum temperature in the temperature list.
+        :type max_temp: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
+
+        :param num_replicas: The number of temperatures in the list.
+        :type num_replicas: int
+
+        :param replica_index: The index for the current temperature of interest.
+        :type replica_index: int
+
+        :returns:
+          - delta ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The spacing to use when assigning the next temperature value.
         """
         T_replica_index = min_temp * exp( replica_index * log( max_temp._value / min_temp._value )/(num_replicas-1) )
         T_previous_index = min_temp * exp( (replica_index-1) * log( max_temp._value / min_temp._value )/(num_replicas-1) )
@@ -66,6 +118,20 @@ def calc_temperature_spacing(min_temp,max_temp,num_replicas,replica_index):
 
 def get_temperature_list(min_temp,max_temp,num_replicas):
         """
+        Given the parameters to define a temperature range as input, this function uses logarithmic spacing to generate a list of intermediate temperatures.
+
+        :param min_temp: The minimum temperature in the temperature list.
+        :type min_temp: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
+
+        :param max_temp: The maximum temperature in the temperature list.
+        :type max_temp: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
+
+        :param num_replicas: The number of temperatures in the list.
+        :type num_replicas: int
+
+        :returns:
+           - temperature_list ( List( float * simtk.unit.temperature ) ) - List of temperatures
+
         """
         temperature_list = []
         temperature_list.append(min_temp)
@@ -80,11 +146,18 @@ def get_temperature_list(min_temp,max_temp,num_replicas):
 
 def get_intermediate_temperatures(T_from_file,NumIntermediates):
         """
+        Given a list of temperatures and a number of intermediate states as input, this function calculates the values for temperatures intermediate between those in this list, as the mean between values in the list.
+
+        :param T_from_file: List of temperatures
+        :type T_from_file: List( float * simtk.unit.temperature )
+
+        :param NumIntermediates: The number of states to insert between existing states in 'T_from_file'
+        :type NumIntermediates: int
+
+        :returns:
+           - Temp_k ( List( float * simtk.unit.temperature ) ) - A new list of temperatures that includes the inserted intermediates.
+
         """
-        #------------------------------------------------------------------------
-        # Insert Intermediate T's and corresponding blank U's and E's
-        #------------------------------------------------------------------------
-        kB = unit.Quantity(0.008314462,unit.kilojoule_per_mole)  #Boltzmann constant (Gas constant) in kJ/(mol*K)
 
         deltas = []
         for i in range(1,len(T_from_file)):
@@ -112,6 +185,34 @@ def get_intermediate_temperatures(T_from_file,NumIntermediates):
 
 def get_mbar_expectation(E_kln,temperature_list,NumIntermediates,output=None,mbar=None):
         """
+        Given a properly-formatted matrix of energies with associated temperatures this function reweights with MBAR (if 'mbar'=None), and can also compute the expectation value for any property of interest.
+
+        .. warning:: This function accepts an input matrix thtat has either 'E_kln' or 'E_kn' format, but always provides an 'E_kn'-formatted matrix in return.
+
+        :param E_kln: A matrix of energies or samples for a property that we would like to use to make predictions with MBAR.
+        :type E_kln: List( List( float * simtk.unit.energy for simulation_steps ) for num_replicas ) OR List( List( List( float * simtk.unit.energy for simulation_steps ) for num_replicas ) for num_replicas )
+
+        :param temperature_list: List of temperatures for the simulation data.
+        :type temperature_list: List( float * simtk.unit.temperature )
+
+        :param NumIntermediates: The number of states to insert between existing states in 'T_from_file'
+        :type NumIntermediates: int
+
+        :param output: The 'output' option to use when calling MBAR, default = 'differences'
+        :type output: str
+
+        :param mbar: An MBAR() class object (from the 'pymbar' package), default = None
+        :type mbar: `MBAR <https://pymbar.readthedocs.io/en/latest/mbar.html>`_ class object
+
+        :returns:
+          - mbar ( `MBAR <https://pymbar.readthedocs.io/en/latest/mbar.html>`_ ) - An MBAR() class object (from the 'pymbar' package)          
+         - E_kn ( List( List( float * simtk.unit.energy for num_samples ) for num_replicas ) ) - A matrix of energies or samples for a property that we would like to use to make predictions with MBAR.
+         - result ( List( List( float for num_samples ) for num_replicas ) - The MBAR expectation value for the energies and/or other samples that were provided.
+         - dresult ( List( List( float for num_samples ) for num_replicas ) - The MBAR expectation value for the energies and/or other samples that were provided.
+         - Temp_k ( List( float * simtk.unit.temperature ) ) - A new list of temperatures that includes the inserted intermediates.
+
+
+
         """
 
         if mbar == None:
