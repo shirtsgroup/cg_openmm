@@ -43,7 +43,7 @@ def basic_cgmodel(polymer_length=12,backbone_length=1,sidechain_length=1,sidecha
         :returns: 
           - cgmodel (class) - CGModel() class object
 
-        ..warning :: this function has significant limitations, in comparison with building a coarse grained model with the CGModel() class.  In particular, this function makes it more difficult to build heteropolymers, and is best-suited for the simulation of homopolymers.
+        .. warning:: this function has significant limitations, in comparison with building a coarse grained model with the CGModel() class.  In particular, this function makes it more difficult to build heteropolymers, and is best-suited for the simulation of homopolymers.
 
         :Example:
 
@@ -297,9 +297,6 @@ for all bond types, default = 200 * kJ/mol/rad^2
           self.nonbonded_exclusion_list = self.get_nonbonded_exclusion_list()
           self.nonbonded_interaction_list = self.get_nonbonded_interaction_list()
 
-          """
-          Initialize new (coarse grained) particle types:
-          """
           self.particle_types = add_new_elements(self)
 
           if positions == None: 
@@ -310,7 +307,7 @@ for all bond types, default = 200 * kJ/mol/rad^2
               self.positions = util.random_positions(self)
            else:
             if polymer_length == 12:
-              positions_file = str(str(__file__.split('foldamers/cg_model/cgmodel.py')[0])+"ensembles/12_1_1_0/helix.pdb")
+              positions_file = os.path.abspath("../../ensembles/12_1_1_0/helix.pdb")
               self.positions = PDBFile(positions_file).getPositions()
             else:
               self.positions = util.random_positions(self,use_library=False)
@@ -330,11 +327,7 @@ for all bond types, default = 200 * kJ/mol/rad^2
           :type CGModel: class
 
           :returns: 
-             - monomer_types ( List( dict( 'monomer_name': str, 'backbone_length': int, 'sidechain_length': int, 'si
-dechain_positions': List( int ), 'num_beads': int, 'bond_lengths': List( `Quantity() <https://docs.openmm.org/developm
-ent/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ), 'epsilons': List( `Quantity() <https://docs.openmm.or
-g/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ), 'sigmas': List( `Quantity() <https://docs.o
-penmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) ) ) ) - A list of unique monomer types in the coarse grained model
+             - monomer_types ( List( dict( 'monomer_name': str, 'backbone_length': int, 'sidechain_length': int, 'sidechain_positions': List( int ), 'num_beads': int, 'bond_lengths': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ), 'epsilons': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ), 'sigmas': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) ) ) ) - A list of unique monomer types in the coarse grained model
 
           """
           monomer_name_modifier = ['A','B','C','D','E','F','G','H']
@@ -684,8 +677,7 @@ penmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ 
           :type particle_index: int
 
           :returns: 
-            - particle_mass ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.h
-tml>`_ ) - The mass for the provided particle index
+            - particle_mass ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The mass for the provided particle index
 
           """
           particle_type = self.get_particle_type(particle_index)
@@ -704,8 +696,7 @@ tml>`_ ) - The mass for the provided particle index
           :type particle_index: int
 
           :returns: 
-            - particle_charge ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.h
-tml>`_ ) - The charge for the provided particle index
+            - particle_charge ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The charge for the provided particle index
 
           """
           particle_type = self.get_particle_type(particle_index)
@@ -750,8 +741,7 @@ tml>`_ ) - The charge for the provided particle index
           :type particle_type: str
 
           :returns: 
-             - epsilon ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.h
-tml>`_ ) - The assigned Lennard-Jones epsilon value for the provided particle index
+             - epsilon ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The assigned Lennard-Jones epsilon value for the provided particle index
 
 
           """
@@ -790,8 +780,7 @@ tml>`_ ) - The assigned Lennard-Jones epsilon value for the provided particle in
           :type particle_2_name: str
 
           :returns: 
-             - bond_length ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quanti
-ty.Quantity.html>`_ ) - The assigned bond length for the provided particles
+             - bond_length ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The assigned bond length for the provided particles
 
           """
           if 'B' in particle_1_name: particle_1_type = 'backbone'
@@ -821,8 +810,7 @@ ty.Quantity.html>`_ ) - The assigned bond length for the provided particles
           :type particle_2_index: int
 
           :returns: 
-             - bond_length ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quanti
-ty.Quantity.html>`_ ) - The assigned bond length for the provided particles
+             - bond_length ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The assigned bond length for the provided particles
 
           """
           if 'B' in self.particle_list[particle_1_index]: particle_1_type = 'backbone'
@@ -933,8 +921,7 @@ ty.Quantity.html>`_ ) - The assigned bond length for the provided particles
           :type particle_3_index: int
 
           :returns: 
-             - bond_angle_force_constant ( `Quantity() <https://docs.openmm.org/development/api-python/generated/sim
-tk.unit.quantity.Quantity.html>`_ ) - The assigned bond angle force constant for the provided particles
+             - bond_angle_force_constant ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The assigned bond angle force constant for the provided particles
 
 
           """
@@ -969,8 +956,7 @@ tk.unit.quantity.Quantity.html>`_ ) - The assigned bond angle force constant for
           :type torsion: List( int )
 
           :returns: 
-             - torsion_force_constant ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.
-unit.quantity.Quantity.html>`_ ) - The assigned torsion force constant for the provided particles
+             - torsion_force_constant ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The assigned torsion force constant for the provided particles
 
           """
           particle_types = ['','','','']
