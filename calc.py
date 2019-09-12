@@ -4,11 +4,20 @@ import matplotlib.pyplot as pyplot
 
 kB = 0.008314462  #Boltzmann constant (Gas constant) in kJ/(mol*K)
 
-def plot_heat_capacity(C_v,dC_v,temperature_list,file_name=None):
+def plot_heat_capacity(C_v,dC_v,temperature_list,file_name="heat_capacity.png"):
         """
+        Given an array of temperature-dependent heat capacity values and the uncertainties in their estimates, this function plots the heat capacity curve.
+
+        :param C_v: The heat capacity data to plot.
+        :type C_v: List( float )
+
+        :param dC_v: The uncertainties in the heat capacity data
+        :type dC_v: List( float )
+
+        :param file_name: The name/path of the file where plotting output will be written, default = "heat_capacity.png"
+        :type file_name: str
+
         """
-        if file_name == None:
-          file_name = "heat_capacity.png"
         figure = pyplot.figure(1)
         temperature_list = np.array([temperature for temperature in temperature_list])
         C_v = np.array([C_v[i] for i in range(len(C_v))])
@@ -23,6 +32,22 @@ def plot_heat_capacity(C_v,dC_v,temperature_list,file_name=None):
 
 def get_heat_capacity(replica_energies,temperature_list,num_intermediate_states=None):
         """
+        Given a set of trajectories, a temperature list, and a number of intermediate states to insert for the temperature list, this function calculates and plots the heat capacity profile.
+
+        :param replica_energies: List of dimension num_replicas X simulation_steps, which gives the energies for all replicas at all simulation steps 
+        :type replica_energies: List( List( float * simtk.unit.energy for simulation_steps ) for num_replicas )
+
+        :param temperature_list: List of temperatures for which to perform replica exchange simulations, default = None
+        :type temperature: List( float * simtk.unit.temperature )
+
+        :param num_intermediate_states: The number of states to insert between existing states in 'temperature_list'
+        :type num_intermediate_states: int
+
+        :returns:
+          - C_v ( List( float ) ) - The heat capacity values for all (including inserted intermediates) states
+          - dC_v ( List( float ) ) - The uncertainty in the heat capacity values for intermediate states
+          - new_temp_list ( List( float * unit.simtk.temperature ) ) - The temperature list corresponding to the heat capacity values in 'C_v'
+
         """
         if num_intermediate_states == None:
          num_intermediate_states = 1
@@ -36,6 +61,8 @@ def get_heat_capacity(replica_energies,temperature_list,num_intermediate_states=
 
 def calculate_heat_capacity(E_expect,E2_expect,dE_expect,DeltaE_expect,dDeltaE_expect,df_ij,ddf_ij,Temp_k,originalK,numIntermediates,ntypes=3,dertype="temperature"):
     """
+    Given numerous pieces of thermodynamic data this function calculates the heat capacity by following the `'pymbar' example <https://github.com/choderalab/pymbar/tree/master/examples/heat-capacity>`_ .
+
     """
 
     #------------------------------------------------------------------------
