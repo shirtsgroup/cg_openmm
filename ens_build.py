@@ -7,6 +7,115 @@ from cg_openmm.simulation.tools import get_mm_energy, build_mm_simulation
 from foldamers.utilities.iotools import write_pdbfile_without_topology
 from foldamers.utilities.util import random_positions
 from foldamers.parameters.secondary_structure import fraction_native_contacts
+from pymbar import timeseries
+
+def get_native_structure(replica_positions,replica_energies,temperature_list):
+        """
+        Given replica exchange run positions and energies, this function identifies the "native" structure, calculated as the structure with the lowest reduced potential energy.
+
+        :param replica_energies: List of dimension num_replicas X simulation_steps, which gives the energies for all replicas at all simulation steps 
+        :type replica_energies: List( List( float * simtk.unit.energy for simulation_steps ) for num_replicas )
+
+        :param replica_positions: List of positions for all output frames for all replicas
+        :type replica_positions: np.array( ( float * simtk.unit.positions for num_beads ) for simulation_steps )
+
+        :returns:
+         - native_structure ( np.array( float * simtk.unit.positions for num_beads ) ) - The predicted native structure
+        """
+
+        native_structure = None
+        native_structure_energy = 9.9e6
+
+        for replica in range(len(replica_energies)):
+          temperature = temperature_list[replica]
+          reduced_energies = np.array([energy/temperature._value for energy in replica_energies[replica][replica]])
+          min_energy = reduced_energies[np.argmin(reduced_energies)]
+          if min_energy < native_structure_energy:
+            native_structure_energy = min_energy
+            native_structure = replica_positions[replica][np.argmin(reduced_energies)]
+
+        return(native_structure)
+
+def get_ensembles_from_replica_positions(cgmodel,replica_positions,replica_energies,temperature_list,native_fraction_cutoff=0.95,nonnative_fraction_cutoff=0.9,native_ensemble_size=10,nonnative_ensemble_size=100,decorrelate=True,native_contact_cutoff_distance=None):
+        """
+        Given a coarse grained model and replica positions, this function: 1) decorrelates the samples, 2) clusters the samples with MSMBuilder, and 3) generates native and nonnative ensembles based upon the RMSD positions of decorrelated samples.
+
+        :param cgmodel: CGModel() class object
+        :type cgmodel: class
+
+        :param replica_positions: 
+        :type replica_positions: np.array( num_replicas x num_steps x np.array(float*simtk.unit (shape = num_beads x 3))))
+
+        :returns:
+           - nonnative_ensemble (List(positions(np.array(float*simtk.unit (shape = num_beads x 3))))) - A list of the positions for all members in the nonnative ensemble
+
+           - nonnative_ensemble_energies ( List(`Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )) - A list of the energies for all members of the nonnative ensemble
+
+           - native_ensemble (List(positions(np.array(float*simtk.unit (shape = num_beads x 3))))) - A list of the positions for all members in the native ensemble
+
+           - native_ensemble_energies ( List(`Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )) - A list of the energies for the native ensemble
+        """
+        all_poses = []
+        all_energies = []
+
+        if native_contact_cutoff_distance == None:
+          native_contact_cutoff_distance = 1.1 * cgmodel.sigmas['bb_bb_sigma']
+        native_structure = get_native_structure(replica_positions,replica_energies,temperature_list)
+
+        for replica_index in range(len(replica_positions)):
+          energies = replica_energies[replica_index][replica_index]
+          if decorrelate:
+           [t0,g,Neff_max] = timeseries.detectEquilibration(energies)
+           energies_equil = energies[t0:]
+           indices = timeseries.subsampleCorrelatedData([energies_equil,g])
+          else:
+           indices = range(len(energies)-1)
+          for index in indices:
+            if index < len(replica_positions[replica_index]):
+#            all_energies.append(energies_equil[index])
+              all_energies.append(energies[index])
+              all_poses.append(replica_positions[replica_index][index])
+
+        # Now we calculate the fraction of native contacts for these poses.
+
+        Q_list = []
+        for pose in all_poses:
+          Q = fraction_native_contacts(cgmodel,pose,native_structure,cutoff_distance=native_contact_cutoff_distance)
+          Q_list.append(Q)
+
+        print(Q_list)
+
+        native_ensemble = []
+        native_ensemble_energies = []
+        nonnative_ensemble = []
+        nonnative_ensemble_energies = []
+        for Q_index in range(len(Q_list)):
+          if Q_list[Q_index] > native_fraction_cutoff:
+            if len(native_ensemble) < native_ensemble_size:
+              native_ensemble.append(all_poses[Q_index])
+              native_ensemble_energies.append(all_energies[Q_index])
+            if len(native_ensemble) >= native_ensemble_size:
+             
+             native_ensemble_energies = np.array([energy for energy in native_ensemble_energies])
+             min_ensemble_energy = native_ensemble_energies[np.argmin(native_ensemble_energies)]
+             if all_energies[Q_index] < min_ensemble_energy:      
+              native_ensemble[np.argmin(native_ensemble_energies)] = all_poses[Q_index]
+              native_ensemble_energies[np.argmin(native_ensemble_energies)] = all_energies[Q_index]
+
+
+          if Q_list[Q_index] < nonnative_fraction_cutoff:
+            if len(nonnative_ensemble) >= nonnative_ensemble_size:
+             nonnative_ensemble_energies = np.array([energy for energy in nonnative_ensemble_energies])
+             min_ensemble_energy = nonnative_ensemble_energies[np.argmin(nonnative_ensemble_energies)]
+             if all_energies[Q_index] < min_ensemble_energy:
+              nonnative_ensemble[np.argmin(nonnative_ensemble_energies)] = all_poses[Q_index]
+              nonnative_ensemble_energies[np.argmin(nonnative_ensemble_energies)] = all_energies[Q_index]
+            if len(nonnative_ensemble) < nonnative_ensemble_size:
+              nonnative_ensemble.append(all_poses[Q_index])
+              nonnative_ensemble_energies.append(all_energies[Q_index])
+            
+
+        return(native_ensemble,native_ensemble_energies,nonnative_ensemble,nonnative_ensemble_energies)
 
 def get_ensemble(cgmodel,ensemble_size=100,high_energy=False,low_energy=False):
         """
@@ -88,6 +197,7 @@ def write_ensemble_pdb(cgmodel,ensemble_directory=None):
           ensemble_directory = get_ensemble_directory(cgmodel)
         index = 1
         pdb_list = get_pdb_list(ensemble_directory)
+        pdb_file_name = str(ensemble_directory+"/cg"+str(index)+".pdb")
         while pdb_file_name in pdb_list:
            pdb_file_name = str(ensemble_directory+"/cg"+str(index)+".pdb")
            index = index + 1
