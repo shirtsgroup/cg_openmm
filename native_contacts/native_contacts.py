@@ -61,20 +61,6 @@ if not os.path.exists(native_contacts_file):
        pose = trajectory[pose_index]
        Q_kn[replica_index][pose_index] = fraction_native_contacts(cgmodel,pose,native_structure)
 
-  data_file = open("T_Q.dat","w")
-  data_file.write("Temperature (Kelvin),Fraction of Native Contacts\n")
-  for index in range(len(T_list)):
-   data_file.write(str(T_list[index])+","+str(Q_list[index])+"\n")
-  data_file.close()
- else:
-  with open("T_Q.dat",newline='') as csvfile:
-          reader = csv.reader(csvfile, delimiter=',')
-          next(reader)
-          for row in reader:
-           T_list.append(row[0])
-           Q_list.append(row[1])
-
-
  print("Reweighting results with MBAR.")
  mbar,E_kn,result,dresult,new_temp_list = get_mbar_expectation(replica_energies,temperature_list,0)
 
@@ -86,8 +72,8 @@ if not os.path.exists(native_contacts_file):
  for k in range(len(F_expect)):
     for l in range(len(F_expect[k])):
       F_list.append(F_expect[k][l])
-      Q_list.append(Q_expect[k][l])
-      T_list.append(temperature_list[k]._value)
+      Q_list.append(Q_expect[l])
+      T_list.append(temperature_list[l]._value)
 
  data_file = open("F_Q_T.dat","w")
  data_file.write("Temperature (Kelvin),Fraction of Native Contacts,Free Energy (Dimensionless)\n")
@@ -95,9 +81,6 @@ if not os.path.exists(native_contacts_file):
   data_file.write(str(T_list[index])+","+str(Q_list[index])+","+str(F_list[index])+"\n")
  data_file.close()
 
-T_list = []
-F_list = []
-Q_list = []
 with open("F_Q_T.dat",newline='') as csvfile:
           reader = csv.reader(csvfile, delimiter=',')
           next(reader)
@@ -118,93 +101,17 @@ for T_index in range(1,len(temperatures)-1):
  next_middle = temperatures[T_index] + next_T_step/2.0
  T_ranges.append([this_middle,next_middle])
 
-n_bins = 50
-max_Q = 1.0
-min_Q = float(Q_list[np.argmin(Q_list)])
-min_T = temperatures[0]
-max_T = temperatures[1]
-Q_step = (max_Q-min_Q)/(n_bins+1)
-Q_ranges = [[min_Q+Q_step*i,min_Q+Q_step*(i+1)] for i in range(n_bins)]
-
-bins = [[[] for j in range(len(T_ranges))] for i in range(len(Q_ranges))]
-bin_counts = np.zeros((len(Q_ranges),len(T_ranges)),dtype=int)
-
-print("Binning samples.")
-for index in range(len(F_list)):
-  Q_index = None
-  T_index = None
-  for Q_range_index in range(len(Q_ranges)):
-   Q_range = Q_ranges[Q_range_index]
-   if Q_range_index == 0:
-     if float(Q_list[index]) >= float(Q_range[0]) and float(Q_list[index]) <= float(Q_range[1]):
-      Q_index = Q_range_index
-   else:
-     if float(Q_list[index]) > float(Q_range[0]) and float(Q_list[index]) <= float(Q_range[1]):
-      Q_index = Q_range_index
-  for T_range_index in range(len(T_ranges)):
-   T_range = T_ranges[T_range_index]
-   if T_range_index == 0:
-     if float(T_list[index]) >= float(T_range[0]) and float(T_list[index]) <= float(T_range[1]):
-      T_index = T_range_index
-   else:
-     if float(T_list[index]) > float(T_range[0]) and float(T_list[index]) <= float(T_range[1]):
-      T_index = T_range_index
-  if Q_index != None and T_index != None:
-    #print("q = "+str(Q_list[index]))
-    #print("T = "+str(T_list[index]))
-    #print("T index = "+str(T_index))
-    #print("Q range = "+str(Q_ranges[Q_index]))
-    #print("T range = "+str(T_ranges[T_index]))
-    bins[Q_index][T_index].append(F_list[index])
-  if Q_index == 1:
-    print("Houston")
-    exit()
-
-total_samples = 0
-for Q_index in range(len(Q_ranges)):
- for T_index in range(len(T_ranges)):
-  bin_counts[Q_index][T_index] = len(bins[Q_index][T_index])
-  total_samples = total_samples + bin_counts[Q_index][T_index]
 x = np.array([mean(np.array([float(T) for T in T_range])) for T_range in T_ranges])
-y = np.array([mean(np.array([float(Q) for Q in Q_range])) for Q_range in Q_ranges])
+y = np.array([float(Q) for Q in Q_expect])
 X,Y = np.meshgrid(x,y)
-Z = bin_counts
-
-pyplot.xlabel("Temperature ( Kelvin )")
-pyplot.ylabel("Fraction of Native Contacts")
-pyplot.title("Bin Distributions ("+str(total_samples)+" total samples)")
+Z = np.array([float(F) for F in F_list]).reshape(len(x),len(y))
 
 pyplot.pcolormesh(X,Y,Z)
 pyplot.colorbar()
-pyplot.savefig("bin_distributions.png")
-pyplot.show()
-pyplot.close()
-
-ensemble_avg_F = np.zeros((n_bins+1,n_bins+1))
-for i in range(n_bins+1):
- for j in range(n_bins+1):
-  #print(bins[i][j])
-  if len(bins[i][j]) > 1:
-    ensemble_avg_F[i][j] = mean(np.array([float(F) for F in bins[i][j]]))
-  else:
-    print(i)
-    print(j)
-    print(bins[i][j])
-    ensemble_avg_F[i][j] = float(bins[i][j][0])
-
-y = np.array([mean(np.array([Q_range])) for Q_range in Q_ranges])
-x = np.array([mean(np.array([T_range])) for T_range in T_ranges])
-X,Y = np.meshgrid(x,y)
-Z = ensemble_avg_F.reshape(len(y),len(x))
-
-pyplot.xlabel("Temperature ( Kelvin )")
-pyplot.ylabel("Fraction of Native Contacts")
-pyplot.title("Free Energy vs. Q")
-
-pyplot.pcolormesh(X,Y,Z)
-pyplot.colorbar()
+pyplot.xlabel("T ( Kelvin )")
+pyplot.ylabel("Q (Fraction native contacts)")
+pyplot.title("F v Q for 1-1 12-mer homopolymer")
 pyplot.savefig("native_contacts.png")
 pyplot.show()
 pyplot.close()
-
 exit()
