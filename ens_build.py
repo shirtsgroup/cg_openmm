@@ -83,7 +83,7 @@ def get_ensembles_from_replica_positions(cgmodel,replica_positions,replica_energ
           Q = fraction_native_contacts(cgmodel,pose,native_structure,cutoff_distance=native_contact_cutoff_distance)
           Q_list.append(Q)
 
-        print(Q_list)
+        #print(Q_list)
 
         native_ensemble = []
         native_ensemble_energies = []
