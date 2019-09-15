@@ -307,7 +307,7 @@ def calculate_p2(cgmodel):
          #plt.zlabel('z') # not defined?
          plt.show()
 
-        return
+        return(p2)
 
 
 def get_helical_data(cgmodel):
