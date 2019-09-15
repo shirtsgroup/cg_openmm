@@ -4,6 +4,8 @@ from simtk import unit
 from statistics import mean
 from scipy.stats import linregress
 from scipy import spatial
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
 #from spatial.transform import Rotation as R
 from foldamers.utilities.util import *
 from foldamers.utilities.iotools import write_pdbfile_without_topology
@@ -29,10 +31,10 @@ def fraction_native_contacts(cgmodel,positions,native_structure,cutoff_distance=
 
         """
         if cutoff_distance == None:
-          cutoff_distance = 1.1 * cgmodel.get_sigma(0)
+          cutoff_distance = 0.8 * cgmodel.get_sigma(0)
 
         nonbonded_interaction_list = cgmodel.nonbonded_interaction_list
-        print("There are "+str(len(nonbonded_interaction_list))+" total nonbonded interaction possibilities.")
+        #print("There are "+str(len(nonbonded_interaction_list))+" total nonbonded interaction possibilities.")
         native_structure_distances = distances(nonbonded_interaction_list,native_structure)
         current_structure_distances = distances(nonbonded_interaction_list,positions)
         native_distances = []
@@ -43,7 +45,7 @@ def fraction_native_contacts(cgmodel,positions,native_structure,cutoff_distance=
             native_distances.append(native_structure_distances[interaction])
             native_interaction_list.append(interaction)
         total_native_interactions = len(native_interaction_list)
-        print("There are "+str(total_native_interactions)+" native interactions.")
+        #print("There are "+str(total_native_interactions)+" native interactions.")
 
         current_distances = []
         current_structure_interaction_list = []
@@ -53,7 +55,7 @@ def fraction_native_contacts(cgmodel,positions,native_structure,cutoff_distance=
               current_distances.append(current_structure_distances[interaction])
               current_structure_interaction_list.append(interaction)
         current_structure_native_interactions = len(current_structure_interaction_list)
-        print("The current structure has "+str(current_structure_native_interactions)+" native interactions")
+        #print("The current structure has "+str(current_structure_native_interactions)+" native interactions")
         Q = current_structure_native_interactions / total_native_interactions
         return(Q)
 
@@ -217,6 +219,96 @@ def orient_along_z_axis(cgmodel,plot_projections=False):
         PDBFile.writeFile(cgmodel.topology,cgmodel.positions,file=file)
 
         return(cgmodel)
+
+def calculate_p2(cgmodel):
+        """
+        """
+        positions = np.array([[float(i.in_units_of(unit.angstrom)._value) for i in position] for position in cgmodel.positions])
+        # 1) Get the backbone particle positions
+        backbone_positions = []
+        for particle in range(len(cgmodel.positions)):
+          if cgmodel.get_particle_type(particle) == "backbone":
+            backbone_positions.append(cgmodel.positions[particle])
+        backbone_positions = np.array([[float(i.in_units_of(unit.angstrom)._value) for i in coord] for coord in backbone_positions])
+        
+        c = backbone_positions
+
+        u = np.diff(c,axis=0)
+        for ui in u:
+            ui /= np.sqrt(np.dot(ui,ui))
+
+        Q = np.zeros([3,3])
+        for ui in u:
+            Q += 1.5*np.outer(ui,ui)
+        Q /= len(u)
+        Q -= 0.5*np.eye(3)
+        vals, vecs = np.linalg.eig(Q)
+        p2 = np.mean(np.dot(u,vecs),axis=0)
+
+        dirindices = np.argsort(np.abs(p2))
+
+        h = vecs[:,dirindices[2]]
+        l = vecs[:,dirindices[1]]
+        m = vecs[:,dirindices[0]]
+
+# rotate the helix itself into the new coordinates 
+# in many cases, this seems to not be a a great rotation.  It seems to
+# start tilting the helix a bit in many cases. Not sure why!!!!
+
+        S = np.zeros([3,3])
+        S = vecs
+        cp = np.dot(c,S)
+        cp1 = cp[:,dirindices]
+        cp = cp1
+
+        up = np.dot(u,S)
+        up1 = up[:,dirindices]
+        up = up1
+
+        up2 = np.diff(cp,axis=0)
+        for upi in up2:
+            upi /= np.sqrt(np.dot(upi,upi))
+
+        FQ = np.zeros([3,3])
+        for upi in up:
+            FQ += 1.5*np.outer(upi,upi)
+        FQ /= len(up)
+        FQ -= 0.5*np.eye(3)
+
+        avecos = np.mean(up[:,2])
+        avesin = np.sqrt(1-avecos**2)
+
+        zaxis = np.array([0,0,1])
+        upr = np.zeros(np.shape(u))
+        for i in range(np.shape(upr)[0]):
+         scal = np.sqrt(1-up[i,2]**2)
+         # project out into x,y plane
+         ax1 = np.array([up[i,0]/scal,up[i,1]/scal,0])
+         # normal from the plane 
+         nm = np.cross(zaxis,ax1) # the normal to the plane
+         v = up[i] # the vector to rotate
+         # R(theta)v = nm(nm.v) + cos(theta) (nm x v) x nm + sin(-theta)(nm x v)  # from wikipedia
+         upr[i]= nm*np.dot(nm,v) + avecos*np.cross(np.cross(nm,v),nm) - avesin*np.cross(nm,v)
+
+        #cmid = 0.5*(cp[0:-1,:] + cp[1:,:])
+        #z = cmid[0:,2]/length
+
+        curves = [c,cp,u,up,upr]
+        labels = ['helix (unrotated)', 'helix (rotated)', 'directors (unrotated)', 'directors (rotated)', 'directors (rotated to helix)']
+        for i in range(len(curves)):
+         fig = plt.figure(i)
+         curve = curves[i]
+         label = labels[i]
+         ax = fig.gca(projection='3d')
+         ax.plot(curve[:,0], curve[:,1], curve[:,2], label=label)
+         ax.legend()
+         plt.xlabel('x')
+         plt.ylabel('y')
+         #plt.zlabel('z') # not defined?
+         plt.show()
+
+        return
+
 
 def get_helical_data(cgmodel):
         """
