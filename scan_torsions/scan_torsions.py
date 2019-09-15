@@ -159,7 +159,8 @@ for bb_bb_bb_bb_equil_torsion_angle in bb_bb_bb_bb_equil_torsion_angles:
     replica_energies,replica_positions,replica_states = run_replica_exchange(cgmodel.topology,cgmodel.system,cgmodel.positions,temperature_list=temperature_list,simulation_time_step=simulation_time_step,total_simulation_time=total_simulation_time,print_frequency=print_frequency,output_data=output_data)
     native_structure = PDBFile(file_name).getPositions()
 
-  native_ensemble,native_ensemble_energies,nonnative_ensemble,nonnative_ensemble_energies = get_ensembles_from_replica_positions(cgmodel,replica_positions,replica_energies,temperature_list,decorrelate=False,nonnative_fraction_cutoff=0.9)
+  native_contact_cutoff_distance = 0.8 * cgmodel.get_sigma(0)
+  native_ensemble,native_ensemble_energies,nonnative_ensemble,nonnative_ensemble_energies = get_ensembles_from_replica_positions(cgmodel,replica_positions,replica_energies,temperature_list,decorrelate=False,nonnative_fraction_cutoff=0.9,native_contact_cutoff_distance=native_contact_cutoff_distance)
 
   nonnative_ensemble_directory = str(str(output_directory)+"/ens_"+str(round(bb_bb_bb_bb_equil_torsion_angle,2))+"_"+str(round(sc_bb_bb_sc_equil_torsion_angle,2))+"_nonnative")
   native_ensemble_directory = str(str(output_directory)+"/ens_"+str(round(bb_bb_bb_bb_equil_torsion_angle,2))+"_"+str(round(sc_bb_bb_sc_equil_torsion_angle,2))+"_native")
