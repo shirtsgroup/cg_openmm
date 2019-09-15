@@ -12,6 +12,7 @@ cgmodel = CGModel(positions=positions)
 pitch,radius,monomers_per_turn,residual = get_helical_parameters(cgmodel)
 print(pitch,radius,monomers_per_turn,residual)
 
-calculate_p2(cgmodel)
+p2 = calculate_p2(cgmodel)
+print(p2)
 
 exit()
