@@ -1,0 +1,49 @@
+
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          Helios  v1.0                                      2016
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+          inputhelix            temp_pitch.pdb                                                                                      
+          coord_type                           1
+             num_grd                          20
+              natoms                          12
+             nframes                           1
+        grid_phi_beg                      0.0000
+        grid_phi_end                     20.0000
+      grid_theta_beg                      0.0000
+      grid_theta_end                     20.0000
+               dsDNA                           0
+        opt_axis_out                           0
+       all_helix_out                           0
+             oradian                           0
+     helix_atom_name            X1  
+       helixout_name            kHelix.out                                                                                          
+          print_sing                           0
+          print_step                           0
+       print_to_plot                           1
+
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          Helios  execution info                              :::
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+| Run on 09/17/2019 at 20:45:02
+
+| Executable path:   /home/gmeek/Foldamers/foldamers/foldamers/parameters/helios.o
+| Working directory: /home/gmeek/Foldamers/foldamers/examples/get_helical_distributions
+
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          Helios  results                                     :::
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+ ................................................................
+          Phi     Theta  Residual    Radius    Pitch1    Sweep1
+ ................................................................
+
+       2.0000   19.0000    2.4308    9.9618   38.7956  345.9948
+
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          Helios  execution timing:                         :::
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Duration of Helios execution (seconds):            0.041447

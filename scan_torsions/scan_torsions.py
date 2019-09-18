@@ -27,7 +27,7 @@ if not os.path.exists(output_directory):
 
 # Configure Yank (replica exchange) simulation settings
 print_frequency = 5 # Number of steps to skip when printing output
-total_simulation_time = 100.0 * unit.picosecond # Units = picoseconds
+total_simulation_time = 500.0 * unit.picosecond # Units = picoseconds
 simulation_time_step = 5.0 * unit.femtosecond
 number_replicas = 100
 min_temp = 10.0 * unit.kelvin
