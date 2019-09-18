@@ -96,20 +96,19 @@ def get_ensembles_from_replica_positions(cgmodel,replica_positions,replica_energ
               native_ensemble_energies.append(all_energies[Q_index])
             if len(native_ensemble) >= native_ensemble_size:
              
-             native_ensemble_energies = np.array([energy for energy in native_ensemble_energies])
-             min_ensemble_energy = native_ensemble_energies[np.argmin(native_ensemble_energies)]
-             if all_energies[Q_index] < min_ensemble_energy:      
-              native_ensemble[np.argmin(native_ensemble_energies)] = all_poses[Q_index]
-              native_ensemble_energies[np.argmin(native_ensemble_energies)] = all_energies[Q_index]
-
+             native_energies = np.array([energy for energy in native_ensemble_energies])
+             max_ensemble_energy = native_energies[np.argmax(native_energies)]
+             if all_energies[Q_index] < max_ensemble_energy:      
+              native_ensemble[np.argmax(native_energies)] = all_poses[Q_index]
+              native_ensemble_energies[np.argmax(native_energies)] = all_energies[Q_index]
 
           if Q_list[Q_index] < nonnative_fraction_cutoff:
             if len(nonnative_ensemble) >= nonnative_ensemble_size:
-             nonnative_ensemble_energies = np.array([energy for energy in nonnative_ensemble_energies])
-             min_ensemble_energy = nonnative_ensemble_energies[np.argmin(nonnative_ensemble_energies)]
-             if all_energies[Q_index] < min_ensemble_energy:
-              nonnative_ensemble[np.argmin(nonnative_ensemble_energies)] = all_poses[Q_index]
-              nonnative_ensemble_energies[np.argmin(nonnative_ensemble_energies)] = all_energies[Q_index]
+             nonnative_energies = np.array([energy for energy in nonnative_ensemble_energies])
+             max_ensemble_energy = nonnative_energies[np.argmax(nonnative_energies)]
+             if all_energies[Q_index] < max_ensemble_energy:
+              nonnative_ensemble[np.argmax(nonnative_energies)] = all_poses[Q_index]
+              nonnative_energies[np.argmax(nonnative_energies)] = all_energies[Q_index]
             if len(nonnative_ensemble) < nonnative_ensemble_size:
               nonnative_ensemble.append(all_poses[Q_index])
               nonnative_ensemble_energies.append(all_energies[Q_index])
