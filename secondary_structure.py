@@ -222,6 +222,15 @@ def orient_along_z_axis(cgmodel,plot_projections=False):
 
 def calculate_p2(cgmodel):
         """
+        Given a coarse grained model containing positions, this function returns the `'P2' <http://cmt.dur.ac.uk/sjc/thesis_dlc/node19.html>`_ orientational ordering parameter value for the current pose.
+
+        .. warning:: By default, 'P2' is evaluated using the positions for only the backbone particles.
+
+        :param cgmodel: CGModel() class object
+        :type cgmodel: class
+
+        :returns:
+         - p2 ( float ) - The value for the 'P2' orientational ordering parameter.
         """
         positions = np.array([[float(i.in_units_of(unit.angstrom)._value) for i in position] for position in cgmodel.positions])
         # 1) Get the backbone particle positions

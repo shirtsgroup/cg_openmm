@@ -6,7 +6,30 @@ from math import exp, log
 import mdtraj as md
 from simtk import unit
 import pymbar
+from pymbar import timeseries
 kB = unit.Quantity(0.008314462,unit.kilojoule_per_mole)  #Boltzmann constant (Gas constant) in kJ/(mol*K)
+
+def bin_samples(sample_kn,n_bins):
+        """
+        """
+        max_value,min_value=None,None
+        for index_1 in range(len(sample_kn)):
+          for index_2 in range(len(sample_kn[index_1])):
+            sample = sample_kn[index_1][index_2]
+            if max_value == None: max_value = sample
+            if min_value == None: min_value = sample
+            if sample > max_value: max_value = sample
+            if sample < min_value: min_value = sample
+
+        bin_size = (max_value-min_value)/(n_bins+1)
+        bins = np.array([[min_value+i*bin_size,min_value+(i+1)*bin_size] for i in range(n_bins)])
+        bin_counts = np.zeros((len(sample_kn),len(bins)))
+        
+        for index_1 in range(len(sample_kn)):
+          for index_2 in range(len(sample_kn[index])):
+            sample = sample_kn[index_1][index_2]
+
+        return(bins,bin_counts)
 
 def get_decorrelated_samples(replica_positions,replica_energies,temperature_list):
         """
@@ -31,11 +54,12 @@ def get_decorrelated_samples(replica_positions,replica_energies,temperature_list
         K = len(temperature_list)
         g = np.zeros(K,np.float64)
         for k in range(K):  # subsample the energies
-          E_total_all = np.array(np.delete(E_total_all_temp,0,0),dtype=float) # E_total_all stores total energies from NaCl simulation output, after re-typing
           [t0, g[k], Neff_max] = timeseries.detectEquilibration(replica_energies[k][k],nskip=10)
           indices = np.array(pymbar.timeseries.subsampleCorrelatedData(replica_energies[k][k],g=g[k])) # indices of uncorre
-          configurations.append(replica_positions[k][k][g[k]])
-          energies.append(replica_energies[k][k][g[k]])
+          configurations.append(replica_positions[k][indices])
+          energies.append(replica_energies[k][k][indices])
+        configurations = np.array([[pose for pose in trajectory] for trajectory in configurations])
+        energies = np.array([[float(energy) for energy in trajectory] for trajectory in energies])
         return(configurations,energies)
 
 def get_entropy_differences(mbar):
