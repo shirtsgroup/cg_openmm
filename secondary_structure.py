@@ -130,7 +130,6 @@ def orient_along_z_axis(cgmodel,plot_projections=False):
            - cgmodel ( class ) - CGModel() class object, with positions oriented so that the helical axis is along the z-axis
 
         """
-        plot_projections = False
         positions = np.array([[float(i.in_units_of(unit.angstrom)._value) for i in position] for position in cgmodel.positions])
         # 1) Get the backbone particle positions
         backbone_positions = []
@@ -219,6 +218,36 @@ def orient_along_z_axis(cgmodel,plot_projections=False):
         PDBFile.writeFile(cgmodel.topology,cgmodel.positions,file=file)
 
         return(cgmodel)
+
+def show_helical_fit(cgmodel):
+        """
+        Given a coarse grained model containing positions, this function performs a helical fit for the backbone particles with `kHelios <https://pubs.acs.org/doi/10.1021/acs.jcim.6b00721>`_ , and uses 'matplotlib' to display attributes of the helical fit.
+        """
+        # 1) Get the backbone particle positions
+        positions = np.array([[float(i.in_units_of(unit.angstrom)._value) for i in position] for position in cgmodel.positions])
+        backbone_positions = []
+        for particle in range(len(cgmodel.positions)):
+          if cgmodel.get_particle_type(particle) == "backbone":
+            backbone_positions.append(cgmodel.positions[particle])
+        backbone_positions = np.array([[float(i.in_units_of(unit.angstrom)._value) for i in coord] for coord in backbone_positions])
+        c = backbone_positions
+
+        curves = [c]
+        labels = ['helix (unrotated)']
+        for i in range(len(curves)):
+         fig = plt.figure(i)
+         curve = curves[i]
+         label = labels[i]
+         ax = fig.gca(projection='3d')
+         ax.plot(curve[:,0], curve[:,1], curve[:,2], label=label)
+         ax.legend()
+         plt.xlabel('x')
+         plt.ylabel('y')
+         #plt.zlabel('z') # not defined?
+         plt.show()
+
+
+        return
 
 def calculate_p2(cgmodel):
         """
