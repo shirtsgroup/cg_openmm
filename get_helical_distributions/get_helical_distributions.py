@@ -21,7 +21,7 @@ native_structure = PDBFile(native_structure_file).getPositions()
 output_directory = 'output'
 if not os.path.exists(output_directory):
   os.mkdir(output_directory)
-output_data=str(str(os.getcwd().split('examples')[0])+"examples/homopolymer_heat_capacity_varying_simulation_time/output/output15.0.nc")
+output_data=str(str(os.getcwd().split('examples')[0])+"examples/homopolymer_heat_capacity_varying_simulation_time/output/output5.0.nc")
 
 # OpenMM simulation settings
 print_frequency = 5 # Number of steps to skip when printing output

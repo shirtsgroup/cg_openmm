@@ -26,7 +26,7 @@
           Helios  execution info                              :::
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-| Run on 09/15/2019 at 17:47:57
+| Run on 09/19/2019 at 10:16:28
 
 | Executable path:   /home/gmeek/Foldamers/foldamers/foldamers/parameters/helios.o
 | Working directory: /home/gmeek/Foldamers/foldamers/examples/get_helical_parameters
@@ -46,4 +46,4 @@
           Helios  execution timing:                         :::
           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-   Duration of Helios execution (seconds):            0.034625
+   Duration of Helios execution (seconds):            0.041654
