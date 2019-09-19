@@ -694,6 +694,7 @@ def random_positions( cgmodel,max_attempts=1000,use_library=False,high_energy=Fa
           cgmodel.positions = positions
           cgmodel.topology = build_topology(cgmodel,use_pdbfile=True)
           cgmodel.system = build_system(cgmodel)
+          #write_pdbfile_without_topology(cgmodel,"random_pose.pdb")
           positions,energy,simulation = minimize_structure(cgmodel.topology,cgmodel.system,positions,temperature=300.0 * unit.kelvin,simulation_time_step=5.0 * unit.femtosecond,total_simulation_time=0.1 * unit.picosecond,print_frequency=10)
         
           #print("No collisions detected.")
