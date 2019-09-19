@@ -130,6 +130,7 @@ class CGModel(object):
                      include_nonbonded_forces=True,
                      include_bond_angle_forces=True,
                      include_torsion_forces=True,
+                     exclusions=True,
                      check_energy_conservation=True,
                      use_structure_library=False,
                      heteropolymer=False,
@@ -294,7 +295,10 @@ for all bond types, default = 200 * kJ/mol/rad^2
           self.bond_list = self.get_bond_list()
           self.bond_angle_list = self.get_bond_angle_list()
           self.torsion_list = self.get_torsion_list()
-          self.nonbonded_exclusion_list = self.get_nonbonded_exclusion_list()
+          if exclusions == True:
+           self.nonbonded_exclusion_list = self.get_nonbonded_exclusion_list()
+          else:
+           self.nonbonded_exclusion_list = None
           self.nonbonded_interaction_list = self.get_nonbonded_interaction_list()
 
           self.particle_types = add_new_elements(self)
@@ -306,17 +310,21 @@ for all bond types, default = 200 * kJ/mol/rad^2
             else:
               self.positions = util.random_positions(self)
            else:
-            if polymer_length == 12:
+            if use_structure_library:
+             if polymer_length == 12:
               positions_file = os.path.abspath("../../ensembles/12_1_1_0/helix.pdb")
               self.positions = PDBFile(positions_file).getPositions()
+             else:
+              self.positions = util.random_positions(self,use_library=True)
             else:
-              self.positions = util.random_positions(self,use_library=False)
+              self.positions = None
           else:
            self.positions = positions
 
           self.simulation = None
           
-          self.topology = build_topology(self,use_pdbfile=True)
+          if self.positions != None:
+            self.topology = build_topology(self,use_pdbfile=False)
           self.system = build_system(self)
 
         def get_monomer_types(self):
@@ -443,7 +451,6 @@ for all bond types, default = 200 * kJ/mol/rad^2
           """
 
           interaction_list = []
-          exclusion_list = self.nonbonded_exclusion_list
           bond_list = self.get_bond_list()
           for particle_1 in range(self.num_beads):
                for particle_2 in range(particle_1+1,self.num_beads):
@@ -455,7 +462,8 @@ for all bond types, default = 200 * kJ/mol/rad^2
                        if [particle_1,particle_2] not in interaction_list:
                          interaction_list.append([particle_2,particle_1])
           exclusion_list = self.nonbonded_exclusion_list
-          for interaction in interaction_list:
+          if exclusion_list != None:
+           for interaction in interaction_list:
             if interaction in exclusion_list or [interaction[1],interaction[0]] in exclusion_list:
               interaction_list.remove(interaction)
           #interaction_list = [[0,1]]
