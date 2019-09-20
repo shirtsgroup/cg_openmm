@@ -3,7 +3,7 @@ import numpy as np
 import math, random, statistics
 from simtk import unit
 from simtk.openmm.app.pdbfile import PDBFile
-from cg_openmm.build.cg_build import *
+from cg_openmm.build.cg_build import build_system, build_topology
 from cg_openmm.simulation.tools import *
 from foldamers.cg_model.cgmodel import *
 from foldamers.utilities.iotools import *
