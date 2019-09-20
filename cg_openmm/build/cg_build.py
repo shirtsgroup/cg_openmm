@@ -504,7 +504,7 @@ def add_force(cgmodel,force_type=None):
 
         if force_type == "Torsion":
           torsion_force = mm.PeriodicTorsionForce()
-          for torsion in torsion_list:
+          for torsion in cgmodel.torsion_list:
             torsion_force_constant = cgmodel.get_torsion_force_constant(torsion)
             equil_torsion_angle = cgmodel.get_equil_torsion_angle(torsion)
             periodicity = 0
@@ -542,7 +542,9 @@ def test_forces(cgmodel):
         """
         if cgmodel.topology == None:
           cgmodel.topology = build_topology(cgmodel)
+        print("Building a simulation object in order to test the forces.")
         simulation = build_mm_simulation(cgmodel.topology,cgmodel.system,cgmodel.positions,simulation_time_step=5.0*unit.femtosecond,print_frequency=1)
+        print("Retrieving the forces.")
         forces = simulation.context.getState(getForces=True).getForces()
         success = True
         for force in forces:
@@ -560,7 +562,7 @@ def test_forces(cgmodel):
               return(success)
         return(success)
 
-def build_system(cgmodel):
+def build_system(cgmodel,verify=True):
         """
         Builds an OpenMM `System() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1System.html>`_ object, given a CGModel() as input.
 
@@ -589,31 +591,23 @@ def build_system(cgmodel):
         #box_vectors = [[100.0*length_scale._value,0.0,0.0],[0.0,100.0*length_scale._value,0.0],[0.0,0.0,100.0*length_scale._value]]
         #system.setDefaultPeriodicBoxVectors(box_vectors[0],box_vectors[1],box_vectors[2])
 
-        if cgmodel.include_bond_forces:
+        if cgmodel.include_bond_forces or cgmodel.constrain_bonds:
          # Create bond (harmonic) potentials
          cgmodel,bond_force = add_force(cgmodel,force_type="Bond")
          if cgmodel.positions != None:
           if not test_force(cgmodel,bond_force,force_type="Bond"):
            print("ERROR: The bond force definition is giving 'nan'")
            exit()
-        else:
-         if cgmodel.constrain_bonds:
-          for bond_indices in cgmodel.bond_list:
-            bond_length = cgmodel.get_bond_length(bond_indices[0],bond_indices[1])
-            cgmodel.system.addConstraint(bond_indices[0],bond_indices[1],bond_length)
-          if cgmodel.positions != None:
-           if not test_forces(cgmodel):
-            print("ERROR: The model broke after bond constraints were applied.")
-            exit()
 
         if cgmodel.include_nonbonded_forces:
          # Create nonbonded forces
           cgmodel,nonbonded_force = add_force(cgmodel,force_type="Nonbonded")
 
-          if cgmodel.positions != None:
-           if not test_force(cgmodel,nonbonded_force,force_type="Nonbonded"):
-            print("ERROR: there was a problem with the nonbonded force definitions.")
-            exit()
+          #if cgmodel.positions != None:
+           #print("Testing the nonbonded forces")
+           #if not test_force(cgmodel,nonbonded_force,force_type="Nonbonded"):
+            #print("ERROR: there was a problem with the nonbonded force definitions.")
+            #exit()
 
         if cgmodel.include_bond_angle_forces:
           # Create bond angle potentials
@@ -631,9 +625,10 @@ def build_system(cgmodel):
             print("ERROR: There was a problem with the torsion definitions.")
             exit()
 
-        if cgmodel.positions != None:
-         if not test_forces(cgmodel):
-          print("ERROR: There was a problem with the forces.")
-          exit()
+        if verify:
+         if cgmodel.positions != None:
+          if not test_forces(cgmodel):
+           print("ERROR: There was a problem with the forces.")
+           exit()
 
         return(system)

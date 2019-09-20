@@ -48,13 +48,25 @@ sigma = 2.5 * bond_length
 sigmas = {'bb_bb_sigma': sigma,'sc_sc_sigma': sigma}
 epsilon = 0.5 * unit.kilocalorie_per_mole
 epsilons = {'bb_bb_eps': epsilon,'sc_sc_eps': epsilon}
+# Bond angle properties
+bond_angle_force_constant = 200 * unit.kilojoule_per_mole / unit.radian / unit.radian
+bond_angle_force_constants = {'bb_bb_bb_angle_k': bond_angle_force_constant,'bb_bb_sc_angle_k': bond_angle_force_constant}
+equil_bond_angle = 92
+equil_bond_angles = {'bb_bb_bb_angle_0': equil_bond_angle,'bb_bb_sc_angle_0': equil_bond_angle}
+
+# Torsion properties
+torsion_force_constant = 200
+torsion_force_constants = {'bb_bb_bb_bb_torsion_k': torsion_force_constant,'bb_bb_bb_sc_torsion_k': torsion_force_constant,'sc_bb_bb_bb_torsion_k': torsion_force_constant,'sc_bb_bb_sc_torsion_k': torsion_force_constant}
+equil_torsion_angle = 52
+equil_torsion_angles = {'bb_bb_bb_bb_torsion_0': equil_torsion_angle,'bb_bb_bb_sc_torsion_0': equil_torsion_angle,'sc_bb_bb_bb_torsion_0': equil_torsion_angle,'sc_bb_bb_sc_torsion_0': equil_torsion_angle}
 
 positions = PDBFile("helix.pdb").getPositions()
 
 # Build a coarse grained model
-cgmodel = CGModel(polymer_length=polymer_length,backbone_lengths=backbone_lengths,sidechain_lengths=sidechain_lengths,sidechain_positions=sidechain_positions,masses=masses,sigmas=sigmas,epsilons=epsilons,bond_lengths=bond_lengths,bond_force_constants=bond_force_constants,include_nonbonded_forces=include_nonbonded_forces,include_bond_forces=include_bond_forces,include_bond_angle_forces=include_bond_angle_forces,include_torsion_forces=include_torsion_forces,constrain_bonds=constrain_bonds,positions=positions)
+cgmodel = CGModel(polymer_length=polymer_length,backbone_lengths=backbone_lengths,sidechain_lengths=sidechain_lengths,sidechain_positions=sidechain_positions,masses=masses,sigmas=sigmas,epsilons=epsilons,bond_lengths=bond_lengths,bond_force_constants=bond_force_constants,bond_angle_force_constants=bond_angle_force_constants,torsion_force_constants=torsion_force_constants,equil_bond_angles=equil_bond_angles,equil_torsion_angles=equil_torsion_angles,include_nonbonded_forces=include_nonbonded_forces,include_bond_forces=include_bond_forces,include_bond_angle_forces=include_bond_angle_forces,include_torsion_forces=include_torsion_forces,constrain_bonds=constrain_bonds,positions=positions)
 
 # Run a simulation
+print("Running a simulation.")
 run_simulation(cgmodel,output_directory,total_simulation_time,simulation_time_step,temperature,print_frequency)
 
 exit()

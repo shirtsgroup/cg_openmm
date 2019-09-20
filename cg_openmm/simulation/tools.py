@@ -1,7 +1,10 @@
 import numpy as np
 from simtk import openmm as mm
 from simtk.openmm import *
+from simtk.openmm.vec3 import Vec3
 from simtk import unit
+from simtk.openmm.app.pdbfile import PDBFile
+import mdtraj
 import simtk.openmm.app.element as elem
 from simtk.openmm.app import *
 import matplotlib.pyplot as pyplot
@@ -285,9 +288,17 @@ def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvi
 
         integrator = LangevinIntegrator(temperature._value,friction,simulation_time_step.in_units_of(unit.picosecond)._value)
         
-        simulation = Simulation(topology, system, integrator)
-
+        file = open("temp.pdb","w")
+        PDBFile.writeFile(topology,positions,file=file)
+        file.close()
+        pdb = PDBFile("temp.pdb")
+        simulation = Simulation(pdb.topology, system, integrator)
+        os.remove("temp.pdb")
+        print("Setting positions")
+        print(type(positions))
+        positions = [Vec3(c[0].in_units_of(unit.nanometer)._value,c[1].in_units_of(unit.nanometer)._value,c[2].in_units_of(unit.nanometer)._value) for c in positions]
         simulation.context.setPositions(positions)
+        print("Finished setting the positions.")
 #        simulation.context.setVelocitiesToTemperature(temperature)
         if output_pdb != None:
           simulation.reporters.append(PDBReporter(output_pdb,print_frequency))
