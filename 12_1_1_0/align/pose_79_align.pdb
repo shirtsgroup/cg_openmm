@@ -1,0 +1,52 @@
+MODEL        0
+ATOM      1 X1    MT A   1      10.411   8.774  -2.886  1.00  0.00          VS  
+ATOM      2 A2    MT A   1       8.921  10.418 -10.051  1.00  0.00          VS  
+ATOM      3 X1     M A   2       8.394   8.753   4.339  1.00  0.00          VS  
+ATOM      4 A2     M A   2      14.878   5.360   5.979  1.00  0.00          VS  
+ATOM      5 X1     M A   3       1.400   8.983   7.045  1.00  0.00          VS  
+ATOM      6 A2     M A   3       1.238  15.431  10.873  1.00  0.00          VS  
+ATOM      7 X1     M A   4      -3.127   3.347   9.045  1.00  0.00          VS  
+ATOM      8 A2     M A   4      -7.797   3.026   3.191  1.00  0.00          VS  
+ATOM      9 X1     M A   5      -4.009  -2.070  14.157  1.00  0.00          VS  
+ATOM     10 A2     M A   5       1.359  -2.259  19.392  1.00  0.00          VS  
+ATOM     11 X1     M A   6      -8.908  -7.199  16.607  1.00  0.00          VS  
+ATOM     12 A2     M A   6      -9.133 -13.215  12.134  1.00  0.00          VS  
+ATOM     13 X1     M A   7     -15.297  -6.670  20.495  1.00  0.00          VS  
+ATOM     14 A2     M A   7     -14.227  -8.491  27.689  1.00  0.00          VS  
+ATOM     15 X1     M A   8     -21.897  -3.218  19.569  1.00  0.00          VS  
+ATOM     16 A2     M A   8     -26.521  -7.131  15.138  1.00  0.00          VS  
+ATOM     17 X1     M A   9     -24.127   3.852  20.688  1.00  0.00          VS  
+ATOM     18 A2     M A   9     -28.217   5.249  26.810  1.00  0.00          VS  
+ATOM     19 X1     M A  10     -22.088  10.063  17.016  1.00  0.00          VS  
+ATOM     20 A2     M A  10     -15.849  13.932  18.544  1.00  0.00          VS  
+ATOM     21 X1     M A  11     -25.136  12.994  10.815  1.00  0.00          VS  
+ATOM     22 A2     M A  11     -25.808  10.511   3.773  1.00  0.00          VS  
+ATOM     23 X1    MT A  12     -30.604  17.976   9.617  1.00  0.00          VS  
+ATOM     24 A2    MT A  12     -33.847  24.074  12.539  1.00  0.00          VS  
+TER      25       MT A  12
+ENDMDL
+CONECT    1    2    3
+CONECT    2    1
+CONECT    3    1    4    5
+CONECT    4    3
+CONECT    5    3    6    7
+CONECT    6    5
+CONECT    7    5    8    9
+CONECT    8    7
+CONECT    9    7   10   11
+CONECT   10    9
+CONECT   11    9   12   13
+CONECT   12   11
+CONECT   13   11   14   15
+CONECT   14   13
+CONECT   15   13   16   17
+CONECT   16   15
+CONECT   17   15   18   19
+CONECT   18   17
+CONECT   19   17   20   21
+CONECT   20   19
+CONECT   21   19   22   23
+CONECT   22   21
+CONECT   23   21   24
+CONECT   24   23
+END
