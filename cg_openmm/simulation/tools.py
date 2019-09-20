@@ -1,13 +1,9 @@
-import sys
 import numpy as np
 from simtk import openmm as mm
 from simtk.openmm import *
 from simtk import unit
 import simtk.openmm.app.element as elem
-from simtk.openmm.app.pdbfile import PDBFile
 from simtk.openmm.app import *
-from cg_openmm.utilities.iotools import *
-import mdtraj
 import matplotlib.pyplot as pyplot
 import csv
 
@@ -150,6 +146,7 @@ def minimize_structure(topology,system,positions,temperature=0.0 * unit.kelvin,s
           if tolerance == None:
 #            print("This set of positions is not a reasonable initial configuration.")
             energy = "NaN"
+            simulation = None
             return(positions,energy)
         else:
           time_step = simulation_time_step
@@ -290,12 +287,6 @@ def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvi
         
         simulation = Simulation(topology, system, integrator)
 
-        file = open("temp.pdb","w")
-        PDBFile.writeFile(topology,positions,file=file)
-        file.close()
-        pdb = PDBFile("temp.pdb")
-        os.remove("temp.pdb")
-        positions = pdb.positions
         simulation.context.setPositions(positions)
 #        simulation.context.setVelocitiesToTemperature(temperature)
         if output_pdb != None:
@@ -405,6 +396,7 @@ def run_simulation(cgmodel,output_directory,total_simulation_time,simulation_tim
               except:
                 attempts = attempts + 1
             if attempts > 3:
+              plot_simulation_results(output_data,output_directory,simulation_time_step)
               print("Error: simulation attempt failed.")
               exit()
 

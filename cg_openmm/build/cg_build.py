@@ -461,7 +461,7 @@ def add_force(cgmodel,force_type=None):
               bond_force_constant = cgmodel.get_bond_force_constant(bond_indices[0],bond_indices[1])
               bond_length = cgmodel.get_bond_length(bond_indices[0],bond_indices[1])
               if cgmodel.constrain_bonds:
-                system.addConstraint(bond_indices[0],bond_indices[1],bond_length)
+                cgmodel.system.addConstraint(bond_indices[0],bond_indices[1],bond_length)
               bond_length = bond_length.in_units_of(unit.nanometer)._value
               bond_force.addBond(bond_indices[0],bond_indices[1],bond_length,bond_force_constant)
 
@@ -592,7 +592,8 @@ def build_system(cgmodel):
         if cgmodel.include_bond_forces:
          # Create bond (harmonic) potentials
          cgmodel,bond_force = add_force(cgmodel,force_type="Bond")
-         if not test_force(cgmodel,bond_force,force_type="Bond"):
+         if cgmodel.positions != None:
+          if not test_force(cgmodel,bond_force,force_type="Bond"):
            print("ERROR: The bond force definition is giving 'nan'")
            exit()
         else:
@@ -600,7 +601,8 @@ def build_system(cgmodel):
           for bond_indices in cgmodel.bond_list:
             bond_length = cgmodel.get_bond_length(bond_indices[0],bond_indices[1])
             cgmodel.system.addConstraint(bond_indices[0],bond_indices[1],bond_length)
-          if not test_forces(cgmodel):
+          if cgmodel.positions != None:
+           if not test_forces(cgmodel):
             print("ERROR: The model broke after bond constraints were applied.")
             exit()
 
@@ -608,26 +610,29 @@ def build_system(cgmodel):
          # Create nonbonded forces
           cgmodel,nonbonded_force = add_force(cgmodel,force_type="Nonbonded")
 
-          if not test_force(cgmodel,nonbonded_force,force_type="Nonbonded"):
+          if cgmodel.positions != None:
+           if not test_force(cgmodel,nonbonded_force,force_type="Nonbonded"):
             print("ERROR: there was a problem with the nonbonded force definitions.")
             exit()
 
         if cgmodel.include_bond_angle_forces:
           # Create bond angle potentials
           cgmodel,bond_angle_force = add_force(cgmodel,force_type="Angle")
-
-          if not test_force(cgmodel,bond_angle_force,force_type="Angle"):
+          if cgmodel.positions != None:
+           if not test_force(cgmodel,bond_angle_force,force_type="Angle"):
             print("ERROR: There was a problem with the bond angle force definitions.")
             exit()
 
         if cgmodel.include_torsion_forces:
           # Create torsion potentials
           cgmodel,torsion_force = add_force(cgmodel,force_type="Torsion")
-          if not test_force(cgmodel,torsion_force,force_type="Torsion"):
+          if cgmodel.positions != None:
+           if not test_force(cgmodel,torsion_force,force_type="Torsion"):
             print("ERROR: There was a problem with the torsion definitions.")
             exit()
 
-        if not test_forces(cgmodel):
+        if cgmodel.positions != None:
+         if not test_forces(cgmodel):
           print("ERROR: There was a problem with the forces.")
           exit()
 
