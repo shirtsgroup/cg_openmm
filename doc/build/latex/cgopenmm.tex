@@ -71,7 +71,7 @@
 
 
 \title{Coarse-grained OpenMM Documentation}
-\date{Sep 18, 2019}
+\date{Sep 20, 2019}
 \release{0.0.1}
 \author{Garrett A. Meek\\ \\Michael R. Shirts\\ \\Dept. of Chemical and Biological Engineering\\University of Colorado Boulder}
 \newcommand{\sphinxlogo}{\vbox{}}
@@ -90,6 +90,122 @@
 This documentation is generated automatically using Sphinx, which reads all docstring-formatted comments from Python functions in the ‘cg\_openmm’ repository.  (See cg\_openmm/doc for Sphinx source files.)
 
 
+\chapter{Installation notes}
+\label{\detokenize{install:installation-notes}}\label{\detokenize{install::doc}}
+The \sphinxhref{https://github.com/shirtsgroup/cg\_openmm}{cg\_openmm} package will eventually be available for installation via \sphinxhref{https://www.anaconda.com/}{Anaconda}.  This will make resolution of software conflicts much easier.  However, at present, because the package has not been made public, Anaconda installation is not yet possible, and software conflicts must be resolved by the individual.
+
+Here we provide installation instructions which have been tested on multiple platforms.
+
+
+\section{Dependencies for the cg\_openmm package}
+\label{\detokenize{install:dependencies-for-the-cg-openmm-package}}
+The ‘cg\_openmm’ package was written in order to interface with a separate software package called \sphinxhref{https://github.com/shirtsgroup/foldamers}{foldamers}.  Due to conflicts among dependencies for the foldamers package with other Python versions, \sphinxstylestrong{we recommend using Python version 3.6 when installing/using cg\_openmm}.
+
+The following is a list of software dependencies for the ‘cg\_openmm’ package, with recommended version numbers in parentheses:
+\begin{enumerate}
+\def\theenumi{\arabic{enumi}}
+\def\labelenumi{\theenumi )}
+\makeatletter\def\p@enumii{\p@enumi \theenumi )}\makeatother
+\item {} 
+\sphinxhref{https://github.com/shirtsgroup/foldamers}{foldamers} (version 0.0)
+\begin{quote}
+\begin{description}
+\item[{\sphinxstylestrong{Dependencies for the ‘foldamers’ software package:}}] \leavevmode\begin{enumerate}
+\def\theenumii{\arabic{enumii}}
+\def\labelenumii{\theenumii )}
+\makeatletter\def\p@enumiii{\p@enumii \theenumii )}\makeatother
+\setcounter{enumii}{1}
+\item {} 
+\sphinxhref{https://github.com/choderalab/pymbar}{pymbar} (version 3.0.3)
+
+\item {} 
+\sphinxhref{http://mdtraj.org/1.9.3/}{MDTraj} (version 1.9.3)
+
+\item {} 
+\sphinxhref{http://msmbuilder.org/3.8.0/}{MSMBuilder} (version 3.8)
+
+\item {} 
+\sphinxhref{https://scikit-learn.org/stable/}{scikit-learn} (version 0.18.1)
+
+\item {} 
+\sphinxhref{https://github.com/manuel-calzolari/sklearn-genetic}{sklearn-genetic} (version 0.2)
+
+\item {} 
+\sphinxhref{https://pubs.acs.org/doi/abs/10.1021/acs.jcim.6b00721}{kHelios}
+
+\end{enumerate}
+
+\end{description}
+\end{quote}
+
+\end{enumerate}
+\begin{enumerate}
+\def\theenumi{\arabic{enumi}}
+\def\labelenumi{\theenumi )}
+\makeatletter\def\p@enumii{\p@enumi \theenumi )}\makeatother
+\setcounter{enumi}{7}
+\item {} 
+\sphinxhref{http://openmm.org/}{OpenMM} (version 7.3.1)
+
+\item {} 
+\sphinxhref{http://getyank.org/latest/}{Yank} (version 0.24.1)
+
+\end{enumerate}
+
+
+\section{Recommended installation steps}
+\label{\detokenize{install:recommended-installation-steps}}
+We recommend installation of \sphinxhref{https://www.anaconda.com/}{Anaconda} prior to installation of the ‘cg\_openmm’ package, as this makes resolution of conflicts between dependencies much easier.
+
+We direct users that have not installed \sphinxhref{https://www.anaconda.com/}{Anaconda} to the \sphinxhref{https://www.anaconda.com/distribution/}{Download page} in order to select the appropriate version for your platform (Windows, Linux, Mac).  (It shouldn’t matter which version of Anaconda is installed.)
+
+The following installation steps are recommended for users that have already installed \sphinxhref{https://www.anaconda.com/}{Anaconda} on their system:
+\begin{enumerate}
+\def\theenumi{\arabic{enumi}}
+\def\labelenumi{\theenumi )}
+\makeatletter\def\p@enumii{\p@enumi \theenumi )}\makeatother
+\item {} 
+Install ‘sklearn-genetic’ (used for genetic algorithm optimization of model parameters):
+
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{n}{pip} \PYG{n}{install} \PYG{n}{sklearn}\PYG{o}{\PYGZhy{}}\PYG{n}{genetic}
+\end{sphinxVerbatim}
+
+\item {} 
+Create an Anaconda environment for Python version 3.6 (the most stable Python version for ‘cg\_openmm’):
+
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{n}{conda} \PYG{n}{create} \PYG{o}{\PYGZhy{}}\PYG{n}{n} \PYG{n}{cg\PYGZus{}openmm} \PYG{n}{python}\PYG{o}{=}\PYG{l+m+mf}{3.6} \PYG{n}{mdtraj}\PYG{o}{=}\PYG{l+m+mf}{1.9}\PYG{o}{.}\PYG{l+m+mi}{3} \PYG{n}{openmm}\PYG{o}{=}\PYG{l+m+mf}{7.3}\PYG{o}{.}\PYG{l+m+mi}{1} \PYG{n}{pymbar}\PYG{o}{=}\PYG{l+m+mf}{3.0}\PYG{o}{.}\PYG{l+m+mi}{3} \PYG{n}{msmbuilder}\PYG{o}{=}\PYG{l+m+mf}{3.8} \PYG{n}{scikit}\PYG{o}{\PYGZhy{}}\PYG{n}{learn}\PYG{o}{=}\PYG{l+m+mf}{0.18}\PYG{o}{.}\PYG{l+m+mi}{1} \PYG{n}{yank}\PYG{o}{=}\PYG{l+m+mf}{0.21}\PYG{o}{.}\PYG{l+m+mi}{2}
+\end{sphinxVerbatim}
+
+\item {} 
+Activate this new environment:
+
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{n}{conda} \PYG{n}{activate} \PYG{n}{cg\PYGZus{}openmm}
+\end{sphinxVerbatim}
+
+\item {} 
+Clone and install a fresh copy of ‘foldamers’:
+
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{n}{git} \PYG{n}{clone} \PYG{n}{https}\PYG{p}{:}\PYG{o}{/}\PYG{o}{/}\PYG{n}{github}\PYG{o}{.}\PYG{n}{com}\PYG{o}{/}\PYG{n}{shirtsgroup}\PYG{o}{/}\PYG{n}{foldamers}\PYG{o}{.}\PYG{n}{git}
+\PYG{n}{cd} \PYG{n}{foldamers}
+\PYG{n}{python} \PYG{n}{setup}\PYG{o}{.}\PYG{n}{py} \PYG{n}{install}
+\end{sphinxVerbatim}
+
+\item {} 
+Clone and install a fresh copy of ‘cg\_openmm’ to your system:
+
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{n}{git} \PYG{n}{clone} \PYG{n}{https}\PYG{p}{:}\PYG{o}{/}\PYG{o}{/}\PYG{n}{github}\PYG{o}{.}\PYG{n}{com}\PYG{o}{/}\PYG{n}{shirtsgroup}\PYG{o}{/}\PYG{n}{cg\PYGZus{}openmm}\PYG{o}{.}\PYG{n}{git}
+\PYG{n}{cd} \PYG{n}{cg\PYGZus{}openmm}
+\PYG{n}{python} \PYG{n}{setup}\PYG{o}{.}\PYG{n}{py} \PYG{n}{install}
+\end{sphinxVerbatim}
+
+\end{enumerate}
+
+
 \chapter{Building OpenMM objects for coarse grained modeling}
 \label{\detokenize{build:building-openmm-objects-for-coarse-grained-modeling}}\label{\detokenize{build::doc}}
 All \sphinxhref{http://openmm.org}{OpenMM} simulations require a \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1openmm\_1\_1System.html}{System()} and a \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1app\_1\_1topology\_1\_1Topology.html}{Topology()}.  This chapter details procedures for building those objects for coarse grained models with user-defined properties.
@@ -100,60 +216,6 @@ All \sphinxhref{http://openmm.org}{OpenMM} simulations require a \sphinxhref{htt
 An OpenMM \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1openmm\_1\_1System.html}{System()} object contains force definitions for a molecular model.  The ‘cg\_openmm’ repository applies default definitions for all forces (see \sphinxhref{http://docs.openmm.org/development/userguide/theory.html}{OpenMM user guide} for detailed definitions).
 
 Shown below are tools and functions needed to build and verify an OpenMM \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1openmm\_1\_1System.html}{System()} .
-
-\phantomsection\label{\detokenize{build:module-build.cg_build}}\index{build.cg\_build (module)@\spxentry{build.cg\_build}\spxextra{module}}\index{build\_system() (in module build.cg\_build)@\spxentry{build\_system()}\spxextra{in module build.cg\_build}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{build:build.cg_build.build_system}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{build.cg\_build.}}\sphinxbfcode{\sphinxupquote{build\_system}}}{\emph{cgmodel}}{}
-Builds an OpenMM \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1openmm\_1\_1System.html}{System()} object, given a CGModel() as input.
-\begin{quote}\begin{description}
-\item[{Parameters}] \leavevmode
-\sphinxstyleliteralstrong{\sphinxupquote{cgmodel}} (\sphinxstyleliteralemphasis{\sphinxupquote{class}}) \textendash{} CGModel() class object
-
-\item[{Returns}] \leavevmode
-\begin{itemize}
-\item {} 
-system ( \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1openmm\_1\_1System.html}{System()} ) - OpenMM System() object
-
-\end{itemize}
-
-
-\item[{Example}] \leavevmode
-\end{description}\end{quote}
-
-\begin{sphinxVerbatim}[commandchars=\\\{\}]
-\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{foldamers}\PYG{n+nn}{.}\PYG{n+nn}{cg\PYGZus{}model}\PYG{n+nn}{.}\PYG{n+nn}{cgmodel} \PYG{k}{import} \PYG{n}{CGModel}
-\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{cgmodel} \PYG{o}{=} \PYG{n}{CGModel}\PYG{p}{(}\PYG{p}{)}
-\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{system} \PYG{o}{=} \PYG{n}{build\PYGZus{}system}\PYG{p}{(}\PYG{n}{cgmodel}\PYG{p}{)}
-\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{cgmodel}\PYG{o}{.}\PYG{n}{system} \PYG{o}{=} \PYG{n}{system}
-\end{sphinxVerbatim}
-
-\end{fulllineitems}
-
-\index{verify\_system() (in module build.cg\_build)@\spxentry{verify\_system()}\spxextra{in module build.cg\_build}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{build:build.cg_build.verify_system}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{build.cg\_build.}}\sphinxbfcode{\sphinxupquote{verify\_system}}}{\emph{cgmodel}}{}
-Given a CGModel() class object, this function confirms that its OpenMM \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1openmm\_1\_1System.html}{System()} object is configured correctly.
-\begin{quote}\begin{description}
-\item[{Parameters}] \leavevmode
-\sphinxstyleliteralstrong{\sphinxupquote{cgmodel}} (\sphinxstyleliteralemphasis{\sphinxupquote{class}}) \textendash{} CGModel() class object
-
-\item[{Example}] \leavevmode
-\end{description}\end{quote}
-
-\begin{sphinxVerbatim}[commandchars=\\\{\}]
-\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{foldamers}\PYG{n+nn}{.}\PYG{n+nn}{cg\PYGZus{}model}\PYG{n+nn}{.}\PYG{n+nn}{cgmodel} \PYG{k}{import} \PYG{n}{CGModel}
-\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{cgmodel} \PYG{o}{=} \PYG{n}{CGModel}\PYG{p}{(}\PYG{p}{)}
-\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{verify\PYGZus{}system}\PYG{p}{(}\PYG{n}{cgmodel}\PYG{p}{)}
-\end{sphinxVerbatim}
-
-\begin{sphinxadmonition}{warning}{Warning:}
-The function will force an error exit if the system is invalid, and will proceed as normal if the system is valid.
-\end{sphinxadmonition}
-
-\end{fulllineitems}
-
 
 \newpage
 
