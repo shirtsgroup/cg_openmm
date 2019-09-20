@@ -41,11 +41,11 @@ replica_energies,replica_positions,replica_states = read_replica_exchange_data(s
 configurations,energies = get_decorrelated_samples(replica_positions,replica_energies,temperature_list)
 
 # Get "native" and "nonnative" ensembles from the decorrelated samples
-native_ensemble,native_ensemble_energies,nonnative_ensemble,nonnative_ensemble_energies = get_ensembles_from_replica_positions(cgmodel,configurations,energies,temperature_list,native_fraction_cutoff=0.95,nonnative_fraction_cutoff=0.9,native_ensemble_size=10,nonnative_ensemble_size=100,decorrelate=False,native_contact_cutoff_distance=None)
+native_ensemble,native_ensemble_energies,nonnative_ensemble,nonnative_ensemble_energies = get_ensembles_from_replica_positions(cgmodel,configurations,energies,temperature_list,native_fraction_cutoff=0.99,nonnative_fraction_cutoff=0.95,native_ensemble_size=10,nonnative_ensemble_size=100,decorrelate=False,native_contact_cutoff_distance=0.7*cgmodel.get_sigma(0))
 
 e_unfolded_mean = mean(nonnative_ensemble_energies) # unfolded mean energy 
 e_unfolded_sigma =  stdev(nonnative_ensemble_energies) # unfolded standard deviation energy
-n_unfolded = len(e_unfolded_ensemble) # ratio of number of unfolded states to folded states. We keep number of folded states at 1
+n_unfolded = len(nonnative_ensemble_energies) # ratio of number of unfolded states to folded states. We keep number of folded states at 1
 e_folded = mean(native_ensemble_energies) # energy of the unfolded state
 Tmax = kB.__mul__(max_temp) # temperature max to plot; T in units of kBT
 Zscore = (e_folded - e_unfolded_mean)/(e_unfolded_sigma) # Z-score for this folded state
@@ -106,10 +106,14 @@ titles = ["Helmholtz free energy (A) vs. T",
           "Entropy (S) vs. T",
           "Heat Capacity (C) vs. T"]
 ylabels = ['A','% folded','E','S','C']
+file_names = file_names = ["CG11_A_v_T.png","CG11_Q_v_T.png","CG11_E_v_T.png","CG11_S_v_T.png","CG11_C_v_T.png"]
 
-for p,t,y in zip(toplot,titles,ylabels):
+i = 1
+for p,t,y,name in zip(toplot,titles,ylabels,file_names):
+    figure = plt.figure(i)
     plt.plot(toplotT,p)
     plt.title(t)
     plt.xlabel('T')
     plt.ylabel(y)
-    plt.show()
+    plt.savefig(name)
+    plt.close()
