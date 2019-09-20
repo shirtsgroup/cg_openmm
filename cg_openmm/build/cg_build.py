@@ -542,9 +542,7 @@ def test_forces(cgmodel):
         """
         if cgmodel.topology == None:
           cgmodel.topology = build_topology(cgmodel)
-        print("Building a simulation object in order to test the forces.")
         simulation = build_mm_simulation(cgmodel.topology,cgmodel.system,cgmodel.positions,simulation_time_step=5.0*unit.femtosecond,print_frequency=1)
-        print("Retrieving the forces.")
         forces = simulation.context.getState(getForces=True).getForces()
         success = True
         for force in forces:

@@ -288,17 +288,16 @@ def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvi
 
         integrator = LangevinIntegrator(temperature._value,friction,simulation_time_step.in_units_of(unit.picosecond)._value)
         
-        file = open("temp.pdb","w")
-        PDBFile.writeFile(topology,positions,file=file)
-        file.close()
-        pdb = PDBFile("temp.pdb")
-        simulation = Simulation(pdb.topology, system, integrator)
-        os.remove("temp.pdb")
-        print("Setting positions")
-        print(type(positions))
-        positions = [Vec3(c[0].in_units_of(unit.nanometer)._value,c[1].in_units_of(unit.nanometer)._value,c[2].in_units_of(unit.nanometer)._value) for c in positions]
+        #file = open("temp.pdb","w")
+        #PDBFile.writeFile(topology,positions,file=file)
+        #file.close()
+        #pdb = PDBFile("temp.pdb")
+        simulation = Simulation(topology, system, integrator)
+        #os.remove("temp.pdb")
+        #print("Setting positions")
+        #print(type(positions))
+        #positions = [Vec3(c[0].in_units_of(unit.nanometer)._value,c[1].in_units_of(unit.nanometer)._value,c[2].in_units_of(unit.nanometer)._value) for c in positions]
         simulation.context.setPositions(positions)
-        print("Finished setting the positions.")
 #        simulation.context.setVelocitiesToTemperature(temperature)
         if output_pdb != None:
           simulation.reporters.append(PDBReporter(output_pdb,print_frequency))

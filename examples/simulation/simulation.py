@@ -51,13 +51,13 @@ epsilons = {'bb_bb_eps': epsilon,'sc_sc_eps': epsilon}
 # Bond angle properties
 bond_angle_force_constant = 200 * unit.kilojoule_per_mole / unit.radian / unit.radian
 bond_angle_force_constants = {'bb_bb_bb_angle_k': bond_angle_force_constant,'bb_bb_sc_angle_k': bond_angle_force_constant}
-equil_bond_angle = 92
+equil_bond_angle = 1.61
 equil_bond_angles = {'bb_bb_bb_angle_0': equil_bond_angle,'bb_bb_sc_angle_0': equil_bond_angle}
 
 # Torsion properties
 torsion_force_constant = 200
 torsion_force_constants = {'bb_bb_bb_bb_torsion_k': torsion_force_constant,'bb_bb_bb_sc_torsion_k': torsion_force_constant,'sc_bb_bb_bb_torsion_k': torsion_force_constant,'sc_bb_bb_sc_torsion_k': torsion_force_constant}
-equil_torsion_angle = 52
+equil_torsion_angle = 0.91
 equil_torsion_angles = {'bb_bb_bb_bb_torsion_0': equil_torsion_angle,'bb_bb_bb_sc_torsion_0': equil_torsion_angle,'sc_bb_bb_bb_torsion_0': equil_torsion_angle,'sc_bb_bb_sc_torsion_0': equil_torsion_angle}
 
 positions = PDBFile("helix.pdb").getPositions()
