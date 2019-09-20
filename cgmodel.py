@@ -6,6 +6,7 @@ from simtk.openmm.app.pdbfile import PDBFile
 from simtk.openmm.app.topology import Topology
 from simtk.openmm.app.topology import Residue
 import simtk.openmm.app.element as elem
+import foldamers
 from foldamers.utilities import util
 from cg_openmm.build.cg_build import *
 from itertools import chain, combinations, product
@@ -136,7 +137,9 @@ class CGModel(object):
                      heteropolymer=False,
                      monomer_types=None,
                      sequence=None,
-                     random_positions=False):
+                     random_positions=False,
+                     system=None,
+                     topology=None):
 
           """
           Initialize definitions for all of the properties of a coarse grained model
@@ -238,7 +241,7 @@ for all bond types, default = 200 * kJ/mol/rad^2
           if torsion_force_constants == None:
             torsion_force_constants={'bb_bb_bb_bb_torsion_k': 0.0002,'bb_bb_bb_sc_torsion_k': 0,'bb_bb_sc_sc_torsion_k': 0, 'bb_sc_sc_sc_torsion_k': 0, 'sc_bb_bb_sc_torsion_k': 0, 'sc_sc_sc_sc_torsion_k': 0, 'sc_bb_bb_bb_torsion_k': 0}
           if equil_bond_angles == None:
-            equil_bond_angles = {'bb_bb_bb_angle_0': 1.61}
+            equil_bond_angles = {'bb_bb_bb_angle_0': 1.61,'bb_bb_sc_angle_0': 1.61}
           if equil_torsion_angles == None:
             equil_torsion_angles = {'bb_bb_bb_bb_torsion_0': 0.91,'bb_bb_bb_sc_torsion_0': 0,'bb_bb_sc_sc_torsion_0': 0.0, 'bb_sc_sc_sc_torsion_0': 0.0, 'sc_bb_bb_sc_torsion_0': 0.0, 'bb_sc_sc_bb_torsion_0': 0.0, 'sc_sc_sc_sc_torsion_0': 0.0, 'sc_bb_bb_bb_torsion_0': 0}
           if charges == None:
@@ -312,7 +315,7 @@ for all bond types, default = 200 * kJ/mol/rad^2
            else:
             if use_structure_library:
              if polymer_length == 12:
-              positions_file = os.path.abspath("../../ensembles/12_1_1_0/helix.pdb")
+              positions_file = str(str(str(os.path.abspath(__file__)).split('/cg_model')[0])+"/structure_library/12_1_1_0/helix.pdb")
               self.positions = PDBFile(positions_file).getPositions()
              else:
               self.positions = util.random_positions(self,use_library=True)
@@ -322,10 +325,19 @@ for all bond types, default = 200 * kJ/mol/rad^2
            self.positions = positions
 
           self.simulation = None
-          
-          if self.positions != None:
-            self.topology = build_topology(self,use_pdbfile=False)
-          self.system = build_system(self)
+
+          #print("Assigning topology")          
+          if topology == None:
+            if self.positions != None:
+              self.topology = build_topology(self,use_pdbfile=True)
+          else:
+              self.topology = topology
+ 
+          #print("Assigning system")
+          if system == None:
+            self.system = build_system(self)
+          else:
+            self.system = system
 
         def get_monomer_types(self):
           """
@@ -967,18 +979,12 @@ for all bond types, default = 200 * kJ/mol/rad^2
              - torsion_force_constant ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The assigned torsion force constant for the provided particles
 
           """
-          particle_types = ['','','','']
-          if 'B' in self.particle_list[torsion[0]]: particle_types[0] = 'backbone'
-          else: particle_types[0] = 'sidechain'
+          particle_1_type = self.get_particle_type(torsion[0])
+          particle_2_type = self.get_particle_type(torsion[1])
+          particle_3_type = self.get_particle_type(torsion[2])
+          particle_4_type = self.get_particle_type(torsion[3])
 
-          if 'B' in self.particle_list[torsion[1]]: particle_types[1] = 'backbone'
-          else: particle_types[1] = 'sidechain'
-
-          if 'B' in self.particle_list[torsion[2]]: particle_types[2] = 'backbone'
-          else: particle_types[2] = 'sidechain'
-
-          if 'B' in self.particle_list[torsion[3]]: particle_types[3] = 'backbone'
-          else: particle_types[3] = 'sidechain'
+          particle_types = [particle_1_type,particle_2_type,particle_3_type,particle_4_type]
 
           if particle_types[0] == 'sidechain':
            if particle_types[1] == 'backbone':
@@ -1042,18 +1048,12 @@ for all bond types, default = 200 * kJ/mol/rad^2
              - equil_torsion_angle (float) - The assigned equilibrium torsion angle for the provided particles
 
           """
-          particle_types = ['','','','']
-          if 'B' in self.particle_list[torsion[0]]: particle_types[0] = 'backbone'
-          else: particle_types[0] = 'sidechain'
+          particle_1_type = self.get_particle_type(torsion[0])
+          particle_2_type = self.get_particle_type(torsion[1])
+          particle_3_type = self.get_particle_type(torsion[2])
+          particle_4_type = self.get_particle_type(torsion[3])
 
-          if 'B' in self.particle_list[torsion[1]]: particle_types[1] = 'backbone'
-          else: particle_types[1] = 'sidechain'
-
-          if 'B' in self.particle_list[torsion[2]]: particle_types[2] = 'backbone'
-          else: particle_types[2] = 'sidechain'
-
-          if 'B' in self.particle_list[torsion[3]]: particle_types[3] = 'backbone'
-          else: particle_types[3] = 'sidechain'
+          particle_types = [particle_1_type,particle_2_type,particle_3_type,particle_4_type]
 
           if particle_types[0] == 'sidechain':
            if particle_types[1] == 'backbone':
