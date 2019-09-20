@@ -9,7 +9,7 @@ from simtk import unit
 from statistics import mean
 from foldamers.cg_model.cgmodel import basic_cgmodel
 from cg_openmm.simulation.tools import *
-from genetic_selection import GeneticSelectionCV
+#from genetic_selection import GeneticSelectionCV
 
 
 
