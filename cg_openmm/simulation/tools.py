@@ -1,9 +1,13 @@
+import sys
 import numpy as np
 from simtk import openmm as mm
 from simtk.openmm import *
 from simtk import unit
 import simtk.openmm.app.element as elem
+from simtk.openmm.app.pdbfile import PDBFile
 from simtk.openmm.app import *
+from cg_openmm.utilities.iotools import *
+import mdtraj
 import matplotlib.pyplot as pyplot
 import csv
 
@@ -286,6 +290,12 @@ def build_mm_simulation(topology,system,positions,temperature=300.0 * unit.kelvi
         
         simulation = Simulation(topology, system, integrator)
 
+        file = open("temp.pdb","w")
+        PDBFile.writeFile(topology,positions,file=file)
+        file.close()
+        pdb = PDBFile("temp.pdb")
+        os.remove("temp.pdb")
+        positions = pdb.positions
         simulation.context.setPositions(positions)
 #        simulation.context.setVelocitiesToTemperature(temperature)
         if output_pdb != None:

@@ -2,6 +2,7 @@ import os
 from simtk import unit
 import foldamers
 import cg_openmm
+from simtk.openmm.app.pdbfile import PDBFile
 from foldamers.cg_model.cgmodel import CGModel
 from cg_openmm.simulation.tools import run_simulation
 
@@ -26,15 +27,15 @@ total_steps = round(total_simulation_time.__div__(simulation_time_step))
 temperature = 300.0 * unit.kelvin
 
 # Coarse grained model settings
-polymer_length=8
+polymer_length=12
 backbone_lengths=[1]
 sidechain_lengths=[1]
 sidechain_positions=[0]
-include_bond_forces=False
+include_bond_forces=True
 include_bond_angle_forces=True
 include_nonbonded_forces=True
 include_torsion_forces=True
-constrain_bonds = True
+constrain_bonds=True
 
 # Particle properties
 mass = 100.0 * unit.amu
@@ -48,8 +49,10 @@ sigmas = {'bb_bb_sigma': sigma,'sc_sc_sigma': sigma}
 epsilon = 0.5 * unit.kilocalorie_per_mole
 epsilons = {'bb_bb_eps': epsilon,'sc_sc_eps': epsilon}
 
+positions = PDBFile("helix.pdb").getPositions()
+
 # Build a coarse grained model
-cgmodel = CGModel(polymer_length=polymer_length,backbone_lengths=backbone_lengths,sidechain_lengths=sidechain_lengths,sidechain_positions=sidechain_positions,masses=masses,sigmas=sigmas,epsilons=epsilons,bond_lengths=bond_lengths,bond_force_constants=bond_force_constants,include_nonbonded_forces=include_nonbonded_forces,include_bond_forces=include_bond_forces,include_bond_angle_forces=include_bond_angle_forces,include_torsion_forces=include_torsion_forces,constrain_bonds=constrain_bonds,use_structure_library=True)
+cgmodel = CGModel(polymer_length=polymer_length,backbone_lengths=backbone_lengths,sidechain_lengths=sidechain_lengths,sidechain_positions=sidechain_positions,masses=masses,sigmas=sigmas,epsilons=epsilons,bond_lengths=bond_lengths,bond_force_constants=bond_force_constants,include_nonbonded_forces=include_nonbonded_forces,include_bond_forces=include_bond_forces,include_bond_angle_forces=include_bond_angle_forces,include_torsion_forces=include_torsion_forces,constrain_bonds=constrain_bonds,positions=positions)
 
 # Run a simulation
 run_simulation(cgmodel,output_directory,total_simulation_time,simulation_time_step,temperature,print_frequency)
