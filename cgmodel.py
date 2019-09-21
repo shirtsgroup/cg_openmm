@@ -111,22 +111,22 @@ class CGModel(object):
         _BUILT_IN_REGIONS = ('polymer_length','backbone_lengths','sidechain_lengths','sidechain_positions','masses','sigmas','epsilons','bond_lengths','bond_force_constants','bond_angle_force_constants','torsion_force_constants','equil_torsion_angles','equil_bond_angles','charges','num_beads','positions','system','topology','simulation','constrain_bonds','bond_list','nonbonded_interaction_list','nonbonded_exclusion_list','bond_angle_list','torsion_list','include_bond_forces','include_nonbonded_forces','include_bond_angle_forces','include_torsion_forces','use_structure_library','check_energy_conservation')
 
         def __init__(self,
-                     positions = None,
-                     polymer_length = 12,
-                     backbone_lengths = [1],
-                     sidechain_lengths = [1],
-                     sidechain_positions = [0],
-                     masses = {'backbone_bead_masses': 100.0 * unit.amu, 'sidechain_bead_masses': 100.0 * unit.amu}, 
-                     sigmas = {'bb_bb_sigma': 1.875 * unit.nanometer,'bb_sc_sigma': 1.875 * unit.nanometer,'sc_sc_sigma': 1.875 * unit.nanometer},
-                     epsilons = {'bb_bb_eps': 0.05 * unit.kilocalorie_per_mole,'sc_sc_eps': 0.05 * unit.kilocalorie_per_mole}, 
-                     bond_lengths = {'bb_bb_bond_length': 0.75 * unit.nanometer,'bb_sc_bond_length': 0.75 * unit.nanometer,'sc_sc_bond_length': 0.75 * unit.nanometer}, 
-                     bond_force_constants = None, 
+                     positions=None,
+                     polymer_length=12,
+                     backbone_lengths=[1],
+                     sidechain_lengths=[1],
+                     sidechain_positions=[0],
+                     masses=None, 
+                     sigmas=None,
+                     epsilons=None, 
+                     bond_lengths=None, 
+                     bond_force_constants=None, 
                      bond_angle_force_constants=None, 
                      torsion_force_constants=None, 
-                     equil_bond_angles = None,
-                     equil_torsion_angles = None, 
-                     charges = None, 
-                     constrain_bonds = True,
+                     equil_bond_angles=None,
+                     equil_torsion_angles=None, 
+                     charges=None, 
+                     constrain_bonds=True,
                      include_bond_forces=False,
                      include_nonbonded_forces=True,
                      include_bond_angle_forces=True,
@@ -149,7 +149,7 @@ class CGModel(object):
           :param positions: Positions for the particles in the coarse grained model, default = None
           :type positions: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit )
 
-          :param polymer_length: Number of monomer units, default = 8
+          :param polymer_length: Number of monomer units, default = 12
           :type polymer_length: integer
 
           :param backbone_lengths: List of the number of beads in the backbone for unique monomer types within the coarse grained model, default = [1]
@@ -161,38 +161,37 @@ class CGModel(object):
           :param sidechain_positions: List of the indices of backbone beads upon which we will place sidechains, default = [0] (add a sidechain to the first backbone bead in each monomer)
           :type sidechain_positions: List( integer )
 
-          :param masses: Masses of all particle types, default = 100.0 * unit.amu (for all particles)
+          :param masses: Masses of all particle types, default = None
           :type masses: dict( 'backbone_bead_masses': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ , 'sidechain_bead_masses': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )
 
-          :param sigmas: Non-bonded bead Lennard-Jones equilibrium interaction distances, default = 18.5 unit.angstrom (for all particles)
+          :param sigmas: Non-bonded bead Lennard-Jones equilibrium interaction distances, default = None
           :type sigmas: dict( 'bb_bb_sigma': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ,'bb_sc_sigma': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ,'sc_sc_sigma': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )
 
-          :param epsilons: Non-bonded Lennard-Jones equilibrium interaction strengths, default = 0.5 * unit.kilocalorie_per_mole (for all particle interactions types)
+          :param epsilons: Non-bonded Lennard-Jones equilibrium interaction strengths, default = None
           :type epsilons: dict( 'bb_bb_eps': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ,'bb_sc_eps': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ,'sc_sc_eps': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )
 
-          :param bond_lengths: Bond lengths for all bonds, default = 7.5 unit.angstrom
+          :param bond_lengths: Bond lengths for all bonds, default = None
           :type bond_lengths: dict( 'bb_bb_bond_length': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ,'bb_sc_bond_length': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ,'sc_sc_bond_length': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )
 
-          :param bond_angle_force_constants: Bond angle force constants
-for all bond types, default = 200 * kJ/mol/rad^2
+          :param bond_angle_force_constants: Bond angle force constants for all bond types, default = None
           :type bond_angle_force_constants: dict( 'bb_bb__bb_angle_k': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ,'bb_bb_sc_angle_k': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ , 'bb_sc_sc_angle_k': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ , 'sc_sc_sc_angle_k': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ , 'sc_bb_sc_angle_k': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ , 'sc_sc_bb_angle_k': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )
 
-          :param bond_force_constants: Bond force constants for all bond types, default = 1250 kJ/mol/nm^2
+          :param bond_force_constants: Bond force constants for all bond types, default = None
           :type bond_force_constants: dict( 'bb_bb_bond_k': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ,'bb_sc_bond_k': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ , 'sc_sc_bond_k': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )
 
-          :param equil_bond_angles: Equilibrium bond angle for all bond angle types, default = 120
+          :param equil_bond_angles: Equilibrium bond angle for all bond angle types, default = None
           :type equil_bond_angles: dict('bb_bb_bb_angle_0': float,'bb_bb_sc_angle_0': float,'bb_sc_sc_angle_0': float,'sc_sc_sc_angle_0': float, 'sc_bb_sc_angle_0': float,'sc_sc_bb_angle_0': float )
 
-          :param torsion_force_constants: Torsion force constants for all unique torsion definitions, default = 200
+          :param torsion_force_constants: Torsion force constants for all unique torsion definitions, default = None
           :type torsion_force_constants: dict( 'bb_bb_bb_bb_torsion_k': float,'bb_bb_bb_sc_torsion_k': float,'bb_bb_sc_sc_torsion_k': float, 'bb_sc_sc_sc_torsion_k': float, 'sc_bb_bb_sc_torsion_k': float, 'bb_sc_sc_bb_torsion_k': float, 'sc_sc_sc_sc_torsion_k': float,  'sc_bb_bb_bb_torsion_k': float )
 
           :param equil_torsion_angles: Equilibrium torsion angle for all unique torsion angle definitions, default = 0
           :type equil_torsion_angles: dict( 'bb_bb_bb_bb_torsion_0': float,'bb_bb_bb_sc_torsion_0': float,'bb_bb_sc_sc_torsion_0': float, 'bb_sc_sc_sc_torsion_0': float, 'sc_bb_bb_sc_torsion_0': float, 'bb_sc_sc_bb_torsion_0': float, 'sc_sc_sc_sc_torsion_0': float, 'sc_bb_bb_bb_torsion_0': float )
 
-          :param charges: Charges for all particles, default = 0.0 unit.elementary_charge (for all particles)
+          :param charges: Charges for all particles, default = None
           :type charges: dict( 'backbone_bead_charges': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ,'sidechain_bead_charges': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )
 
-          :param num_beads: Total number of particles in the coarse grained model, default = 24 (The total number of particles in a length=12 1-1 coarse-grained model)
+          :param num_beads: Total number of particles in the coarse grained model, default = None (The total number of particles in a length=12 1-1 coarse-grained model)
           :type num_beads: int
 
           :param system: OpenMM System() object, which stores the forces for the coarse grained model, default = None
@@ -246,6 +245,14 @@ for all bond types, default = 200 * kJ/mol/rad^2
             equil_torsion_angles = {'bb_bb_bb_bb_torsion_0': 0.91,'bb_bb_bb_sc_torsion_0': 0,'bb_bb_sc_sc_torsion_0': 0.0, 'bb_sc_sc_sc_torsion_0': 0.0, 'sc_bb_bb_sc_torsion_0': 0.0, 'bb_sc_sc_bb_torsion_0': 0.0, 'sc_sc_sc_sc_torsion_0': 0.0, 'sc_bb_bb_bb_torsion_0': 0}
           if charges == None:
             charges = {'backbone_bead_charges': 0.0 * unit.elementary_charge,'sidechain_bead_charges': 0.0 * unit.elementary_charge}
+          if masses == None:
+            masses = {'backbone_bead_masses': 100.0 * unit.amu, 'sidechain_bead_masses': 100.0 * unit.amu}
+          if sigmas == None:
+            sigmas = {'bb_bb_sigma': 1.875 * unit.nanometer,'bb_sc_sigma': 1.875 * unit.nanometer,'sc_sc_sigma': 1.875 * unit.nanometer}
+          if epsilons == None:
+            epsilons = {'bb_bb_eps': 0.05 * unit.kilocalorie_per_mole,'sc_sc_eps': 0.05 * unit.kilocalorie_per_mole}
+          if bond_lengths == None:
+            bond_lengths = {'bb_bb_bond_length': 0.75 * unit.nanometer,'bb_sc_bond_length': 0.75 * unit.nanometer,'sc_sc_bond_length': 0.75 * unit.nanometer}
 
           """
           Initialize user-defined input.
