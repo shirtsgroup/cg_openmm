@@ -1,28 +1,17 @@
-# This script generates random coordinates for a CG polymer
-
-# =============================================================================================
-# 1) PYTHON PACKAGE IMPORTS
-# =============================================================================================
-
-# System packages
 from simtk.openmm.app.pdbfile import PDBFile
 import numpy as np
 import math, random
 from simtk import unit
-# =============================================================================================
-# 2) ENVIRONMENT/JOB SETTINGS
-# =============================================================================================
 
 def write_bonds(CGModel,pdb_object):
         """
         Writes the bonds from an input CGModel class object to the file object 'pdb_object', using PDB 'CONECT' syntax.
 
-        Parameters
-        ----------
+        :param CGModel: CGModel() class object
+        :type CGModel: class
 
-        CGModel: Coarse grained model class object
-
-        pdb_object: File object to which we will write the bond list
+        :param pdb_object: File object to which we will write the bond list
+        :type pdb_object: file
 
         """
         bond_list = CGModel.bond_list
@@ -34,39 +23,18 @@ def write_bonds(CGModel,pdb_object):
         pdb_object.write(str("END\n"))
         return
 
-def write_cg_pdb(cgmodel,file_name):
-        """
-        Writes the positions from an input CGModel class object to the file 'filename'.  Used to test the compatibility of coarse grained model parameters with the OpenMM PDBFile() functions, which are needed to write coordinates to a PDB file during MD simulations.
-
-        Parameters
-        ----------
-
-        CGModel: Coarse grained model class object
-
-        filename: Path to the file where we will write PDB coordinates.
-
-        """
-
-        file_obj = open(file_name,'w')
-        PDBFile.writeHeader(cgmodel.topology, file_obj)
-        #print(cgmodel.positions)
-        PDBFile.writeModel(cgmodel.topology,cgmodel.positions, file_obj)
-        write_bonds(cgmodel,file_obj)
-        file_obj.close()
-        return
-
 def write_pdbfile_without_topology(CGModel,filename,energy=None):
         """
         Writes the positions from an input CGModel class object to the file 'filename'.
 
-        Parameters
-        ----------
+        :param CGModel: CGModel() class object
+        :type CGModel: class
 
-        CGModel: Coarse grained model class object
+        :param filename: Path to the file where we will write PDB coordinates.
+        :type filename: str
 
-        filename: Path to the file where we will write PDB coordinates.
-
-        energy: Energy to write to the PDB file, default = None
+        :param energy: Energy to write to the PDB file, default = None
+        :type energy: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
 
         """
 
