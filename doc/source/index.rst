@@ -14,9 +14,3 @@ This documentation is generated automatically using Sphinx, which reads all docs
    simulation.rst
    utilities.rst
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

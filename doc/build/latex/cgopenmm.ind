@@ -5,80 +5,83 @@
 \let\spxextra \sphinxstyleindexextra
 
   \bigletter A
-  \item \spxentry{add\_force()}\spxextra{in module build.cg\_build}, \hyperpage{7}
-  \item \spxentry{add\_new\_elements()}\spxextra{in module build.cg\_build}, \hyperpage{9}
+  \item \spxentry{add\_force()}\spxextra{in module build.cg\_build}, \hyperpage{8}
+  \item \spxentry{add\_new\_elements()}\spxextra{in module build.cg\_build}, \hyperpage{10}
 
   \indexspace
   \bigletter B
-  \item \spxentry{build.cg\_build}\spxextra{module}, \hyperpage{5}, \hyperpage{7}, \hyperpage{9}
-  \item \spxentry{build\_mm\_simulation()}\spxextra{in module simulation.tools}, \hyperpage{10}
-  \item \spxentry{build\_topology()}\spxextra{in module build.cg\_build}, \hyperpage{5}
+  \item \spxentry{build.cg\_build}\spxextra{module}, \hyperpage{4}, \hyperpage{6}, \hyperpage{8}, 
+		\hyperpage{10}
+  \item \spxentry{build\_mm\_simulation()}\spxextra{in module simulation.tools}, \hyperpage{11}
+  \item \spxentry{build\_system()}\spxextra{in module build.cg\_build}, \hyperpage{4}
+  \item \spxentry{build\_topology()}\spxextra{in module build.cg\_build}, \hyperpage{6}
 
   \indexspace
   \bigletter D
-  \item \spxentry{distance()}\spxextra{in module utilities.util}, \hyperpage{26}
+  \item \spxentry{distance()}\spxextra{in module utilities.util}, \hyperpage{27}
 
   \indexspace
   \bigletter G
-  \item \spxentry{get\_box\_vectors()}\spxextra{in module utilities.util}, \hyperpage{26}
+  \item \spxentry{get\_box\_vectors()}\spxextra{in module utilities.util}, \hyperpage{27}
   \item \spxentry{get\_minimum\_energy\_ensemble()}\spxextra{in module simulation.rep\_exch}, 
-		\hyperpage{25}
-  \item \spxentry{get\_mm\_energy()}\spxextra{in module simulation.tools}, \hyperpage{22}
-  \item \spxentry{get\_num\_forces()}\spxextra{in module build.cg\_build}, \hyperpage{8}
+		\hyperpage{26}
+  \item \spxentry{get\_mm\_energy()}\spxextra{in module simulation.tools}, \hyperpage{23}
+  \item \spxentry{get\_num\_forces()}\spxextra{in module build.cg\_build}, \hyperpage{9}
   \item \spxentry{get\_simulation\_time\_step()}\spxextra{in module simulation.tools}, 
-		\hyperpage{22}
+		\hyperpage{23}
 
   \indexspace
   \bigletter L
-  \item \spxentry{lj\_v()}\spxextra{in module utilities.util}, \hyperpage{26}
+  \item \spxentry{lj\_v()}\spxextra{in module utilities.util}, \hyperpage{27}
 
   \indexspace
   \bigletter M
   \item \spxentry{make\_replica\_pdb\_files()}\spxextra{in module simulation.rep\_exch}, 
-		\hyperpage{15}
-  \item \spxentry{minimize\_structure()}\spxextra{in module simulation.tools}, \hyperpage{23}
+		\hyperpage{16}
+  \item \spxentry{minimize\_structure()}\spxextra{in module simulation.tools}, \hyperpage{24}
 
   \indexspace
   \bigletter P
   \item \spxentry{plot\_replica\_exchange\_energies()}\spxextra{in module simulation.rep\_exch}, 
-		\hyperpage{18}
-  \item \spxentry{plot\_replica\_exchange\_summary()}\spxextra{in module simulation.rep\_exch}, 
 		\hyperpage{19}
-  \item \spxentry{plot\_simulation\_data()}\spxextra{in module simulation.tools}, \hyperpage{20}
-  \item \spxentry{plot\_simulation\_results()}\spxextra{in module simulation.tools}, \hyperpage{20}
+  \item \spxentry{plot\_replica\_exchange\_summary()}\spxextra{in module simulation.rep\_exch}, 
+		\hyperpage{20}
+  \item \spxentry{plot\_simulation\_data()}\spxextra{in module simulation.tools}, \hyperpage{21}
+  \item \spxentry{plot\_simulation\_results()}\spxextra{in module simulation.tools}, \hyperpage{21}
 
   \indexspace
   \bigletter R
   \item \spxentry{read\_replica\_exchange\_data()}\spxextra{in module simulation.rep\_exch}, 
-		\hyperpage{14}
-  \item \spxentry{read\_simulation\_data()}\spxextra{in module simulation.tools}, \hyperpage{24}
+		\hyperpage{15}
+  \item \spxentry{read\_simulation\_data()}\spxextra{in module simulation.tools}, \hyperpage{25}
   \item \spxentry{run\_replica\_exchange()}\spxextra{in module simulation.rep\_exch}, 
-		\hyperpage{13}
-  \item \spxentry{run\_simulation()}\spxextra{in module simulation.tools}, \hyperpage{11}
+		\hyperpage{14}
+  \item \spxentry{run\_simulation()}\spxextra{in module simulation.tools}, \hyperpage{12}
 
   \indexspace
   \bigletter S
-  \item \spxentry{set\_box\_vectors()}\spxextra{in module utilities.util}, \hyperpage{27}
-  \item \spxentry{simulation.rep\_exch}\spxextra{module}, \hyperpage{13}, \hyperpage{18}, 
-		\hyperpage{25}
-  \item \spxentry{simulation.tools}\spxextra{module}, \hyperpage{10}, \hyperpage{20}, 
-		\hyperpage{22}
+  \item \spxentry{set\_box\_vectors()}\spxextra{in module utilities.util}, \hyperpage{28}
+  \item \spxentry{simulation.rep\_exch}\spxextra{module}, \hyperpage{14}, \hyperpage{19}, 
+		\hyperpage{26}
+  \item \spxentry{simulation.tools}\spxextra{module}, \hyperpage{11}, \hyperpage{21}, 
+		\hyperpage{23}
 
   \indexspace
   \bigletter T
-  \item \spxentry{test\_force()}\spxextra{in module build.cg\_build}, \hyperpage{7}
-  \item \spxentry{test\_forces()}\spxextra{in module build.cg\_build}, \hyperpage{8}
+  \item \spxentry{test\_force()}\spxextra{in module build.cg\_build}, \hyperpage{8}
+  \item \spxentry{test\_forces()}\spxextra{in module build.cg\_build}, \hyperpage{9}
 
   \indexspace
   \bigletter U
-  \item \spxentry{utilities.util}\spxextra{module}, \hyperpage{26}
+  \item \spxentry{utilities.util}\spxextra{module}, \hyperpage{27}
 
   \indexspace
   \bigletter V
-  \item \spxentry{verify\_topology()}\spxextra{in module build.cg\_build}, \hyperpage{5}
+  \item \spxentry{verify\_system()}\spxextra{in module build.cg\_build}, \hyperpage{4}
+  \item \spxentry{verify\_topology()}\spxextra{in module build.cg\_build}, \hyperpage{6}
 
   \indexspace
   \bigletter W
-  \item \spxentry{write\_xml\_file()}\spxextra{in module build.cg\_build}, \hyperpage{9}
+  \item \spxentry{write\_xml\_file()}\spxextra{in module build.cg\_build}, \hyperpage{10}
 
 \end{sphinxtheindex}

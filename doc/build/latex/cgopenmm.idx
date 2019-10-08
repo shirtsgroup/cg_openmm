@@ -1,36 +1,39 @@
-\indexentry{build.cg\_build (module)@\spxentry{build.cg\_build}\spxextra{module}|hyperpage}{5}
-\indexentry{build\_topology() (in module build.cg\_build)@\spxentry{build\_topology()}\spxextra{in module build.cg\_build}|hyperpage}{5}
-\indexentry{verify\_topology() (in module build.cg\_build)@\spxentry{verify\_topology()}\spxextra{in module build.cg\_build}|hyperpage}{5}
-\indexentry{build.cg\_build (module)@\spxentry{build.cg\_build}\spxextra{module}|hyperpage}{7}
-\indexentry{add\_force() (in module build.cg\_build)@\spxentry{add\_force()}\spxextra{in module build.cg\_build}|hyperpage}{7}
-\indexentry{test\_force() (in module build.cg\_build)@\spxentry{test\_force()}\spxextra{in module build.cg\_build}|hyperpage}{7}
-\indexentry{test\_forces() (in module build.cg\_build)@\spxentry{test\_forces()}\spxextra{in module build.cg\_build}|hyperpage}{8}
-\indexentry{get\_num\_forces() (in module build.cg\_build)@\spxentry{get\_num\_forces()}\spxextra{in module build.cg\_build}|hyperpage}{8}
-\indexentry{build.cg\_build (module)@\spxentry{build.cg\_build}\spxextra{module}|hyperpage}{9}
-\indexentry{add\_new\_elements() (in module build.cg\_build)@\spxentry{add\_new\_elements()}\spxextra{in module build.cg\_build}|hyperpage}{9}
-\indexentry{write\_xml\_file() (in module build.cg\_build)@\spxentry{write\_xml\_file()}\spxextra{in module build.cg\_build}|hyperpage}{9}
-\indexentry{simulation.tools (module)@\spxentry{simulation.tools}\spxextra{module}|hyperpage}{10}
-\indexentry{build\_mm\_simulation() (in module simulation.tools)@\spxentry{build\_mm\_simulation()}\spxextra{in module simulation.tools}|hyperpage}{10}
-\indexentry{run\_simulation() (in module simulation.tools)@\spxentry{run\_simulation()}\spxextra{in module simulation.tools}|hyperpage}{11}
-\indexentry{simulation.rep\_exch (module)@\spxentry{simulation.rep\_exch}\spxextra{module}|hyperpage}{13}
-\indexentry{run\_replica\_exchange() (in module simulation.rep\_exch)@\spxentry{run\_replica\_exchange()}\spxextra{in module simulation.rep\_exch}|hyperpage}{13}
-\indexentry{read\_replica\_exchange\_data() (in module simulation.rep\_exch)@\spxentry{read\_replica\_exchange\_data()}\spxextra{in module simulation.rep\_exch}|hyperpage}{14}
-\indexentry{make\_replica\_pdb\_files() (in module simulation.rep\_exch)@\spxentry{make\_replica\_pdb\_files()}\spxextra{in module simulation.rep\_exch}|hyperpage}{15}
-\indexentry{simulation.rep\_exch (module)@\spxentry{simulation.rep\_exch}\spxextra{module}|hyperpage}{18}
-\indexentry{plot\_replica\_exchange\_energies() (in module simulation.rep\_exch)@\spxentry{plot\_replica\_exchange\_energies()}\spxextra{in module simulation.rep\_exch}|hyperpage}{18}
-\indexentry{plot\_replica\_exchange\_summary() (in module simulation.rep\_exch)@\spxentry{plot\_replica\_exchange\_summary()}\spxextra{in module simulation.rep\_exch}|hyperpage}{19}
-\indexentry{simulation.tools (module)@\spxentry{simulation.tools}\spxextra{module}|hyperpage}{20}
-\indexentry{plot\_simulation\_data() (in module simulation.tools)@\spxentry{plot\_simulation\_data()}\spxextra{in module simulation.tools}|hyperpage}{20}
-\indexentry{plot\_simulation\_results() (in module simulation.tools)@\spxentry{plot\_simulation\_results()}\spxextra{in module simulation.tools}|hyperpage}{20}
-\indexentry{simulation.tools (module)@\spxentry{simulation.tools}\spxextra{module}|hyperpage}{22}
-\indexentry{get\_mm\_energy() (in module simulation.tools)@\spxentry{get\_mm\_energy()}\spxextra{in module simulation.tools}|hyperpage}{22}
-\indexentry{get\_simulation\_time\_step() (in module simulation.tools)@\spxentry{get\_simulation\_time\_step()}\spxextra{in module simulation.tools}|hyperpage}{22}
-\indexentry{minimize\_structure() (in module simulation.tools)@\spxentry{minimize\_structure()}\spxextra{in module simulation.tools}|hyperpage}{23}
-\indexentry{read\_simulation\_data() (in module simulation.tools)@\spxentry{read\_simulation\_data()}\spxextra{in module simulation.tools}|hyperpage}{24}
-\indexentry{simulation.rep\_exch (module)@\spxentry{simulation.rep\_exch}\spxextra{module}|hyperpage}{25}
-\indexentry{get\_minimum\_energy\_ensemble() (in module simulation.rep\_exch)@\spxentry{get\_minimum\_energy\_ensemble()}\spxextra{in module simulation.rep\_exch}|hyperpage}{25}
-\indexentry{utilities.util (module)@\spxentry{utilities.util}\spxextra{module}|hyperpage}{26}
-\indexentry{distance() (in module utilities.util)@\spxentry{distance()}\spxextra{in module utilities.util}|hyperpage}{26}
-\indexentry{get\_box\_vectors() (in module utilities.util)@\spxentry{get\_box\_vectors()}\spxextra{in module utilities.util}|hyperpage}{26}
-\indexentry{lj\_v() (in module utilities.util)@\spxentry{lj\_v()}\spxextra{in module utilities.util}|hyperpage}{26}
-\indexentry{set\_box\_vectors() (in module utilities.util)@\spxentry{set\_box\_vectors()}\spxextra{in module utilities.util}|hyperpage}{27}
+\indexentry{build.cg\_build (module)@\spxentry{build.cg\_build}\spxextra{module}|hyperpage}{4}
+\indexentry{build\_system() (in module build.cg\_build)@\spxentry{build\_system()}\spxextra{in module build.cg\_build}|hyperpage}{4}
+\indexentry{verify\_system() (in module build.cg\_build)@\spxentry{verify\_system()}\spxextra{in module build.cg\_build}|hyperpage}{4}
+\indexentry{build.cg\_build (module)@\spxentry{build.cg\_build}\spxextra{module}|hyperpage}{6}
+\indexentry{build\_topology() (in module build.cg\_build)@\spxentry{build\_topology()}\spxextra{in module build.cg\_build}|hyperpage}{6}
+\indexentry{verify\_topology() (in module build.cg\_build)@\spxentry{verify\_topology()}\spxextra{in module build.cg\_build}|hyperpage}{6}
+\indexentry{build.cg\_build (module)@\spxentry{build.cg\_build}\spxextra{module}|hyperpage}{8}
+\indexentry{add\_force() (in module build.cg\_build)@\spxentry{add\_force()}\spxextra{in module build.cg\_build}|hyperpage}{8}
+\indexentry{test\_force() (in module build.cg\_build)@\spxentry{test\_force()}\spxextra{in module build.cg\_build}|hyperpage}{8}
+\indexentry{test\_forces() (in module build.cg\_build)@\spxentry{test\_forces()}\spxextra{in module build.cg\_build}|hyperpage}{9}
+\indexentry{get\_num\_forces() (in module build.cg\_build)@\spxentry{get\_num\_forces()}\spxextra{in module build.cg\_build}|hyperpage}{9}
+\indexentry{build.cg\_build (module)@\spxentry{build.cg\_build}\spxextra{module}|hyperpage}{10}
+\indexentry{add\_new\_elements() (in module build.cg\_build)@\spxentry{add\_new\_elements()}\spxextra{in module build.cg\_build}|hyperpage}{10}
+\indexentry{write\_xml\_file() (in module build.cg\_build)@\spxentry{write\_xml\_file()}\spxextra{in module build.cg\_build}|hyperpage}{10}
+\indexentry{simulation.tools (module)@\spxentry{simulation.tools}\spxextra{module}|hyperpage}{11}
+\indexentry{build\_mm\_simulation() (in module simulation.tools)@\spxentry{build\_mm\_simulation()}\spxextra{in module simulation.tools}|hyperpage}{11}
+\indexentry{run\_simulation() (in module simulation.tools)@\spxentry{run\_simulation()}\spxextra{in module simulation.tools}|hyperpage}{12}
+\indexentry{simulation.rep\_exch (module)@\spxentry{simulation.rep\_exch}\spxextra{module}|hyperpage}{14}
+\indexentry{run\_replica\_exchange() (in module simulation.rep\_exch)@\spxentry{run\_replica\_exchange()}\spxextra{in module simulation.rep\_exch}|hyperpage}{14}
+\indexentry{read\_replica\_exchange\_data() (in module simulation.rep\_exch)@\spxentry{read\_replica\_exchange\_data()}\spxextra{in module simulation.rep\_exch}|hyperpage}{15}
+\indexentry{make\_replica\_pdb\_files() (in module simulation.rep\_exch)@\spxentry{make\_replica\_pdb\_files()}\spxextra{in module simulation.rep\_exch}|hyperpage}{16}
+\indexentry{simulation.rep\_exch (module)@\spxentry{simulation.rep\_exch}\spxextra{module}|hyperpage}{19}
+\indexentry{plot\_replica\_exchange\_energies() (in module simulation.rep\_exch)@\spxentry{plot\_replica\_exchange\_energies()}\spxextra{in module simulation.rep\_exch}|hyperpage}{19}
+\indexentry{plot\_replica\_exchange\_summary() (in module simulation.rep\_exch)@\spxentry{plot\_replica\_exchange\_summary()}\spxextra{in module simulation.rep\_exch}|hyperpage}{20}
+\indexentry{simulation.tools (module)@\spxentry{simulation.tools}\spxextra{module}|hyperpage}{21}
+\indexentry{plot\_simulation\_data() (in module simulation.tools)@\spxentry{plot\_simulation\_data()}\spxextra{in module simulation.tools}|hyperpage}{21}
+\indexentry{plot\_simulation\_results() (in module simulation.tools)@\spxentry{plot\_simulation\_results()}\spxextra{in module simulation.tools}|hyperpage}{21}
+\indexentry{simulation.tools (module)@\spxentry{simulation.tools}\spxextra{module}|hyperpage}{23}
+\indexentry{get\_mm\_energy() (in module simulation.tools)@\spxentry{get\_mm\_energy()}\spxextra{in module simulation.tools}|hyperpage}{23}
+\indexentry{get\_simulation\_time\_step() (in module simulation.tools)@\spxentry{get\_simulation\_time\_step()}\spxextra{in module simulation.tools}|hyperpage}{23}
+\indexentry{minimize\_structure() (in module simulation.tools)@\spxentry{minimize\_structure()}\spxextra{in module simulation.tools}|hyperpage}{24}
+\indexentry{read\_simulation\_data() (in module simulation.tools)@\spxentry{read\_simulation\_data()}\spxextra{in module simulation.tools}|hyperpage}{25}
+\indexentry{simulation.rep\_exch (module)@\spxentry{simulation.rep\_exch}\spxextra{module}|hyperpage}{26}
+\indexentry{get\_minimum\_energy\_ensemble() (in module simulation.rep\_exch)@\spxentry{get\_minimum\_energy\_ensemble()}\spxextra{in module simulation.rep\_exch}|hyperpage}{26}
+\indexentry{utilities.util (module)@\spxentry{utilities.util}\spxextra{module}|hyperpage}{27}
+\indexentry{distance() (in module utilities.util)@\spxentry{distance()}\spxextra{in module utilities.util}|hyperpage}{27}
+\indexentry{get\_box\_vectors() (in module utilities.util)@\spxentry{get\_box\_vectors()}\spxextra{in module utilities.util}|hyperpage}{27}
+\indexentry{lj\_v() (in module utilities.util)@\spxentry{lj\_v()}\spxextra{in module utilities.util}|hyperpage}{27}
+\indexentry{set\_box\_vectors() (in module utilities.util)@\spxentry{set\_box\_vectors()}\spxextra{in module utilities.util}|hyperpage}{28}

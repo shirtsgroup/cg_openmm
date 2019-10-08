@@ -71,7 +71,7 @@
 
 
 \title{Coarse-grained OpenMM Documentation}
-\date{Sep 20, 2019}
+\date{Sep 21, 2019}
 \release{0.0.1}
 \author{Garrett A. Meek\\ \\Michael R. Shirts\\ \\Dept. of Chemical and Biological Engineering\\University of Colorado Boulder}
 \newcommand{\sphinxlogo}{\vbox{}}
@@ -216,6 +216,60 @@ All \sphinxhref{http://openmm.org}{OpenMM} simulations require a \sphinxhref{htt
 An OpenMM \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1openmm\_1\_1System.html}{System()} object contains force definitions for a molecular model.  The ‘cg\_openmm’ repository applies default definitions for all forces (see \sphinxhref{http://docs.openmm.org/development/userguide/theory.html}{OpenMM user guide} for detailed definitions).
 
 Shown below are tools and functions needed to build and verify an OpenMM \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1openmm\_1\_1System.html}{System()} .
+
+\phantomsection\label{\detokenize{build:module-build.cg_build}}\index{build.cg\_build (module)@\spxentry{build.cg\_build}\spxextra{module}}\index{build\_system() (in module build.cg\_build)@\spxentry{build\_system()}\spxextra{in module build.cg\_build}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{build:build.cg_build.build_system}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{build.cg\_build.}}\sphinxbfcode{\sphinxupquote{build\_system}}}{\emph{cgmodel}, \emph{verify=True}}{}
+Builds an OpenMM \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1openmm\_1\_1System.html}{System()} object, given a CGModel() as input.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode
+\sphinxstyleliteralstrong{\sphinxupquote{cgmodel}} (\sphinxstyleliteralemphasis{\sphinxupquote{class}}) \textendash{} CGModel() class object
+
+\item[{Returns}] \leavevmode
+\begin{itemize}
+\item {} 
+system ( \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1openmm\_1\_1System.html}{System()} ) - OpenMM System() object
+
+\end{itemize}
+
+
+\item[{Example}] \leavevmode
+\end{description}\end{quote}
+
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{foldamers}\PYG{n+nn}{.}\PYG{n+nn}{cg\PYGZus{}model}\PYG{n+nn}{.}\PYG{n+nn}{cgmodel} \PYG{k}{import} \PYG{n}{CGModel}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{cgmodel} \PYG{o}{=} \PYG{n}{CGModel}\PYG{p}{(}\PYG{p}{)}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{system} \PYG{o}{=} \PYG{n}{build\PYGZus{}system}\PYG{p}{(}\PYG{n}{cgmodel}\PYG{p}{)}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{cgmodel}\PYG{o}{.}\PYG{n}{system} \PYG{o}{=} \PYG{n}{system}
+\end{sphinxVerbatim}
+
+\end{fulllineitems}
+
+\index{verify\_system() (in module build.cg\_build)@\spxentry{verify\_system()}\spxextra{in module build.cg\_build}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{build:build.cg_build.verify_system}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{build.cg\_build.}}\sphinxbfcode{\sphinxupquote{verify\_system}}}{\emph{cgmodel}}{}
+Given a CGModel() class object, this function confirms that its OpenMM \sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk\_1\_1openmm\_1\_1openmm\_1\_1System.html}{System()} object is configured correctly.
+\begin{quote}\begin{description}
+\item[{Parameters}] \leavevmode
+\sphinxstyleliteralstrong{\sphinxupquote{cgmodel}} (\sphinxstyleliteralemphasis{\sphinxupquote{class}}) \textendash{} CGModel() class object
+
+\item[{Example}] \leavevmode
+\end{description}\end{quote}
+
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{k+kn}{from} \PYG{n+nn}{foldamers}\PYG{n+nn}{.}\PYG{n+nn}{cg\PYGZus{}model}\PYG{n+nn}{.}\PYG{n+nn}{cgmodel} \PYG{k}{import} \PYG{n}{CGModel}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{cgmodel} \PYG{o}{=} \PYG{n}{CGModel}\PYG{p}{(}\PYG{p}{)}
+\PYG{g+gp}{\PYGZgt{}\PYGZgt{}\PYGZgt{} }\PYG{n}{verify\PYGZus{}system}\PYG{p}{(}\PYG{n}{cgmodel}\PYG{p}{)}
+\end{sphinxVerbatim}
+
+\begin{sphinxadmonition}{warning}{Warning:}
+The function will force an error exit if the system is invalid, and will proceed as normal if the system is valid.
+\end{sphinxadmonition}
+
+\end{fulllineitems}
+
 
 \newpage
 
@@ -1346,20 +1400,6 @@ system (\sphinxhref{https://simtk.org/api\_docs/openmm/api4\_1/python/classsimtk
 
 \end{fulllineitems}
 
-
-
-\chapter{Indices and tables}
-\label{\detokenize{index:indices-and-tables}}\begin{itemize}
-\item {} 
-\DUrole{xref,std,std-ref}{genindex}
-
-\item {} 
-\DUrole{xref,std,std-ref}{modindex}
-
-\item {} 
-\DUrole{xref,std,std-ref}{search}
-
-\end{itemize}
 
 
 \renewcommand{\indexname}{Python Module Index}

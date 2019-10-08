@@ -8,7 +8,7 @@ from simtk.openmm.app.topology import Topology
 import simtk.openmm.app.element as elem
 from cg_openmm.simulation.tools import build_mm_simulation
 from cg_openmm.utilities.util import lj_v
-from foldamers.utilities.iotools import write_pdbfile_without_topology
+from cg_openmm.utilities.iotools import write_pdbfile_without_topology
 
 def add_new_elements(cgmodel):
         """
@@ -427,7 +427,26 @@ def test_force(cgmodel,force,force_type=None):
 
         return(success)
 
-def add_force(cgmodel,force_type=None):
+def add_rosetta_exception_parameters(cgmodel,nonbonded_force,particle_index_1,particle_index_2):
+        """
+        """
+        exception_list = []
+        for exception in range(nonbonded_force.getNumExceptions()):
+          index_1,index_2,charge,sigma,epsilon = nonbonded_force.getExceptionParameters(exception)
+          if [index_1,index_2] not in exception_list and [index_2,index_1] not in exception_list:
+            exception_list.append([index_1,index_2])
+        
+        if [particle_index_1,particle_index_2] not in exception_list and [particle_index_2,particle_index_1] not in exception_list:
+          charge_1 = cgmodel.get_particle_charge(particle_index_1)
+          sigma_1 = cgmodel.get_sigma(particle_index_1).in_units_of(unit.nanometer)
+          epsilon_1 = cgmodel.get_epsilon(particle_index_1).in_units_of(unit.kilojoule_per_mole)
+          charge_2 = cgmodel.get_particle_charge(particle_index_2)
+          sigma_2 = cgmodel.get_sigma(particle_index_2).in_units_of(unit.nanometer)
+          epsilon_2 = cgmodel.get_epsilon(particle_index_2).in_units_of(unit.kilojoule_per_mole)
+          nonbonded_force.addException(particle_index_1,particle_index_2,0.2*charge_1*charge_2,0.2*sigma_1*sigma_2,0.2*epsilon_1*epsilon_2)
+        return(nonbonded_force)
+
+def add_force(cgmodel,force_type=None,rosetta_scoring=False):
         """
 
         Given a 'cgmodel' and 'force_type' as input, this function adds
@@ -487,7 +506,22 @@ def add_force(cgmodel,force_type=None):
             nonbonded_force.addParticle(charge,sigma,epsilon)
 
           if len(cgmodel.bond_list) >= 1:
-            nonbonded_force.createExceptionsFromBonds(cgmodel.bond_list,1.0,1.0)
+            if not rosetta_scoring:
+              nonbonded_force.createExceptionsFromBonds(cgmodel.bond_list,1.0,1.0)
+            if rosetta_scoring:
+              nonbonded_force.createExceptionsFromBonds(cgmodel.bond_list,0.0,0.0)
+              for torsion in cgmodel.torsion_list:
+                for bond in cgmodel.bond_list:
+                  if bond[0] not in torsion:
+                    if bond[1] == torsion[0]:
+                      nonbonded_force = add_rosetta_exception_parameters(cgmodel,nonbonded_force,bond[0],torsion[3])
+                    if bond[1] == torsion[3]:
+                      nonbonded_force = add_rosetta_exception_parameters(cgmodel,nonbonded_force,bond[0],torsion[0])
+                  if bond[1] not in torsion:
+                    if bond[0] == torsion[0]:
+                      nonbonded_force = add_rosetta_exception_parameters(cgmodel,nonbonded_force,bond[1],torsion[3])
+                    if bond[0] == torsion[3]:
+                      nonbonded_force = add_rosetta_exception_parameters(cgmodel,nonbonded_force,bond[1],torsion[0])
           cgmodel.system.addForce(nonbonded_force)
           force = nonbonded_force
           #for particle in range(cgmodel.num_beads):
@@ -507,10 +541,7 @@ def add_force(cgmodel,force_type=None):
           for torsion in cgmodel.torsion_list:
             torsion_force_constant = cgmodel.get_torsion_force_constant(torsion)
             equil_torsion_angle = cgmodel.get_equil_torsion_angle(torsion)
-            periodicity = 0
-            #print(torsion)
-            #print(equil_torsion_angle)
-            #print(torsion_force_constant)
+            periodicity = cgmodel.get_torsion_periodicity(torsion)
             torsion_force.addTorsion(torsion[0],torsion[1],torsion[2],torsion[3],periodicity,equil_torsion_angle,torsion_force_constant)
               #print(torsion_force.getNumTorsions())
           cgmodel.system.addForce(torsion_force)
@@ -560,7 +591,7 @@ def test_forces(cgmodel):
               return(success)
         return(success)
 
-def build_system(cgmodel,verify=True):
+def build_system(cgmodel,rosetta_scoring=False,verify=True):
         """
         Builds an OpenMM `System() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1System.html>`_ object, given a CGModel() as input.
 
@@ -599,7 +630,7 @@ def build_system(cgmodel,verify=True):
 
         if cgmodel.include_nonbonded_forces:
          # Create nonbonded forces
-          cgmodel,nonbonded_force = add_force(cgmodel,force_type="Nonbonded")
+          cgmodel,nonbonded_force = add_force(cgmodel,force_type="Nonbonded",rosetta_scoring=rosetta_scoring)
 
           #if cgmodel.positions != None:
            #print("Testing the nonbonded forces")
@@ -611,22 +642,22 @@ def build_system(cgmodel,verify=True):
           # Create bond angle potentials
           cgmodel,bond_angle_force = add_force(cgmodel,force_type="Angle")
           if cgmodel.positions != None:
-           if not test_force(cgmodel,bond_angle_force,force_type="Angle"):
-            print("ERROR: There was a problem with the bond angle force definitions.")
-            exit()
+            if not test_force(cgmodel,bond_angle_force,force_type="Angle"):
+              print("ERROR: There was a problem with the bond angle force definitions.")
+              exit()
 
         if cgmodel.include_torsion_forces:
           # Create torsion potentials
           cgmodel,torsion_force = add_force(cgmodel,force_type="Torsion")
           if cgmodel.positions != None:
-           if not test_force(cgmodel,torsion_force,force_type="Torsion"):
-            print("ERROR: There was a problem with the torsion definitions.")
-            exit()
+            if not test_force(cgmodel,torsion_force,force_type="Torsion"):
+              print("ERROR: There was a problem with the torsion definitions.")
+              exit()
 
         if verify:
-         if cgmodel.positions != None:
-          if not test_forces(cgmodel):
-           print("ERROR: There was a problem with the forces.")
-           exit()
+          if cgmodel.positions != None:
+            if not test_forces(cgmodel):
+              print("ERROR: There was a problem with the forces.")
+              exit()
 
         return(system)
