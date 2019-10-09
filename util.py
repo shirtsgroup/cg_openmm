@@ -5,11 +5,7 @@ from simtk import unit
 from simtk.openmm.app.pdbfile import PDBFile
 from cg_openmm.build.cg_build import build_system, build_topology
 from cg_openmm.simulation.tools import *
-<<<<<<< HEAD
-#from foldamers.cg_model.cgmodel import *
-=======
 from foldamers.cg_model.cgmodel import *
->>>>>>> b704e614255ece15c0e01d315d085d4840cb755d
 from foldamers.utilities.iotools import *
 
 def random_sign(number):
