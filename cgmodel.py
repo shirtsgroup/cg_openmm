@@ -7,11 +7,8 @@ from simtk.openmm.app.topology import Topology
 from simtk.openmm.app.topology import Residue
 import simtk.openmm.app.element as elem
 import foldamers
-<<<<<<< HEAD
 from foldamers.utilities.util import random_positions
-=======
 from foldamers.utilities import util
->>>>>>> b704e614255ece15c0e01d315d085d4840cb755d
 from cg_openmm.build.cg_build import *
 from itertools import chain, combinations, product
 
@@ -127,23 +124,17 @@ class CGModel(object):
                      bond_force_constants=None, 
                      bond_angle_force_constants=None, 
                      torsion_force_constants=None, 
-<<<<<<< HEAD
                      torsion_periodicities=None,
-=======
->>>>>>> b704e614255ece15c0e01d315d085d4840cb755d
                      equil_bond_angles=None,
                      equil_torsion_angles=None, 
                      charges=None, 
                      constrain_bonds=True,
-                     include_bond_forces=False,
+                     include_bond_forces=True,
                      include_nonbonded_forces=True,
                      include_bond_angle_forces=True,
                      include_torsion_forces=True,
                      exclusions=True,
-<<<<<<< HEAD
                      rosetta_scoring=False,
-=======
->>>>>>> b704e614255ece15c0e01d315d085d4840cb755d
                      check_energy_conservation=True,
                      use_structure_library=False,
                      heteropolymer=False,
@@ -251,11 +242,8 @@ class CGModel(object):
             bond_angle_force_constants={'bb_bb_bb_angle_k': 0.0002,'bb_bb_sc_angle_k': 0,'bb_sc_sc_angle_k': 0,'sc_sc_sc_angle_k': 0.0002}
           if torsion_force_constants == None:
             torsion_force_constants={'bb_bb_bb_bb_torsion_k': 0.0002,'bb_bb_bb_sc_torsion_k': 0,'bb_bb_sc_sc_torsion_k': 0, 'bb_sc_sc_sc_torsion_k': 0, 'sc_bb_bb_sc_torsion_k': 0, 'sc_sc_sc_sc_torsion_k': 0, 'sc_bb_bb_bb_torsion_k': 0}
-<<<<<<< HEAD
           if torsion_periodicities == None:
             torsion_periodicities={'bb_bb_bb_bb_period': 1,'bb_bb_bb_sc_period': 1,'bb_bb_sc_sc_period': 1, 'bb_sc_sc_sc_period': 1, 'sc_bb_bb_sc_period': 1, 'sc_sc_sc_sc_period': 1, 'sc_bb_bb_bb_period': 1}
-=======
->>>>>>> b704e614255ece15c0e01d315d085d4840cb755d
           if equil_bond_angles == None:
             equil_bond_angles = {'bb_bb_bb_angle_0': 1.61,'bb_bb_sc_angle_0': 1.61}
           if equil_torsion_angles == None:
@@ -309,71 +297,60 @@ class CGModel(object):
           self.bond_angle_force_constants = bond_angle_force_constants
           self.equil_bond_angles = equil_bond_angles
           self.torsion_force_constants = torsion_force_constants
-<<<<<<< HEAD
           self.torsion_periodicities = torsion_periodicities
           self.equil_torsion_angles = equil_torsion_angles
           self.charges = charges
           
-          if rosetta_scoring:
-            self.include_bond_forces = False
-          else:
-            self.include_bond_forces = include_bond_forces
-=======
+          self.rosetta_scoring = rosetta_scoring
+          self.include_bond_forces = include_bond_forces
           self.equil_torsion_angles = equil_torsion_angles
           self.charges = charges
 
-          self.include_bond_forces = include_bond_forces
->>>>>>> b704e614255ece15c0e01d315d085d4840cb755d
           self.include_bond_angle_forces = include_bond_angle_forces
           self.include_nonbonded_forces = include_nonbonded_forces
           self.include_torsion_forces = include_torsion_forces
           self.check_energy_conservation = check_energy_conservation
 
           self.constrain_bonds = constrain_bonds
-          self.bond_list = self.get_bond_list()
+          if self.include_bond_forces:
+           self.bond_list = self.get_bond_list()
+          else:
+           exclusions = False
+           self.bond_list = []
+
+          self.exclusions = exclusions
+
           self.bond_angle_list = self.get_bond_angle_list()
           self.torsion_list = self.get_torsion_list()
-<<<<<<< HEAD
           self.rosetta_scoring = rosetta_scoring
-          if exclusions == True:
+          if self.exclusions == True:
             self.nonbonded_exclusion_list = self.get_nonbonded_exclusion_list(rosetta_scoring=self.rosetta_scoring)
           else:
-           self.nonbonded_exclusion_list = []
+            self.nonbonded_exclusion_list = []
 
           self.nonbonded_interaction_list = self.get_nonbonded_interaction_list()
-=======
           if exclusions == True:
            self.nonbonded_exclusion_list = self.get_nonbonded_exclusion_list()
           else:
            self.nonbonded_exclusion_list = None
           self.nonbonded_interaction_list = self.get_nonbonded_interaction_list()
 
->>>>>>> b704e614255ece15c0e01d315d085d4840cb755d
           self.particle_types = add_new_elements(self)
 
           if positions == None: 
            if random_positions:
             if use_structure_library:
-<<<<<<< HEAD
               self.positions = random_positions(self,use_library=True)
             else:
               self.positions = random_positions(self)
-=======
-              self.positions = util.random_positions(self,use_library=True)
-            else:
-              self.positions = util.random_positions(self)
->>>>>>> b704e614255ece15c0e01d315d085d4840cb755d
            else:
             if use_structure_library:
              if polymer_length == 12:
               positions_file = str(str(str(os.path.abspath(__file__)).split('/cg_model')[0])+"/structure_library/12_1_1_0/helix.pdb")
               self.positions = PDBFile(positions_file).getPositions()
              else:
-<<<<<<< HEAD
               self.positions = random_positions(self,use_library=True)
-=======
               self.positions = util.random_positions(self,use_library=True)
->>>>>>> b704e614255ece15c0e01d315d085d4840cb755d
             else:
               self.positions = None
           else:
@@ -387,18 +364,12 @@ class CGModel(object):
               self.topology = build_topology(self,use_pdbfile=True)
           else:
               self.topology = topology
-<<<<<<< HEAD
 
           #print("Assigning system")
           if system == None:
            if self.rosetta_scoring:
             self.system = build_system(self,rosetta_scoring=rosetta_scoring)
            else:
-=======
- 
-          #print("Assigning system")
-          if system == None:
->>>>>>> b704e614255ece15c0e01d315d085d4840cb755d
             self.system = build_system(self)
           else:
             self.system = system
@@ -527,8 +498,10 @@ class CGModel(object):
           """
 
           interaction_list = []
-          bond_list = self.get_bond_list()
-          for particle_1 in range(self.num_beads):
+
+          if self.include_bond_forces:
+           bond_list = self.get_bond_list()
+           for particle_1 in range(self.num_beads):
                for particle_2 in range(particle_1+1,self.num_beads):
                    if [particle_1,particle_2] not in bond_list and [particle_2,particle_1] not in bond_list:
                      if [particle_1,particle_2] not in interaction_list:
@@ -537,28 +510,21 @@ class CGModel(object):
                      if [particle_2,particle_1] not in interaction_list:
                        if [particle_1,particle_2] not in interaction_list:
                          interaction_list.append([particle_2,particle_1])
-          exclusion_list = self.nonbonded_exclusion_list
-<<<<<<< HEAD
-          print("The exclusion list is: "+str(exclusion_list))
-          if exclusion_list != None:
-           for interaction in interaction_list:
-            if interaction in exclusion_list:
-              interaction_list.remove(interaction)
-            if [interaction[1],interaction[0]] in exclusion_list:
-              interaction_list.remove([interaction[1],interaction[0]])
+           exclusion_list = self.nonbonded_exclusion_list
+           if exclusion_list != None:
+            for exclusion in exclusion_list:
+             if exclusion in interaction_list:
+              interaction_list.remove(exclusion)
+             if [exclusion[1],exclusion[0]] in exclusion_list:
+              print([exclusion[1],exclusion[0]])
+              interaction_list.remove([exclusion[1],exclusion[0]])
+          else:
+           for particle_1 in range(self.num_beads):
+               for particle_2 in range(particle_1+1,self.num_beads):
+                    interaction_list.append([particle_1,particle_2])
           return(interaction_list)
 
         def get_nonbonded_exclusion_list(self,rosetta_scoring=False):
-=======
-          if exclusion_list != None:
-           for interaction in interaction_list:
-            if interaction in exclusion_list or [interaction[1],interaction[0]] in exclusion_list:
-              interaction_list.remove(interaction)
-          #interaction_list = [[0,1]]
-          return(interaction_list)
-
-        def get_nonbonded_exclusion_list(self):
->>>>>>> b704e614255ece15c0e01d315d085d4840cb755d
           """
           Get a list of the nonbonded interaction exclusions, which are assigned if two particles are separated by less than three bonds
 
@@ -571,7 +537,6 @@ class CGModel(object):
           """
           bond_list = self.bond_list
           exclusion_list = []
-<<<<<<< HEAD
 
           if rosetta_scoring:
             bead_index = 0
@@ -599,8 +564,8 @@ class CGModel(object):
               exclusion_list.append([torsion[0],torsion[3]])
           #print("After removing i+1,i+2, and i+3 interactions, the nonbonded exclusion list is: "+str(exclusion_list))
 
-=======
-          for i in range(self.num_beads):
+          if rosetta_scoring:
+           for i in range(self.num_beads):
             for j in range(i+1,self.num_beads):
               if [i,j] in bond_list or [j,i] in bond_list:
                 if [i,j] not in exclusion_list:
@@ -609,7 +574,6 @@ class CGModel(object):
                 if i in angle and j in angle:
                   if [i,j] not in exclusion_list:
                     exclusion_list.append([i,j]) 
->>>>>>> b704e614255ece15c0e01d315d085d4840cb755d
           return(exclusion_list)
 
         def get_bond_angle_list(self):
@@ -1020,28 +984,21 @@ class CGModel(object):
           if (particle_1_type == 'backbone' and particle_2_type == 'backbone' and particle_3_type == 'sidechain') or (particle_1_type == 'sidechain' and particle_2_type == 'backbone' and particle_3_type == 'backbone'):
            equil_bond_angle = self.equil_bond_angles['bb_bb_sc_angle_0']
           if particle_1_type == 'backbone' and particle_2_type == 'sidechain' and particle_3_type == 'sidechain':
-<<<<<<< HEAD
            try:
              equil_bond_angle = self.equil_bond_angles['bb_sc_sc_angle_0']
            except:
              equil_bond_angle = self.equil_bond_angles['sc_sc_bb_angle_0']
-=======
            equil_bond_angle = self.equil_bond_angles['bb_sc_sc_angle_0']
->>>>>>> b704e614255ece15c0e01d315d085d4840cb755d
           if particle_1_type == 'sidechain' and particle_2_type == 'backbone' and particle_3_type == 'sidechain':
            equil_bond_angle = self.equil_bond_angles['sc_bb_sc_angle_0']
           if particle_1_type == 'sidechain' and particle_2_type == 'sidechain' and particle_3_type == 'sidechain':
            equil_bond_angle = self.equil_bond_angles['sc_sc_sc_angle_0']
           if particle_1_type == 'sidechain' and particle_2_type == 'sidechain' and particle_3_type == 'backbone':
-<<<<<<< HEAD
            try:
              equil_bond_angle = self.equil_bond_angles['sc_sc_bb_angle_0']
            except:
              equil_bond_angle = self.equil_bond_angles['bb_sc_sc_angle_0']
-=======
            equil_bond_angle = self.equil_bond_angles['sc_sc_bb_angle_0']
->>>>>>> b704e614255ece15c0e01d315d085d4840cb755d
-
 
           return(equil_bond_angle)
 
@@ -1073,7 +1030,6 @@ class CGModel(object):
           if particle_1_type == 'backbone' and particle_2_type == 'backbone' and particle_3_type == 'backbone':
            bond_angle_force_constant = self.bond_angle_force_constants['bb_bb_bb_angle_k']
           if (particle_1_type == 'backbone' and particle_2_type == 'backbone' and particle_3_type == 'sidechain') or (particle_1_type == 'sidechain' and particle_2_type == 'backbone' and particle_3_type == 'backbone'):
-<<<<<<< HEAD
            try:
             bond_angle_force_constant = self.bond_angle_force_constants['bb_bb_sc_angle_k']
            except:
@@ -1083,29 +1039,22 @@ class CGModel(object):
             bond_angle_force_constant = self.bond_angle_force_constants['bb_sc_sc_angle_k']
            except:
             bond_angle_force_constant = self.bond_angle_force_constants['sc_sc_bb_angle_k']
-=======
            bond_angle_force_constant = self.bond_angle_force_constants['bb_bb_sc_angle_k']
           if particle_1_type == 'backbone' and particle_2_type == 'sidechain' and particle_3_type == 'sidechain':
            bond_angle_force_constant = self.bond_angle_force_constants['bb_sc_sc_angle_k']
->>>>>>> b704e614255ece15c0e01d315d085d4840cb755d
           if particle_1_type == 'sidechain' and particle_2_type == 'backbone' and particle_3_type == 'sidechain':
            bond_angle_force_constant = self.bond_angle_force_constants['sc_bb_sc_angle_k']
           if particle_1_type == 'sidechain' and particle_2_type == 'sidechain' and particle_3_type == 'sidechain':
            bond_angle_force_constant = self.bond_angle_force_constants['sc_sc_sc_angle_k']
           if particle_1_type == 'sidechain' and particle_2_type == 'sidechain' and particle_3_type == 'backbone':
-<<<<<<< HEAD
            try:
             bond_angle_force_constant = self.bond_angle_force_constants['sc_sc_bb_angle_k']
            except:
             bond_angle_force_constant = self.bond_angle_force_constants['bb_sc_sc_angle_k']
-=======
            bond_angle_force_constant = self.bond_angle_force_constants['sc_sc_bb_angle_k']
->>>>>>> b704e614255ece15c0e01d315d085d4840cb755d
-
 
           return(bond_angle_force_constant)
 
-<<<<<<< HEAD
         def get_torsion_periodicity(self,torsion):
           """         
           Determines the correct periodicity for a torsion (bond angle involving four particles), given their indices within the coarse grained model
@@ -1184,8 +1133,6 @@ class CGModel(object):
 
           return(torsion_periodicity)
 
-=======
->>>>>>> b704e614255ece15c0e01d315d085d4840cb755d
         def get_torsion_force_constant(self,torsion):
           """         
           Determines the correct torsion force constant for a torsion (bond angle involving four particles), given their indices within the coarse grained model
