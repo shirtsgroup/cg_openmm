@@ -219,7 +219,7 @@ def get_mm_energy(topology,system,positions):
         integrator = LangevinIntegrator(300.0 * unit.kelvin,friction,simulation_time_step.in_units_of(unit.picosecond))
         simulation = Simulation(topology, system, integrator)
         simulation.context.setPositions(positions)
-        potential_energy = simulation.context.getEnergy(potentialEnergy=True).getPotentialEnergy()
+        potential_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
 
         return(potential_energy)
 

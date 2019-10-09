@@ -274,7 +274,8 @@ def build_topology(cgmodel,use_pdbfile=False,pdbfile=None):
           element = elem.Element.getBySymbol(particle_symbol)
           particle = topology.addAtom(particle_symbol, element, residue)
           if backbone_bead == 0 and residue_index != 1:
-           topology.addBond(particle,last_backbone_particle)
+           if cgmodel.include_bond_forces:
+            topology.addBond(particle,last_backbone_particle)
           last_backbone_particle = particle
           cg_particle_index = cg_particle_index + 1
           if backbone_bead in [monomer_type['sidechain_positions']]:
@@ -283,9 +284,11 @@ def build_topology(cgmodel,use_pdbfile=False,pdbfile=None):
              element = elem.Element.getBySymbol(particle_symbol)
              particle = topology.addAtom(particle_symbol, element, residue)
              if sidechain_bead == 0:
-              topology.addBond(particle,last_backbone_particle)
+              if cgmodel.include_bond_forces:
+               topology.addBond(particle,last_backbone_particle)
              if sidechain_bead != 0:
-              topology.addBond(particle,last_sidechain_particle)
+              if cgmodel.include_bond_forces:
+               topology.addBond(particle,last_sidechain_particle)
              last_sidechain_particle = particle
              cg_particle_index = cg_particle_index + 1
          residue_index = residue_index + 1
@@ -355,7 +358,7 @@ def verify_system(cgmodel):
             print("number of constraints in the coarse grained model\n")
             print("does not match the number of constraintes in the OpenMM system.\n")
             print("There are "+str(cgmodel.bond_list)+" bond constraints in the coarse grained model\n")
-            print("and "+str(cgmodel.ssytem.getNumConstraints())+" constraints in the OpenMM system.")
+            print("and "+str(cgmodel.system.getNumConstraints())+" constraints in the OpenMM system.")
             exit()
 
         return
