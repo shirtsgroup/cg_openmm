@@ -142,7 +142,8 @@ class CGModel(object):
                      sequence=None,
                      random_positions=False,
                      system=None,
-                     topology=None):
+                     topology=None,
+                     simulation=None):
 
           """
           Initialize definitions for all of the properties of a coarse grained model
@@ -312,6 +313,7 @@ class CGModel(object):
           self.check_energy_conservation = check_energy_conservation
 
           self.constrain_bonds = constrain_bonds
+
           if self.include_bond_forces:
            self.bond_list = self.get_bond_list()
           else:
@@ -356,7 +358,7 @@ class CGModel(object):
           else:
            self.positions = positions
 
-          self.simulation = None
+          self.simulation = simulation
 
           #print("Assigning topology")          
           if topology == None:
