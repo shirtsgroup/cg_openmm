@@ -406,11 +406,11 @@ def run_simulation(cgmodel,output_directory,total_simulation_time,simulation_tim
               except:
                 attempts = attempts + 1
             if attempts > 3:
-              plot_simulation_results(output_data,output_directory,simulation_time_step)
+              plot_simulation_results(output_data,output_directory,simulation_time_step,total_simulation_time)
               print("Error: simulation attempt failed.")
               exit()
 
-        plot_simulation_results(output_data,output_directory,simulation_time_step)
+        plot_simulation_results(output_data,output_directory,simulation_time_step,total_simulation_time)
         return
 
 def read_simulation_data(simulation_data_file,simulation_time_step):
@@ -504,7 +504,7 @@ def plot_simulation_data(simulation_times,y_data,plot_type=None,output_directory
         pyplot.close()
         return
 
-def plot_simulation_results(simulation_data_file,plot_output_directory,simulation_time_step):
+def plot_simulation_results(simulation_data_file,plot_output_directory,simulation_time_step,total_simulation_time):
         """
         Plot all data from an OpenMM output file
 

@@ -1,4 +1,4 @@
-This repository contains tools to perform coarse grained simulations in OpenMM.  The repository also enables the use of OpenMM utilities such as Yank.
+This repository contains tools to perform coarse grained simulations in OpenMM.  This repository also enables the use of coarse grained models with OpenMM utilities such as Yank.
 
 ## To use this repository install it using standard Python conventions:
 
@@ -6,19 +6,12 @@ python setup.py install
 
 ## Dependencies:
 
-simtk.unit
-simtk.openmm
+For a detailed list of dependencies, and more detailed installation instructions, please read the "Installation notes" section of "manual.pdf".
 
-## Getting started:
+## Testing your installation:
 
 Test your installation by opening a new Python session and typing the following:
 
 import cg_openmm
-
-or
-
-from cg_openmm import *
-
-If this test does not work, please check to make sure that the cg_openmm path is included in the $PYTHONPATH system variable.  This is the most common place for the package installation to fail.
 
 **For full documentation please refer to 'manual.pdf'.**

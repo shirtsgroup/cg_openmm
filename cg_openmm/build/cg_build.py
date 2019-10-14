@@ -172,7 +172,7 @@ def write_xml_file(cgmodel,xml_file_name):
             xml_type_2 = particle_2_name #unique_particle_names.index(particle_2_name)
             xml_type_3 = particle_3_name #unique_particle_names.index(particle_3_name)
             xml_type_4 = particle_4_name #unique_particle_names.index(particle_4_name)
-            periodicity = 1
+            periodicity = cgmodel.get_torsion_periodicity(torsion)
             xml_object.write('  <Proper k1="'+str(torsion_force_constant)+'" periodicity1="'+str(periodicity)+'" phase1="'+str(equil_torsion_angle)+'" type1="'+str(xml_type_1)+'" type2="'+str(xml_type_2)+'" type3="'+str(xml_type_3)+'" type4="'+str(xml_type_4)+'"/>\n')
           xml_object.write(" </PeriodicTorsionForce>\n")
         if cgmodel.include_nonbonded_forces:
@@ -250,6 +250,8 @@ def build_topology(cgmodel,use_pdbfile=False,pdbfile=None):
         .. warning:: When 'use_pdbfile'=True, this function will use the `PDBFile() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1pdbfile_1_1PDBFile.html>`_ class object from OpenMM to build the Topology().  In order for this approach to function correctly, the particle names in the PDB file must match the particle names in the coarse grained model.
 
         """
+        if cgmodel.constrain_bonds == True:
+         use_pdbfile = True
         if use_pdbfile == True:
          if pdbfile == None:
            write_pdbfile_without_topology(cgmodel,"topology_source.pdb")
@@ -480,12 +482,13 @@ def add_force(cgmodel,force_type=None,rosetta_scoring=False):
 
           for bond_indices in cgmodel.get_bond_list():
               bond_list.append([bond_indices[0],bond_indices[1]])
-              bond_force_constant = cgmodel.get_bond_force_constant(bond_indices[0],bond_indices[1])
-              bond_length = cgmodel.get_bond_length(bond_indices[0],bond_indices[1])
+              if cgmodel.include_bond_forces:
+                bond_force_constant = cgmodel.get_bond_force_constant(bond_indices[0],bond_indices[1])
+                bond_length = cgmodel.get_bond_length(bond_indices[0],bond_indices[1]).in_units_of(unit.nanometer)._value
+                bond_force.addBond(bond_indices[0],bond_indices[1],bond_length,bond_force_constant)
               if cgmodel.constrain_bonds:
+                bond_length = cgmodel.get_bond_length(bond_indices[0],bond_indices[1]).in_units_of(unit.nanometer)._value
                 cgmodel.system.addConstraint(bond_indices[0],bond_indices[1],bond_length)
-              bond_length = bond_length.in_units_of(unit.nanometer)._value
-              bond_force.addBond(bond_indices[0],bond_indices[1],bond_length,bond_force_constant)
 
           if len(bond_list) != bond_force.getNumBonds():
             print("ERROR: The number of bonds in the coarse grained model is different\n")
@@ -582,7 +585,7 @@ def test_forces(cgmodel):
         for force in forces:
           for component in force:
             if 'nan' in str(component):
-              print("Detected a 'nan' force value.")
+              print("Detected 'nan' force value")
               print("for particle "+str(forces.index(force)))
               success = False
               return(success)
@@ -623,7 +626,7 @@ def build_system(cgmodel,rosetta_scoring=False,verify=True):
         #box_vectors = [[100.0*length_scale._value,0.0,0.0],[0.0,100.0*length_scale._value,0.0],[0.0,0.0,100.0*length_scale._value]]
         #system.setDefaultPeriodicBoxVectors(box_vectors[0],box_vectors[1],box_vectors[2])
 
-        if cgmodel.include_bond_forces or cgmodel.constrain_bonds:
+        if cgmodel.include_bond_forces:
          # Create bond (harmonic) potentials
          cgmodel,bond_force = add_force(cgmodel,force_type="Bond")
          if cgmodel.positions != None:
