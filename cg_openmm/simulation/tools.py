@@ -9,6 +9,7 @@ import simtk.openmm.app.element as elem
 from simtk.openmm.app import *
 import matplotlib.pyplot as pyplot
 import csv
+from cg_openmm.utilities.iotools import write_bonds
 
 def get_simulation_time_step(topology,system,positions,temperature,total_simulation_time,time_step_list=None):
         """
@@ -409,6 +410,17 @@ def run_simulation(cgmodel,output_directory,total_simulation_time,simulation_tim
               plot_simulation_results(output_data,output_directory,simulation_time_step,total_simulation_time)
               print("Error: simulation attempt failed.")
               exit()
+
+        if not cgmodel.include_bond_forces and cgmodel.constrain_bonds:
+          file = open(output_pdb,"r")
+          lines = file.readlines()
+          file.close()
+          os.remove(output_pdb)
+          file = open(output_pdb,"w")
+          for line in lines[:-1]:
+            file.write(line)
+          write_bonds(cgmodel,file)
+          file.close()
 
         plot_simulation_results(output_data,output_directory,simulation_time_step,total_simulation_time)
         return

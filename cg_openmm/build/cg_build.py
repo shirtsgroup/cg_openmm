@@ -276,7 +276,7 @@ def build_topology(cgmodel,use_pdbfile=False,pdbfile=None):
           element = elem.Element.getBySymbol(particle_symbol)
           particle = topology.addAtom(particle_symbol, element, residue)
           if backbone_bead == 0 and residue_index != 1:
-           if cgmodel.include_bond_forces:
+           if cgmodel.include_bond_forces or cgmodel.constrain_bonds:
             topology.addBond(particle,last_backbone_particle)
           last_backbone_particle = particle
           cg_particle_index = cg_particle_index + 1
@@ -286,10 +286,10 @@ def build_topology(cgmodel,use_pdbfile=False,pdbfile=None):
              element = elem.Element.getBySymbol(particle_symbol)
              particle = topology.addAtom(particle_symbol, element, residue)
              if sidechain_bead == 0:
-              if cgmodel.include_bond_forces:
+              if cgmodel.include_bond_forces or cgmodel.constrain_bonds:
                topology.addBond(particle,last_backbone_particle)
              if sidechain_bead != 0:
-              if cgmodel.include_bond_forces:
+              if cgmodel.include_bond_forces or cgmodel.constrain_bonds:
                topology.addBond(particle,last_sidechain_particle)
              last_sidechain_particle = particle
              cg_particle_index = cg_particle_index + 1
@@ -488,6 +488,9 @@ def add_force(cgmodel,force_type=None,rosetta_scoring=False):
                 bond_force.addBond(bond_indices[0],bond_indices[1],bond_length,bond_force_constant)
               if cgmodel.constrain_bonds:
                 bond_length = cgmodel.get_bond_length(bond_indices[0],bond_indices[1]).in_units_of(unit.nanometer)._value
+                if not cgmodel.include_bond_forces:
+                  bond_force_constant = 0.0 * cgmodel.get_bond_force_constant(bond_indices[0],bond_indices[1])
+                  bond_force.addBond(bond_indices[0],bond_indices[1],bond_length,bond_force_constant)
                 cgmodel.system.addConstraint(bond_indices[0],bond_indices[1],bond_length)
 
           if len(bond_list) != bond_force.getNumBonds():
@@ -626,7 +629,7 @@ def build_system(cgmodel,rosetta_scoring=False,verify=True):
         #box_vectors = [[100.0*length_scale._value,0.0,0.0],[0.0,100.0*length_scale._value,0.0],[0.0,0.0,100.0*length_scale._value]]
         #system.setDefaultPeriodicBoxVectors(box_vectors[0],box_vectors[1],box_vectors[2])
 
-        if cgmodel.include_bond_forces:
+        if cgmodel.include_bond_forces or cgmodel.constrain_bonds:
          # Create bond (harmonic) potentials
          cgmodel,bond_force = add_force(cgmodel,force_type="Bond")
          if cgmodel.positions != None:
