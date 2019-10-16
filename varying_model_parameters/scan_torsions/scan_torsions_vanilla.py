@@ -25,19 +25,9 @@ output_directory = 'output'
 if not os.path.exists(output_directory):
   os.mkdir(output_directory)
 
-# Configure Yank (replica exchange) simulation settings
 print_frequency = 5 # Number of steps to skip when printing output
 total_simulation_time = 500.0 * unit.picosecond # Units = picoseconds
 simulation_time_step = 5.0 * unit.femtosecond
-number_replicas = 5
-min_temp = 10.0 * unit.kelvin
-max_temp = 15.0 * unit.kelvin
-temperature_list = get_temperature_list(min_temp,max_temp,number_replicas)
-total_steps = round(total_simulation_time.__div__(simulation_time_step))
-if total_steps > 10000:
-   exchange_attempts = round(total_steps/1000)
-else:
-   exchange_attempts = 10
 
 ###
 #

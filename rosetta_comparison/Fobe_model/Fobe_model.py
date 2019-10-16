@@ -54,7 +54,6 @@ bond_force_constants = {'bb_bb_bond_k': bond_force_constant, 'bb_sc_bond_k': bon
 
 epsilon = 0.5 * unit.kilocalorie_per_mole
 epsilons = {'bb_bb_eps': epsilon,'sc_sc_eps': epsilon}
-sigma = bond_length / (2.0**(1/6))
 sigmas = {'bb_bb_sigma': sigma,'sc_sc_sigma': sigma}
 
 bond_angle_force_constant = 0.0 * unit.kilojoule_per_mole / unit.radian / unit.radian
