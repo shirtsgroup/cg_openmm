@@ -314,7 +314,7 @@ class CGModel(object):
 
           self.constrain_bonds = constrain_bonds
 
-          if self.include_bond_forces:
+          if self.include_bond_forces or self.constrain_bonds:
            self.bond_list = self.get_bond_list()
           else:
            exclusions = False
@@ -981,26 +981,47 @@ class CGModel(object):
           particle_2_type = self.get_particle_type(particle_2_index)
           particle_3_type = self.get_particle_type(particle_3_index)
 
+          equil_bond_angle = None
+
           if particle_1_type == 'backbone' and particle_2_type == 'backbone' and particle_3_type == 'backbone':
-           equil_bond_angle = self.equil_bond_angles['bb_bb_bb_angle_0']
+           try:
+            equil_bond_angle = self.equil_bond_angles['bb_bb_bb_angle_0']
+           except:
+            print("No angle definition provided for 'bb_bb_bb_angle_0', setting 'bb_bb_bb_angle_0'=0")
+            equil_bond_angle = None
           if (particle_1_type == 'backbone' and particle_2_type == 'backbone' and particle_3_type == 'sidechain') or (particle_1_type == 'sidechain' and particle_2_type == 'backbone' and particle_3_type == 'backbone'):
-           equil_bond_angle = self.equil_bond_angles['bb_bb_sc_angle_0']
-          if particle_1_type == 'backbone' and particle_2_type == 'sidechain' and particle_3_type == 'sidechain':
            try:
-             equil_bond_angle = self.equil_bond_angles['bb_sc_sc_angle_0']
+            equil_bond_angle = self.equil_bond_angles['bb_bb_sc_angle_0']
            except:
+            try:
+             equil_bond_angle = self.equil_bond_angles['sc_bb_bb_angle_0']
+            except:
+             print("No angle definition provided for 'bb_bb_sc_angle_0', setting 'bb_bb_sc_angle_0'=0")
+             equil_bond_angle = None
+          if (particle_1_type == 'backbone' and particle_2_type == 'sidechain' and particle_3_type == 'sidechain') or (particle_1_type == 'sidechain' and particle_2_type == 'sidechain' and particle_3_type == 'backbone'):
+           try:
+            equil_bond_angle = self.equil_bond_angles['bb_sc_sc_angle_0']
+           except:
+            try:
              equil_bond_angle = self.equil_bond_angles['sc_sc_bb_angle_0']
-           equil_bond_angle = self.equil_bond_angles['bb_sc_sc_angle_0']
+            except:
+             print("No angle definition provided for 'bb_sc_sc_angle_0', setting 'bb_sc_sc_angle_0'=0")
+             equil_bond_angle = None
           if particle_1_type == 'sidechain' and particle_2_type == 'backbone' and particle_3_type == 'sidechain':
-           equil_bond_angle = self.equil_bond_angles['sc_bb_sc_angle_0']
-          if particle_1_type == 'sidechain' and particle_2_type == 'sidechain' and particle_3_type == 'sidechain':
-           equil_bond_angle = self.equil_bond_angles['sc_sc_sc_angle_0']
-          if particle_1_type == 'sidechain' and particle_2_type == 'sidechain' and particle_3_type == 'backbone':
            try:
-             equil_bond_angle = self.equil_bond_angles['sc_sc_bb_angle_0']
+            equil_bond_angle = self.equil_bond_angles['sc_bb_sc_angle_0']
            except:
-             equil_bond_angle = self.equil_bond_angles['bb_sc_sc_angle_0']
-           equil_bond_angle = self.equil_bond_angles['sc_sc_bb_angle_0']
+            print("No angle definition provided for 'sc_bb_sc_angle_0', setting 'sc_bb_sc_angle_0'=0")
+            equil_bond_angle = None
+          if particle_1_type == 'sidechain' and particle_2_type == 'sidechain' and particle_3_type == 'sidechain':
+           try:
+            equil_bond_angle = self.equil_bond_angles['sc_sc_sc_angle_0']
+           except:
+            print("No angle definition provided for 'sc_sc_sc_angle_0', setting 'sc_sc_sc_angle_0'=0")
+            equil_bond_angle = None
+
+          if equil_bond_angle == None:
+            equil_bond_angle = 0.0
 
           return(equil_bond_angle)
 
@@ -1029,31 +1050,47 @@ class CGModel(object):
           particle_2_type = self.get_particle_type(particle_2_index)
           particle_3_type = self.get_particle_type(particle_3_index)
 
+          bond_angle_force_constant = None
+
           if particle_1_type == 'backbone' and particle_2_type == 'backbone' and particle_3_type == 'backbone':
-           bond_angle_force_constant = self.bond_angle_force_constants['bb_bb_bb_angle_k']
+           try:
+            bond_angle_force_constant = self.bond_angle_force_constants['bb_bb_bb_angle_k']
+           except:
+            print("No force constant definition provided for 'bb_bb_bb_angle_k', setting 'bb_bb_bb_angle_k'=0")
+            bond_angle_force_constant = None
           if (particle_1_type == 'backbone' and particle_2_type == 'backbone' and particle_3_type == 'sidechain') or (particle_1_type == 'sidechain' and particle_2_type == 'backbone' and particle_3_type == 'backbone'):
            try:
             bond_angle_force_constant = self.bond_angle_force_constants['bb_bb_sc_angle_k']
            except:
-            bond_angle_force_constant = self.bond_angle_force_constants['sc_bb_bb_angle_k']
-          if particle_1_type == 'backbone' and particle_2_type == 'sidechain' and particle_3_type == 'sidechain':
+            try:
+             bond_angle_force_constant = self.bond_angle_force_constants['sc_bb_bb_angle_k']
+            except:
+             print("No force constant definition provided for 'bb_bb_sc_angle_k', setting 'bb_bb_sc_angle_k'=0")
+             bond_angle_force_constant = None
+          if (particle_1_type == 'backbone' and particle_2_type == 'sidechain' and particle_3_type == 'sidechain') or (particle_1_type == 'sidechain' and particle_2_type == 'sidechain' and particle_3_type == 'backbone'):
            try:
             bond_angle_force_constant = self.bond_angle_force_constants['bb_sc_sc_angle_k']
            except:
-            bond_angle_force_constant = self.bond_angle_force_constants['sc_sc_bb_angle_k']
-           bond_angle_force_constant = self.bond_angle_force_constants['bb_bb_sc_angle_k']
-          if particle_1_type == 'backbone' and particle_2_type == 'sidechain' and particle_3_type == 'sidechain':
-           bond_angle_force_constant = self.bond_angle_force_constants['bb_sc_sc_angle_k']
+            try:
+             bond_angle_force_constant = self.bond_angle_force_constants['sc_sc_bb_angle_k']
+            except:
+             print("No force constant definition provided for 'bb_sc_sc_angle_k', setting 'bb_sc_sc_angle_k'=0")
+             bond_angle_force_constant = None
           if particle_1_type == 'sidechain' and particle_2_type == 'backbone' and particle_3_type == 'sidechain':
-           bond_angle_force_constant = self.bond_angle_force_constants['sc_bb_sc_angle_k']
-          if particle_1_type == 'sidechain' and particle_2_type == 'sidechain' and particle_3_type == 'sidechain':
-           bond_angle_force_constant = self.bond_angle_force_constants['sc_sc_sc_angle_k']
-          if particle_1_type == 'sidechain' and particle_2_type == 'sidechain' and particle_3_type == 'backbone':
            try:
-            bond_angle_force_constant = self.bond_angle_force_constants['sc_sc_bb_angle_k']
+            bond_angle_force_constant = self.bond_angle_force_constants['sc_bb_sc_angle_k']
            except:
-            bond_angle_force_constant = self.bond_angle_force_constants['bb_sc_sc_angle_k']
-           bond_angle_force_constant = self.bond_angle_force_constants['sc_sc_bb_angle_k']
+            print("No force constant definition provided for 'sc_bb_sc_angle_k', setting 'sc_bb_sc_angle_k'=0")
+            bond_angle_force_constant = None
+          if particle_1_type == 'sidechain' and particle_2_type == 'sidechain' and particle_3_type == 'sidechain':
+           try:
+            bond_angle_force_constant = self.bond_angle_force_constants['sc_sc_sc_angle_k']
+           except:
+            print("No force constant definition provided for 'sc_sc_sc_angle_k', setting 'sc_sc_sc_angle_k'=0")
+            bond_angle_force_constant = None
+
+          if bond_angle_force_constant == None:
+            bond_angle_force_constant = 0.0 * unit.kilojoule_per_mole / unit.radian / unit.radian
 
           return(bond_angle_force_constant)
 
@@ -1080,58 +1117,149 @@ class CGModel(object):
           
           torsion_periodicity = None
 
-          #print(self.torsion_periodicities)
-
           if particle_types[0] == 'sidechain':
            if particle_types[1] == 'backbone':
             if particle_types[2] == 'backbone':
              if particle_types[3] == 'backbone':
-              torsion_periodicity = self.torsion_periodicities['sc_bb_bb_bb_period']
+              try:
+               torsion_periodicity = self.torsion_periodicities['sc_bb_bb_bb_period']
+              except:
+               try:
+                torsion_periodicity = self.torsion_periodicities['bb_bb_bb_sc_period']
+               except:
+                print("No torsion periodicity definition provided for 'bb_bb_bb_sc_period', setting 'bb_bb_bb_sc_period'=1")
+                torsion_periodicity = None
              if particle_types[3] == 'sidechain':
-              torsion_periodicity = self.torsion_periodicities['sc_bb_bb_sc_period']
+              try:
+               torsion_periodicity = self.torsion_periodicities['sc_bb_bb_sc_period']
+              except:
+               print("No torsion periodicity definition provided for 'sc_bb_bb_sc_period', setting 'sc_bb_bb_sc_period'=1")
+               torsion_periodicity = None
             if particle_types[2] == 'sidechain':
              if particle_types[3] == 'backbone':
-              torsion_periodicity = self.torsion_periodicities['bb_sc_sc_bb_period']
+              try:
+               torsion_periodicity = self.torsion_periodicities['bb_sc_sc_bb_period']
+              except:
+               print("No torsion periodicity definition provided for 'bb_sc_sc_bb_period', setting 'bb_sc_sc_bb_period'=1")
+               torsion_periodicity = None
              if particle_types[3] == 'sidechain':
-              torsion_periodicity = self.torsion_periodicities['sc_bb_sc_sc_period']
+              try:
+               torsion_periodicity = self.torsion_periodicities['sc_bb_sc_sc_period']
+              except:
+               print("No torsion periodicity definition provided for 'sc_bb_sc_sc_period', setting 'sc_bb_sc_sc_period'=1")
+               torsion_periodicity = None
            if particle_types[1] == 'sidechain':
             if particle_types[2] == 'backbone':
              if particle_types[3] == 'backbone':
-              torsion_periodicity = self.torsion_periodicities['sc_sc_bb_bb_period']
+              try:
+               torsion_periodicity = self.torsion_periodicities['sc_sc_bb_bb_period']
+              except:
+               try:
+                torsion_periodicity = self.torsion_periodicities['bb_bb_sc_sc_period']
+               except:
+                print("No torsion periodicity definition provided for 'bb_bb_sc_sc_period', setting 'bb_bb_sc_sc_period'=1")
+                torsion_periodicity = None
              if particle_types[3] == 'sidechain':
-              torsion_periodicity = self.torsion_periodicities['sc_sc_bb_sc_period']
+              try:
+               torsion_periodicity = self.torsion_periodicities['sc_sc_bb_sc_period']
+              except:
+               try:
+                torsion_periodicity = self.torsion_periodicities['sc_bb_sc_sc_period']
+               except:
+                print("No torsion periodicity definition provided for 'sc_bb_sc_sc_period', setting 'sc_bb_sc_sc_period'=1")
+                torsion_periodicity = None
             if particle_types[2] == 'sidechain':
              if particle_types[3] == 'backbone':
-              torsion_periodicity = self.torsion_periodicities['sc_sc_sc_bb_period']
+              try:
+               torsion_periodicity = self.torsion_periodicities['sc_sc_sc_bb_period']
+              except:
+               try:
+                torsion_periodicity = self.torsion_periodicities['bb_sc_sc_sc_period']
+               except:
+                print("No torsion periodicity definition provided for 'bb_sc_sc_sc_period', setting 'bb_sc_sc_sc_period'=1")
+                torsion_periodicity = None
              if particle_types[3] == 'sidechain':
-              torsion_periodicity = self.torsion_periodicities['sc_sc_sc_sc_period']
+              try:
+               torsion_periodicity = self.torsion_periodicities['sc_sc_sc_sc_period']
+              except:
+               print("No torsion periodicity definition provided for 'sc_sc_sc_sc_period', setting 'sc_sc_sc_sc_period'=1")
+               torsion_periodicity = None
           if particle_types[0] == 'backbone':
            if particle_types[1] == 'backbone':
             if particle_types[2] == 'backbone':
              if particle_types[3] == 'backbone':
-              torsion_periodicity = self.torsion_periodicities['bb_bb_bb_bb_period']
+              try:
+               torsion_periodicity = self.torsion_periodicities['bb_bb_bb_bb_period']
+              except:
+               print("No torsion periodicity definition provided for 'bb_bb_bb_bb_period', setting 'bb_bb_bb_bb_period'=1")
+               torsion_periodicity = None
              if particle_types[3] == 'sidechain':
-              torsion_periodicity = self.torsion_periodicities['bb_bb_bb_sc_period']
+              try:
+               torsion_periodicity = self.torsion_periodicities['bb_bb_bb_sc_period']
+              except:
+               try:
+                torsion_periodicity = self.torsion_periodicities['sc_bb_bb_bb_period']
+               except:
+                print("No torsion periodicity definition provided for 'sc_bb_bb_bb_period', setting 'sc_bb_bb_bb_period'=1")
+                torsion_periodicity = None
             if particle_types[2] == 'sidechain':
              if particle_types[3] == 'backbone':
-              torsion_periodicity = self.torsion_periodicities['bb_bb_sc_bb_period']
+              try:
+               torsion_periodicity = self.torsion_periodicities['bb_bb_sc_bb_period']
+              except:
+               try:
+                torsion_periodicity = self.torsion_periodicities['bb_sc_bb_bb_period']
+               except:
+                print("No torsion periodicity definition provided for 'bb_sc_bb_bb_period', setting 'bb_sc_bb_bb_period'=1")
+                torsion_periodicity = None
              if particle_types[3] == 'sidechain':
-              torsion_periodicity = self.torsion_periodicities['bb_bb_sc_sc_period']
+              try: 
+               torsion_periodicity = self.torsion_periodicities['bb_bb_sc_sc_period']
+              except:
+               try:
+                torsion_periodicity = self.torsion_periodicities['sc_sc_bb_bb_period']
+               except:
+                print("No torsion periodicity definition provided for 'sc_sc_bb_bb_period', setting 'sc_sc_bb_bb_period'=1")
+                torsion_periodicity = None
            if particle_types[1] == 'sidechain':
             if particle_types[2] == 'backbone':
              if particle_types[3] == 'backbone':
-              torsion_periodicity = self.torsion_periodicities['bb_sc_bb_bb_period']
+              try:
+               torsion_periodicity = self.torsion_periodicities['bb_sc_bb_bb_period']
+              except:
+               try:
+                torsion_periodicity = self.torsion_periodicities['bb_bb_sc_bb_period']
+               except:
+                print("No torsion periodicity definition provided for 'bb_sc_bb_bb_period', setting 'bb_sc_bb_bb_period'=1")
+                torsion_periodicity = None
              if particle_types[3] == 'sidechain':
-              torsion_periodicity = self.torsion_periodicities['bb_sc_bb_sc_period']
+              try:
+               torsion_periodicity = self.torsion_periodicities['bb_sc_bb_sc_period']
+              except:
+               try:
+                torsion_periodicity = self.torsion_periodicities['sc_bb_sc_bb_period']
+               except:
+                print("No torsion periodicity definition provided for 'sc_bb_sc_bb_period', setting 'sc_bb_sc_bb_period'=1")
+                torsion_periodicity = None
             if particle_types[2] == 'sidechain':
              if particle_types[3] == 'backbone':
-              torsion_periodicity = self.torsion_periodicities['bb_sc_sc_bb_period']
+              try:
+               torsion_periodicity = self.torsion_periodicities['bb_sc_sc_bb_period']
+              except:
+               print("No torsion periodicity definition provided for 'bb_sc_sc_bb_period', setting 'bb_sc_sc_bb_period'=1")
+               torsion_periodicity = None
              if particle_types[3] == 'sidechain':
-              torsion_periodicity = self.torsion_periodicities['bb_sc_sc_sc_period']
+              try:
+               torsion_periodicity = self.torsion_periodicities['bb_sc_sc_sc_period']
+              except:
+               try:
+                torsion_periodicity = self.torsion_periodicities['sc_sc_sc_bb_period']
+               except:
+                print("No torsion periodicity definition provided for 'sc_sc_sc_bb_period', setting 'sc_sc_sc_bb_period'=1")
+                torsion_periodicity = None
 
           if torsion_periodicity == None:
-            print(particle_types)
-            exit()
+            torsion_periodicity = 1
 
           return(torsion_periodicity)
 
@@ -1156,52 +1284,155 @@ class CGModel(object):
 
           particle_types = [particle_1_type,particle_2_type,particle_3_type,particle_4_type]
 
+          torsion_force_constant = None
+
           if particle_types[0] == 'sidechain':
            if particle_types[1] == 'backbone':
             if particle_types[2] == 'backbone':
              if particle_types[3] == 'backbone':
-              torsion_force_constant = self.torsion_force_constants['sc_bb_bb_bb_torsion_k']
+              try:
+               torsion_force_constant = self.torsion_force_constants['sc_bb_bb_bb_torsion_k']
+              except:
+               try:
+                torsion_force_constant = self.torsion_force_constants['bb_bb_bb_sc_torsion_k']
+               except:
+                print("No torsion force constant definition provided for 'sc_bb_bb_bb_torsion_k', setting 'sc_bb_bb_bb_torsion_k'=0")
+                torsion_force_constant = None
              if particle_types[3] == 'sidechain':
-              torsion_force_constant = self.torsion_force_constants['sc_bb_bb_sc_torsion_k']
+              try:
+               torsion_force_constant = self.torsion_force_constants['sc_bb_bb_sc_torsion_k']
+              except:
+               print("No torsion force constant definition provided for 'sc_bb_bb_sc_torsion_k', setting 'sc_bb_bb_sc_torsion_k'=0")
+               torsion_force_constant = None
             if particle_types[2] == 'sidechain':
              if particle_types[3] == 'backbone':
-              torsion_force_constant = self.torsion_force_constants['bb_sc_sc_bb_torsion_k']
+              try:
+               torsion_force_constant = self.torsion_force_constants['bb_sc_sc_bb_torsion_k']
+              except:
+               print("No torsion force constant definition provided for 'bb_sc_sc_bb_torsion_k', setting 'bb_sc_sc_bb_torsion_k'=0")
+               torsion_force_constant = None
              if particle_types[3] == 'sidechain':
-              torsion_force_constant = self.torsion_force_constants['sc_bb_sc_sc_torsion_k']
+              try:
+               torsion_force_constant = self.torsion_force_constants['sc_bb_sc_sc_torsion_k']
+              except:
+               try:
+                torsion_force_constant = self.torsion_force_constants['sc_sc_bb_sc_torsion_k']
+               except:
+                print("No torsion force constant definition provided for 'sc_sc_bb_sc_torsion_k', setting 'sc_sc_bb_sc_torsion_k'=0")
+                torsion_force_constant = None
            if particle_types[1] == 'sidechain':
             if particle_types[2] == 'backbone':
              if particle_types[3] == 'backbone':
-              torsion_force_constant = self.torsion_force_constants['sc_sc_bb_bb_torsion_k']
+              try:
+               torsion_force_constant = self.torsion_force_constants['sc_sc_bb_bb_torsion_k']
+              except:
+               try:
+                torsion_force_constant = self.torsion_force_constants['bb_bb_sc_sc_torsion_k']
+               except:
+                print("No torsion force constant definition provided for 'sc_sc_bb_bb_torsion_k', setting 'sc_sc_bb_bb_torsion_k'=0")
+                torsion_force_constant = None
              if particle_types[3] == 'sidechain':
-              torsion_force_constant = self.torsion_force_constants['sc_sc_bb_sc_torsion_k']
+              try:
+               torsion_force_constant = self.torsion_force_constants['sc_sc_bb_sc_torsion_k']
+              except:
+               try:
+                torsion_force_constant = self.torsion_force_constants['sc_bb_sc_sc_torsion_k']
+               except:
+                print("No torsion force constant definition provided for 'sc_sc_bb_sc_torsion_k', setting 'sc_sc_bb_sc_torsion_k'=0")
+                torsion_force_constant = None
             if particle_types[2] == 'sidechain':
              if particle_types[3] == 'backbone':
-              torsion_force_constant = self.torsion_force_constants['sc_sc_sc_bb_torsion_k']
+              try:
+               torsion_force_constant = self.torsion_force_constants['sc_sc_sc_bb_torsion_k']
+              except:
+               try:
+                torsion_force_constant = self.torsion_force_constants['bb_sc_sc_sc_torsion_k']
+               except:
+                print("No torsion force constant definition provided for 'sc_sc_sc_bb_torsion_k', setting 'sc_sc_sc_bb_torsion_k'=0")
+                torsion_force_constant = None
              if particle_types[3] == 'sidechain':
-              torsion_force_constant = self.torsion_force_constants['sc_sc_sc_sc_torsion_k']
+              try:
+               torsion_force_constant = self.torsion_force_constants['sc_sc_sc_sc_torsion_k']
+              except:
+               print("No torsion force constant definition provided for 'sc_sc_sc_sc_torsion_k', setting 'sc_sc_sc_sc_torsion_k'=0")
+               torsion_force_constant = None
           if particle_types[0] == 'backbone':
            if particle_types[1] == 'backbone':
             if particle_types[2] == 'backbone':
              if particle_types[3] == 'backbone':
-              torsion_force_constant = self.torsion_force_constants['bb_bb_bb_bb_torsion_k']
+              try:
+               torsion_force_constant = self.torsion_force_constants['bb_bb_bb_bb_torsion_k']
+              except:
+               print("No torsion force constant definition provided for 'bb_bb_bb_bb_torsion_k', setting 'bb_bb_bb_bb_torsion_k'=0")
+               torsion_force_constant = None
              if particle_types[3] == 'sidechain':
-              torsion_force_constant = self.torsion_force_constants['bb_bb_bb_sc_torsion_k']
+              try:
+               torsion_force_constant = self.torsion_force_constants['bb_bb_bb_sc_torsion_k']
+              except:
+               try:
+                torsion_force_constant = self.torsion_force_constants['sc_bb_bb_bb_torsion_k']
+               except:
+                print("No torsion force constant definition provided for 'sc_bb_bb_bb_torsion_k', setting 'sc_bb_bb_bb_torsion_k'=0")
+                torsion_force_constant = None
             if particle_types[2] == 'sidechain':
              if particle_types[3] == 'backbone':
-              torsion_force_constant = self.torsion_force_constants['bb_bb_sc_bb_torsion_k']
+              try:
+               torsion_force_constant = self.torsion_force_constants['bb_bb_sc_bb_torsion_k']
+              except:
+               try:
+                torsion_force_constant = self.torsion_force_constants['bb_sc_bb_bb_torsion_k']
+               except:
+                print("No torsion force constant definition provided for 'bb_sc_bb_bb_torsion_k', setting 'bb_sc_bb_bb_torsion_k'=0")
+                torsion_force_constant = None
              if particle_types[3] == 'sidechain':
-              torsion_force_constant = self.torsion_force_constants['bb_bb_sc_sc_torsion_k']
+              try:
+               torsion_force_constant = self.torsion_force_constants['bb_bb_sc_sc_torsion_k']
+              except:
+               try:
+                torsion_force_constant = self.torsion_force_constants['sc_sc_bb_bb_torsion_k']
+               except:
+                print("No torsion force constant definition provided for 'sc_sc_bb_bb_torsion_k', setting 'sc_sc_bb_bb_torsion_k'=0")
+                torsion_force_constant = None
            if particle_types[1] == 'sidechain':
             if particle_types[2] == 'backbone':
              if particle_types[3] == 'backbone':
-              torsion_force_constant = self.torsion_force_constants['bb_sc_bb_bb_torsion_k']
+              try:
+               torsion_force_constant = self.torsion_force_constants['bb_sc_bb_bb_torsion_k']
+              except:
+               try:
+                torsion_force_constant = self.torsion_force_constants['bb_bb_sc_bb_torsion_k']
+               except:
+                print("No torsion force constant definition provided for 'bb_sc_bb_bb_torsion_k', setting 'bb_sc_bb_bb_torsion_k'=0")
+                torsion_force_constant = None
              if particle_types[3] == 'sidechain':
-              torsion_force_constant = self.torsion_force_constants['bb_sc_bb_sc_torsion_k']
+              try:
+               torsion_force_constant = self.torsion_force_constants['bb_sc_bb_sc_torsion_k']
+              except:
+               try:
+                torsion_force_constant = self.torsion_force_constants['sc_bb_sc_bb_torsion_k']
+               except:
+                print("No torsion force constant definition provided for 'bb_sc_bb_sc_torsion_k', setting 'bb_sc_bb_sc_torsion_k'=0")
+                torsion_force_constant = None
             if particle_types[2] == 'sidechain':
              if particle_types[3] == 'backbone':
-              torsion_force_constant = self.torsion_force_constants['bb_sc_sc_bb_torsion_k']
+              try:
+               torsion_force_constant = self.torsion_force_constants['bb_sc_sc_bb_torsion_k']
+              except:
+               print("No torsion force constant definition provided for 'bb_sc_sc_bb_torsion_k', setting 'bb_sc_sc_bb_torsion_k'=0")
+               torsion_force_constant = None
              if particle_types[3] == 'sidechain':
-              torsion_force_constant = self.torsion_force_constants['bb_sc_sc_sc_torsion_k']
+              try:
+               torsion_force_constant = self.torsion_force_constants['bb_sc_sc_sc_torsion_k']
+              except:
+               try:
+                torsion_force_constant = self.torsion_force_constants['sc_sc_sc_bb_torsion_k']
+               except:
+                print("No torsion force constant definition provided for 'sc_sc_sc_bb_torsion_k', setting 'sc_sc_sc_bb_torsion_k'=0")
+                torsion_force_constant = None
+
+          if torsion_force_constant == None:
+            torsion_force_constant = 0.0
+
           return(torsion_force_constant)
 
         def get_equil_torsion_angle(self,torsion):
@@ -1225,51 +1456,154 @@ class CGModel(object):
 
           particle_types = [particle_1_type,particle_2_type,particle_3_type,particle_4_type]
 
+          equil_torsion_angle = None
+
           if particle_types[0] == 'sidechain':
            if particle_types[1] == 'backbone':
             if particle_types[2] == 'backbone':
              if particle_types[3] == 'backbone':
-              equil_torsion_angle = self.equil_torsion_angles['sc_bb_bb_bb_torsion_0']
+              try:
+               equil_torsion_angle = self.equil_torsion_angles['sc_bb_bb_bb_torsion_0']
+              except:
+               try:
+                equil_torsion_angle = self.equil_torsion_angles['bb_bb_bb_sc_torsion_0']
+               except:
+                print("No equilibrium torsion angle definition provided for 'sc_bb_bb_bb_torsion_0', setting 'sc_bb_bb_bb_torsion_0'=0")
+                equil_torsion_angle = None
              if particle_types[3] == 'sidechain':
-              equil_torsion_angle = self.equil_torsion_angles['sc_bb_bb_sc_torsion_0']
+              try:
+               equil_torsion_angle = self.equil_torsion_angles['sc_bb_bb_sc_torsion_0']
+              except:
+               print("No equilibrium torsion angle definition provided for 'sc_bb_bb_bb_torsion_0', setting 'sc_bb_bb_bb_torsion_0'=0")
+               equil_torsion_angle = None
             if particle_types[2] == 'sidechain':
              if particle_types[3] == 'backbone':
-              equil_torsion_angle = self.equil_torsion_angles['bb_sc_sc_bb_torsion_0']
+              try:
+               equil_torsion_angle = self.equil_torsion_angles['bb_sc_sc_bb_torsion_0']
+              except:
+               print("No equilibrium torsion angle definition provided for 'bb_sc_sc_bb_torsion_0', setting 'bb_sc_sc_bb_torsion_0'=0")
+               equil_torsion_angle = None
              if particle_types[3] == 'sidechain':
-              equil_torsion_angle = self.equil_torsion_angles['sc_bb_sc_sc_torsion_0']
+              try:
+               equil_torsion_angle = self.equil_torsion_angles['sc_bb_sc_sc_torsion_0']
+              except:
+               try:
+                equil_torsion_angle = self.equil_torsion_angles['sc_sc_bb_sc_torsion_0']
+               except:
+                print("No equilibrium torsion angle definition provided for 'sc_sc_bb_sc_torsion_0', setting 'sc_sc_bb_sc_torsion_0'=0")
+                equil_torsion_angle = None
            if particle_types[1] == 'sidechain':
             if particle_types[2] == 'backbone':
              if particle_types[3] == 'backbone':
-              equil_torsion_angle = self.equil_torsion_angles['sc_sc_bb_bb_torsion_0']
+              try:
+               equil_torsion_angle = self.equil_torsion_angles['sc_sc_bb_bb_torsion_0']
+              except:
+               try:
+                equil_torsion_angle = self.equil_torsion_angles['bb_bb_sc_sc_torsion_0']
+               except:
+                print("No equilibrium torsion angle definition provided for 'sc_sc_bb_bb_torsion_0', setting 'sc_sc_bb_bb_torsion_0'=0")
+                equil_torsion_angle = None
              if particle_types[3] == 'sidechain':
-              equil_torsion_angle = self.equil_torsion_angles['sc_sc_bb_sc_torsion_0']
+              try:
+               equil_torsion_angle = self.equil_torsion_angles['sc_sc_bb_sc_torsion_0']
+              except:
+               try:
+                equil_torsion_angle = self.equil_torsion_angles['sc_bb_sc_sc_torsion_0']
+               except:
+                print("No equilibrium torsion angle definition provided for 'sc_bb_sc_sc_torsion_0', setting 'sc_bb_sc_sc_torsion_0'=0")
+                equil_torsion_angle = None
             if particle_types[2] == 'sidechain':
              if particle_types[3] == 'backbone':
-              equil_torsion_angle = self.equil_torsion_angles['sc_sc_sc_bb_torsion_0']
+              try:
+               equil_torsion_angle = self.equil_torsion_angles['sc_sc_sc_bb_torsion_0']
+              except:
+               try:
+                equil_torsion_angle = self.equil_torsion_angles['bb_sc_sc_sc_torsion_0']
+               except:
+                print("No equilibrium torsion angle definition provided for 'bb_sc_sc_sc_torsion_0', setting 'bb_sc_sc_sc_torsion_0'=0")
+                equil_torsion_angle = None
              if particle_types[3] == 'sidechain':
-              equil_torsion_angle = self.equil_torsion_angles['sc_sc_sc_sc_torsion_0']
+              try:
+               equil_torsion_angle = self.equil_torsion_angles['sc_sc_sc_sc_torsion_0']
+              except:
+               print("No equilibrium torsion angle definition provided for 'sc_sc_sc_sc_torsion_0', setting 'sc_sc_sc_sc_torsion_0'=0")
+               equil_torsion_angle = None
           if particle_types[0] == 'backbone':
            if particle_types[1] == 'backbone':
             if particle_types[2] == 'backbone':
              if particle_types[3] == 'backbone':
-              equil_torsion_angle = self.equil_torsion_angles['bb_bb_bb_bb_torsion_0']
+              try:
+               equil_torsion_angle = self.equil_torsion_angles['bb_bb_bb_bb_torsion_0']
+              except:
+               print("No equilibrium torsion angle definition provided for 'bb_bb_bb_bb_torsion_0', setting 'bb_bb_bb_bb_torsion_0'=0")
+               equil_torsion_angle = None
              if particle_types[3] == 'sidechain':
-              equil_torsion_angle = self.equil_torsion_angles['bb_bb_bb_sc_torsion_0']
+              try:
+               equil_torsion_angle = self.equil_torsion_angles['bb_bb_bb_sc_torsion_0']
+              except:
+               try:
+                equil_torsion_angle = self.equil_torsion_angles['sc_bb_bb_bb_torsion_0']
+               except:
+                print("No equilibrium torsion angle definition provided for 'sc_bb_bb_bb_torsion_0', setting 'sc_bb_bb_bb_torsion_0'=0")
+                equil_torsion_angle = None
             if particle_types[2] == 'sidechain':
              if particle_types[3] == 'backbone':
-              equil_torsion_angle = self.equil_torsion_angles['bb_bb_sc_bb_torsion_0']
+              try:
+               equil_torsion_angle = self.equil_torsion_angles['bb_bb_sc_bb_torsion_0']
+              except:
+               try:
+                equil_torsion_angle = self.equil_torsion_angles['bb_sc_bb_bb_torsion_0']
+               except:
+                print("No equilibrium torsion angle definition provided for 'bb_sc_bb_bb_torsion_0', setting 'bb_sc_bb_bb_torsion_0'=0")
+                equil_torsion_angle = None
              if particle_types[3] == 'sidechain':
-              equil_torsion_angle = self.equil_torsion_angles['bb_bb_sc_sc_torsion_0']
+              try:
+               equil_torsion_angle = self.equil_torsion_angles['bb_bb_sc_sc_torsion_0']
+              except:
+               try:
+                equil_torsion_angle = self.equil_torsion_angles['sc_sc_bb_bb_torsion_0']
+               except:
+                print("No equilibrium torsion angle definition provided for 'sc_sc_bb_bb_torsion_0', setting 'sc_sc_bb_bb_torsion_0'=0")
+                equil_torsion_angle = None
            if particle_types[1] == 'sidechain':
             if particle_types[2] == 'backbone':
              if particle_types[3] == 'backbone':
-              equil_torsion_angle = self.equil_torsion_angles['bb_sc_bb_bb_torsion_0']
+              try:
+               equil_torsion_angle = self.equil_torsion_angles['bb_sc_bb_bb_torsion_0']
+              except:
+               try:
+                equil_torsion_angle = self.equil_torsion_angles['bb_bb_sc_bb_torsion_0']
+               except:
+                print("No equilibrium torsion angle definition provided for 'bb_sc_bb_bb_torsion_0', setting 'bb_sc_bb_bb_torsion_0'=0")
+                equil_torsion_angle = None
              if particle_types[3] == 'sidechain':
-              equil_torsion_angle = self.equil_torsion_angles['bb_sc_bb_sc_torsion_0']
+              try:
+               equil_torsion_angle = self.equil_torsion_angles['bb_sc_bb_sc_torsion_0']
+              except:
+               try:
+                equil_torsion_angle = self.equil_torsion_angles['sc_bb_sc_bb_torsion_0']
+               except:
+                print("No equilibrium torsion angle definition provided for 'bb_sc_bb_sc_torsion_0', setting 'bb_sc_bb_sc_torsion_0'=0")
+                equil_torsion_angle = None
             if particle_types[2] == 'sidechain':
              if particle_types[3] == 'backbone':
-              equil_torsion_angle = self.equil_torsion_angles['bb_sc_sc_bb_torsion_0']
+              try:
+               equil_torsion_angle = self.equil_torsion_angles['bb_sc_sc_bb_torsion_0']
+              except:
+               print("No equilibrium torsion angle definition provided for 'bb_sc_sc_bb_torsion_0', setting 'bb_sc_sc_bb_torsion_0'=0")
+               equil_torsion_angle = None
              if particle_types[3] == 'sidechain':
-              equil_torsion_angle = self.equil_torsion_angles['bb_sc_sc_sc_torsion_0']
+              try:
+               equil_torsion_angle = self.equil_torsion_angles['bb_sc_sc_sc_torsion_0']
+              except:
+               try:
+                equil_torsion_angle = self.equil_torsion_angles['sc_sc_sc_bb_torsion_0']
+               except:
+                print("No equilibrium torsion angle definition provided for 'sc_sc_sc_bb_torsion_0', setting 'sc_sc_sc_bb_torsion_0'=0")
+                equil_torsion_angle = None
+
+          if equil_torsion_angle == None:
+            equil_torsion_angle = 0.0
+
           return(equil_torsion_angle)
 
