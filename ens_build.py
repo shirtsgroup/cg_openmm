@@ -36,7 +36,7 @@ def get_native_structure(replica_positions,replica_energies,temperature_list):
 
         return(native_structure)
 
-def get_ensembles_from_replica_positions(cgmodel,replica_positions,replica_energies,temperature_list,native_fraction_cutoff=0.95,nonnative_fraction_cutoff=0.9,native_ensemble_size=10,nonnative_ensemble_size=100,decorrelate=True,native_contact_cutoff_distance=None):
+def get_ensembles_from_replica_positions(cgmodel,replica_positions,replica_energies,temperature_list,native_fraction_cutoff=0.95,nonnative_fraction_cutoff=0.9,native_ensemble_size=10,nonnative_ensemble_size=100,decorrelate=True,native_structure_contact_distance_cutoff=None,optimize_Q=False):
         """
         Given a coarse grained model and replica positions, this function: 1) decorrelates the samples, 2) clusters the samples with MSMBuilder, and 3) generates native and nonnative ensembles based upon the RMSD positions of decorrelated samples.
 
@@ -46,20 +46,44 @@ def get_ensembles_from_replica_positions(cgmodel,replica_positions,replica_energ
         :param replica_positions: 
         :type replica_positions: np.array( num_replicas x num_steps x np.array(float*simtk.unit (shape = num_beads x 3))))
 
+        :param replica_energies: List of dimension num_replicas X simulation_steps, which gives the energies for all replicas at all simulation steps 
+        :type replica_energies: List( List( float * simtk.unit.energy for simulation_steps ) for num_replicas )
+
+        :param temperature_list: List of temperatures that will be used to define different replicas (thermodynamics states), default = None
+        :type temperature_list: List( `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_ * number_replicas ) 
+
+        :param native_fraction_cutoff: The fraction of native contacts above which a pose is considered 'native'
+        :type native_fraction_cutoff: float
+
+        :param nonnative_fraction_cutoff: The fraction of native contacts above which a pose is considered 'native'
+        :type nonnative_fraction_cutoff: float
+
+        :param native_ensemble_size: The number of poses to generate for a native ensemble
+        :type native_ensemble_size: index
+
+        :param nonnative_ensemble_size: The number of poses to generate for a nonnative ensemble
+        :type nonnative_ensemble_size: index
+
+        :param decorrelate: Determines whether or not to subsample the replica exchange trajectories using pymbar, default = True
+        :type decorrelate: Logical
+
+        :param native_structure_contact_distance_cutoff: The distance below which two nonbonded, interacting particles that are defined as "native contact",default=None
+        :type native_structure_contact_distance_cutoff: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
+
+        :param optimize_Q: Determines whether or not to call a procedure that optimizes parameters which influence determination of native contacts
+
         :returns:
-           - nonnative_ensemble (List(positions(np.array(float*simtk.unit (shape = num_beads x 3))))) - A list of the positions for all members in the nonnative ensemble
-
-           - nonnative_ensemble_energies ( List(`Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )) - A list of the energies for all members of the nonnative ensemble
-
            - native_ensemble (List(positions(np.array(float*simtk.unit (shape = num_beads x 3))))) - A list of the positions for all members in the native ensemble
 
            - native_ensemble_energies ( List(`Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )) - A list of the energies for the native ensemble
+
+           - nonnative_ensemble (List(positions(np.array(float*simtk.unit (shape = num_beads x 3))))) - A list of the positions for all members in the nonnative ensemble
+
+           - nonnative_ensemble_energies ( List(`Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )) - A list of the energies for all members of the nonnative ensemble
         """
         all_poses = []
         all_energies = []
 
-        if native_contact_cutoff_distance == None:
-          native_contact_cutoff_distance = 1.1 * cgmodel.sigmas['bb_bb_sigma']
         native_structure = get_native_structure(replica_positions,replica_energies,temperature_list)
 
         for replica_index in range(len(replica_positions)):
@@ -67,10 +91,14 @@ def get_ensembles_from_replica_positions(cgmodel,replica_positions,replica_energ
           if decorrelate:
            [t0,g,Neff_max] = timeseries.detectEquilibration(energies)
            energies_equil = energies[t0:]
-           indices = timeseries.subsampleCorrelatedData([energies_equil,g])
+           poses_equil = replica_positions[replica_index][t0:]
+           indices = timeseries.subsampleCorrelatedData(energies_equil)
+           for index in indices:
+            all_energies.append(energies_equil[index])
+            all_poses.append(poses_equil[index])
           else:
            indices = range(len(energies)-1)
-          for index in indices:
+           for index in indices:
             if index < len(replica_positions[replica_index]):
 #            all_energies.append(energies_equil[index])
               all_energies.append(energies[index])
@@ -80,7 +108,7 @@ def get_ensembles_from_replica_positions(cgmodel,replica_positions,replica_energ
 
         Q_list = []
         for pose in all_poses:
-          Q = fraction_native_contacts(cgmodel,pose,native_structure,cutoff_distance=native_contact_cutoff_distance)
+          Q = fraction_native_contacts(cgmodel,pose,native_structure,native_structure_contact_distance_cutoff=native_structure_contact_distance_cutoff)
           Q_list.append(Q)
 
         #print(Q_list)
@@ -200,7 +228,7 @@ def write_ensemble_pdb(cgmodel,ensemble_directory=None):
         while pdb_file_name in pdb_list:
            pdb_file_name = str(ensemble_directory+"/cg"+str(index)+".pdb")
            index = index + 1
-        write_pdbfile_without_topology(cgmodel,pdb_file_name,energy=energy)
+        write_pdbfile_without_topology(cgmodel,pdb_file_name)
  
         return
 
