@@ -45,22 +45,26 @@ def get_decorrelated_samples(replica_positions,replica_energies,temperature_list
         :type temperature_list: List( float * simtk.unit.temperature )
 
         :returns:
-           - configurations ( List( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [n_decorrelated_samples,cgmodel.num_beads,3] ), simtk.unit ) ) - A list of decorrelated samples
+           - configurations ( List( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ (n_decorrelated_samples,cgmodel.num_beads,3), simtk.unit ) ) - A list of decorrelated samples
            - energies ( List( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) ) - The energies for the decorrelated samples (configurations)
 
         """
-        configurations = []
-        energies = []
-        K = len(temperature_list)
-        g = np.zeros(K,np.float64)
-        for k in range(K):  # subsample the energies
-          [t0, g[k], Neff_max] = timeseries.detectEquilibration(replica_energies[k][k],nskip=10)
-          indices = np.array(pymbar.timeseries.subsampleCorrelatedData(replica_energies[k][k],g=g[k])) # indices of uncorre
-          configurations.append(replica_positions[k][indices])
-          energies.append(replica_energies[k][k][indices])
-        configurations = np.array([[pose for pose in trajectory] for trajectory in configurations])
-        energies = np.array([[float(energy) for energy in trajectory] for trajectory in energies])
-        return(configurations,energies)
+        all_poses = []
+        all_energies = []
+
+        for replica_index in range(len(replica_positions)):
+          energies = replica_energies[replica_index][replica_index]
+          [t0,g,Neff_max] = timeseries.detectEquilibration(energies)
+          energies_equil = energies[t0:]
+          poses_equil = replica_positions[replica_index][t0:]
+          indices = timeseries.subsampleCorrelatedData(energies_equil)
+          for index in indices:
+            all_energies.append(energies_equil[index])
+            all_poses.append(poses_equil[index])
+
+        all_energies = np.array([float(energy) for energy in all_energies])
+
+        return(all_poses,all_energies)
 
 def get_entropy_differences(mbar):
         """

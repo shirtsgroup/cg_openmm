@@ -10,7 +10,59 @@ import matplotlib.pyplot as plt
 from foldamers.utilities.util import *
 from foldamers.utilities.iotools import write_pdbfile_without_topology
 
-def fraction_native_contacts(cgmodel,positions,native_structure,cutoff_distance=None):
+def get_native_contacts(cgmodel,native_structure,native_contact_distance_cutoff):
+        """
+        Given a coarse grained model, positions for that model, and positions for the native structure, this function calculates the fraction of native contacts for the model.
+
+        :param cgmodel: CGModel() class object
+        :type cgmodel: class
+
+        :param native_structure: Positions for the particles in a coarse grained model.
+        :type native_structure: np.array( float * unit.angstrom ( num_particles x 3 ) )
+
+        :param native_contact_distance_cutoff: The maximum distance for two nonbonded particles that are defined as "native",default=None
+        :type native_contact_distance_cutoff: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
+
+        :returns:
+          - native_contact_list - A list of the nonbonded interactions whose inter-particle distances are less than the 'native_contact_cutoff_distance'.
+
+        """
+
+        nonbonded_interaction_list = cgmodel.nonbonded_interaction_list
+        native_structure_distances = distances(nonbonded_interaction_list,native_structure)
+        native_contact_list = []
+
+        for interaction in range(len(nonbonded_interaction_list)):
+          if native_structure_distances[interaction].__lt__(native_contact_distance_cutoff):
+            native_contact_list.append(nonbonded_interaction_list[interaction])
+
+        return(native_contact_list)
+
+def get_number_native_contacts(cgmodel,native_structure,native_contact_distance_cutoff):
+        """
+        Given a coarse grained model, positions for that model, and positions for the native structure, this function calculates the fraction of native contacts for the model.
+
+        :param cgmodel: CGModel() class object
+        :type cgmodel: class
+
+        :param native_structure: Positions for the particles in a coarse grained model.
+        :type native_structure: np.array( float * unit.angstrom ( num_particles x 3 ) )
+
+        :param native_contact_cutoff_distance: The maximum distance for two nonbonded particles that are defined as "native",default=None
+        :type native_contact_cutoff_distance: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
+
+        :returns:
+          - contacts - The number of nonbonded interactions that are considered 'native'.
+
+        """
+
+        native_contact_list = get_native_contacts(cgmodel,native_structure,native_contact_distance_cutoff)
+
+        contacts = len(native_contact_list)
+
+        return(contacts)
+
+def fraction_native_contacts(cgmodel,positions,native_structure,native_structure_contact_distance_cutoff=None,native_contact_cutoff_ratio=None):
         """
         Given a coarse grained model, positions for that model, and positions for the native structure, this function calculates the fraction of native contacts for the model.
 
@@ -23,41 +75,79 @@ def fraction_native_contacts(cgmodel,positions,native_structure,cutoff_distance=
         :param native_structure: Positions for the native structure.
         :type native_structure: np.array( float * unit.angstrom ( num_particles x 3 ) )
 
-        :param cutoff_distance: The maximum distance for two nonbonded particles that are defined as "native",default=None
-        :type cutoff_distance: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
+        :param native_structure_contact_distance_cutoff: The distance below which two nonbonded, interacting particles that are defined as "native contact",default=None
+        :type native_structure_contact_distance_cutoff: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
+
+        :param native_contact_cutoff_ratio: The distance below which two nonbonded, interacting particles in a non-native pose are assigned as a "native contact", as a ratio of the distance for that contact in the native structure, default=None
+        :type native_contact_cutoff_ratio: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
 
         :returns:
-          - Q ( float ) - The fraction of native contacts for the model with the current structure.
+          - Q ( float ) - The fraction of native contacts for the comparison pose.
 
         """
-        if cutoff_distance == None:
-          cutoff_distance = 0.8 * cgmodel.get_sigma(0)
 
-        nonbonded_interaction_list = cgmodel.nonbonded_interaction_list
-        #print("There are "+str(len(nonbonded_interaction_list))+" total nonbonded interaction possibilities.")
-        native_structure_distances = distances(nonbonded_interaction_list,native_structure)
-        current_structure_distances = distances(nonbonded_interaction_list,positions)
-        native_distances = []
-        native_interaction_list = []
+        if native_structure_contact_distance_cutoff == None:
+          native_structure_contact_distance_cutoff = 1.1*cgmodel.get_sigma(0)
+
+        if native_contact_cutoff_ratio == None:
+          native_contact_cutoff_ratio = 1.05
+
+        native_contact_list = get_native_contacts(cgmodel,native_structure,native_structure_contact_distance_cutoff)
+
+        total_native_interactions = get_number_native_contacts(cgmodel,native_structure,native_structure_contact_distance_cutoff)
+
+        if total_native_interactions == 0:
+          print("ERROR: there are 0 'native' interactions with the current cutoff distance.")
+          print("Try increasing the 'native_structure_contact_distance_cutoff'")
+          exit()
+
+        native_contact_distances = distances(native_contact_list,native_structure)
         
-        for interaction in range(len(nonbonded_interaction_list)):
-          if native_structure_distances[interaction].__lt__(cutoff_distance):
-            native_distances.append(native_structure_distances[interaction])
-            native_interaction_list.append(interaction)
-        total_native_interactions = len(native_interaction_list)
-        #print("There are "+str(total_native_interactions)+" native interactions.")
+        current_structure_distances = distances(native_contact_list,positions)
 
-        current_distances = []
-        current_structure_interaction_list = []
-        for interaction in range(len(nonbonded_interaction_list)):
-          if interaction in native_interaction_list:
-            if current_structure_distances[interaction].__lt__(1.1*native_structure_distances[interaction]):
-              current_distances.append(current_structure_distances[interaction])
-              current_structure_interaction_list.append(interaction)
-        current_structure_native_interactions = len(current_structure_interaction_list)
-        #print("The current structure has "+str(current_structure_native_interactions)+" native interactions")
-        Q = current_structure_native_interactions / total_native_interactions
+        current_structure_native_contact_list = []
+        for interaction in range(len(native_contact_list)):
+          if current_structure_distances[interaction].__lt__(native_contact_cutoff_ratio*native_contact_distances[interaction]):
+            current_structure_native_contact_list.append(native_contact_list[interaction])
+        current_structure_number_native_interactions = len(current_structure_native_contact_list)
+        Q = current_structure_number_native_interactions / total_native_interactions
         return(Q)
+
+def optimize_Q(cgmodel,native_structure,ensemble):
+        """
+        Given a coarse grained model and a native structure as input
+
+        :param cgmodel: CGModel() class object
+        :type cgmodel: class
+
+        :param native_structure: Positions for the native structure.
+        :type native_structure: np.array( float * unit.angstrom ( num_particles x 3 ) )
+
+        :param ensemble: A list of poses that will be used to optimize the cutoff distance for defining native contacts
+        :type ensemble: List(positions(np.array(float*simtk.unit (shape = num_beads x 3))))
+
+        :returns:
+          - native_structure_contact_distance_cutoff ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The ideal distance below which two nonbonded, interacting particles should be defined as a "native contact"
+        """
+
+        cutoff_list = [(0.95+i*.01)*cgmodel.get_sigma(0) for i in range(30)]
+
+        cutoff_Q_list = []
+        for cutoff in cutoff_list:
+          Q_list = []
+          for pose in ensemble:
+            Q = fraction_native_contacts(cgmodel,pose,native_structure,native_structure_contact_distance_cutoff=cutoff)
+            Q_list.append(Q)
+
+          mean_Q = mean(Q_list)
+          cutoff_Q_list.append(mean_Q)
+
+        cutoff_Q_list.index(max(cutoff_Q_list))
+
+        native_structure_contact_distance_cutoff = cutoff_Q_list.index(max(cutoff_Q_list))
+
+        return(native_structure_contact_distance_cutoff)
+
 
 def get_helical_parameters(cgmodel):
         """
