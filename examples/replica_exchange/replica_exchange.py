@@ -82,6 +82,7 @@ cgmodel = CGModel(polymer_length=polymer_length,backbone_lengths=backbone_length
 # If there is data in 'output_directory', read that data instead.
 if not os.path.exists(output_data):
   replica_energies,replica_positions,replica_states = run_replica_exchange(cgmodel.topology,cgmodel.system,cgmodel.positions,temperature_list=temperature_list,simulation_time_step=simulation_time_step,total_simulation_time=total_simulation_time,print_frequency=print_frequency,output_data=output_data,output_directory=output_directory)
+  make_replica_pdb_files(cgmodel.topology,replica_positions)
 else:
   replica_energies,replica_positions,replica_states = read_replica_exchange_data(system=cgmodel.system,topology=cgmodel.topology,temperature_list=temperature_list,output_data=output_data,print_frequency=print_frequency)
 
