@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath('../../cg_openmm'))
 # -- Project information -----------------------------------------------------
 
 project = 'Coarse grained OpenMM'
-copyright = '2019, Shirts research group'
+copyright = '2019, Garrett A. Meek, Michael R. Shirts'
 author = "Garrett A. Meek\\\ \\\Michael R. Shirts\\\ \\\Dept. of Chemical and Biological Engineering\\\University of Colorado Boulder"
 
 # The short X.Y version

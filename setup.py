@@ -10,11 +10,12 @@ from setuptools import setup, Command
 # Package meta-data.
 NAME = 'cg_openmm'
 DESCRIPTION = 'Package containing tools to perform coarse-grained modeling in OpenMM.'
+long_description = 'This package provides tools to build coarse grained models and perform molecular simulations using OpenMM.'
 URL = 'https://github.com/shirtsgroup/cg_openmm'
-EMAIL = 'michael.shirts@colorado.edu'
-AUTHOR = 'Shirts research group'
+EMAIL = 'garrett.a.meek@gmail.com'
+AUTHOR = 'Garrett A. Meek'
 REQUIRES_PYTHON = '>=3.6.8'
-VERSION = 0.0
+VERSION = 1.0
 
 # What packages are required for this module to be executed?
 REQUIRED = [
@@ -88,7 +89,7 @@ setup(
     name=NAME,
     version=about['__version__'],
     description=DESCRIPTION,
-#    long_description=long_description,
+    long_description=long_description,
     long_description_content_type='text/markdown',
     author=AUTHOR,
     author_email=EMAIL,
