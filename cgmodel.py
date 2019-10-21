@@ -5,7 +5,7 @@ from simtk import openmm as mm
 from simtk.openmm.app.pdbfile import PDBFile
 from simtk.openmm.app.topology import Topology
 from simtk.openmm.app.topology import Residue
-import simtk.openmm.app.element as elem
+from simtk.openmm.app import element as elem
 import foldamers
 from foldamers.utilities.util import random_positions
 from foldamers.utilities import util
