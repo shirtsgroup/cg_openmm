@@ -4,7 +4,6 @@ import simtk.unit as unit
 from statistics import mean
 from scipy.stats import linregress
 from scipy import spatial
-from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 from foldamers.utilities.util import *
 from foldamers.utilities.iotools import write_pdbfile_without_topology
