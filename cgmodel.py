@@ -129,7 +129,7 @@ class CGModel(object):
                      equil_torsion_angles=None, 
                      charges=None, 
                      constrain_bonds=True,
-                     include_bond_forces=True,
+                     include_bond_forces=False,
                      include_nonbonded_forces=True,
                      include_bond_angle_forces=True,
                      include_torsion_forces=True,
@@ -238,25 +238,25 @@ class CGModel(object):
 
           """
           if bond_force_constants == None:
-            bond_force_constants = {'bb_bb_bond_k': 1250.0,'bb_sc_bond_k': 1250.0, 'sc_sc_bond_k': 1250.0}
+            bond_force_constants = {}
           if bond_angle_force_constants == None:
-            bond_angle_force_constants={'bb_bb_bb_angle_k': 0.0002,'bb_bb_sc_angle_k': 0,'bb_sc_sc_angle_k': 0,'sc_sc_sc_angle_k': 0.0002}
+            bond_angle_force_constants = {}
           if torsion_force_constants == None:
-            torsion_force_constants={'bb_bb_bb_bb_torsion_k': 0.0002,'bb_bb_bb_sc_torsion_k': 0,'bb_bb_sc_sc_torsion_k': 0, 'bb_sc_sc_sc_torsion_k': 0, 'sc_bb_bb_sc_torsion_k': 0, 'sc_sc_sc_sc_torsion_k': 0, 'sc_bb_bb_bb_torsion_k': 0}
+            torsion_force_constants={}
           if torsion_periodicities == None:
-            torsion_periodicities={'bb_bb_bb_bb_period': 1,'bb_bb_bb_sc_period': 1,'bb_bb_sc_sc_period': 1, 'bb_sc_sc_sc_period': 1, 'sc_bb_bb_sc_period': 1, 'sc_sc_sc_sc_period': 1, 'sc_bb_bb_bb_period': 1}
+            torsion_periodicities={}
           if equil_bond_angles == None:
-            equil_bond_angles = {'bb_bb_bb_angle_0': 1.61,'bb_bb_sc_angle_0': 1.61}
+            equil_bond_angles = {}
           if equil_torsion_angles == None:
-            equil_torsion_angles = {'bb_bb_bb_bb_torsion_0': 0.91,'bb_bb_bb_sc_torsion_0': 0,'bb_bb_sc_sc_torsion_0': 0.0, 'bb_sc_sc_sc_torsion_0': 0.0, 'sc_bb_bb_sc_torsion_0': 0.0, 'bb_sc_sc_bb_torsion_0': 0.0, 'sc_sc_sc_sc_torsion_0': 0.0, 'sc_bb_bb_bb_torsion_0': 0}
+            equil_torsion_angles = {}
           if charges == None:
-            charges = {'backbone_bead_charges': 0.0 * unit.elementary_charge,'sidechain_bead_charges': 0.0 * unit.elementary_charge}
+            charges = {}
           if masses == None:
-            masses = {'backbone_bead_masses': 100.0 * unit.amu, 'sidechain_bead_masses': 100.0 * unit.amu}
+            masses = {}
           if sigmas == None:
-            sigmas = {'bb_bb_sigma': 1.875 * unit.nanometer,'bb_sc_sigma': 1.875 * unit.nanometer,'sc_sc_sigma': 1.875 * unit.nanometer}
+            sigmas = {}
           if epsilons == None:
-            epsilons = {'bb_bb_eps': 0.05 * unit.kilocalorie_per_mole,'sc_sc_eps': 0.05 * unit.kilocalorie_per_mole}
+            epsilons = {}
           if bond_lengths == None:
             bond_lengths = {'bb_bb_bond_length': 0.75 * unit.nanometer,'bb_sc_bond_length': 0.75 * unit.nanometer,'sc_sc_bond_length': 0.75 * unit.nanometer}
 
@@ -501,7 +501,7 @@ class CGModel(object):
 
           interaction_list = []
 
-          if self.include_bond_forces:
+          if self.include_bond_forces or self.constrain_bonds:
            bond_list = self.get_bond_list()
            for particle_1 in range(self.num_beads):
                for particle_2 in range(particle_1+1,self.num_beads):
@@ -839,13 +839,17 @@ class CGModel(object):
            except:
             print("No particle charge definition was found for particle type: backbone")
             print("Applying a default definition: charge = 0.0")
+            self.charges.update({'backbone_bead_charges':0.0*unit.elementary_charge})
+            particle_charge = self.charges['backbone_bead_charges']
 
           if particle_type == 'sidechain': 
            try:
             particle_charge = self.charges['sidechain_bead_charges']
            except:
-            print("No particle charge definition was found for particle type: backbone")
+            print("No particle charge definition was found for particle type: sidechain")
             print("Applying a default definition: charge = 0.0")
+            self.charges.update({'sidechain_bead_charges':0.0*unit.elementary_charge})
+            particle_charge = self.charges['sidechain_bead_charges']
 
           if particle_charge == None:
             print("ERROR: No charge definition could be found for particle_type: "+str(particle_type))
