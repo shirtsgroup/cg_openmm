@@ -1,11 +1,11 @@
-from simtk import unit
+import simtk.unit as unit
 import sys, os
 from collections import Counter
-from simtk import openmm as mm
-from simtk.openmm.app.pdbfile import PDBFile
-from simtk.openmm.app.topology import Topology
-from simtk.openmm.app.topology import Residue
-from simtk.openmm.app import element as elem
+import openmm as mm
+from openmm.app.pdbfile import PDBFile
+from openmm.app.topology import Topology
+from openmm.app.topology import Residue
+from openmm.app import element as elem
 import foldamers
 from foldamers.utilities.util import random_positions
 from foldamers.utilities import util
