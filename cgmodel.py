@@ -1,7 +1,7 @@
 import simtk.unit as unit
 import sys, os
 from collections import Counter
-import openmm as mm
+import simtk.openmm as mm
 from openmm.app.pdbfile import PDBFile
 from openmm.app.topology import Topology
 from openmm.app.topology import Residue
