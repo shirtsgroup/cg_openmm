@@ -14,7 +14,7 @@ from itertools import chain, combinations, product
 
 def basic_cgmodel(polymer_length=12,backbone_length=1,sidechain_length=1,sidechain_positions=[0],mass=100.0 * unit.amu,bond_length=0.75 * unit.nanometer,sigma=1.85*unit.nanometer,epsilon=0.5 * unit.kilocalorie_per_mole,positions=None):
 
-        """
+        r"""
         :param polymer_length: Number of monomer units, default = 8
         :type polymer_length: int
 
