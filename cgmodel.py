@@ -1,16 +1,11 @@
-#import simtk.unit as unit
-#import sys, os
-#from collections import Counter
-#import simtk.openmm as mm
-#from openmm.app.pdbfile import PDBFile
-#from openmm.app.topology import Topology
-#from openmm.app.topology import Residue
-#from openmm.app import element as elem
-#import foldamers
-#from foldamers.utilities.util import random_positions
-#from foldamers.utilities import util
-#from cg_openmm.build.cg_build import *
-#from itertools import chain, combinations, product
+import simtk.unit as unit
+import sys, os
+from collections import Counter
+from foldamers.utilities.util import random_positions
+from foldamers.utilities import util
+from cg_openmm.build.cg_build import *
+from cg_openmm.utilities.iotools import *
+from itertools import chain, combinations, product
 
 def basic_cgmodel(polymer_length=12,backbone_length=1,sidechain_length=1,sidechain_positions=[0],mass=100.0 * unit.amu,bond_length=0.75 * unit.nanometer,sigma=1.85*unit.nanometer,epsilon=0.5 * unit.kilocalorie_per_mole,positions=None):
 
@@ -349,7 +344,7 @@ class CGModel(object):
             if use_structure_library:
              if polymer_length == 12:
               positions_file = str(str(str(os.path.abspath(__file__)).split('/cg_model')[0])+"/structure_library/12_1_1_0/helix.pdb")
-              self.positions = PDBFile(positions_file).getPositions()
+              self.positions = get_positions_from_pdbfile(filename)
              else:
               self.positions = random_positions(self,use_library=True)
               self.positions = util.random_positions(self,use_library=True)
