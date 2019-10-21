@@ -1,7 +1,6 @@
 import numpy as np
 import os, statistics, random
-from simtk import unit
-from simtk.openmm.app.pdbfile import PDBFile
+import simtk.unit as unit
 from foldamers.cg_model.cgmodel import basic_cgmodel
 from cg_openmm.simulation.tools import get_mm_energy, build_mm_simulation
 from foldamers.utilities.iotools import write_pdbfile_without_topology
@@ -292,8 +291,7 @@ def get_ensemble_data(cgmodel,ensemble_directory):
         if len(pdb_list) > 0:
            print("Searching for suitable ensemble members in the 'foldamers' database.")
            for pdb_file in pdb_list:
-              pdb_mm_obj = PDBFile(pdb_file)
-              cgmodel.positions = pdb_mm_obj.getPositions()
+              cgmodel = read_pdbfile(cgmodel,pdb_file)
               ensemble.append(cgmodel.positions)
               cgmodel.simulation = build_mm_simulation(cgmodel.topology,cgmodel.system,cgmodel.positions)
               energy = cgmodel.simulation.context.getState(getEnergy=True).getPotentialEnergy()

@@ -1,7 +1,6 @@
-from simtk import unit
+import simtk.unit as unit
 from msmbuilder.cluster.kcenters import KCenters
 import mdtraj as md
-from simtk.openmm.app.pdbfile import PDBFile
 from foldamers.utilities.iotools import write_pdbfile_without_topology
 
 def concatenate_trajectories(pdb_file_list,combined_pdb_file="combined.pdb"):
@@ -18,20 +17,10 @@ def concatenate_trajectories(pdb_file_list,combined_pdb_file="combined.pdb"):
           - combined_pdb_file ( str ) - The name/path for a file within which the concatenated coordinates will be written.
 
         """
-        file = open(combined_pdb_file,mode="w")
+        traj_list = []
         for pdb_file in pdb_file_list:
-          pdb_obj = PDBFile(pdb_file)
-          frame=0
-          success = True
-          while success:
-            try:
-              positions = pdb_obj.getPositions(frame=frame)
-              topology = pdb_obj.getTopology()
-              PDBFile.writeFile(topology,positions,file=file)
-              frame = frame + 1
-            except:
-              success = False
-        file.close()
+          traj = md.load(pdb_file)
+          traj_list.append(traj)
         return(combined_pdb_file)
 
 def get_cluster_centroid_positions(pdb_file,cgmodel,n_clusters=None):
