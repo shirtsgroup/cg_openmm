@@ -1,12 +1,11 @@
 import os, subprocess
 import numpy as np
-from simtk import unit
+import simtk.unit as unit
 from statistics import mean
 from scipy.stats import linregress
 from scipy import spatial
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
-#from spatial.transform import Rotation as R
 from foldamers.utilities.util import *
 from foldamers.utilities.iotools import write_pdbfile_without_topology
 

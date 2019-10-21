@@ -1,11 +1,7 @@
-#!/usr/bin/python
-
 import numpy as np
 import matplotlib.pyplot as pyplot
-# OpenMM utilities
 import mdtraj as md
-from simtk import unit
-# foldamers utilities
+import simtk.unit as unit
 from statistics import mean
 from foldamers.cg_model.cgmodel import basic_cgmodel
 from cg_openmm.simulation.tools import *

@@ -1,10 +1,8 @@
-#!/usr/bin/python
-
 import numpy as np
 from math import exp, log
 # OpenMM utilities
 import mdtraj as md
-from simtk import unit
+import simtk.unit as unit
 import pymbar
 from pymbar import timeseries
 kB = unit.Quantity(0.008314462,unit.kilojoule_per_mole)  #Boltzmann constant (Gas constant) in kJ/(mol*K)
