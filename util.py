@@ -1,12 +1,11 @@
 import sys
 import numpy as np
 import math, random, statistics
-from simtk import unit
-from simtk.openmm.app.pdbfile import PDBFile
-from cg_openmm.build.cg_build import build_system, build_topology
+import simtk.unit as unit
+from cg_openmm.build.cg_build import *
 from cg_openmm.simulation.tools import *
+from cg_openmm.utilities.iotools import *
 from foldamers.cg_model.cgmodel import *
-from foldamers.utilities.iotools import *
 
 def random_sign(number):
         """
@@ -537,8 +536,7 @@ def get_structure_from_library( cgmodel, high_energy=False, low_energy=False ):
               if not os.path.exists(file_name):
                 cgmodel.positions,cgmodel.simulation = random_positions(cgmodel,use_library=False)
                 write_pdbfile_without_topology(cgmodel,file_name)
-                pdb_mm_obj = PDBFile(file_name)
-                cgmodel.topology = pdb_mm_obj.getTopology()
+                cgmodel.topology = get_topology_from_pdbfile(file_name)
                 cgmodel.system = build_system(cgmodel)
                 simulation_time_step = 5.0 * unit.femtosecond
                 positions_after,energy,simulation = minimize_structure(cgmodel.topology,cgmodel.system,cgmodel.positions,temperature=300.0 * unit.kelvin,simulation_time_step=5.0 * unit.femtosecond,total_simulation_time=0.1 * unit.picosecond,print_frequency=10)
@@ -579,9 +577,7 @@ def get_structure_from_library( cgmodel, high_energy=False, low_energy=False ):
             pdb_list.append(str(str(ensemble_directory)+"/"+str(file)))
         if len(pdb_list) > 0:
           random_file = pdb_list[random.randint(0,len(pdb_list)-1)]
-        pdb_mm_obj = PDBFile(random_file)
-        positions = pdb_mm_obj.getPositions()
-        cgmodel.positions = positions
+        cgmodel.positions = get_positions_from_pdbfile(random_file)
         try:
          cgmodel.simulation = simulation
         except:
