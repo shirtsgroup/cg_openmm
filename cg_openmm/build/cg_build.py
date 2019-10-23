@@ -448,7 +448,9 @@ def add_rosetta_exception_parameters(cgmodel,nonbonded_force,particle_index_1,pa
           charge_2 = cgmodel.get_particle_charge(particle_index_2)
           sigma_2 = cgmodel.get_sigma(particle_index_2).in_units_of(unit.nanometer)
           epsilon_2 = cgmodel.get_epsilon(particle_index_2).in_units_of(unit.kilojoule_per_mole)
-          nonbonded_force.addException(particle_index_1,particle_index_2,0.2*charge_1*charge_2,0.2*sigma_1*sigma_2,0.2*epsilon_1*epsilon_2)
+          sigma = (sigma_1.__add__(sigma_2))/2.0
+          epsilon = 0.2 * unit.sqrt(epsilon_1.__mul__(epsilon_2))
+          nonbonded_force.addException(particle_index_1,particle_index_2,0.2*charge_1*charge_2,sigma,epsilon)
         return(nonbonded_force)
 
 def add_force(cgmodel,force_type=None,rosetta_scoring=False):
@@ -518,7 +520,9 @@ def add_force(cgmodel,force_type=None,rosetta_scoring=False):
             if not rosetta_scoring:
               nonbonded_force.createExceptionsFromBonds(cgmodel.bond_list,1.0,1.0)
             if rosetta_scoring:
+              # Remove i+3 interactions
               nonbonded_force.createExceptionsFromBonds(cgmodel.bond_list,0.0,0.0)
+              # Reduce the strength of i+4 interactions
               for torsion in cgmodel.torsion_list:
                 for bond in cgmodel.bond_list:
                   if bond[0] not in torsion:
