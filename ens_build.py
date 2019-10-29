@@ -4,7 +4,7 @@ import simtk.unit as unit
 from foldamers.cg_model.cgmodel import basic_cgmodel
 from cg_openmm.simulation.tools import get_mm_energy, build_mm_simulation
 from foldamers.utilities.iotools import write_pdbfile_without_topology
-from foldamers.utilities.util import random_positions
+from foldamers.utilities.util import get_random_positions
 from foldamers.parameters.secondary_structure import fraction_native_contacts
 from pymbar import timeseries
 
