@@ -18,11 +18,11 @@ grid_points = 3
 
 # Configure Yank (replica exchange) simulation settings
 print_frequency = 5 # Number of steps to skip when printing output
-total_simulation_time = 1.0 * unit.nanosecond
+total_simulation_time = 50.0 * unit.picosecond
 simulation_time_step = 5.0 * unit.femtosecond
 number_replicas = 30
 min_temp = 1.0 * unit.kelvin
-max_temp = 150.0 * unit.kelvin
+max_temp = 500.0 * unit.kelvin
 temperature_list = get_temperature_list(min_temp,max_temp,number_replicas)
 
 # Model settings
@@ -36,10 +36,6 @@ include_nonbonded_forces=True
 include_torsion_forces=True
 constrain_bonds = True
 
-# Particle properties
-mass = 100.0 * unit.amu
-masses = {'backbone_bead_masses': mass, 'sidechain_bead_masses': mass}
-
 # Bond definitions
 bond_length = 7.5 * unit.angstrom
 bond_lengths = {'bb_bb_bond_length': bond_length,'bb_sc_bond_length': bond_length,'sc_sc_bond_length': bond_length}
@@ -52,18 +48,18 @@ masses = {'backbone_bead_masses': mass, 'sidechain_bead_masses': mass}
 r_min =  3.0 * bond_length # Lennard-Jones potential r_min
 sigma =  r_min / (2.0**(1/6)) # Factor of /(2.0**(1/6)) is applied to convert r_min to sigma
 sigmas = {'bb_sigma': sigma,'sc_sigma': sigma}
-epsilon = 0.5 * unit.kilocalorie_per_mole
+epsilon = 0.05 * unit.kilocalorie_per_mole
 epsilons = {'bb_eps': epsilon,'sc_eps': epsilon}
 
 # Bond angle definitions
-bond_angle_force_constant = 0.5 * unit.kilocalorie_per_mole / unit.radian / unit.radian
+bond_angle_force_constant = 0.005 * unit.kilocalorie_per_mole / unit.radian / unit.radian
 bond_angle_force_constants = {'bb_bb_bb_angle_k': bond_angle_force_constant,'bb_bb_sc_angle_k': bond_angle_force_constant}
 bb_bb_bb_equil_bond_angle = 120.0 * (3.14/180.0) # OpenMM expects angle definitions in units of radians
 bb_bb_sc_equil_bond_angle = 120.0 * (3.14/180.0)
 equil_bond_angles = {'bb_bb_bb_angle_0': bb_bb_bb_equil_bond_angle,'bb_bb_sc_angle_0': bb_bb_sc_equil_bond_angle}
 
 # Torsion angle definitions (Used to establish a scanning range below)
-torsion_force_constant = 0.5 * unit.kilocalorie_per_mole / unit.radian / unit.radian
+torsion_force_constant = 0.005 * unit.kilocalorie_per_mole / unit.radian / unit.radian
 torsion_force_constants = {'bb_bb_bb_bb_torsion_k': torsion_force_constant,'sc_bb_bb_sc_torsion_k': torsion_force_constant}
 bb_bb_bb_bb_equil_torsion_angle = 78.0 * (3.14/180.0) # OpenMM defaults to units of radians for angle definitions
 sc_bb_bb_sc_equil_torsion_angle = 110.0 * (3.14/180.0)
@@ -109,17 +105,18 @@ for bb_bb_bb_bb_equil_torsion_angle in bb_bb_bb_bb_equil_torsion_angles:
     PDBFile.writeFile(cgmodel.topology,native_structure,file=file)
     file.close()
 
-  native_structure_contact_distance_cutoff = 0.99 * cgmodel.get_sigma(0) # This distance cutoff determines which nonbonded interactions are considered 'native' contacts
+  native_structure_contact_distance_cutoff = 1.15 * cgmodel.get_sigma(0) # This distance cutoff determines which nonbonded interactions are considered 'native' contacts
   native_fraction_cutoff = 0.95 # The threshold fraction of native contacts above which a pose is considered 'native'
   nonnative_fraction_cutoff = 0.95 # The threshold fraction of native contacts below which a pose is considered 'nonnative'
   native_ensemble_size = 10
-  nonnative_ensemble_size = 100
-  native_ensemble,native_ensemble_energies,nonnative_ensemble,nonnative_ensemble_energies = get_ensembles_from_replica_positions(cgmodel,replica_positions,replica_energies,temperature_list,decorrelate=True,native_fraction_cutoff=native_fraction_cutoff,nonnative_fraction_cutoff=nonnative_fraction_cutoff,native_structure_distance_cutoff=native_structure_distance_cutoff,native_ensemble_size=native_ensemble_size,nonnative_ensemble_size=nonnative_ensemble_size)
+  nonnative_ensemble_size = 10
+  decorrelate=False
+  native_ensemble,native_ensemble_energies,nonnative_ensemble,nonnative_ensemble_energies = get_ensembles_from_replica_positions(cgmodel,replica_positions,replica_energies,temperature_list,decorrelate=decorrelate,native_fraction_cutoff=native_fraction_cutoff,nonnative_fraction_cutoff=nonnative_fraction_cutoff,native_structure_contact_distance_cutoff=native_structure_contact_distance_cutoff,native_ensemble_size=native_ensemble_size,nonnative_ensemble_size=nonnative_ensemble_size)
   if len(native_ensemble_energies) != native_ensemble_size or len(nonnative_ensemble_energies) != nonnative_ensemble_size:
     print("ERROR: attempt to generate native and nonnative ensembles was unsuccessful.")
     print(str(len(native_ensemble_energies))+" native ensemble members were generated ("+str(native_ensemble_size)+" were requested),")
     print("and "+str(len(nonnative_ensemble_energies))+" non-native ensemble members were generated ("+str(nonnative_ensemble_size)+" were requested).")
-    print("Try adjusting the 'native_structure_distance_cutoff' parameter (current value="+str(native_structure_distance_cutoff.__div__(cgmodel.get_sigma(0)))+"*'bb_sigma'),")
+    print("Try adjusting the 'native_structure_distance_cutoff' parameter (current value="+str(native_structure_contact_distance_cutoff.__div__(cgmodel.get_sigma(0)))+"*'bb_sigma'),")
     print("and the 'nonnative_fraction_cutoff' parameter (current value="+str(nonnative_fraction_cutoff)+")")
     print("to see if either of these approaches fixes the problem.")
     exit()

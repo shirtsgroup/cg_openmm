@@ -56,7 +56,6 @@ for i,T in enumerate(toplotT):
     folded = np.exp(-e_folded/T)
     Pf[i] = folded/Q
 
-print('Zscore = ',Zscore)
 toplot = [A,Pf,E,S,C]
 titles = ["Helmholtz free energy (A) vs. T",
           "Percent folded vs. T",
@@ -65,9 +64,12 @@ titles = ["Helmholtz free energy (A) vs. T",
           "Heat Capacity (C) vs. T"]
 ylabels = ['A','% folded','E','S','C']
 
-for p,t,y in zip(toplot,titles,ylabels):
+file_names = ['A_v_T','Percent_folded_v_T','E_v_T','S_v_T','C_v_T']
+
+for p,t,y,file_name in zip(toplot,titles,ylabels,file_names):
     plt.plot(toplotT,p)
     plt.title(t)
     plt.xlabel('T')
     plt.ylabel(y)
     plt.show()
+    plt.savefig(str(str(file_name)+".png"))
