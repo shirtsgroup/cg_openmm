@@ -1,7 +1,7 @@
 import simtk.unit as unit
 from msmbuilder.cluster.kcenters import KCenters
 import mdtraj as md
-from foldamers.utilities.iotools import write_pdbfile_without_topology
+from cg_openmm.utilities.iotools import write_pdbfile_without_topology
 
 def concatenate_trajectories(pdb_file_list,combined_pdb_file="combined.pdb"):
         """
