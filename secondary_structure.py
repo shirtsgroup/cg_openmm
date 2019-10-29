@@ -6,7 +6,7 @@ from scipy.stats import linregress
 from scipy import spatial
 import matplotlib.pyplot as plt
 from foldamers.utilities.util import *
-from foldamers.utilities.iotools import write_pdbfile_without_topology
+from cg_openmm.utilities.iotools import write_pdbfile_without_topology
 
 def get_native_contacts(cgmodel,native_structure,native_contact_distance_cutoff):
         """
