@@ -1,7 +1,7 @@
 import simtk.unit as unit
 import sys, os
 from collections import Counter
-from foldamers.utilities.util import random_positions
+from foldamers.utilities.util import get_random_positions
 from foldamers.utilities import util
 from cg_openmm.build.cg_build import *
 from cg_openmm.utilities.iotools import *
@@ -258,7 +258,6 @@ class CGModel(object):
           """
           Initialize user-defined input.
           """
-
           self.polymer_length = polymer_length
           self.backbone_lengths = backbone_lengths
           self.sidechain_lengths = sidechain_lengths
@@ -326,29 +325,16 @@ class CGModel(object):
             self.nonbonded_exclusion_list = []
 
           self.nonbonded_interaction_list = self.get_nonbonded_interaction_list()
-          if exclusions == True:
-           self.nonbonded_exclusion_list = self.get_nonbonded_exclusion_list()
-          else:
-           self.nonbonded_exclusion_list = None
-          self.nonbonded_interaction_list = self.get_nonbonded_interaction_list()
 
           self.particle_types = add_new_elements(self)
-
+          
           if positions == None: 
            if random_positions:
             if use_structure_library:
-              self.positions = random_positions(self,use_library=True)
+              self.positions = get_random_positions(self,use_library=True)
             else:
-              self.positions = random_positions(self)
+              self.positions = get_random_positions(self)
            else:
-            if use_structure_library:
-             if polymer_length == 12:
-              positions_file = str(str(str(os.path.abspath(__file__)).split('/cg_model')[0])+"/structure_library/12_1_1_0/helix.pdb")
-              self.positions = get_positions_from_pdbfile(filename)
-             else:
-              self.positions = random_positions(self,use_library=True)
-              self.positions = util.random_positions(self,use_library=True)
-            else:
               self.positions = None
           else:
            self.positions = positions
@@ -458,7 +444,8 @@ class CGModel(object):
           """
           bond_list = []
           bead_index = 0
-          for monomer in range(len(self.sequence)):
+          if self.include_bond_forces or self.constrain_bonds:
+           for monomer in range(len(self.sequence)):
             monomer_type = self.sequence[monomer]
             for backbone_bead in range(monomer_type['backbone_length']):
              if (int(monomer) != 0 and backbone_bead == 0 and monomer_type['backbone_length']-1 in [monomer_type['sidechain_positions']]) or (backbone_bead != 0 and backbone_bead-1 in [monomer_type['sidechain_positions']]):
@@ -536,6 +523,7 @@ class CGModel(object):
           exclusion_list = []
 
           if rosetta_scoring:
+            # Remove interactions between particles in the same monomer
             bead_index = 0
             for monomer in self.sequence:
               exclusion = []
@@ -549,14 +537,14 @@ class CGModel(object):
                   exclusion = []
                 bead_index = bead_index + 1
 
-
           for bond in self.bond_list:
             if [bond[0],bond[1]] not in exclusion_list and [bond[1],bond[0]] not in exclusion_list:
               exclusion_list.append([bond[0],bond[1]])
           for angle in self.bond_angle_list:
             if [angle[0],angle[2]] not in exclusion_list and [angle[2],angle[0]] not in exclusion_list:
               exclusion_list.append([angle[0],angle[2]])                        
-          for torsion in self.torsion_list:
+          if rosetta_scoring:
+           for torsion in self.torsion_list:
             if [torsion[0],torsion[3]] not in exclusion_list and [torsion[3],torsion[0]] not in exclusion_list:
               exclusion_list.append([torsion[0],torsion[3]])
           #print("After removing i+1,i+2, and i+3 interactions, the nonbonded exclusion list is: "+str(exclusion_list))
@@ -571,6 +559,7 @@ class CGModel(object):
                 if i in angle and j in angle:
                   if [i,j] not in exclusion_list:
                     exclusion_list.append([i,j]) 
+
           return(exclusion_list)
 
         def get_bond_angle_list(self):
