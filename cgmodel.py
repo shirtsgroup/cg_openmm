@@ -2,7 +2,6 @@ import simtk.unit as unit
 import sys, os
 from collections import Counter
 from foldamers.utilities.util import get_random_positions
-from foldamers.utilities import util
 from cg_openmm.build.cg_build import *
 from cg_openmm.utilities.iotools import *
 from itertools import chain, combinations, product
