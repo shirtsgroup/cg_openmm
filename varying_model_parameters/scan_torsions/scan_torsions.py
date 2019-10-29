@@ -11,8 +11,7 @@ from cg_openmm.simulation.rep_exch import *
 from cg_openmm.simulation.tools import *
 
 # Job settings
-scan_sc_bb_bb_sc_torsions = False
-
+scan_sc_bb_bb_sc_torsions = True
 output_directory = 'output'
 if not os.path.exists(output_directory):
   os.mkdir(output_directory)
