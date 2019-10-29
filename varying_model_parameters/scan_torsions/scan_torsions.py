@@ -8,21 +8,22 @@ from foldamers.cg_model.cgmodel import CGModel
 from foldamers.parameters.reweight import *
 from foldamers.ensembles.ens_build import *
 from cg_openmm.simulation.rep_exch import *
+from cg_openmm.simulation.tools import *
 
 # Job settings
 output_directory = 'output'
 if not os.path.exists(output_directory):
   os.mkdir(output_directory)
-# Number of grid points to scan (around initial angle definitions)
+# Number of grid points to scan (around initial angle definition)
 grid_points = 3
 
 # Configure Yank (replica exchange) simulation settings
 print_frequency = 5 # Number of steps to skip when printing output
-total_simulation_time = 50.0 * unit.picosecond
+total_simulation_time = 500.0 * unit.picosecond
 simulation_time_step = 5.0 * unit.femtosecond
 number_replicas = 30
 min_temp = 1.0 * unit.kelvin
-max_temp = 500.0 * unit.kelvin
+max_temp = 400.0 * unit.kelvin
 temperature_list = get_temperature_list(min_temp,max_temp,number_replicas)
 
 # Model settings
@@ -52,19 +53,19 @@ epsilon = 0.05 * unit.kilocalorie_per_mole
 epsilons = {'bb_eps': epsilon,'sc_eps': epsilon}
 
 # Bond angle definitions
-bond_angle_force_constant = 0.005 * unit.kilocalorie_per_mole / unit.radian / unit.radian
+bond_angle_force_constant = 0.0001 * unit.kilocalorie_per_mole / unit.radian / unit.radian
 bond_angle_force_constants = {'bb_bb_bb_angle_k': bond_angle_force_constant,'bb_bb_sc_angle_k': bond_angle_force_constant}
 bb_bb_bb_equil_bond_angle = 120.0 * (3.14/180.0) # OpenMM expects angle definitions in units of radians
 bb_bb_sc_equil_bond_angle = 120.0 * (3.14/180.0)
 equil_bond_angles = {'bb_bb_bb_angle_0': bb_bb_bb_equil_bond_angle,'bb_bb_sc_angle_0': bb_bb_sc_equil_bond_angle}
 
 # Torsion angle definitions (Used to establish a scanning range below)
-torsion_force_constant = 0.005 * unit.kilocalorie_per_mole / unit.radian / unit.radian
-torsion_force_constants = {'bb_bb_bb_bb_torsion_k': torsion_force_constant,'sc_bb_bb_sc_torsion_k': torsion_force_constant}
+torsion_force_constant = 0.01 * unit.kilocalorie_per_mole / unit.radian / unit.radian
+torsion_force_constants = {'bb_bb_bb_bb_torsion_k': torsion_force_constant}#,'sc_bb_bb_sc_torsion_k': torsion_force_constant}
 bb_bb_bb_bb_equil_torsion_angle = 78.0 * (3.14/180.0) # OpenMM defaults to units of radians for angle definitions
-sc_bb_bb_sc_equil_torsion_angle = 110.0 * (3.14/180.0)
-equil_torsion_angles = {'bb_bb_bb_bb_torsion_0': bb_bb_bb_bb_equil_torsion_angle,'sc_bb_bb_sc_torsion_0': sc_bb_bb_sc_equil_torsion_angle}
-torsion_periodicities = {'bb_bb_bb_bb_period': 1,'sc_bb_bb_sc_period': 2}
+#sc_bb_bb_sc_equil_torsion_angle = 110.0 * (3.14/180.0)
+equil_torsion_angles = {'bb_bb_bb_bb_torsion_0': bb_bb_bb_bb_equil_torsion_angle}#,'sc_bb_bb_sc_torsion_0': sc_bb_bb_sc_equil_torsion_angle}
+torsion_periodicities = {'bb_bb_bb_bb_period': 1}#,'sc_bb_bb_sc_period': 2}
 
 # Get initial positions from local file
 positions = PDBFile("helix.pdb").getPositions()
@@ -72,26 +73,63 @@ positions = PDBFile("helix.pdb").getPositions()
 # Build a coarse grained model
 cgmodel = CGModel(polymer_length=polymer_length,backbone_lengths=backbone_lengths,sidechain_lengths=sidechain_lengths,sidechain_positions=sidechain_positions,masses=masses,sigmas=sigmas,epsilons=epsilons,bond_lengths=bond_lengths,bond_force_constants=bond_force_constants,bond_angle_force_constants=bond_angle_force_constants,torsion_force_constants=torsion_force_constants,equil_bond_angles=equil_bond_angles,equil_torsion_angles=equil_torsion_angles,torsion_periodicities=torsion_periodicities,include_nonbonded_forces=include_nonbonded_forces,include_bond_forces=include_bond_forces,include_bond_angle_forces=include_bond_angle_forces,include_torsion_forces=include_torsion_forces,constrain_bonds=constrain_bonds,positions=positions)
 
-bb_bb_bb_bb_equil_torsion_angles = [float(bb_bb_bb_bb_equil_torsion_angle+i*0.05) for i in range(-grid_points,grid_points,1)]
-sc_bb_bb_sc_equil_torsion_angles = [float(sc_bb_bb_sc_equil_torsion_angle+i*0.05) for i in range(-grid_points,grid_points,1)]
+# Run test simulations (NVT) with this coarse-grained model at the minimum and maximum temperatures
+# to make sure the parameters are reasonable before attempting replica exchange simulations
+# (If high-T simulations fail then we need to modify the model parameters)
+test_simulation_time = 50.0 * unit.picosecond
+print_frequency = 5
+temperature = temperature_list[0]
+output_directory = str("test_"+str(round(temperature._value,1)))
+if not os.path.exists(output_directory):
+  os.mkdir(output_directory)
+run_simulation(cgmodel,output_directory,test_simulation_time,simulation_time_step,temperature,print_frequency)
+temperature = temperature_list[-1]
+output_directory = str("test_"+str(round(temperature._value,1)))
+if not os.path.exists(output_directory):
+  os.mkdir(output_directory)
+run_simulation(cgmodel,output_directory,test_simulation_time,simulation_time_step,temperature,print_frequency)
 
-# We build an array to store data we will read from the output
+# Reset the output directory
+output_directory = 'output'
+if not os.path.exists(output_directory):
+  os.mkdir(output_directory)
+
+# Create a list of the torsion angles that we will investigate in our parameter scan
+bb_bb_bb_bb_equil_torsion_angles = [float(bb_bb_bb_bb_equil_torsion_angle+i*0.05) for i in range(-grid_points,grid_points,1)]
+#sc_bb_bb_sc_equil_torsion_angles = [float(sc_bb_bb_sc_equil_torsion_angle+i*0.05) for i in range(-grid_points,grid_points,1)]
+sc_bb_bb_sc_equil_torsion_angles = None
+
+# Set parameters for evaluating native contacts
+native_structure_contact_distance_cutoff = 1.15 * cgmodel.get_sigma(0) # This distance cutoff determines which nonbonded interactions are considered 'native' contacts
+native_fraction_cutoff = 0.95 # The threshold fraction of native contacts above which a pose is considered 'native'
+nonnative_fraction_cutoff = 0.95 # The threshold fraction of native contacts below which a pose is considered 'nonnative'
+native_ensemble_size = 10
+nonnative_ensemble_size = 10
+decorrelate=False
+
+# Build an array to store data we will read from the output
 dQ_list = []
 
 # This is where we start evaluating the properties of models with different equilibrium torsion angles
 for bb_bb_bb_bb_equil_torsion_angle in bb_bb_bb_bb_equil_torsion_angles: 
- for sc_bb_bb_sc_equil_torsion_angle in sc_bb_bb_sc_equil_torsion_angles:
+ #for sc_bb_bb_sc_equil_torsion_angle in sc_bb_bb_sc_equil_torsion_angles:
+  print("\n")
   print("Performing simulations for a coarse grained model")
   print("with bb_bb_bb_bb torsion angles of "+str(round(bb_bb_bb_bb_equil_torsion_angle*(180.0/3.14),1))+" degrees.")
-  print("and sc_bb_bb_sc torsion angles of "+str(round(sc_bb_bb_sc_equil_torsion_angle*(180.0/3.14),1))+" degrees.\n")
+  print("\n")
+  #print("and sc_bb_bb_sc torsion angles of "+str(round(sc_bb_bb_sc_equil_torsion_angle*(180.0/3.14),1))+" degrees.\n")
   # Set the torsion angles for this grid point.
-  equil_torsion_angles = {'bb_bb_bb_bb_torsion_0': bb_bb_bb_bb_equil_torsion_angle, 'sc_bb_bb_sc_torsion_0': sc_bb_bb_sc_equil_torsion_angle}
+  equil_torsion_angles = {'bb_bb_bb_bb_torsion_0': bb_bb_bb_bb_equil_torsion_angle}#, 'sc_bb_bb_sc_torsion_0': sc_bb_bb_sc_equil_torsion_angle}
   # Build a coarse grained model that has the torsion parameters for this grid point.
   positions = PDBFile("helix.pdb").getPositions()
   cgmodel = CGModel(polymer_length=polymer_length,backbone_lengths=backbone_lengths,sidechain_lengths=sidechain_lengths,sidechain_positions=sidechain_positions,masses=masses,sigmas=sigmas,epsilons=epsilons,bond_lengths=bond_lengths,bond_force_constants=bond_force_constants,bond_angle_force_constants=bond_angle_force_constants,torsion_force_constants=torsion_force_constants,equil_bond_angles=equil_bond_angles,equil_torsion_angles=equil_torsion_angles,torsion_periodicities=torsion_periodicities,include_nonbonded_forces=include_nonbonded_forces,include_bond_forces=include_bond_forces,include_bond_angle_forces=include_bond_angle_forces,include_torsion_forces=include_torsion_forces,constrain_bonds=constrain_bonds,positions=positions)
 
-  output_data = str(str(output_directory)+"/torsions_"+str(round(bb_bb_bb_bb_equil_torsion_angle*(180.0/3.14),1))+"_"+str(round(sc_bb_bb_sc_equil_torsion_angle*(180.0/3.14),1))+".nc")
-  file_name = str(str(output_directory)+"/re_min_"+str(round(bb_bb_bb_bb_equil_torsion_angle*(180.0/3.14),1))+"_"+str(round(sc_bb_bb_sc_equil_torsion_angle*(180.0/3.14),1))+".pdb")
+  if sc_bb_bb_sc_equil_torsion_angles != None:
+    output_data = str(str(output_directory)+"/torsions_"+str(round(bb_bb_bb_bb_equil_torsion_angle*(180.0/3.14),1))+"_"+str(round(sc_bb_bb_sc_equil_torsion_angle*(180.0/3.14),1))+".nc")
+    file_name = str(str(output_directory)+"/re_min_"+str(round(bb_bb_bb_bb_equil_torsion_angle*(180.0/3.14),1))+"_"+str(round(sc_bb_bb_sc_equil_torsion_angle*(180.0/3.14),1))+".pdb")
+  else:
+    output_data = str(str(output_directory)+"/torsions_"+str(round(bb_bb_bb_bb_equil_torsion_angle*(180.0/3.14),1))+".nc")
+    file_name = str(str(output_directory)+"/re_min_"+str(round(bb_bb_bb_bb_equil_torsion_angle*(180.0/3.14),1))+".pdb")
   if os.path.exists(file_name):
     # Search for existing data, and read it if possible
     replica_energies,replica_positions,replica_states = read_replica_exchange_data(system=cgmodel.system,topology=cgmodel.topology,temperature_list=temperature_list,output_data=output_data,print_frequency=print_frequency)
@@ -141,6 +179,7 @@ for bb_bb_bb_bb_equil_torsion_angle in bb_bb_bb_bb_equil_torsion_angles:
     nonnative_ensemble_Q.append(Q)
   nonnative_ensemble_Q = np.array([Q for Q in nonnative_ensemble_Q])
   mean_nonnative_contacts = mean(nonnative_ensemble_Q)
+  print("The mean fraction of native contacts for this model is: "+str(mean_nonnative_contacts))
 
   # We build an ensemble of native poses in order to understand the energy distribution around the folded state.
   if os.path.exists(native_ensemble_directory):
@@ -163,24 +202,42 @@ for bb_bb_bb_bb_equil_torsion_angle in bb_bb_bb_bb_equil_torsion_angles:
   dQ = 1.0 - mean_nonnative_contacts
   dQ_list.append(dQ)
 
-file_name = "dQ_for_variable_equil_torsion_angles.png"
+
+if sc_bb_bb_sc_equil_torsion_angles != None:
+  file_name = "dQ_for_variable_equil_torsion_angles.png"
+  figure = pyplot.figure(1)
+  bb_bb_bb_bb_equil_torsion_angles = np.array([float(equil_torsion_angle) for equil_torsion_angle in bb_bb_bb_bb_equil_torsion_angle_range])
+  sc_bb_bb_sc_equil_torsion_angles = np.array([float(equil_torsion_angle) for equil_torsion_angle in sc_bb_bb_sc_equil_torsion_angle_range])
+
+  x=np.unique(bb_bb_bb_bb_equil_torsion_angles*(180.0/3.14))
+  y=np.unique(sc_bb_bb_sc_equil_torsion_angles*(180.0/3.14))
+  X,Y = np.meshgrid(x,y)
+  Z=dQ_list.reshape(len(x),len(y))
+
+  pyplot.xlabel(r"$ \alpha_{0}^{BB-BB-BB-BB} $ ( Degrees )")
+  pyplot.ylabel(r"$ \alpha_{0}^{SC-BB-BB-SC} $ ( Degrees )")
+  pyplot.title("dQ (Change in native contacts during folding)")
+  pyplot.pcolormesh(X,Y,Z)
+  pyplot.colorbar()
+  pyplot.savefig(file_name)
+  pyplot.show()
+  pyplot.close()
+
+file_name = "dQ_for_variable_bb_bb_bb_bb_torsion_angle.png"
 figure = pyplot.figure(1)
 bb_bb_bb_bb_equil_torsion_angles = np.array([float(equil_torsion_angle) for equil_torsion_angle in bb_bb_bb_bb_equil_torsion_angle_range])
-sc_bb_bb_sc_equil_torsion_angles = np.array([float(equil_torsion_angle) for equil_torsion_angle in sc_bb_bb_sc_equil_torsion_angle_range])
 
 x=np.unique(bb_bb_bb_bb_equil_torsion_angles*(180.0/3.14))
-y=np.unique(sc_bb_bb_sc_equil_torsion_angles*(180.0/3.14))
-X,Y = np.meshgrid(x,y)
-Z=dQ_list.reshape(len(x),len(y))
+y=np.array([float(dQ) for dQ in dQ_list])
 
 pyplot.xlabel(r"$ \alpha_{0}^{BB-BB-BB-BB} $ ( Degrees )")
-pyplot.ylabel(r"$ \alpha_{0}^{SC-BB-BB-SC} $ ( Degrees )")
-pyplot.title("dQ (Change in native contacts during folding)")
-pyplot.pcolormesh(X,Y,Z)
-pyplot.colorbar()
+pyplot.ylabel(r"$\delta$Q")
+pyplot.title(r"$\delta$Q (Change in native contacts) during folding")
+pyplot.plot(x,y)
 pyplot.savefig(file_name)
 pyplot.show()
 pyplot.close()
 
+  
 
 exit()
