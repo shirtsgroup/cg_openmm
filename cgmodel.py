@@ -257,20 +257,82 @@ class CGModel(object):
           """
           Initialize user-defined input.
           """
-          self.polymer_length = polymer_length
-          self.backbone_lengths = backbone_lengths
-          self.sidechain_lengths = sidechain_lengths
-          self.sidechain_positions = sidechain_positions
-          self.bond_lengths = bond_lengths
-          self.sigmas = sigmas
-          self.epsilons = epsilons
+
+          # Assign forces based upon input flags
+          self.rosetta_scoring = rosetta_scoring
+          self.include_bond_forces = include_bond_forces
+          self.constrain_bonds = constrain_bonds
+          self.include_bond_angle_forces = include_bond_angle_forces
+          self.include_nonbonded_forces = include_nonbonded_forces
+          self.exclusions = exclusions
+          self.include_torsion_forces = include_torsion_forces
+          self.check_energy_conservation = check_energy_conservation
+
+          # Initialize the monomer types
           if monomer_types == None:
+            self.backbone_lengths = backbone_lengths
+            self.sidechain_lengths = sidechain_lengths
+            self.sidechain_positions = sidechain_positions
+            self.bond_lengths = bond_lengths
+            self.sigmas = sigmas
+            self.epsilons = epsilons
             self.monomer_types = self.get_monomer_types()
           else:
             self.monomer_types = monomer_types
 
+          # Build a polymer with these model settings
+          self.build_polymer(polymer_length,heteropolymer,sequence)
 
-          if heteropolymer == True:
+          # Assign particle properties
+          self.masses = masses
+          self.charges = charges
+          self.particle_types = add_new_elements(self)
+          # Assign bonded force properties
+          self.bond_force_constants = bond_force_constants
+          self.bond_angle_force_constants = bond_angle_force_constants
+          self.equil_bond_angles = equil_bond_angles
+          self.torsion_force_constants = torsion_force_constants
+          self.torsion_periodicities = torsion_periodicities
+          self.equil_torsion_angles = equil_torsion_angles
+
+          # Assign positions          
+          if positions == None: 
+           if random_positions:
+            if use_structure_library:
+              self.positions = get_random_positions(self,use_library=True)
+            else:
+              self.positions = get_random_positions(self)
+           else:
+              self.positions = None
+          else:
+           self.positions = positions
+
+          # Define storage for simulation objects from OpenMM
+          self.simulation = simulation
+
+          # Define OpenMM topology
+          if topology == None:
+            if self.positions != None:
+              self.topology = build_topology(self,use_pdbfile=True)
+          else:
+              self.topology = topology
+          # Define OpenMM system
+          if system == None:
+           if self.rosetta_scoring:
+            self.system = build_system(self,rosetta_scoring=rosetta_scoring)
+           else:
+            self.system = build_system(self)
+          else:
+            self.system = system
+
+        def build_polymer(self,polymer_length,heteropolymer,sequence):
+          """
+          Used to build a polymer, or reset the properties for a polymer after parameters such as the polymer_length or sequence have been modified.
+          """
+          self.polymer_length = polymer_length
+          self.heteropolymer = heteropolymer
+
+          if self.heteropolymer:
             if sequence == None:
               print("ERROR: The 'heteropolymer'=True flag was selected, but no")
               print("'sequence' was provided.  Please rerun with an input 'sequence'.")
@@ -286,75 +348,23 @@ class CGModel(object):
           self.sequence = sequence
           self.num_beads = self.get_num_beads()
           self.particle_list = self.get_particle_list()
-          self.masses = masses
-          self.bond_force_constants = bond_force_constants
-          self.bond_angle_force_constants = bond_angle_force_constants
-          self.equil_bond_angles = equil_bond_angles
-          self.torsion_force_constants = torsion_force_constants
-          self.torsion_periodicities = torsion_periodicities
-          self.equil_torsion_angles = equil_torsion_angles
-          self.charges = charges
-          
-          self.rosetta_scoring = rosetta_scoring
-          self.include_bond_forces = include_bond_forces
-          self.equil_torsion_angles = equil_torsion_angles
-          self.charges = charges
-
-          self.include_bond_angle_forces = include_bond_angle_forces
-          self.include_nonbonded_forces = include_nonbonded_forces
-          self.include_torsion_forces = include_torsion_forces
-          self.check_energy_conservation = check_energy_conservation
-
-          self.constrain_bonds = constrain_bonds
 
           if self.include_bond_forces or self.constrain_bonds:
            self.bond_list = self.get_bond_list()
           else:
-           exclusions = False
+           self.exclusions = False
            self.bond_list = []
-
-          self.exclusions = exclusions
 
           self.bond_angle_list = self.get_bond_angle_list()
           self.torsion_list = self.get_torsion_list()
-          self.rosetta_scoring = rosetta_scoring
-          if self.exclusions == True:
+          if self.exclusions:
             self.nonbonded_exclusion_list = self.get_nonbonded_exclusion_list(rosetta_scoring=self.rosetta_scoring)
           else:
             self.nonbonded_exclusion_list = []
 
           self.nonbonded_interaction_list = self.get_nonbonded_interaction_list()
-
-          self.particle_types = add_new_elements(self)
-          
-          if positions == None: 
-           if random_positions:
-            if use_structure_library:
-              self.positions = get_random_positions(self,use_library=True)
-            else:
-              self.positions = get_random_positions(self)
-           else:
-              self.positions = None
-          else:
-           self.positions = positions
-
-          self.simulation = simulation
-
-          #print("Assigning topology")          
-          if topology == None:
-            if self.positions != None:
-              self.topology = build_topology(self,use_pdbfile=True)
-          else:
-              self.topology = topology
-
-          #print("Assigning system")
-          if system == None:
-           if self.rosetta_scoring:
-            self.system = build_system(self,rosetta_scoring=rosetta_scoring)
-           else:
-            self.system = build_system(self)
-          else:
-            self.system = system
+ 
+          return
 
         def get_monomer_types(self):
           """
