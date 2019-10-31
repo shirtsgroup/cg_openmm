@@ -1,10 +1,10 @@
 import os
 from simtk import unit
 from foldamers.cg_model.cgmodel import CGModel
-from cg_openmm.utilities.iotools import *
+from cg_openmm.utilities.iotools import write_pdbfile_without_topology
 
 # Coarse grained model settings
-polymer_length=12
+polymer_length=2
 backbone_lengths=[1]
 sidechain_lengths=[1]
 sidechain_positions=[0]
