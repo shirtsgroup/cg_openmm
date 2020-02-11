@@ -1,8 +1,10 @@
 import os
+import pdb
 from simtk import unit
 from foldamers.cg_model.cgmodel import CGModel
 from foldamers.parameters.reweight import get_temperature_list
 from cg_openmm.simulation.rep_exch import *
+import numpy as np
 
 ###
 #
@@ -18,10 +20,10 @@ if not os.path.exists(output_directory):
 
 # Yank (replica exchange) simulation settings
 print_frequency = 5 # Number of steps to skip when printing output
-total_simulation_time = 0.2 * unit.nanosecond
+total_simulation_time = 2.0 * unit.nanosecond
 simulation_time_step = 5.0 * unit.femtosecond
 total_steps = round(total_simulation_time.__div__(simulation_time_step))
-output_data=str(str(output_directory)+"/output.nc")
+output_data = str(str(output_directory)+"/output.nc")
 number_replicas = 10
 min_temp = 300.0 * unit.kelvin
 max_temp = 350.0 * unit.kelvin
@@ -60,15 +62,15 @@ epsilons = {'bb_eps': epsilon,'sc_eps': epsilon}
 # Bond angle definitions
 bond_angle_force_constant = 0.5 * unit.kilocalorie_per_mole / unit.radian / unit.radian
 bond_angle_force_constants = {'bb_bb_bb_angle_k': bond_angle_force_constant,'bb_bb_sc_angle_k': bond_angle_force_constant}
-bb_bb_bb_equil_bond_angle = 120.0 * (3.14/180.0) # OpenMM requires angle definitions in units of radians
-bb_bb_sc_equil_bond_angle = 120.0 * (3.14/180.0)
+bb_bb_bb_equil_bond_angle = 120.0 * (np.math.pi/180.0) # OpenMM requires angle definitions in units of radians
+bb_bb_sc_equil_bond_angle = 120.0 * (np.math.pi/180.0)
 equil_bond_angles = {'bb_bb_bb_angle_0': bb_bb_bb_equil_bond_angle,'bb_bb_sc_angle_0': bb_bb_sc_equil_bond_angle}
 
 # Torsion angle definitions
 torsion_force_constant = 0.5 * unit.kilocalorie_per_mole / unit.radian / unit.radian
 torsion_force_constants = {'bb_bb_bb_bb_torsion_k': torsion_force_constant}
-bb_bb_bb_bb_equil_torsion_angle = 78.0 * (3.14/180.0) # OpenMM requires angle definitions in units of radians
-bb_bb_bb_sc_equil_torsion_angle = 78.0 * (3.14/180.0)
+bb_bb_bb_bb_equil_torsion_angle = 78.0 * (np.math.pi/180.0) # OpenMM requires angle definitions in units of radians
+bb_bb_bb_sc_equil_torsion_angle = 78.0 * (np.math.pi/180.0)
 equil_torsion_angles = {'bb_bb_bb_bb_torsion_0': bb_bb_bb_bb_equil_torsion_angle}
 torsion_periodicities = {'bb_bb_bb_bb_period': 1}
 
@@ -81,7 +83,7 @@ cgmodel = CGModel(polymer_length=polymer_length,backbone_lengths=backbone_length
 # Run replica exchange simulations *if* there is not existing data in 'output_directory'.
 # If there is data in 'output_directory', read that data instead.
 if not os.path.exists(output_data):
-  replica_energies,replica_positions,replica_states = run_replica_exchange(cgmodel.topology,cgmodel.system,cgmodel.positions,temperature_list=temperature_list,simulation_time_step=simulation_time_step,total_simulation_time=total_simulation_time,print_frequency=print_frequency,output_data=output_data,output_directory=output_directory)
+  replica_energies, replica_positions, replica_states = run_replica_exchange(cgmodel.topology,cgmodel.system,cgmodel.positions,temperature_list=temperature_list,simulation_time_step=simulation_time_step,total_simulation_time=total_simulation_time,print_frequency=print_frequency,output_data=output_data,output_directory=output_directory)
   make_replica_pdb_files(cgmodel.topology,replica_positions)
 else:
   replica_energies,replica_positions,replica_states = read_replica_exchange_data(system=cgmodel.system,topology=cgmodel.topology,temperature_list=temperature_list,output_data=output_data,print_frequency=print_frequency)

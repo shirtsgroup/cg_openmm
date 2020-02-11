@@ -3,21 +3,22 @@ import subprocess
 import numpy as np
 import matplotlib.pyplot as pyplot
 from simtk import unit
-import openmmtools as mmtools
+import openmmtools
 from cg_openmm.utilities.util import set_box_vectors, get_box_vectors
 from cg_openmm.simulation.tools import get_simulation_time_step
 from simtk.openmm.app.pdbfile import PDBFile
 from mdtraj.formats import PDBTrajectoryFile
 from mdtraj import Topology
-from yank import mpi, analyze
+#from yank import mpi, analyze
+from yank import analyze
 from yank.analyze import extract_trajectory
-from yank.multistate import MultiStateReporter, MultiStateSampler, ReplicaExchangeSampler
-from yank.multistate import ReplicaExchangeAnalyzer
+from openmmtools.multistate import MultiStateReporter, MultiStateSampler, ReplicaExchangeSampler
+from openmmtools.multistate import ReplicaExchangeAnalyzer
 from yank.utils import config_root_logger
 # quiet down some citation spam
 MultiStateSampler._global_citation_silence = True
 
-kB = 0.008314462
+kB = unit.BOLTZMANN_CONSTANT_kB
 
 def make_replica_pdb_files(topology,replica_positions):
         """
@@ -192,12 +193,12 @@ def run_replica_exchange(topology,system,positions,temperature_list=None,simulat
         # Define thermodynamic states.
         box_vectors = system.getDefaultPeriodicBoxVectors()
         for temperature in temperature_list:
-          thermodynamic_state = mmtools.states.ThermodynamicState(system=system, temperature=temperature)
+          thermodynamic_state = openmmtools.states.ThermodynamicState(system=system, temperature=temperature)
           thermodynamic_states.append(thermodynamic_state)
-          sampler_states.append(mmtools.states.SamplerState(positions,box_vectors=box_vectors))
+          sampler_states.append(openmmtools.states.SamplerState(positions,box_vectors=box_vectors))
 
         # Create and configure simulation object.
-        move = mmtools.mcmc.LangevinDynamicsMove(timestep=simulation_time_step,collision_rate=5.0/unit.picosecond,n_steps=exchange_attempts, reassign_velocities=True)
+        move = openmmtools.mcmc.LangevinDynamicsMove(timestep=simulation_time_step,collision_rate=5.0/unit.picosecond,n_steps=exchange_attempts, reassign_velocities=True)
         simulation = ReplicaExchangeSampler(mcmc_moves=move, number_of_iterations=exchange_attempts)
 
         if os.path.exists(output_data): os.remove(output_data)
@@ -226,7 +227,7 @@ def run_replica_exchange(topology,system,positions,temperature_list=None,simulat
               print("Running replica exchange simulations with Yank...")
               print("Using a time step of "+str(simulation_time_step))
               print("Running each trial simulation for 1000 steps, with 10 exchange attempts.")
-              move = mmtools.mcmc.LangevinDynamicsMove(timestep=simulation_time_step,collision_rate=20.0/unit.picosecond,n_steps=10, reassign_velocities=True)
+              move = openmmtools.mcmc.LangevinDynamicsMove(timestep=simulation_time_step,collision_rate=20.0/unit.picosecond,n_steps=10, reassign_velocities=True)
               simulation = ReplicaExchangeSampler(replica_mixing_scheme='swap-neighbors',mcmc_moves=move,number_of_iterations=10)
               reporter = MultiStateReporter(output_data, checkpoint_interval=1)
               simulation.create(thermodynamic_states, sampler_states, reporter)
@@ -363,7 +364,6 @@ def plot_replica_exchange_energies(replica_energies,temperature_list,simulation_
           pyplot.savefig(output_file,bbox_inches='tight')
         else:
           pyplot.savefig(file_name,bbox_inches='tight')
-        #pyplot.show()
         pyplot.close()
 
         return
