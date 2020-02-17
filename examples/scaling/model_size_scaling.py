@@ -59,8 +59,8 @@ torsion_force_constants = {
     'bb_bb_bb_sc_torsion_k': torsion_force_constant,
     'sc_bb_bb_sc_torsion_k': torsion_force_constant}
 # OpenMM defaults to units of radians for angle definitions
-bb_bb_bb_bb_equil_torsion_angle = 78.0 * (3.14 / 180.0)
-equil_torsion_angle = 0.0 * (3.14 / 180.0)
+bb_bb_bb_bb_equil_torsion_angle = 78.0 * (np.math.pi / 180.0)
+equil_torsion_angle = 0.0 * (np.math.pi / 180.0)
 equil_torsion_angles = {
     'bb_bb_bb_bb_torsion_0': bb_bb_bb_bb_equil_torsion_angle,
     'bb_bb_bb_sc_torsion_0': equil_torsion_angle,
