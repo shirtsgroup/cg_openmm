@@ -20,11 +20,11 @@ if not os.path.exists(output_directory):
     os.mkdir(output_directory)
 
 # OpenMM simulation settings
-print_frequency = 5  # Number of steps to skip when printing output
-total_simulation_time = 10.0 * unit.picosecond  # Units = picoseconds
+print_frequency = 500  # Number of steps to skip when printing output
+total_simulation_time = 50.0 * unit.nanosecond  # Units = picoseconds
 simulation_time_step = 5.0 * unit.femtosecond
 total_steps = round(total_simulation_time.__div__(simulation_time_step))
-temperature = 600.0 * unit.kelvin
+temperature = 300.0 * unit.kelvin
 
 # Coarse grained model settings
 polymer_length = 12
@@ -43,8 +43,7 @@ bond_lengths = {
     'bb_bb_bond_length': bond_length,
     'bb_sc_bond_length': bond_length,
     'sc_sc_bond_length': bond_length}
-bond_force_constant = 0 * unit.kilocalorie_per_mole / \
-    unit.nanometer / unit.nanometer
+bond_force_constant = 0 * unit.kilocalorie_per_mole / unit.nanometer / unit.nanometer
 bond_force_constants = {
     'bb_bb_bond_k': bond_force_constant,
     'bb_sc_bond_k': bond_force_constant,
@@ -61,14 +60,13 @@ epsilon = 0.5 * unit.kilocalorie_per_mole
 epsilons = {'bb_eps': epsilon, 'sc_eps': epsilon}
 
 # Bond angle definitions
-bond_angle_force_constant = 0.5 * \
-    unit.kilocalorie_per_mole / unit.radian / unit.radian
+bond_angle_force_constant = 0.5 * unit.kilocalorie_per_mole / unit.radian / unit.radian
 bond_angle_force_constants = {
     'bb_bb_bb_angle_k': bond_angle_force_constant,
     'bb_bb_sc_angle_k': bond_angle_force_constant}
 # OpenMM requires angle definitions in units of radians
-bb_bb_bb_equil_bond_angle = 120.0 * (3.14 / 180.0)
-bb_bb_sc_equil_bond_angle = 120.0 * (3.14 / 180.0)
+bb_bb_bb_equil_bond_angle = 120.0 * (np.math.pi / 180.0)
+bb_bb_sc_equil_bond_angle = 120.0 * (np.math.pi / 180.0)
 equil_bond_angles = {
     'bb_bb_bb_angle_0': bb_bb_bb_equil_bond_angle,
     'bb_bb_sc_angle_0': bb_bb_sc_equil_bond_angle}
@@ -77,8 +75,8 @@ equil_bond_angles = {
 torsion_force_constant = 0.5 * unit.kilocalorie_per_mole / unit.radian / unit.radian
 torsion_force_constants = {'bb_bb_bb_bb_torsion_k': torsion_force_constant}
 # OpenMM requires angle definitions in units of radians
-bb_bb_bb_bb_equil_torsion_angle = 78.0 * (3.14 / 180.0)
-bb_bb_bb_sc_equil_torsion_angle = 78.0 * (3.14 / 180.0)
+bb_bb_bb_bb_equil_torsion_angle = 78.0 * (np.math.pi / 180.0)
+bb_bb_bb_sc_equil_torsion_angle = 78.0 * (np.math.pi / 180.0)
 equil_torsion_angles = {
     'bb_bb_bb_bb_torsion_0': bb_bb_bb_bb_equil_torsion_angle}
 torsion_periodicities = {'bb_bb_bb_bb_period': 1}
