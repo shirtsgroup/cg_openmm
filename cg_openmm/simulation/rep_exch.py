@@ -18,8 +18,7 @@ from yank.utils import config_root_logger
 # quiet down some citation spam
 MultiStateSampler._global_citation_silence = True
 
-kB = unit.BOLTZMANN_CONSTANT_kB
-
+kB = (unit.MOLAR_GAS_CONSTANT_R).in_units_of(unit.kilojoule/(unit.kelvin*unit.mole))
 
 def make_replica_pdb_files(topology, replica_positions):
     """
@@ -120,13 +119,9 @@ def read_replica_exchange_data(
 
     for step in range(total_steps):
         sampler_states = reporter.read_sampler_states(iteration=step)
-        if isinstance(sampler_states, None):
-            print("ERROR: no data found for step " + str(step))
-            exit()
-        else:
-            for replica_index in range(len(temperature_list)):
-                for particle in range(system.getNumParticles()):
-                    replica_positions[replica_index][step][particle] = sampler_states[replica_index].positions[particle]
+        for replica_index in range(len(temperature_list)):
+            for particle in range(system.getNumParticles()):
+                replica_positions[replica_index][step][particle] = sampler_states[replica_index].positions[particle]
 
     return(replica_energies, replica_positions, replica_state_indices)
 
@@ -230,11 +225,14 @@ def run_replica_exchange(
                 positions, box_vectors=box_vectors))
 
     # Create and configure simulation object.
+ 
+    langevin_steps = int(simulation_steps/exchange_attempts)  # check whether dividable?
     move = openmmtools.mcmc.LangevinDynamicsMove(
         timestep=simulation_time_step,
         collision_rate=5.0 / unit.picosecond,
-        n_steps=exchange_attempts,
-        reassign_velocities=True)
+        n_steps=langevin_steps,
+        reassign_velocities=False)
+
     simulation = ReplicaExchangeSampler(
         mcmc_moves=move, number_of_iterations=exchange_attempts)
 
