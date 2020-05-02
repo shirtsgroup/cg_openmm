@@ -13,12 +13,8 @@ from cg_openmm.utilities.iotools import write_bonds
 
 
 def get_simulation_time_step(
-        topology,
-        system,
-        positions,
-        temperature,
-        total_simulation_time,
-        time_step_list=None):
+    topology, system, positions, temperature, total_simulation_time, time_step_list=None
+):
     """
     Determine a suitable simulation time step.
 
@@ -62,16 +58,7 @@ def get_simulation_time_step(
     success = False
 
     if time_step_list is None:
-        time_step_list = [
-            10.0 -
-            i *
-            unit.femtosecond for i in [
-                5.0,
-                7.5,
-                9.0,
-                9.5,
-                9.9,
-                9.99]]
+        time_step_list = [10.0 - i * unit.femtosecond for i in [5.0, 7.5, 9.0, 9.5, 9.9, 9.99]]
 
     if not isinstance(time_step_list, list):
         time_step_list = [time_step_list]
@@ -79,28 +66,29 @@ def get_simulation_time_step(
         integrator = LangevinIntegrator(
             temperature._value,
             1.0 / unit.picoseconds,
-            time_step.in_units_of(
-                unit.picosecond)._value)
+            time_step.in_units_of(unit.picosecond)._value,
+        )
 
         simulation = Simulation(topology, system, integrator)
         simulation.context.setPositions(positions.in_units_of(unit.nanometer))
         simulation.context.setVelocitiesToTemperature(temperature)
-        simulation.reporters.append(PDBReporter('test.pdb', 1))
+        simulation.reporters.append(PDBReporter("test.pdb", 1))
         simulation.reporters.append(
             StateDataReporter(
-                'test.dat',
+                "test.dat",
                 1,
                 step=True,
                 totalEnergy=True,
                 potentialEnergy=True,
                 kineticEnergy=True,
-                temperature=True))
+                temperature=True,
+            )
+        )
 
         total_steps = round(total_simulation_time.__div__(time_step))
         try:
             simulation.minimizeEnergy()
-            positions = simulation.context.getState(
-                getPositions=True).getPositions()
+            positions = simulation.context.getState(getPositions=True).getPositions()
             success = True
             break
         except BaseException:
@@ -112,8 +100,8 @@ def get_simulation_time_step(
                 integrator = LangevinIntegrator(
                     temperature._value,
                     1.0 / unit.picoseconds,
-                    time_step.in_units_of(
-                        unit.picosecond)._value)
+                    time_step.in_units_of(unit.picosecond)._value,
+                )
                 simulation = Simulation(topology, system, integrator)
                 simulation.context.setPositions(positions)
                 simulation.minimizeEnergy(tolerance=tolerance)
@@ -123,21 +111,20 @@ def get_simulation_time_step(
                 continue
     if not success:
         tolerance = None
-    return(time_step, tolerance)
+    return (time_step, tolerance)
 
 
 def minimize_structure(
-        topology,
-        system,
-        positions,
-        temperature=0.0 *
-        unit.kelvin,
-        simulation_time_step=None,
-        total_simulation_time=1.0 *
-        unit.picosecond,
-        output_pdb=None,
-        output_data=None,
-        print_frequency=1):
+    topology,
+    system,
+    positions,
+    temperature=0.0 * unit.kelvin,
+    simulation_time_step=None,
+    total_simulation_time=1.0 * unit.picosecond,
+    output_pdb=None,
+    output_data=None,
+    print_frequency=1,
+):
     """
     Minimize the potential energy
 
@@ -189,22 +176,25 @@ def minimize_structure(
     if simulation_time_step is None:
         print("Minimizing the structure, but no time step was provided.")
         exit()
-        simulation_time_step_list = [
-            (10.0 * (0.5 ** i)) * unit.femtosecond for i in range(0, 14)]
+        simulation_time_step_list = [(10.0 * (0.5 ** i)) * unit.femtosecond for i in range(0, 14)]
         time_step, tolerance = get_simulation_time_step(
-            topology, system, positions, temperature, total_simulation_time, simulation_time_step_list)
+            topology,
+            system,
+            positions,
+            temperature,
+            total_simulation_time,
+            simulation_time_step_list,
+        )
         if tolerance is None:
             #            print("This set of positions is not a reasonable initial configuration.")
             energy = "NaN"
             simulation = None
-            return(positions, energy)
+            return (positions, energy)
     else:
         time_step = simulation_time_step
     integrator = LangevinIntegrator(
-        temperature._value,
-        1.0 / unit.picoseconds,
-        time_step.in_units_of(
-            unit.picosecond)._value)
+        temperature._value, 1.0 / unit.picoseconds, time_step.in_units_of(unit.picosecond)._value
+    )
 
     simulation = Simulation(topology, system, integrator)
     simulation.context.setPositions(positions.in_units_of(unit.nanometer))
@@ -221,23 +211,32 @@ def minimize_structure(
                 totalEnergy=True,
                 potentialEnergy=True,
                 kineticEnergy=True,
-                temperature=True))
+                temperature=True,
+            )
+        )
 
     total_steps = round(total_simulation_time.__div__(time_step))
     potential_energy = None
     try:
         simulation.minimizeEnergy()  # Set the simulation type to energy minimization
-        positions = simulation.context.getState(
-            getPositions=True).getPositions()
-        potential_energy = simulation.context.getState(
-            getEnergy=True).getPotentialEnergy()
+        positions = simulation.context.getState(getPositions=True).getPositions()
+        potential_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
     except BaseException:
         print("Minimization attempt failed with a time step of: " + str(time_step))
         if time_step.__gt__(0.01 * unit.femtosecond):
             time_step = time_step / 2.0
             print("Attempting minimization with a smaller time step.")
-            positions, potential_energy = minimize_structure(topology, system, positions, temperature=temperature, simulation_time_step=time_step,
-                                                             total_simulation_time=total_simulation_time, output_pdb=output_pdb, output_data=output_data, print_frequency=print_frequency)
+            positions, potential_energy = minimize_structure(
+                topology,
+                system,
+                positions,
+                temperature=temperature,
+                simulation_time_step=time_step,
+                total_simulation_time=total_simulation_time,
+                output_pdb=output_pdb,
+                output_data=output_data,
+                print_frequency=print_frequency,
+            )
             time_step = time_step / 2.0
         if time_step.__le__(0.01 * unit.femtosecond):
             print("Try using the 'get_simulation_time_step()' function,")
@@ -245,7 +244,7 @@ def minimize_structure(
             print("to see if one of these changes solves the problem.")
             # exit()
 
-    return(positions, potential_energy, simulation)
+    return (positions, potential_energy, simulation)
 
 
 def get_mm_energy(topology, system, positions):
@@ -277,31 +276,27 @@ def get_mm_energy(topology, system, positions):
     simulation_time_step = 5.0 * unit.femtosecond
     friction = 0.0 / unit.picosecond
     integrator = LangevinIntegrator(
-        0.0 * unit.kelvin,
-        friction,
-        simulation_time_step.in_units_of(
-            unit.picosecond))
+        0.0 * unit.kelvin, friction, simulation_time_step.in_units_of(unit.picosecond)
+    )
     simulation = Simulation(topology, system, integrator)
     simulation.context.setPositions(positions)
-    potential_energy = simulation.context.getState(
-        getEnergy=True).getPotentialEnergy()
+    potential_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
 
-    return(potential_energy)
+    return potential_energy
 
 
 def build_mm_simulation(
-        topology,
-        system,
-        positions,
-        temperature=300.0 *
-        unit.kelvin,
-        simulation_time_step=None,
-        total_simulation_time=1.0 *
-        unit.picosecond,
-        output_pdb=None,
-        output_data=None,
-        print_frequency=100,
-        test_time_step=False):
+    topology,
+    system,
+    positions,
+    temperature=300.0 * unit.kelvin,
+    simulation_time_step=None,
+    total_simulation_time=1.0 * unit.picosecond,
+    output_pdb=None,
+    output_data=None,
+    print_frequency=100,
+    test_time_step=False,
+):
     """
     Build an OpenMM Simulation()
 
@@ -360,29 +355,27 @@ def build_mm_simulation(
         #          print("Going to attempt a range of time steps,")
         #          print("to confirm their validity for these model settings,")
         #          print("before performing a full simulation.")
-        time_step_list = [(10.0 * (0.5 ** i)) *
-                          unit.femtosecond for i in range(0, 14)]
+        time_step_list = [(10.0 * (0.5 ** i)) * unit.femtosecond for i in range(0, 14)]
         simulation_time_step, force_cutoff = get_simulation_time_step(
-            topology, system, positions, temperature, total_simulation_time, time_step_list)
+            topology, system, positions, temperature, total_simulation_time, time_step_list
+        )
     friction = 1.0 / unit.picosecond
 
     integrator = LangevinIntegrator(
-        temperature._value,
-        friction,
-        simulation_time_step.in_units_of(
-            unit.picosecond)._value)
+        temperature._value, friction, simulation_time_step.in_units_of(unit.picosecond)._value
+    )
 
-    #file = open("temp.pdb","w")
+    # file = open("temp.pdb","w")
     # PDBFile.writeFile(topology,positions,file=file)
     # file.close()
-    #pdb = PDBFile("temp.pdb")
+    # pdb = PDBFile("temp.pdb")
     simulation = Simulation(topology, system, integrator)
     # os.remove("temp.pdb")
-    #print("Setting positions")
+    # print("Setting positions")
     # print(type(positions))
-    #positions = [Vec3(c[0].in_units_of(unit.nanometer)._value,c[1].in_units_of(unit.nanometer)._value,c[2].in_units_of(unit.nanometer)._value) for c in positions]
+    # positions = [Vec3(c[0].in_units_of(unit.nanometer)._value,c[1].in_units_of(unit.nanometer)._value,c[2].in_units_of(unit.nanometer)._value) for c in positions]
     simulation.context.setPositions(positions)
-#        simulation.context.setVelocitiesToTemperature(temperature)
+    #        simulation.context.setVelocitiesToTemperature(temperature)
     if output_pdb is not None:
         simulation.reporters.append(PDBReporter(output_pdb, print_frequency))
     if output_data is not None:
@@ -394,10 +387,12 @@ def build_mm_simulation(
                 totalEnergy=True,
                 potentialEnergy=True,
                 kineticEnergy=True,
-                temperature=True))
+                temperature=True,
+            )
+        )
 
-# simulation.minimizeEnergy() # Set the simulation type to energy
-# minimization
+    # simulation.minimizeEnergy() # Set the simulation type to energy
+    # minimization
 
     if test_time_step:
         try:
@@ -407,15 +402,13 @@ def build_mm_simulation(
         except BaseException:
             #            print("Simulation attempt failed with a time step of: "+str(simulation_time_step))
             #            print("Going to attempt to identify a smaller time step that allows simulation for this model and its current settings...")
-            time_step_list = [(10.0 * (0.5 ** i)) *
-                              unit.femtosecond for i in range(0, 14)]
-            if all(simulation_time_step.__lt__(time_step)
-                   for time_step in time_step_list):
-                print(
-                    "Error: couldn't identify a suitable simulation time step for this model.")
+            time_step_list = [(10.0 * (0.5 ** i)) * unit.femtosecond for i in range(0, 14)]
+            if all(simulation_time_step.__lt__(time_step) for time_step in time_step_list):
+                print("Error: couldn't identify a suitable simulation time step for this model.")
                 print("Check the model settings, consider changing the input time step,")
                 print(
-                    "and if this doesn't fix the problem, try changing the default list of time steps")
+                    "and if this doesn't fix the problem, try changing the default list of time steps"
+                )
                 print("that are sampled in .build.cg_build.build_mm_simulation.py'")
                 exit()
             for time_step in time_step_list:
@@ -429,25 +422,27 @@ def build_mm_simulation(
                         total_simulation_time=total_simulation_time,
                         output_pdb=output_pdb,
                         output_data=output_data,
-                        print_frequency=print_frequency)
+                        print_frequency=print_frequency,
+                    )
                     try:
 
                         simulation_temp.step(100)
-                        return(simulation)
+                        return simulation
                     except BaseException:
                         continue
-    return(simulation)
+    return simulation
 
 
 def run_simulation(
-        cgmodel,
-        output_directory,
-        total_simulation_time,
-        simulation_time_step,
-        temperature,
-        print_frequency,
-        output_pdb=None,
-        output_data=None):
+    cgmodel,
+    output_directory,
+    total_simulation_time,
+    simulation_time_step,
+    temperature,
+    print_frequency,
+    output_pdb=None,
+    output_data=None,
+):
     """
 
     Run OpenMM() simulation
@@ -495,11 +490,11 @@ def run_simulation(
     if not os.path.exists(output_directory):
         os.mkdir(output_directory)
     if output_pdb is None:
-        output_pdb = str(str(output_directory) + '/simulation.pdb')
+        output_pdb = str(str(output_directory) + "/simulation.pdb")
     else:
         output_pdb = str(str(output_directory) + "/" + str(output_pdb))
     if output_data is None:
-        output_data = str(str(output_directory) + '/simulation.dat')
+        output_data = str(str(output_directory) + "/simulation.dat")
     else:
         output_data = str(str(output_directory) + "/" + str(output_data))
 
@@ -512,7 +507,8 @@ def run_simulation(
         temperature=temperature,
         output_pdb=output_pdb,
         output_data=output_data,
-        print_frequency=print_frequency)
+        print_frequency=print_frequency,
+    )
 
     for step in range(total_steps):
         sim = simulation
@@ -530,20 +526,15 @@ def run_simulation(
                     attempts = attempts + 1
             if attempts > 3:
                 plot_simulation_results(
-                    output_data,
-                    output_directory,
-                    simulation_time_step,
-                    total_simulation_time)
+                    output_data, output_directory, simulation_time_step, total_simulation_time
+                )
                 print("Error: simulation attempt failed.")
-                print(
-                    "We suggest trying the following changes to see if they fix the problem:")
+                print("We suggest trying the following changes to see if they fix the problem:")
                 print("1) Reduce the simulation time step")
-                print(
-                    "2) Make sure that the values for the model parameters are reasonable,")
+                print("2) Make sure that the values for the model parameters are reasonable,")
                 print("   particularly in comparison with the requested simulation")
                 print(str("   temperature: " + str(temperature)))
-                print(
-                    "3) Make sure that the initial/input structure is reasonable for the")
+                print("3) Make sure that the initial/input structure is reasonable for the")
                 print("   input set of model parameters.")
                 exit()
 
@@ -559,10 +550,8 @@ def run_simulation(
         file.close()
 
     plot_simulation_results(
-        output_data,
-        output_directory,
-        simulation_time_step,
-        total_simulation_time)
+        output_data, output_directory, simulation_time_step, total_simulation_time
+    )
     return
 
 
@@ -592,30 +581,24 @@ def read_simulation_data(simulation_data_file, simulation_time_step):
         "Potential Energy": [],
         "Kinetic Energy": [],
         "Total Energy": [],
-        "Temperature": []}
-    with open(simulation_data_file, newline='') as csvfile:
-        reader = csv.reader(csvfile, delimiter=',')
+        "Temperature": [],
+    }
+    with open(simulation_data_file, newline="") as csvfile:
+        reader = csv.reader(csvfile, delimiter=",")
         next(reader)
         for row in reader:
             data["Simulation Time"].append(
-                float(
-                    simulation_time_step.in_units_of(
-                        unit.picosecond)._value) *
-                float(
-                    row[0]))
+                float(simulation_time_step.in_units_of(unit.picosecond)._value) * float(row[0])
+            )
             data["Potential Energy"].append(float(row[1]))
             data["Kinetic Energy"].append(float(row[2]))
             data["Total Energy"].append(float(row[3]))
             data["Temperature"].append(float(row[4]))
 
-    return(data)
+    return data
 
 
-def plot_simulation_data(
-        simulation_times,
-        y_data,
-        plot_type=None,
-        output_directory=None):
+def plot_simulation_data(simulation_times, y_data, plot_type=None, output_directory=None):
     """
     Plot simulation data.
 
@@ -674,10 +657,8 @@ def plot_simulation_data(
 
 
 def plot_simulation_results(
-        simulation_data_file,
-        plot_output_directory,
-        simulation_time_step,
-        total_simulation_time):
+    simulation_data_file, plot_output_directory, simulation_time_step, total_simulation_time
+):
     """
     Plot all data from an OpenMM output file
 
@@ -706,20 +687,24 @@ def plot_simulation_results(
         data["Simulation Time"],
         data["Potential Energy"],
         plot_type="Potential Energy",
-        output_directory=plot_output_directory)
+        output_directory=plot_output_directory,
+    )
     plot_simulation_data(
         data["Simulation Time"],
         data["Kinetic Energy"],
         plot_type="Kinetic Energy",
-        output_directory=plot_output_directory)
+        output_directory=plot_output_directory,
+    )
     plot_simulation_data(
         data["Simulation Time"],
         data["Total Energy"],
         plot_type="Total Energy",
-        output_directory=plot_output_directory)
+        output_directory=plot_output_directory,
+    )
     plot_simulation_data(
         data["Simulation Time"],
         data["Temperature"],
         plot_type="Temperature",
-        output_directory=plot_output_directory)
+        output_directory=plot_output_directory,
+    )
     return

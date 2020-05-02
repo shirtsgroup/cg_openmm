@@ -32,22 +32,19 @@ def distance(positions_1, positions_2):
     direction_comp = np.zeros(3) * positions_1.unit
 
     for direction in range(len(direction_comp)):
-        direction_comp[direction] = positions_1[direction].__sub__(
-            positions_2[direction])
+        direction_comp[direction] = positions_1[direction].__sub__(positions_2[direction])
 
     direction_comb = np.zeros(3) * positions_1.unit.__pow__(2.0)
     for direction in range(3):
         direction_comb[direction] = direction_comp[direction].__pow__(2.0)
 
-    sqrt_arg = direction_comb[0].__add__(
-        direction_comb[1]).__add__(
-        direction_comb[2])
+    sqrt_arg = direction_comb[0].__add__(direction_comb[1]).__add__(direction_comb[2])
 
     value = math.sqrt(sqrt_arg._value)
     units = sqrt_arg.unit.sqrt()
     distance = unit.Quantity(value=value, unit=units)
 
-    return(distance)
+    return distance
 
 
 def get_box_vectors(box_size):
@@ -70,7 +67,7 @@ def get_box_vectors(box_size):
     c = unit.Quantity(np.zeros([3]), units)
     c[2] = box_size
     box_vectors = [a, b, c]
-    return(box_vectors)
+    return box_vectors
 
 
 def set_box_vectors(system, box_size):
@@ -90,7 +87,7 @@ def set_box_vectors(system, box_size):
 
     a, b, c = get_box_vectors(box_size)
     system.setDefaultPeriodicBoxVectors(a, b, c)
-    return(system)
+    return system
 
 
 def lj_v(positions_1, positions_2, sigma, epsilon):
@@ -119,4 +116,4 @@ def lj_v(positions_1, positions_2, sigma, epsilon):
     attr = quot.__pow__(6.0)
     rep = quot.__pow__(12.0)
     v = 4.0 * epsilon.__mul__(rep.__sub__(attr))
-    return(v)
+    return v
