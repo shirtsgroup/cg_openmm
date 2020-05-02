@@ -9,16 +9,19 @@ from cg_openmm.simulation.tools import get_simulation_time_step
 from simtk.openmm.app.pdbfile import PDBFile
 from mdtraj.formats import PDBTrajectoryFile
 from mdtraj import Topology
-#from yank import mpi, analyze
+
+# from yank import mpi, analyze
 from yank import analyze
 from yank.analyze import extract_trajectory
 from openmmtools.multistate import MultiStateReporter, MultiStateSampler, ReplicaExchangeSampler
 from openmmtools.multistate import ReplicaExchangeAnalyzer
 from yank.utils import config_root_logger
+
 # quiet down some citation spam
 MultiStateSampler._global_citation_silence = True
 
-kB = (unit.MOLAR_GAS_CONSTANT_R).in_units_of(unit.kilojoule/(unit.kelvin*unit.mole))
+kB = (unit.MOLAR_GAS_CONSTANT_R).in_units_of(unit.kilojoule / (unit.kelvin * unit.mole))
+
 
 def make_replica_pdb_files(topology, replica_positions):
     """
@@ -51,23 +54,20 @@ def make_replica_pdb_files(topology, replica_positions):
         PDBFile.writeHeader(topology, file=file)
         modelIndex = 1
         for positions in replica_trajectory:
-            PDBFile.writeModel(
-                topology,
-                positions,
-                file=file,
-                modelIndex=modelIndex)
+            PDBFile.writeModel(topology, positions, file=file, modelIndex=modelIndex)
         PDBFile.writeFooter(topology, file=file)
         file.close()
         file_list.append(file_name)
-    return(file_list)
+    return file_list
 
 
 def read_replica_exchange_data(
-        system=None,
-        topology=None,
-        temperature_list=None,
-        output_data="output.nc",
-        print_frequency=None):
+    system=None,
+    topology=None,
+    temperature_list=None,
+    output_data="output.nc",
+    print_frequency=None,
+):
     """
     Read replica exchange simulation data.
 
@@ -103,43 +103,51 @@ def read_replica_exchange_data(
 
     """
     # Read the simulation coordinates for individual temperature replicas
-    reporter = MultiStateReporter(output_data, open_mode='r')
+    reporter = MultiStateReporter(output_data, open_mode="r")
     analyzer = ReplicaExchangeAnalyzer(reporter)
 
-    replica_energies, unsampled_state_energies, neighborhoods, replica_state_indices = analyzer.read_energies()
+    (
+        replica_energies,
+        unsampled_state_energies,
+        neighborhoods,
+        replica_state_indices,
+    ) = analyzer.read_energies()
 
     temps = np.array([temp._value for temp in temperature_list])
     beta_k = 1 / (kB * temps)
     for k in range(len(replica_energies)):
-        replica_energies[:, k, :] *= beta_k[k]**(-1)
+        replica_energies[:, k, :] *= beta_k[k] ** (-1)
 
     total_steps = len(replica_energies[0][0])
-    replica_positions = unit.Quantity(np.zeros(
-        [len(temperature_list), total_steps, system.getNumParticles(), 3]), unit.nanometer)
+    replica_positions = unit.Quantity(
+        np.zeros([len(temperature_list), total_steps, system.getNumParticles(), 3]), unit.nanometer
+    )
 
     for step in range(total_steps):
         sampler_states = reporter.read_sampler_states(iteration=step)
         for replica_index in range(len(temperature_list)):
             for particle in range(system.getNumParticles()):
-                replica_positions[replica_index][step][particle] = sampler_states[replica_index].positions[particle]
+                replica_positions[replica_index][step][particle] = sampler_states[
+                    replica_index
+                ].positions[particle]
 
-    return(replica_energies, replica_positions, replica_state_indices)
+    return (replica_energies, replica_positions, replica_state_indices)
 
 
 def run_replica_exchange(
-        topology,
-        system,
-        positions,
-        temperature_list=None,
-        simulation_time_step=None,
-        total_simulation_time=1.0 *
-        unit.picosecond,
-        output_data='output.nc',
-        print_frequency=100,
-        verbose_simulation=False,
-        exchange_attempts=None,
-        test_time_step=False,
-        output_directory=None):
+    topology,
+    system,
+    positions,
+    temperature_list=None,
+    simulation_time_step=None,
+    total_simulation_time=1.0 * unit.picosecond,
+    output_data="output.nc",
+    print_frequency=100,
+    verbose_simulation=False,
+    exchange_attempts=None,
+    test_time_step=False,
+    output_directory=None,
+):
     """
     Run a Yank replica exchange simulation using an OpenMM coarse grained model.
 
@@ -195,10 +203,10 @@ def run_replica_exchange(
     """
     if simulation_time_step is None:
         simulation_time_step, force_threshold = get_simulation_time_step(
-            topology, system, positions, temperature_list[-1], total_simulation_time)
+            topology, system, positions, temperature_list[-1], total_simulation_time
+        )
 
-    simulation_steps = int(
-        round(total_simulation_time.__div__(simulation_time_step)))
+    simulation_steps = int(round(total_simulation_time.__div__(simulation_time_step)))
 
     if exchange_attempts is None:
         if simulation_steps > 10000:
@@ -207,8 +215,9 @@ def run_replica_exchange(
             exchange_attempts = 10
 
     if temperature_list is None:
-        temperature_list = [(300.0 * unit.kelvin).__add__(i * unit.kelvin)
-                            for i in range(-50, 50, 10)]
+        temperature_list = [
+            (300.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(-50, 50, 10)
+        ]
 
     num_replicas = len(temperature_list)
     sampler_states = list()
@@ -218,23 +227,22 @@ def run_replica_exchange(
     box_vectors = system.getDefaultPeriodicBoxVectors()
     for temperature in temperature_list:
         thermodynamic_state = openmmtools.states.ThermodynamicState(
-            system=system, temperature=temperature)
+            system=system, temperature=temperature
+        )
         thermodynamic_states.append(thermodynamic_state)
-        sampler_states.append(
-            openmmtools.states.SamplerState(
-                positions, box_vectors=box_vectors))
+        sampler_states.append(openmmtools.states.SamplerState(positions, box_vectors=box_vectors))
 
     # Create and configure simulation object.
- 
-    langevin_steps = int(simulation_steps/exchange_attempts)  # check whether dividable?
+
+    langevin_steps = int(simulation_steps / exchange_attempts)  # check whether dividable?
     move = openmmtools.mcmc.LangevinDynamicsMove(
         timestep=simulation_time_step,
         collision_rate=5.0 / unit.picosecond,
         n_steps=langevin_steps,
-        reassign_velocities=False)
+        reassign_velocities=False,
+    )
 
-    simulation = ReplicaExchangeSampler(
-        mcmc_moves=move, number_of_iterations=exchange_attempts)
+    simulation = ReplicaExchangeSampler(mcmc_moves=move, number_of_iterations=exchange_attempts)
 
     if os.path.exists(output_data):
         os.remove(output_data)
@@ -247,67 +255,72 @@ def run_replica_exchange(
         while num_attempts < 5:
             try:
                 simulation.run()
-                #print("Replica exchange simulations succeeded with a time step of: "+str(simulation_time_step))
+                # print("Replica exchange simulations succeeded with a time step of: "+str(simulation_time_step))
                 break
             except BaseException:
                 num_attempts = num_attempts + 1
         if num_attempts >= 5:
             print(
-                "Replica exchange simulation attempts failed, try verifying your model/simulation settings.")
+                "Replica exchange simulation attempts failed, try verifying your model/simulation settings."
+            )
             exit()
     else:
         simulation_time_step, force_threshold = get_simulation_time_step(
-            topology, system, positions, temperature_list[-1], total_simulation_time)
+            topology, system, positions, temperature_list[-1], total_simulation_time
+        )
         print(
-            "The suggested time step for a simulation with this model is: " +
-            str(simulation_time_step))
+            "The suggested time step for a simulation with this model is: "
+            + str(simulation_time_step)
+        )
         while simulation_time_step.__div__(2.0) > 0.001 * unit.femtosecond:
 
             try:
                 print("Running replica exchange simulations with Yank...")
                 print("Using a time step of " + str(simulation_time_step))
-                print(
-                    "Running each trial simulation for 1000 steps, with 10 exchange attempts.")
+                print("Running each trial simulation for 1000 steps, with 10 exchange attempts.")
                 move = openmmtools.mcmc.LangevinDynamicsMove(
                     timestep=simulation_time_step,
                     collision_rate=20.0 / unit.picosecond,
                     n_steps=10,
-                    reassign_velocities=True)
+                    reassign_velocities=True,
+                )
                 simulation = ReplicaExchangeSampler(
-                    replica_mixing_scheme='swap-neighbors',
+                    replica_mixing_scheme="swap-neighbors",
                     mcmc_moves=move,
-                    number_of_iterations=10)
-                reporter = MultiStateReporter(
-                    output_data, checkpoint_interval=1)
-                simulation.create(
-                    thermodynamic_states,
-                    sampler_states,
-                    reporter)
+                    number_of_iterations=10,
+                )
+                reporter = MultiStateReporter(output_data, checkpoint_interval=1)
+                simulation.create(thermodynamic_states, sampler_states, reporter)
 
                 simulation.run()
                 print(
-                    "Replica exchange simulations succeeded with a time step of: " +
-                    str(simulation_time_step))
+                    "Replica exchange simulations succeeded with a time step of: "
+                    + str(simulation_time_step)
+                )
                 break
             except BaseException:
                 del simulation
                 os.remove(output_data)
                 print(
-                    "Simulation attempt failed with a time step of: " +
-                    str(simulation_time_step))
-                if simulation_time_step.__div__(
-                        2.0) > 0.001 * unit.femtosecond:
+                    "Simulation attempt failed with a time step of: " + str(simulation_time_step)
+                )
+                if simulation_time_step.__div__(2.0) > 0.001 * unit.femtosecond:
                     simulation_time_step = simulation_time_step.__div__(2.0)
                 else:
                     print(
-                        "Error: replica exchange simulation attempt failed with a time step of: " +
-                        str(simulation_time_step))
-                    print(
-                        "Please check the model and simulations settings, and try again.")
+                        "Error: replica exchange simulation attempt failed with a time step of: "
+                        + str(simulation_time_step)
+                    )
+                    print("Please check the model and simulations settings, and try again.")
                     exit()
 
     replica_energies, replica_positions, replica_state_indices = read_replica_exchange_data(
-        system=system, topology=topology, temperature_list=temperature_list, output_data=output_data, print_frequency=print_frequency)
+        system=system,
+        topology=topology,
+        temperature_list=temperature_list,
+        output_data=output_data,
+        print_frequency=print_frequency,
+    )
 
     steps_per_stage = round(simulation_steps / exchange_attempts)
     if output_directory is not None:
@@ -316,34 +329,35 @@ def run_replica_exchange(
             temperature_list,
             simulation_time_step,
             steps_per_stage=steps_per_stage,
-            output_directory=output_directory)
+            output_directory=output_directory,
+        )
         plot_replica_exchange_summary(
             replica_state_indices,
             temperature_list,
             simulation_time_step,
             steps_per_stage=steps_per_stage,
-            output_directory=output_directory)
+            output_directory=output_directory,
+        )
     else:
         plot_replica_exchange_energies(
             replica_energies,
             temperature_list,
             simulation_time_step,
-            steps_per_stage=steps_per_stage)
+            steps_per_stage=steps_per_stage,
+        )
         plot_replica_exchange_summary(
             replica_state_indices,
             temperature_list,
             simulation_time_step,
-            steps_per_stage=steps_per_stage)
+            steps_per_stage=steps_per_stage,
+        )
 
-    return(replica_energies, replica_positions, replica_state_indices)
+    return (replica_energies, replica_positions, replica_state_indices)
 
 
 def get_minimum_energy_ensemble(
-        topology,
-        replica_energies,
-        replica_positions,
-        ensemble_size=5,
-        file_name=None):
+    topology, replica_energies, replica_positions, ensemble_size=5, file_name=None
+):
     """
     Get an ensemble of low (potential) energy poses, and write the lowest energy structure to a PDB file if a file_name is provided.
 
@@ -376,8 +390,7 @@ def get_minimum_energy_ensemble(
     ensemble = []
     ensemble_energies = []
     for replica in range(len(replica_energies)):
-        energies = np.array(
-            [energy for energy in replica_energies[replica][replica]])
+        energies = np.array([energy for energy in replica_energies[replica][replica]])
         for energy in range(len(energies)):
             if len(ensemble) < ensemble_size:
                 ensemble.append(replica_positions[replica][energy])
@@ -399,17 +412,18 @@ def get_minimum_energy_ensemble(
         for pose in ensemble:
             PDBFile.writeFile(topology, pose, file=file)
 
-    return(ensemble)
+    return ensemble
 
 
 def plot_replica_exchange_energies(
-        replica_energies,
-        temperature_list,
-        simulation_time_step,
-        steps_per_stage=1,
-        file_name="rep_ex_ener.png",
-        legend=True,
-        output_directory=None):
+    replica_energies,
+    temperature_list,
+    simulation_time_step,
+    steps_per_stage=1,
+    file_name="rep_ex_ener.png",
+    legend=True,
+    output_directory=None,
+):
     """
     Plot the potential energies for a batch of replica exchange trajectories
 
@@ -441,10 +455,16 @@ def plot_replica_exchange_energies(
     figure = pyplot.figure(0)
 
     for replica in range(len(replica_energies)):
-        simulation_times = np.array([float(int(step * steps_per_stage) * simulation_time_step.in_units_of(
-            unit.picosecond)._value) for step in range(len(replica_energies[replica][replica]))])
-        energies = np.array([float(energy)
-                             for energy in replica_energies[replica][replica]])
+        simulation_times = np.array(
+            [
+                float(
+                    int(step * steps_per_stage)
+                    * simulation_time_step.in_units_of(unit.picosecond)._value
+                )
+                for step in range(len(replica_energies[replica][replica]))
+            ]
+        )
+        energies = np.array([float(energy) for energy in replica_energies[replica][replica]])
         pyplot.plot(simulation_times, energies, figure=figure)
 
     pyplot.xlabel("Simulation Time ( Picoseconds )")
@@ -452,37 +472,38 @@ def plot_replica_exchange_energies(
     pyplot.title("Replica Exchange Simulation")
     if legend:
         if len(temperature_list) > 10:
-            pyplot.legend([round(temperature._value,
-                                 1) for temperature in temperature_list[0:9]],
-                          loc='center left',
-                          bbox_to_anchor=(1,
-                                          0.5),
-                          title='T (K)')
+            pyplot.legend(
+                [round(temperature._value, 1) for temperature in temperature_list[0:9]],
+                loc="center left",
+                bbox_to_anchor=(1, 0.5),
+                title="T (K)",
+            )
         else:
-            pyplot.legend([round(temperature._value,
-                                 1) for temperature in temperature_list],
-                          loc='center left',
-                          bbox_to_anchor=(1,
-                                          0.5),
-                          title='T (K)')
+            pyplot.legend(
+                [round(temperature._value, 1) for temperature in temperature_list],
+                loc="center left",
+                bbox_to_anchor=(1, 0.5),
+                title="T (K)",
+            )
     if output_directory is not None:
         output_file = str(str(output_directory) + "/" + str(file_name))
-        pyplot.savefig(output_file, bbox_inches='tight')
+        pyplot.savefig(output_file, bbox_inches="tight")
     else:
-        pyplot.savefig(file_name, bbox_inches='tight')
+        pyplot.savefig(file_name, bbox_inches="tight")
     pyplot.close()
 
     return
 
 
 def plot_replica_exchange_summary(
-        replica_states,
-        temperature_list,
-        simulation_time_step,
-        steps_per_stage=1,
-        file_name="rep_ex_states.png",
-        legend=True,
-        output_directory=None):
+    replica_states,
+    temperature_list,
+    simulation_time_step,
+    steps_per_stage=1,
+    file_name="rep_ex_states.png",
+    legend=True,
+    output_directory=None,
+):
     """
     Plot the thermodynamic state assignments for individual temperature replicas as a function of the simulation time, in order to obtain a visual summary of the replica exchanges from a Yank simulation.
 
@@ -513,10 +534,16 @@ def plot_replica_exchange_summary(
 
     figure = pyplot.figure(1)
     for replica in range(len(replica_states)):
-        simulation_times = np.array([float(int(step * steps_per_stage) * simulation_time_step.in_units_of(
-            unit.picosecond)._value) for step in range(len(replica_states[replica]))])
-        state_indices = np.array([int(round(state))
-                                  for state in replica_states[replica]])
+        simulation_times = np.array(
+            [
+                float(
+                    int(step * steps_per_stage)
+                    * simulation_time_step.in_units_of(unit.picosecond)._value
+                )
+                for step in range(len(replica_states[replica]))
+            ]
+        )
+        state_indices = np.array([int(round(state)) for state in replica_states[replica]])
         pyplot.plot(simulation_times, state_indices, figure=figure)
 
     pyplot.xlabel("Simulation Time ( Picoseconds )")
@@ -524,19 +551,24 @@ def plot_replica_exchange_summary(
     pyplot.title("State Exchange Summary")
     if legend:
         if len(replica_states) > 10:
-            pyplot.legend([i for i in range(len(replica_states[0:9]))],
-                          loc='center left', bbox_to_anchor=(1, 0.5), title='Replica Index')
+            pyplot.legend(
+                [i for i in range(len(replica_states[0:9]))],
+                loc="center left",
+                bbox_to_anchor=(1, 0.5),
+                title="Replica Index",
+            )
         else:
-            pyplot.legend([i for i in range(len(replica_states))],
-                          loc='center left',
-                          bbox_to_anchor=(1,
-                                          0.5),
-                          title='Replica Index')
+            pyplot.legend(
+                [i for i in range(len(replica_states))],
+                loc="center left",
+                bbox_to_anchor=(1, 0.5),
+                title="Replica Index",
+            )
     if output_directory is not None:
         output_file = str(str(output_directory) + "/" + str(file_name))
-        pyplot.savefig(output_file, bbox_inches='tight')
+        pyplot.savefig(output_file, bbox_inches="tight")
     else:
-        pyplot.savefig(file_name, bbox_inches='tight')
+        pyplot.savefig(file_name, bbox_inches="tight")
     # pyplot.show()
     pyplot.close()
 

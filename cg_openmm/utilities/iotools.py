@@ -18,10 +18,18 @@ def write_bonds(CGModel, pdb_object):
     for bond in bond_list:
         if int(bond[0]) < int(bond[1]):
             pdb_object.write(
-                "CONECT" + str("{:>5}".format(bond[0] + 1)) + str("{:>5}".format(bond[1] + 1)) + "\n")
+                "CONECT"
+                + str("{:>5}".format(bond[0] + 1))
+                + str("{:>5}".format(bond[1] + 1))
+                + "\n"
+            )
         else:
             pdb_object.write(
-                "CONECT" + str("{:>5}".format(bond[1] + 1)) + str("{:>5}".format(bond[0] + 1)) + "\n")
+                "CONECT"
+                + str("{:>5}".format(bond[1] + 1))
+                + str("{:>5}".format(bond[0] + 1))
+                + "\n"
+            )
     pdb_object.write(str("END\n"))
     return
 
@@ -39,7 +47,7 @@ def get_topology_from_pdbfile(filename):
     pdb_mm_obj = PDBFile(filename)
     topology = pdb_mm_obj.getTopology()
 
-    return(topology)
+    return topology
 
 
 def get_positions_from_pdbfile(filename):
@@ -56,7 +64,7 @@ def get_positions_from_pdbfile(filename):
     pdb_mm_obj = PDBFile(filename)
     positions = pdb_mm_obj.getPositions()
 
-    return(positions)
+    return positions
 
 
 def read_pdbfile(cgmodel, filename):
@@ -78,7 +86,7 @@ def read_pdbfile(cgmodel, filename):
     cgmodel.positions = pdb_mm_obj.getPositions()
     cgmodel.topology = pdb_mm_obj.getTopology()
 
-    return(cgmodel)
+    return cgmodel
 
 
 def write_pdbfile_without_topology(CGModel, filename, energy=None):
@@ -99,104 +107,213 @@ def write_pdbfile_without_topology(CGModel, filename, energy=None):
     pdb_object = open(filename, "w")
     if energy is not None:
         pdb_object.write(
-            "## The OpenMM potential energy for this structure is: " +
-            str(energy) +
-            "\n")
+            "## The OpenMM potential energy for this structure is: " + str(energy) + "\n"
+        )
         pdb_object.write("## with the following parameter settings:\n")
-        pdb_object.write("## sigma = " +
-                         str(CGModel.sigmas['bb_bb_sigma']) +
-                         ", epsilon = " +
-                         str(CGModel.epsilons['bb_bb_eps']) +
-                         "\n")
+        pdb_object.write(
+            "## sigma = "
+            + str(CGModel.sigmas["bb_bb_sigma"])
+            + ", epsilon = "
+            + str(CGModel.epsilons["bb_bb_eps"])
+            + "\n"
+        )
 
     coordinates = CGModel.positions
     bead_index = 1
     for monomer_index in range(CGModel.polymer_length):
         monomer_type = CGModel.sequence[monomer_index]
         element_index = 1
-        for backbone_bead in range(monomer_type['backbone_length']):
+        for backbone_bead in range(monomer_type["backbone_length"]):
 
             if monomer_index in list([0, CGModel.polymer_length - 1]):
-                pdb_object.write(str("ATOM" +
-                                     str("{:>7}".format(bead_index)) +
-                                     " X" +
-                                     str(element_index) +
-                                     str("{:>6}".format(str("MT"))) +
-                                     " A" +
-                                     str("{:>4}".format(monomer_index +
-                                                        1)) +
-                                     "     " +
-                                     str("{:>7}".format(round(coordinates[bead_index -
-                                                                          1][0].in_units_of(unit.angstrom)._value, 2))) +
-                                     " " +
-                                     str("{:>7}".format(round(coordinates[bead_index -
-                                                                          1][1].in_units_of(unit.angstrom)._value, 2))) +
-                                     " " +
-                                     str("{:>7}".format(round(coordinates[bead_index -
-                                                                          1][2].in_units_of(unit.angstrom)._value, 2))) +
-                                     "  1.00  0.00\n"))
+                pdb_object.write(
+                    str(
+                        "ATOM"
+                        + str("{:>7}".format(bead_index))
+                        + " X"
+                        + str(element_index)
+                        + str("{:>6}".format(str("MT")))
+                        + " A"
+                        + str("{:>4}".format(monomer_index + 1))
+                        + "     "
+                        + str(
+                            "{:>7}".format(
+                                round(
+                                    coordinates[bead_index - 1][0]
+                                    .in_units_of(unit.angstrom)
+                                    ._value,
+                                    2,
+                                )
+                            )
+                        )
+                        + " "
+                        + str(
+                            "{:>7}".format(
+                                round(
+                                    coordinates[bead_index - 1][1]
+                                    .in_units_of(unit.angstrom)
+                                    ._value,
+                                    2,
+                                )
+                            )
+                        )
+                        + " "
+                        + str(
+                            "{:>7}".format(
+                                round(
+                                    coordinates[bead_index - 1][2]
+                                    .in_units_of(unit.angstrom)
+                                    ._value,
+                                    2,
+                                )
+                            )
+                        )
+                        + "  1.00  0.00\n"
+                    )
+                )
             else:
-                pdb_object.write(str("ATOM" +
-                                     str("{:>7}".format(bead_index)) +
-                                     " X" +
-                                     str(element_index) +
-                                     str("{:>6}".format(str("M"))) +
-                                     " A" +
-                                     str("{:>4}".format(monomer_index +
-                                                        1)) +
-                                     "     " +
-                                     str("{:>7}".format(round(coordinates[bead_index -
-                                                                          1][0].in_units_of(unit.angstrom)._value, 2))) +
-                                     " " +
-                                     str("{:>7}".format(round(coordinates[bead_index -
-                                                                          1][1].in_units_of(unit.angstrom)._value, 2))) +
-                                     " " +
-                                     str("{:>7}".format(round(coordinates[bead_index -
-                                                                          1][2].in_units_of(unit.angstrom)._value, 2))) +
-                                     "  1.00  0.00\n"))
+                pdb_object.write(
+                    str(
+                        "ATOM"
+                        + str("{:>7}".format(bead_index))
+                        + " X"
+                        + str(element_index)
+                        + str("{:>6}".format(str("M")))
+                        + " A"
+                        + str("{:>4}".format(monomer_index + 1))
+                        + "     "
+                        + str(
+                            "{:>7}".format(
+                                round(
+                                    coordinates[bead_index - 1][0]
+                                    .in_units_of(unit.angstrom)
+                                    ._value,
+                                    2,
+                                )
+                            )
+                        )
+                        + " "
+                        + str(
+                            "{:>7}".format(
+                                round(
+                                    coordinates[bead_index - 1][1]
+                                    .in_units_of(unit.angstrom)
+                                    ._value,
+                                    2,
+                                )
+                            )
+                        )
+                        + " "
+                        + str(
+                            "{:>7}".format(
+                                round(
+                                    coordinates[bead_index - 1][2]
+                                    .in_units_of(unit.angstrom)
+                                    ._value,
+                                    2,
+                                )
+                            )
+                        )
+                        + "  1.00  0.00\n"
+                    )
+                )
             bead_index = bead_index + 1
             element_index = element_index + 1
 
-            if backbone_bead in [monomer_type['sidechain_positions']]:
-                for sidechain_bead in range(monomer_type['sidechain_length']):
+            if backbone_bead in [monomer_type["sidechain_positions"]]:
+                for sidechain_bead in range(monomer_type["sidechain_length"]):
                     if monomer_index in list([0, CGModel.polymer_length - 1]):
-                        pdb_object.write(str("ATOM" +
-                                             str("{:>7}".format(bead_index)) +
-                                             " A" +
-                                             str(element_index) +
-                                             str("{:>6}".format(str("MT"))) +
-                                             " A" +
-                                             str("{:>4}".format(monomer_index +
-                                                                1)) +
-                                             "     " +
-                                             str("{:>7}".format(round(coordinates[bead_index -
-                                                                                  1][0].in_units_of(unit.angstrom)._value, 2))) +
-                                             " " +
-                                             str("{:>7}".format(round(coordinates[bead_index -
-                                                                                  1][1].in_units_of(unit.angstrom)._value, 2))) +
-                                             " " +
-                                             str("{:>7}".format(round(coordinates[bead_index -
-                                                                                  1][2].in_units_of(unit.angstrom)._value, 2))) +
-                                             "  1.00  0.00\n"))
+                        pdb_object.write(
+                            str(
+                                "ATOM"
+                                + str("{:>7}".format(bead_index))
+                                + " A"
+                                + str(element_index)
+                                + str("{:>6}".format(str("MT")))
+                                + " A"
+                                + str("{:>4}".format(monomer_index + 1))
+                                + "     "
+                                + str(
+                                    "{:>7}".format(
+                                        round(
+                                            coordinates[bead_index - 1][0]
+                                            .in_units_of(unit.angstrom)
+                                            ._value,
+                                            2,
+                                        )
+                                    )
+                                )
+                                + " "
+                                + str(
+                                    "{:>7}".format(
+                                        round(
+                                            coordinates[bead_index - 1][1]
+                                            .in_units_of(unit.angstrom)
+                                            ._value,
+                                            2,
+                                        )
+                                    )
+                                )
+                                + " "
+                                + str(
+                                    "{:>7}".format(
+                                        round(
+                                            coordinates[bead_index - 1][2]
+                                            .in_units_of(unit.angstrom)
+                                            ._value,
+                                            2,
+                                        )
+                                    )
+                                )
+                                + "  1.00  0.00\n"
+                            )
+                        )
                     else:
-                        pdb_object.write(str("ATOM" +
-                                             str("{:>7}".format(bead_index)) +
-                                             " A" +
-                                             str(element_index) +
-                                             str("{:>6}".format(str("M"))) +
-                                             " A" +
-                                             str("{:>4}".format(monomer_index +
-                                                                1)) +
-                                             "     " +
-                                             str("{:>7}".format(round(coordinates[bead_index -
-                                                                                  1][0].in_units_of(unit.angstrom)._value, 2))) +
-                                             " " +
-                                             str("{:>7}".format(round(coordinates[bead_index -
-                                                                                  1][1].in_units_of(unit.angstrom)._value, 2))) +
-                                             " " +
-                                             str("{:>7}".format(round(coordinates[bead_index -
-                                                                                  1][2].in_units_of(unit.angstrom)._value, 2))) +
-                                             "  1.00  0.00\n"))
+                        pdb_object.write(
+                            str(
+                                "ATOM"
+                                + str("{:>7}".format(bead_index))
+                                + " A"
+                                + str(element_index)
+                                + str("{:>6}".format(str("M")))
+                                + " A"
+                                + str("{:>4}".format(monomer_index + 1))
+                                + "     "
+                                + str(
+                                    "{:>7}".format(
+                                        round(
+                                            coordinates[bead_index - 1][0]
+                                            .in_units_of(unit.angstrom)
+                                            ._value,
+                                            2,
+                                        )
+                                    )
+                                )
+                                + " "
+                                + str(
+                                    "{:>7}".format(
+                                        round(
+                                            coordinates[bead_index - 1][1]
+                                            .in_units_of(unit.angstrom)
+                                            ._value,
+                                            2,
+                                        )
+                                    )
+                                )
+                                + " "
+                                + str(
+                                    "{:>7}".format(
+                                        round(
+                                            coordinates[bead_index - 1][2]
+                                            .in_units_of(unit.angstrom)
+                                            ._value,
+                                            2,
+                                        )
+                                    )
+                                )
+                                + "  1.00  0.00\n"
+                            )
+                        )
                     bead_index = bead_index + 1
                     element_index = element_index + 1
     pdb_object.write(str("TER\n"))
@@ -219,39 +336,38 @@ def read_mm_energies(openmm_data_file):
     """
 
     energies = {
-        'step': [],
-        'potential_energy': [],
-        'kinetic_energy': [],
-        'total_energy': [],
-        'temperature': []}
+        "step": [],
+        "potential_energy": [],
+        "kinetic_energy": [],
+        "total_energy": [],
+        "temperature": [],
+    }
 
     with open(openmm_data_file) as csvfile:
-        readCSV = csv.DictReader(csvfile, delimiter=',')
+        readCSV = csv.DictReader(csvfile, delimiter=",")
         for row in readCSV:
             try:
-                energies['step'].append(row['#"Step"'])
+                energies["step"].append(row['#"Step"'])
             except BaseException:
                 continue
             try:
-                energies['potential_energy'].append(
-                    row['Potential Energy (kJ/mole)'])
+                energies["potential_energy"].append(row["Potential Energy (kJ/mole)"])
             except BaseException:
                 continue
             try:
-                energies['kinetic_energy'].append(
-                    row['Kinetic Energy (kJ/mole)'])
+                energies["kinetic_energy"].append(row["Kinetic Energy (kJ/mole)"])
             except BaseException:
                 continue
             try:
-                energies['total_energy'].append(row['Total Energy (kJ/mole)'])
+                energies["total_energy"].append(row["Total Energy (kJ/mole)"])
             except BaseException:
                 continue
             try:
-                energies['temperature'].append(row['Temperature (K)'])
+                energies["temperature"].append(row["Temperature (K)"])
             except BaseException:
                 continue
 
-#              print(energies)
-#              exit()
+    #              print(energies)
+    #              exit()
 
-    return(energies)
+    return energies
