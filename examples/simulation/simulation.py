@@ -5,6 +5,7 @@ import cg_openmm
 from simtk.openmm.app.pdbfile import PDBFile
 from foldamers.cg_model.cgmodel import CGModel
 from cg_openmm.simulation.tools import run_simulation
+import numpy as np
 
 ###
 #
@@ -21,7 +22,7 @@ if not os.path.exists(output_directory):
 
 # OpenMM simulation settings
 print_frequency = 500  # Number of steps to skip when printing output
-total_simulation_time = 50.0 * unit.nanosecond  # Units = picoseconds
+total_simulation_time = 0.5 * unit.nanosecond  # Units = picoseconds
 simulation_time_step = 5.0 * unit.femtosecond
 total_steps = round(total_simulation_time.__div__(simulation_time_step))
 temperature = 300.0 * unit.kelvin

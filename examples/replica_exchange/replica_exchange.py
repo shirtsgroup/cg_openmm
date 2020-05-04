@@ -17,6 +17,7 @@ import numpy as np
 output_directory = "output"
 if not os.path.exists(output_directory):
     os.mkdir(output_directory)
+overwrite_files = True # overwrite files.
 
 # Yank (replica exchange) simulation settings
 print_frequency = 10  # Number of steps to skip when printing output
@@ -121,7 +122,7 @@ cgmodel = CGModel(
 
 # Run replica exchange simulations *if* there is not existing data in 'output_directory'.
 # If there is data in 'output_directory', read that data instead.
-if not os.path.exists(output_data):
+if not os.path.exists(output_data) or overwrite_files == True:
     replica_energies, replica_positions, replica_states = run_replica_exchange(
         cgmodel.topology,
         cgmodel.system,
