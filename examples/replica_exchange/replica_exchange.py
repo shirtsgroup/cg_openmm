@@ -5,6 +5,10 @@ from foldamers.cg_model.cgmodel import CGModel
 from foldamers.parameters.reweight import get_temperature_list
 from cg_openmm.simulation.rep_exch import *
 import numpy as np
+from statistics import mean
+import matplotlib.pyplot as pyplot
+from foldamers.thermo.calc import *
+from foldamers.parameters.secondary_structure import *
 
 ###
 #
@@ -124,3 +128,47 @@ if not os.path.exists(output_data):
 else:
     replica_energies, replica_positions, replica_states = read_replica_exchange_data(
         system=cgmodel.system, topology=cgmodel.topology, temperature_list=temperature_list, output_data=output_data, print_frequency=print_frequency)
+
+
+t_diff = int((max_temp - min_temp) * 1/(unit.kelvin))
+configurations,energies = get_decorrelated_samples(replica_positions,replica_energies,temperature_list)
+n_bins = 30
+energy_step_size = (int(len(replica_energies)))
+max_num_samples = 10
+energy_total = np.zeros((len(configurations),max_num_samples)) 
+
+
+
+
+for traj in configurations:
+    if len(traj) > max_num_samples:
+        max_num_samples = len(traj)
+
+
+energy_kn = np.zeros((len(configurations),max_num_samples))
+for i in range(len(replica_energies)):
+    for j in range(len(replica_energies)):
+        energy_kn = replica_energies[i,j]
+
+energy_bin = np.zeros((len(temperature_list),len(energy_kn)))
+energy_bin_counts = np.zeros((len(temperature_list),len(energy_bin)),dtype=int)
+for data_index in range(len(temperature_list)):
+    data = temperature_list[data_index]
+    for temp in range(len(temperature_list)):
+        for bin_index in range(len(energy_bin)):
+            bin = energy_bin[bin_index]
+            energy_bin[data_index][bin_index] = energy_bin[data_index][bin_index] + 1
+figure = pyplot.figure(0)
+for T_index in range(len(energy_kn)):
+    num_samples = int(len(configurations[T_index]))
+    pyplot.hist(energy_kn,energy_bin)
+    #pyplot.hist(energy_kn[T_index][:num_samples],energy_bin)
+
+pyplot.xlabel("Temperature")
+pyplot.ylabel("Energy")
+pyplot.title("Temperature vs. Energy distribution")
+#pyplot.legend([round(temperature_list,1) for temperature in temperature_list[:9]],loc='center left', bbox_to_anchor=(1, 0.5),title='T (K)')
+pyplot.savefig("energy_dist.png")
+pyplot.show()
+
+pyplot.close()
