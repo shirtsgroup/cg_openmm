@@ -10,12 +10,8 @@ from simtk.openmm.app.pdbfile import PDBFile
 from mdtraj.formats import PDBTrajectoryFile
 from mdtraj import Topology
 
-# from yank import mpi, analyze
-from yank import analyze
-from yank.analyze import extract_trajectory
 from openmmtools.multistate import MultiStateReporter, MultiStateSampler, ReplicaExchangeSampler
 from openmmtools.multistate import ReplicaExchangeAnalyzer
-from yank.utils import config_root_logger
 
 # quiet down some citation spam
 MultiStateSampler._global_citation_silence = True
@@ -80,7 +76,7 @@ def read_replica_exchange_data(
     :param temperature_list: List of temperatures that will be used to define different replicas (thermodynamics states), default = None
     :type temperature_list: List( `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_ * number_replicas )
 
-    :param output_data: Path to the output data for a Yank, NetCDF-formatted file containing replica exchange simulation data, default = None
+    :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data, default = None
     :type output_data: str
 
     :param print_frequency: Number of simulation steps to skip when writing data, default = None
@@ -149,7 +145,7 @@ def run_replica_exchange(
     output_directory=None,
 ):
     """
-    Run a Yank replica exchange simulation using an OpenMM coarse grained model.
+    Run a OpenMMTools replica exchange simulation using an OpenMM coarse grained model.
 
     :param topology: OpenMM Topology
     :type topology: `Topology() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1topology_1_1Topology.html>`_
@@ -248,7 +244,6 @@ def run_replica_exchange(
         os.remove(output_data)
     reporter = MultiStateReporter(output_data, checkpoint_interval=1)
     simulation.create(thermodynamic_states, sampler_states, reporter)
-    config_root_logger(verbose_simulation)
 
     if not test_time_step:
         num_attempts = 0
@@ -275,7 +270,7 @@ def run_replica_exchange(
         while simulation_time_step.__div__(2.0) > 0.001 * unit.femtosecond:
 
             try:
-                print("Running replica exchange simulations with Yank...")
+                print("Running replica exchange simulations with OpenMM...")
                 print("Using a time step of " + str(simulation_time_step))
                 print("Running each trial simulation for 1000 steps, with 10 exchange attempts.")
                 move = openmmtools.mcmc.LangevinDynamicsMove(
@@ -505,7 +500,7 @@ def plot_replica_exchange_summary(
     output_directory=None,
 ):
     """
-    Plot the thermodynamic state assignments for individual temperature replicas as a function of the simulation time, in order to obtain a visual summary of the replica exchanges from a Yank simulation.
+    Plot the thermodynamic state assignments for individual temperature replicas as a function of the simulation time, in order to obtain a visual summary of the replica exchanges from a OpenMM simulation.
 
     :param replica_states: List of dimension num_replicas X simulation_steps, which gives the thermodynamic state indices for all replicas at all simulation steps
     :type replica_states: List( List( float * simtk.unit.energy for simulation_steps ) for num_replicas )
