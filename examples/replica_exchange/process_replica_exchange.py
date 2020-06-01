@@ -29,13 +29,15 @@ total_steps = round(total_simulation_time.__div__(simulation_time_step))
 output_data = os.path.join(output_directory, "output.nc")
 number_replicas = 12
 min_temp = 600.0 * unit.kelvin
-max_temp = 2400.0 * unit.kelvin
+max_temp = 1000.0 * unit.kelvin
 temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
-
-replica_energies, replica_positions, replica_states = read_replica_exchange_data(
+exchange_attempts = 1000
+replica_energies, replica_positions, replica_states = process_replica_exchange_data(
     temperature_list=temperature_list,
     output_data=output_data,
+    output_directory="output",
     print_frequency=print_frequency,
+    time_interval = 2.0*unit.picoseconds
     )
 import pdb
 pdb.set_trace()
