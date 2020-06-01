@@ -58,8 +58,6 @@ def make_replica_pdb_files(topology, replica_positions):
 
 
 def read_replica_exchange_data(
-    system=None,
-    topology=None,
     temperature_list=None,
     output_data="output.nc",
     print_frequency=None,
@@ -69,9 +67,6 @@ def read_replica_exchange_data(
 
     :param system: OpenMM system object, default = None
     :type system: `System() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1System.html>`_
-
-    :param topology: OpenMM topology object, default = None
-    :type topology: `Topology() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1topology_1_1Topology.html>`_
 
     :param temperature_list: List of temperatures that will be used to define different replicas (thermodynamics states), default = None
     :type temperature_list: List( `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_ * number_replicas )
@@ -94,7 +89,7 @@ def read_replica_exchange_data(
     >>> from cg_openmm.simulation.rep_exch import *
     >>> cgmodel = CGModel()
     >>> replica_energies,replica_positions,replica_state_indices = run_replica_exchange(cgmodel.topology,cgmodel.system,cgmodel.positions)
-    >>> replica_energies,replica_positions,replica_state_indices = read_replica_exchange_data(system=cgmodel.system,topology=cgmodel.topology,temperature_list=,output_data="output.nc",print_frequency=None)
+    >>> replica_energies,replica_positions,replica_state_indices = read_replica_exchange_data(temperature_list=,output_data="output.nc",print_frequency=None)
 
 
     """
@@ -109,6 +104,7 @@ def read_replica_exchange_data(
         replica_state_indices,
     ) = analyzer.read_energies()
 
+    nparticles = np.shape(reporter.read_sampler_states(iteration=0)[0].positions)[0]
     temps = np.array([temp._value for temp in temperature_list])
     beta_k = 1 / (kB * temps)
     for k in range(len(replica_energies)):
@@ -116,13 +112,13 @@ def read_replica_exchange_data(
 
     total_steps = len(replica_energies[0][0])
     replica_positions = unit.Quantity(
-        np.zeros([len(temperature_list), total_steps, system.getNumParticles(), 3]), unit.nanometer
+        np.zeros([len(temperature_list), total_steps, nparticles, 3]), unit.nanometer
     )
 
     for step in range(total_steps):
         sampler_states = reporter.read_sampler_states(iteration=step)
         for replica_index in range(len(temperature_list)):
-            for particle in range(system.getNumParticles()):
+            for particle in range(nparticles):
                 replica_positions[replica_index][step][particle] = sampler_states[
                     replica_index
                 ].positions[particle]
