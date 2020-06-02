@@ -11,7 +11,7 @@ import pickle
 
 ###
 #
-# This example demonstrates how to run a Yank replica exchange simulation
+# This example demonstrates how to run a OpenMM replica exchange simulation
 # using a "CGModel" object built with the 'foldamers' software package.
 #
 ###
@@ -23,8 +23,6 @@ if not os.path.exists(output_directory):
 output_data = os.path.join(output_directory, "output.nc")
 
 # Replica exchange simulation settings
-min_temp = 600.0 * unit.kelvin
-max_temp = 1000.0 * unit.kelvin
 ft = open("stored_topology.pkl","rb")
 (temperature_list,time_interval,stored_topology) = pickle.load(ft)
 replica_energies, replica_positions, replica_states = process_replica_exchange_data(

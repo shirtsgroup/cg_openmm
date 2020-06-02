@@ -88,7 +88,7 @@ equil_bond_angles = {
 }
 
 # Torsion angle definitions
-torsion_force_constant = 20.0 * unit.kilocalorie_per_mole / unit.radian / unit.radian
+torsion_force_constant = 20.0 * unit.kilocalorie_per_mole
 torsion_force_constants = {"bb_bb_bb_bb_torsion_k": torsion_force_constant}
 # OpenMM requires angle definitions in units of radians
 bb_bb_bb_bb_equil_torsion_angle = 78.0 * (np.math.pi / 180.0)
