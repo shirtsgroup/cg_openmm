@@ -10,7 +10,7 @@ from simtk.openmm.app import *
 import matplotlib.pyplot as pyplot
 import csv
 from cg_openmm.utilities.iotools import write_bonds
-
+import sys
 
 def get_simulation_time_step(
     topology, system, positions, temperature, total_simulation_time, time_step_list=None
@@ -84,7 +84,6 @@ def get_simulation_time_step(
                 temperature=True,
             )
         )
-
         total_steps = round(total_simulation_time.__div__(time_step))
         try:
             simulation.minimizeEnergy()
@@ -365,17 +364,10 @@ def build_mm_simulation(
         temperature._value, friction, simulation_time_step.in_units_of(unit.picosecond)._value
     )
 
-    # file = open("temp.pdb","w")
-    # PDBFile.writeFile(topology,positions,file=file)
-    # file.close()
-    # pdb = PDBFile("temp.pdb")
     simulation = Simulation(topology, system, integrator)
-    # os.remove("temp.pdb")
-    # print("Setting positions")
-    # print(type(positions))
-    # positions = [Vec3(c[0].in_units_of(unit.nanometer)._value,c[1].in_units_of(unit.nanometer)._value,c[2].in_units_of(unit.nanometer)._value) for c in positions]
     simulation.context.setPositions(positions)
-    #        simulation.context.setVelocitiesToTemperature(temperature)
+    simulation.context.setVelocitiesToTemperature(temperature)
+
     if output_pdb is not None:
         simulation.reporters.append(PDBReporter(output_pdb, print_frequency))
     if output_data is not None:
@@ -390,9 +382,12 @@ def build_mm_simulation(
                 temperature=True,
             )
         )
+    simulation.reporters.append(StateDataReporter(sys.stdout, print_frequency, step=True,
+                                                  potentialEnergy=True, temperature=True))
 
-    # simulation.minimizeEnergy() # Set the simulation type to energy
     # minimization
+    simulation.minimizeEnergy() # Set the simulation type to energy
+
 
     if test_time_step:
         try:
@@ -440,6 +435,7 @@ def run_simulation(
     simulation_time_step,
     temperature,
     print_frequency,
+    minimize=True,
     output_pdb=None,
     output_data=None,
 ):
@@ -510,33 +506,22 @@ def run_simulation(
         print_frequency=print_frequency,
     )
 
-    for step in range(total_steps):
-        sim = simulation
-        try:
-            sim.step(1)
-            simulation = sim
-        except BaseException:
-            attempts = 1
-            while attempts <= 3:
-                try:
-                    sim = simulation
-                    sim.step(1)
-                    simulation = sim
-                except BaseException:
-                    attempts = attempts + 1
-            if attempts > 3:
-                plot_simulation_results(
-                    output_data, output_directory, simulation_time_step, total_simulation_time
-                )
-                print("Error: simulation attempt failed.")
-                print("We suggest trying the following changes to see if they fix the problem:")
-                print("1) Reduce the simulation time step")
-                print("2) Make sure that the values for the model parameters are reasonable,")
-                print("   particularly in comparison with the requested simulation")
-                print(str("   temperature: " + str(temperature)))
-                print("3) Make sure that the initial/input structure is reasonable for the")
-                print("   input set of model parameters.")
-                exit()
+    print(f"Will run {total_steps} simulation steps")
+    try:
+        simulation.step(total_steps)
+    except BaseException:
+        plot_simulation_results(
+            output_data, output_directory, simulation_time_step, total_simulation_time
+            )
+        print("Error: simulation attempt failed.")
+        print("We suggest trying the following changes to see if they fix the problem:")
+        print("1) Reduce the simulation time step")
+        print("2) Make sure that the values for the model parameters are reasonable,")
+        print("   particularly in comparison with the requested simulation")
+        print(str("   temperature: " + str(temperature)))
+        print("3) Make sure that the initial/input structure is reasonable for the")
+        print("   input set of model parameters.")
+        exit()
 
     if not cgmodel.include_bond_forces and cgmodel.constrain_bonds:
         file = open(output_pdb, "r")

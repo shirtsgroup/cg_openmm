@@ -7,10 +7,10 @@ from foldamers.cg_model.cgmodel import CGModel
 from foldamers.parameters.reweight import get_temperature_list
 from cg_openmm.simulation.rep_exch import *
 import numpy as np
-import openmmtools
+import simtk.openmm as openmm
 
 from openmmtools.cache import global_context_cache
-global_context_cache.platform = openmm.getPlatform('CPU')
+global_context_cache.platform = openmm.Platform.getPlatformByName('CPU')
 
 ###
 #
@@ -123,10 +123,8 @@ cgmodel = CGModel(
     positions=positions,
 )
 
-import pdb
-pdb.set_trace()
 if not os.path.exists(output_data) or overwrite_files == True:
-    replica_energies, replica_positions, replica_states = run_replica_exchange(
+    run_replica_exchange(
         cgmodel.topology,
         cgmodel.system,
         cgmodel.positions,
@@ -136,7 +134,7 @@ if not os.path.exists(output_data) or overwrite_files == True:
         print_frequency=print_frequency,
         output_data=output_data,
         output_directory=output_directory,
-    )
+        )
     make_replica_pdb_files(cgmodel.topology, replica_positions)
 else:
     print("Replica output files exist")
