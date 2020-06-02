@@ -1,5 +1,6 @@
 import os
 import datetime
+import tempfile
 import numpy as np
 from simtk import openmm as mm
 from simtk import unit
@@ -362,12 +363,14 @@ def build_topology(cgmodel, use_pdbfile=False, pdbfile=None):
     """
     if cgmodel.constrain_bonds:
         use_pdbfile = True
+
     if use_pdbfile:
         if pdbfile is None:
-            write_pdbfile_without_topology(cgmodel, "topology_source.pdb")
-            pdb = PDBFile("topology_source.pdb")
+            tf = tempfile.NamedTemporaryFile()
+            write_pdbfile_without_topology(cgmodel, tf.name)
+            pdb = PDBFile(tf.name)
             topology = pdb.getTopology()
-            os.remove("topology_source.pdb")
+            tf.close()
             return(topology)
         else:
             pdb = PDBFile(pdbfile)

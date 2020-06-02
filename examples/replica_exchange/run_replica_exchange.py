@@ -1,3 +1,5 @@
+#!/Users/mrshirts/anaconda3/bin/python
+
 import os
 import pdb
 from simtk import unit
@@ -5,6 +7,11 @@ from foldamers.cg_model.cgmodel import CGModel
 from foldamers.parameters.reweight import get_temperature_list
 from cg_openmm.simulation.rep_exch import *
 import numpy as np
+import simtk.openmm as openmm
+import pickle
+
+from openmmtools.cache import global_context_cache
+global_context_cache.platform = openmm.Platform.getPlatformByName('CPU')
 
 ###
 #
@@ -19,21 +26,17 @@ if not os.path.exists(output_directory):
     os.mkdir(output_directory)
 overwrite_files = True # overwrite files.
 
-# Yank (replica exchange) simulation settings
+# Replica exchange simulation settings
 print_frequency = 10  # Number of steps to skip when printing output
-total_simulation_time = 0.4 * unit.nanosecond
+total_simulation_time = 0.1 * unit.nanosecond
 simulation_time_step = 2.0 * unit.femtosecond
 total_steps = round(total_simulation_time.__div__(simulation_time_step))
 output_data = os.path.join(output_directory, "output.nc")
-number_replicas = 10
+number_replicas = 12
 min_temp = 600.0 * unit.kelvin
-max_temp = 2400.0 * unit.kelvin
+max_temp = 1000.0 * unit.kelvin
 temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
 exchange_frequency = 50
-# if total_steps > 10000:
-#    exchange_attempts = round(total_steps / exchange_frequency)
-# else:
-#    exchange_attempts = 10
 
 # Coarse grained model settings
 polymer_length = 12
@@ -44,16 +47,16 @@ include_bond_forces = False
 include_bond_angle_forces = True
 include_nonbonded_forces = True
 include_torsion_forces = True
-constrain_bonds = True
+constrain_bonds = False
 
 # Bond definitions
-bond_length = 7.5 * unit.angstrom
+bond_length = 1.5 * unit.angstrom
 bond_lengths = {
     "bb_bb_bond_length": bond_length,
     "bb_sc_bond_length": bond_length,
     "sc_sc_bond_length": bond_length,
 }
-bond_force_constant = 0 * unit.kilocalorie_per_mole / unit.nanometer / unit.nanometer
+bond_force_constant = 1000 * unit.kilocalorie_per_mole / unit.nanometer / unit.nanometer
 bond_force_constants = {
     "bb_bb_bond_k": bond_force_constant,
     "bb_sc_bond_k": bond_force_constant,
@@ -63,15 +66,15 @@ bond_force_constants = {
 # Particle definitions
 mass = 100.0 * unit.amu
 masses = {"backbone_bead_masses": mass, "sidechain_bead_masses": mass}
-r_min = 3.0 * bond_length  # Lennard-Jones potential r_min
+r_min = 2.0 * bond_length  # Lennard-Jones potential r_min
 # Factor of /(2.0**(1/6)) is applied to convert r_min to sigma
-sigma = r_min / (2.0 ** (1 / 6))
+sigma = r_min / (2.0 ** (1.0 / 6.0))
 sigmas = {"bb_sigma": sigma, "sc_sigma": sigma}
 epsilon = 0.2 * unit.kilocalorie_per_mole
 epsilons = {"bb_eps": epsilon, "sc_eps": epsilon}
 
 # Bond angle definitions
-bond_angle_force_constant = 0.2 * unit.kilocalorie_per_mole / unit.radian / unit.radian
+bond_angle_force_constant = 100 * unit.kilocalorie_per_mole / unit.radian / unit.radian
 bond_angle_force_constants = {
     "bb_bb_bb_angle_k": bond_angle_force_constant,
     "bb_bb_sc_angle_k": bond_angle_force_constant,
@@ -85,7 +88,7 @@ equil_bond_angles = {
 }
 
 # Torsion angle definitions
-torsion_force_constant = 0.2 * unit.kilocalorie_per_mole / unit.radian / unit.radian
+torsion_force_constant = 20.0 * unit.kilocalorie_per_mole
 torsion_force_constants = {"bb_bb_bb_bb_torsion_k": torsion_force_constant}
 # OpenMM requires angle definitions in units of radians
 bb_bb_bb_bb_equil_torsion_angle = 78.0 * (np.math.pi / 180.0)
@@ -120,10 +123,14 @@ cgmodel = CGModel(
     positions=positions,
 )
 
-# Run replica exchange simulations *if* there is not existing data in 'output_directory'.
-# If there is data in 'output_directory', read that data instead.
+# kludge - information needed for writing out
+pkl = open('stored_topology.pkl',"wb")
+# check to make sure that this is the right time interval.
+pickle.dump((temperature_list,exchange_frequency*simulation_time_step,cgmodel.topology),pkl)
+pkl.close()
+
 if not os.path.exists(output_data) or overwrite_files == True:
-    replica_energies, replica_positions, replica_states = run_replica_exchange(
+    run_replica_exchange(
         cgmodel.topology,
         cgmodel.system,
         cgmodel.positions,
@@ -133,13 +140,6 @@ if not os.path.exists(output_data) or overwrite_files == True:
         print_frequency=print_frequency,
         output_data=output_data,
         output_directory=output_directory,
-    )
-    make_replica_pdb_files(cgmodel.topology, replica_positions)
+        )
 else:
-    replica_energies, replica_positions, replica_states = read_replica_exchange_data(
-        system=cgmodel.system,
-        topology=cgmodel.topology,
-        temperature_list=temperature_list,
-        output_data=output_data,
-        print_frequency=print_frequency,
-    )
+    print("Replica output files exist")

@@ -1,0 +1,52 @@
+REMARK   1 CREATED WITH OPENMM 7.4.1, 2020-06-01
+HETATM    1  X1   MT A   1     -15.374  -8.669  13.354  1.00  0.00              
+HETATM    2  A2   MT A   1     -14.220 -15.628  14.099  1.00  0.00              
+HETATM    3  X1    M A   2     -12.450  -1.129  16.071  1.00  0.00              
+HETATM    4  A2    M A   2     -17.063  -2.392  21.576  1.00  0.00              
+HETATM    5  X1    M A   3      -6.355   2.500  17.594  1.00  0.00              
+HETATM    6  A2    M A   3      -2.643  -3.281  14.223  1.00  0.00              
+HETATM    7  X1    M A   4      -3.707   4.572  24.244  1.00  0.00              
+HETATM    8  A2    M A   4      -0.575  10.583  28.082  1.00  0.00              
+HETATM    9  X1    M A   5      -7.253  11.263  19.318  1.00  0.00              
+HETATM   10  A2    M A   5      -3.176  16.674  15.677  1.00  0.00              
+HETATM   11  X1    M A   6     -14.277  14.645  20.259  1.00  0.00              
+HETATM   12  A2    M A   6     -15.794  13.312  27.295  1.00  0.00              
+HETATM   13  X1    M A   7     -20.263  15.250  19.678  1.00  0.00              
+HETATM   14  A2    M A   7     -18.965  21.837  16.494  1.00  0.00              
+HETATM   15  X1    M A   8     -24.935  13.828  15.252  1.00  0.00              
+HETATM   16  A2    M A   8     -27.453   7.652  18.140  1.00  0.00              
+HETATM   17  X1    M A   9     -26.600  13.241   7.441  1.00  0.00              
+HETATM   18  A2    M A   9     -33.172  14.498   5.142  1.00  0.00              
+HETATM   19  X1    M A  10     -18.638   8.866   5.887  1.00  0.00              
+HETATM   20  A2    M A  10     -21.852   2.853   5.144  1.00  0.00              
+HETATM   21  X1    M A  11     -10.781   9.587   6.060  1.00  0.00              
+HETATM   22  A2    M A  11      -3.678   6.040   5.113  1.00  0.00              
+HETATM   23  X1   MT A  12     -13.423  16.306   4.788  1.00  0.00              
+HETATM   24  A2   MT A  12     -19.455  21.667   1.283  1.00  0.00              
+TER      25       MT A  12
+ENDMDL
+CONECT    1    2    3
+CONECT    2    1
+CONECT    3    1    4    5
+CONECT    4    3
+CONECT    5    3    6    7
+CONECT    6    5
+CONECT    7    5    8    9
+CONECT    8    7
+CONECT    9    7   10   11
+CONECT   10    9
+CONECT   11    9   12   13
+CONECT   12   11
+CONECT   13   11   14   15
+CONECT   14   13
+CONECT   15   13   16   17
+CONECT   16   15
+CONECT   17   15   18   19
+CONECT   18   17
+CONECT   19   17   20   21
+CONECT   20   19
+CONECT   21   19   22   23
+CONECT   22   21
+CONECT   23   21   24
+CONECT   24   23
+END
