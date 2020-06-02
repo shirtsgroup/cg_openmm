@@ -19,7 +19,7 @@ MultiStateSampler._global_citation_silence = True
 kB = (unit.MOLAR_GAS_CONSTANT_R).in_units_of(unit.kilojoule / (unit.kelvin * unit.mole))
 
 
-def make_replica_pdb_files(topology, replica_positions):
+def make_replica_pdb_files(topology, replica_positions, output_dir=""):
     """
     Make PDB files from replica exchange simulation trajectory data
     
@@ -45,7 +45,7 @@ def make_replica_pdb_files(topology, replica_positions):
     file_list = []
     for replica_index in range(len(replica_positions)):
         replica_trajectory = replica_positions[replica_index]
-        file_name = str("replica_" + str(replica_index + 1) + ".pdb")
+        file_name = os.path.join(output_dir,"replica_"+str(replica_index + 1)+".pdb")
         file = open(file_name, "w")
         PDBFile.writeHeader(topology, file=file)
         modelIndex = 1
@@ -61,9 +61,6 @@ def process_replica_exchange_data(
     temperature_list=None,
     output_data="output.nc",
     output_directory="output",
-    print_frequency=None,
-    plot_data=None,
-    simulation_time_step=None,
     time_interval=None
     ):
     """
@@ -78,8 +75,9 @@ def process_replica_exchange_data(
     :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data, default = None
     :type output_data: str
 
-    :param print_frequency: Number of simulation steps to skip when writing data, default = None
-    :type print_frequency: int
+    :param time_interval: Time between samples, default = None
+    :type time_interval: int
+
 
     :returns:
         - replica_energies ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.float( [number_replicas,number_simulation_steps] ), simtk.unit ) ) - The potential energies for all replicas at all (printed) time steps
@@ -108,7 +106,7 @@ def process_replica_exchange_data(
         replica_state_indices,
     ) = analyzer.read_energies()
 
-    nparticles = np.shape(reporter.read_sampler_states(iteration=0)[0].positions)[0]
+    n_particles = np.shape(reporter.read_sampler_states(iteration=0)[0].positions)[0]
     temps = np.array([temp._value for temp in temperature_list])
     beta_k = 1 / (kB * temps)
     for k in range(len(replica_energies)):
@@ -116,13 +114,13 @@ def process_replica_exchange_data(
 
     total_steps = len(replica_energies[0][0])
     replica_positions = unit.Quantity(
-        np.zeros([len(temperature_list), total_steps, nparticles, 3]), unit.nanometer
+        np.zeros([len(temperature_list), total_steps, n_particles, 3]), unit.nanometer
     )
 
     for step in range(total_steps):
         sampler_states = reporter.read_sampler_states(iteration=step)
         for replica_index in range(len(temperature_list)):
-            for particle in range(nparticles):
+            for particle in range(n_particles):
                 replica_positions[replica_index][step][particle] = sampler_states[
                     replica_index
                 ].positions[particle]
@@ -158,6 +156,7 @@ def run_replica_exchange(
     exchange_attempts=None,
     test_time_step=False,
     output_directory=None,
+    minimize=True
     ):
 
     """
@@ -262,6 +261,9 @@ def run_replica_exchange(
 
     reporter = MultiStateReporter(output_data, checkpoint_interval=1)
     simulation.create(thermodynamic_states, sampler_states, reporter)
+
+    if minimize:
+        simulation.minimize()
     
     if not test_time_step:
         num_attempts = 0

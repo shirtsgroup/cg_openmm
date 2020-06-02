@@ -365,7 +365,6 @@ def build_topology(cgmodel, use_pdbfile=False, pdbfile=None):
         use_pdbfile = True
 
     if use_pdbfile:
-        
         if pdbfile is None:
             tf = tempfile.NamedTemporaryFile()
             write_pdbfile_without_topology(cgmodel, tf.name)
