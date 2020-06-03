@@ -12,10 +12,10 @@ def basic_cgmodel(
     backbone_length=1,
     sidechain_length=1,
     sidechain_positions=[0],
-    mass=100.0 * unit.amu,
-    bond_length=0.75 * unit.nanometer,
-    sigma=1.85 * unit.nanometer,
-    epsilon=0.5 * unit.kilocalorie_per_mole,
+    mass=72 * unit.amu,
+    bond_length=0.47 * unit.nanometer,
+    sigma=0.47 * unit.nanometer,
+    epsilon=3.5 * unit.kilojoule_per_mole,
     positions=None,
 ):
 
@@ -298,7 +298,20 @@ class CGModel(object):
 
           :param random_positions: Flag designating whether or not to generate a set of random coordinates for the coarse grained model, default = None
 
+
           """
+
+        # define some default units
+        self.default_mass = 72 * unit.amu # from martini 3.0 C1
+        self.default_length = 0.47 * unit.nanometers # from martini 3.0 C1 particle
+        self.default_angle = 0.0 * unit.degrees
+        self.default_torsion_k = 0.0 * unit.kilojoule_per_mole / unit.radian / unit.radian
+        self.default_angle_k = 10.0 * unit.kilojoule_per_mole / unit.radian / unit.radian  # from martini 3.0
+        self.default_bond_k = 1250.0 * unit.kilojoule_per_mole / unit.nanometer / unit.nanometer # from martini 3.0
+        self.default_charge = 0.0 * unit.elementary_charge
+        self.default_periodicity = 1
+
+
         if bond_force_constants == None:
             bond_force_constants = {}
         if bond_angle_force_constants == None:
@@ -321,9 +334,9 @@ class CGModel(object):
             epsilons = {}
         if bond_lengths == None:
             bond_lengths = {
-                "bb_bb_bond_length": 0.75 * unit.nanometer,
-                "bb_sc_bond_length": 0.75 * unit.nanometer,
-                "sc_sc_bond_length": 0.75 * unit.nanometer,
+                "bb_bb_bond_length": self.default_bond_length,
+                "bb_sc_bond_length": self.default_bond_length,
+                "sc_sc_bond_length": self.default_bond_length,
             }
 
         """
@@ -963,8 +976,8 @@ class CGModel(object):
                 particle_charge = self.charges["backbone_bead_charges"]
             except:
                 print("No particle charge definition was found for particle type: backbone")
-                print("Applying a default definition: charge = 0.0")
-                self.charges.update({"backbone_bead_charges": 0.0 * unit.elementary_charge})
+                print(f"Applying a default definition: charge = {self.default_charge}")
+                self.charges.update({"backbone_bead_charges": self.default_charge})
                 particle_charge = self.charges["backbone_bead_charges"]
 
         if particle_type == "sidechain":
@@ -972,10 +985,10 @@ class CGModel(object):
                 particle_charge = self.charges["sidechain_bead_charges"]
             except:
                 print("No particle charge definition was found for particle type: sidechain")
-                print("Applying a default definition: charge = 0.0")
-                self.charges.update({"sidechain_bead_charges": 0.0 * unit.elementary_charge})
+                print(f"Applying a default definition: charge = {self.default_charge}")
+                self.charges.update({"sidechain_bead_charges": self.default_charge})
                 particle_charge = self.charges["sidechain_bead_charges"]
-
+                
         if particle_charge == None:
             print(
                 "ERROR: No charge definition could be found for particle_type: "
@@ -1009,36 +1022,23 @@ class CGModel(object):
 
         sigma = None
 
-        if particle_type == "backbone":
-            try:
-                sigma = self.sigmas["bb_sigma"]
-            except:
+        abbrev = {"backbone":"bb","sidechain":"sc"}
+        for ptype in ["backbone","sidechain"]:
+            sigma_type = abbrev[type]+"_sigma"
+            if particle_type == ptype:
+                try:
+                    sigma = self.sigmas[sigma_type]
+                except:
+                    print(
+                        f"No Lennard-Jones potential 'sigma' definition found for particle type: {sigma_type}"
+                        )
                 print(
-                    "No Lennard-Jones potential 'sigma' definition found for particle type: backbone"
+                    "Applying a definition based upon the default between particles of this type:"
                 )
-                print(
-                    "Applying a definition based upon the equil. bond lengths between particles of this type:"
-                )
-                print("'bb_sigma' = (2.5 * 'bb_bb_bond_length')/(2.0**(1/6))")
+                print(f"{sigma_typ]} = {self.default_sigma}")
                 print("If you observe unusual behavior, it is most likely because")
                 print("this default definition is inappropriate for your model.")
-                sigma = 2.5 * self.bond_lengths["bb_bb_bond_length"] / (2.0 ** (1 / 6))
-                self.sigmas.update({"bb_sigma": sigma})
-        if particle_type == "sidechain":
-            try:
-                sigma = self.sigmas["sc_sigma"]
-            except:
-                print(
-                    "No Lennard-Jones potential 'sigma' definition found for particle type: sidechain"
-                )
-                print(
-                    "Applying a definition based upon the equil. bond lengths between particles of this type:"
-                )
-                print("'sc_sigma' = (2.5 * 'sc_sc_bond_length')/(2.0**(1/6))")
-                print("If you observe unusual behavior, it is most likely because")
-                print("this default definition is inappropriate for your model.")
-                sigma = 2.5 * self.bond_lengths["sc_sc_bond_length"] / (2.0 ** (1 / 6))
-                self.sigmas.update({"sc_sigma": sigma})
+                self.sigmas.update({sigma_type: sigma})
 
         if sigma == None:
             print(
@@ -1073,31 +1073,23 @@ class CGModel(object):
 
         epsilon = None
 
-        if particle_type == "backbone":
-            try:
-                epsilon = self.epsilons["bb_eps"]
-            except:
+        abbrev = {"backbone":"bb","sidechain":"sc"}
+        for ptype in ["backbone","sidechain"]:
+            epsilon_type = abbrev[type]+"_epsilon"
+            if particle_type == ptype:
+                try:
+                    epsilon = self.epsilons[epsilon_type]
+                except:
+                    print(
+                        f"No Lennard-Jones potential 'epsilon' definition found for particle type: {epsilon_type}"
+                        )
                 print(
-                    "No Lennard-Jones potential 'epsilon' definition found for particle type: backbone"
+                    "Applying a definition based upon the default between particles of this type:"
                 )
-                print("Applying a default value of : 0.5 * unit.kilocalorie_per_mole")
+                print(f"{epsilon_typ]} = {self.default_epsilon}")
                 print("If you observe unusual behavior, it is most likely because")
                 print("this default definition is inappropriate for your model.")
-                epsilon = 0.5 * unit.kilocalorie_per_mole
-                self.epsilons.update({"bb_eps": epsilon})
-
-        if particle_type == "sidechain":
-            try:
-                epsilon = self.epsilons["sc_eps"]
-            except:
-                print(
-                    "No Lennard-Jones potential 'epsilon' definition found for particle type: sidechain"
-                )
-                print("Applying a default value of : 0.5 * unit.kilocalorie_per_mole")
-                print("If you observe unusual behavior, it is most likely because")
-                print("this default definition is inappropriate for your model.")
-                epsilon = 0.5 * unit.kilocalorie_per_mole
-                self.epsilons.update({"sc_eps": epsilon})
+                self.epsilons.update({epsilon_type: epsilon})
 
         if epsilon == None:
             print(
@@ -1181,36 +1173,29 @@ class CGModel(object):
         bond_length = None
 
         if particle_1_type == "backbone" and particle_2_type == "backbone":
-            try:
-                bond_length = self.bond_lengths["bb_bb_bond_length"]
-            except:
-                print(
-                    "No bond length definition provided for 'bb_bb_bond_length', setting 'bb_bb_bond_length'=7.5*unit.angstrom"
-                )
-                self.bond_lengths.update({"bb_bb_bond_length": 7.5 * unit.angstrom})
-                bond_length = self.bond_lengths["bb_bb_bond_length"]
+            string_name = reverse_string_name = "bb_bb_bond_length"
         if particle_1_type == "backbone" and particle_2_type == "sidechain":
-            try:
-                bond_length = self.bond_lengths["bb_sc_bond_length"]
-            except:
-                try:
-                    bond_length = self.bond_lengths["sc_bb_bond_length"]
-                except:
-                    print(
-                        "No bond length definition provided for 'bb_sc_bond_length', setting 'bb_sc_bond_length'=7.5*unit.angstrom"
-                    )
-                    self.bond_lengths.update({"bb_sc_bond_length": 7.5 * unit.angstrom})
-                    bond_length = self.bond_lengths["bb_sc_bond_length"]
+            string_name = "bb_sc_bond_length"
+            reverse_string_name = "sc_bb_bond_length"
+        if particle_1_type == "sidechain" and particle_2_type == "backbone":
+            string_name = "sc_bb_bond_length"
+            reverse_string_name = "bb_sc_bond_length"
         if particle_1_type == "sidechain" and particle_2_type == "sidechain":
-            try:
-                bond_length = self.bond_lengths["sc_sc_bond_length"]
-            except:
-                print(
-                    "No bond length definition provided for 'bb_sc_bond_length', setting 'bb_sc_bond_length'=7.5*unit.angstrom"
+            string_name = reverse_string_name = "sc_sc_bond_length"
+        try:
+            bond_length = self.bond_lengths[string_name]
+        except:
+                try:
+                    bond_length = self.bond_lengths[reverse_string_name]
+                except: 
+               print(
+                    f"No bond length definition provided for \'{string}\', setting \'{string}\'={self_default_length}"
                 )
-                self.bond_lengths.update({"sc_sc_bond_length": 7.5 * unit.angstrom})
-                bond_length = self.bond_lengths["sc_sc_bond_length"]
-
+                self.bond_lengths.update({string_name: self.default_length})
+                self.bond_lengths.update({reverse_string_name: self.default_length})
+                bond_length = self.bond_lengths[string_name]
+ 
+        # is this code reached?        
         if bond_length == None:
             print("ERROR: No bond length definition was found for the following particle types:")
             print(str(particle_1_type) + " " + str(particle_2_type))
@@ -1241,59 +1226,31 @@ class CGModel(object):
         particle_1_type = self.get_particle_type(particle_1_index)
         particle_2_type = self.get_particle_type(particle_2_index)
 
+        if particle_1_type == "backbone" and particle_2_type == "backbone":
+            string_name = reverse_string_name = "bb_bb_bond_length"
+        if particle_1_type == "backbone" and particle_2_type == "sidechain":
+            string_name = "bb_sc_bond_length"
+            reverse_string_name = "sc_bb_bond_length"
+        if particle_1_type == "sidechain" and particle_2_type == "backbone":
+            string_name = "sc_bb_bond_length"
+            reverse_string_name = "bb_sc_bond_length"
+        if particle_1_type == "sidechain" and particle_2_type == "sidechain":
+            string_name = reverse_string_name = "sc_sc_bond_length"
+
         bond_force_constant = None
 
-        if particle_1_type == "backbone" and particle_2_type == "backbone":
-            try:
-                bond_force_constant = self.bond_force_constants["bb_bb_bond_k"]
-            except:
-                print(
-                    "No bond force constant definition provided for 'bb_bb_bond_k', setting 'bb_bb_bond_k'=0"
-                )
-                self.bond_force_constants.update(
-                    {
-                        "bb_bb_bond_k": 0.0
-                        * unit.kilocalorie_per_mole
-                        / unit.nanometer
-                        / unit.nanometer
-                    }
-                )
-                bond_force_constant = self.bond_force_constants["bb_bb_bond_k"]
-        if particle_1_type == "backbone" and particle_2_type == "sidechain":
-            try:
-                bond_force_constant = self.bond_force_constants["bb_sc_bond_k"]
-            except:
+        try:
+            bond_force_constant = self.bond_force_constants[string_name]
+        except:
                 try:
-                    bond_force_constant = self.bond_force_constants["sc_bb_bond_k"]
-                except:
-                    print(
-                        "No bond force constant definition provided for 'bb_sc_bond_k', setting 'bb_sc_bond_k'=0"
-                    )
-                    self.bond_force_constants.update(
-                        {
-                            "bb_sc_bond_k": 0.0
-                            * unit.kilocalorie_per_mole
-                            / unit.nanometer
-                            / unit.nanometer
-                        }
-                    )
-                    bond_force_constant = self.bond_force_constants["bb_sc_bond_k"]
-        if particle_1_type == "sidechain" and particle_2_type == "sidechain":
-            try:
-                bond_force_constant = self.bond_force_constants["sc_sc_bond_k"]
-            except:
-                print(
-                    "No bond force constant definition provided for 'sc_sc_bond_k', setting 'sc_sc_bond_k'=0"
+                    bond_force_constant = self.bond_force_constants[reverse_string_name]
+                except: 
+               print(
+                    f"No bond force constant provided for \'{string}\', setting \'{string}\'={self_default_force_constant}"
                 )
-                self.bond_force_constants.update(
-                    {
-                        "sc_sc_bond_k": 0.0
-                        * unit.kilocalorie_per_mole
-                        / unit.nanometer
-                        / unit.nanometer
-                    }
-                )
-                bond_force_constant = self.bond_force_constants["sc_sc_bond_k"]
+                self.bond_force_constants.update({string_name: self.default_bond_k})
+                self.bond_force_constants.update({reverse_string_name: self.default_bond_k})
+                bond_force_constant = self.bond_force_constants[string_name]
 
         if bond_force_constant == None:
             print(
@@ -1350,9 +1307,9 @@ class CGModel(object):
             try:
                 equil_bond_angles = self.equil_bond_angles[reverse_string_name]
             except:
-                print(f"No equilibrium bond angle definition provided for \'{string_name}\', setting \'{string_name}\'=1")
-                self.equil_bond_angles.update({string_name: 0.0 * unit.degrees})
-                self.equil_bond_angles.update({reverse_string_name: 0.0 * unit.degrees})
+                print(f"No equilibrium bond angle definition provided for \'{string_name}\', setting \'{string_name}\'={self.default_angle}")
+                self.equil_bond_angles.update({string_name: self.default_angle})
+                self.equil_bond_angles.update({reverse_string_name: self.default_angle})
                 equil_bond_angle = self.equil_bond_angles[string_name]
 
         if equil_bond_angle == None:
@@ -1411,9 +1368,9 @@ class CGModel(object):
             try:
                 bond_angle_force_constant = self.bond_angle_force_constants[reverse_string_name]
             except:
-                print(f"No bond_angle_force_constant definition provided for \'{string_name}\', setting \'{string_name}\'=1")
-                self.bond_angle_force_constants.update({string_name: 0.0 * unit.kilojoule_per_mole / unit.radian / unit.radian})
-                self.bond_angle_force_constants.update({reverse_string_name: 0.0 * unit.kilojoule_per_mole / unit.radian / unit.radian})
+                print(f"No bond_angle_force_constant definition provided for \'{string_name}\', setting \'{string_name}\'={self.default_angle_k}")
+                self.bond_angle_force_constants.update({string_name: self.default_angle_k})
+                self.bond_angle_force_constants.update({reverse_string_name: self.default_angle_k})
                 bond_angle_force_constant = self.bond_angle_force_constants[string_name]
 
         if bond_angle_force_constant == None:
@@ -1466,9 +1423,9 @@ class CGModel(object):
             try:
                 torsion_periodicity = self.torsion_periodicities[reverse_string_name] 
             except:
-                print(f"No torsion periodicity definition provided for \'{string_name}\', setting \'{string_name}\'=1")
-                self.torsion_periodicities.update({string_name: 1})
-                self.torsion_periodicities.update({reverse_string_name: 1})
+                print(f"No torsion periodicity definition provided for \'{string_name}\', setting \'{string_name}\'={self.default_periodicity}")
+                self.torsion_periodicities.update({string_name: self.default_periodicity})
+                self.torsion_periodicities.update({reverse_string_name: self.default_periodicity})
                 torsion_periodicity = self.torsion_periodicities[string_name]
 
         #does it reach here?        
@@ -1530,9 +1487,9 @@ class CGModel(object):
             try:
                 torsion_force_constant = self.torsion_force_constants[reverse_string_name] 
             except:
-                print(f"No torsion force constant definition provided for \'{string_name}\', setting \'{string_name}\'=1")
-                self.torsion_force_constants.update({string_name: 0 * unit.kilocalorie_per_mole})
-                self.torsion_force_constants.update({reverse_string_name: 0 * unit.kilocalorie_per_mole})
+                print(f"No torsion force constant definition provided for \'{string_name}\', setting \'{string_name}\'={self.default_torsion_k}")
+                self.torsion_force_constants.update({string_name:  self.default_torsion_k})
+                self.torsion_force_constants.update({reverse_string_name:  self.default_torsion_k})
                 torsion_force_constant = self.torsion_force_constants[string_name]
 
         # can it reach here?        
@@ -1594,9 +1551,9 @@ class CGModel(object):
             try:
                 equil_torsion_angle = self.equil_torsion_angles[reverse_string_name] 
             except:
-                print(f"No equilibrium torsion angle definition provided for \'{string_name}\', setting \'{string_name}\'=1")
-                self.equil_torsion_angles.update({string_name: 0 * unit.degrees})
-                self.equil_torsion_angles.update({reverse_string_name: 0 * unit.degrees})
+                print(f"No equilibrium torsion angle definition provided for \'{string_name}\', setting \'{string_name}\'={self.default_angle}")
+                self.equil_torsion_angles.update({string_name: self.default_angle})
+                self.equil_torsion_angles.update({reverse_string_name: self.default_angle})
                 equil_torsion_angle = self.equil_torsion_angles[string_name]
 
         # can it reach here?
