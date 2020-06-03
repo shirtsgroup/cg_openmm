@@ -1033,14 +1033,14 @@ class CGModel(object):
                     print(
                         f"No Lennard-Jones potential 'sigma' definition found for particle type: {sigma_type}"
                         )
-                print(
-                    "Applying a definition based upon the default between particles of this type:"
-                )
-                print(f"{sigma_type} = {self.default_length}")
-                print("If you observe unusual behavior, it is most likely because")
-                print("this default definition is inappropriate for your model.")
-                self.sigmas.update({sigma_type: self.default_length})
-                sigma = self.default_length
+                    print(
+                        "Applying a definition based upon the default between particles of this type:"
+                        )
+                    print(f"{sigma_type} = {self.default_length}")
+                    print("If you observe unusual behavior, it is most likely because")
+                    print("this default definition is inappropriate for your model.")
+                    self.sigmas.update({sigma_type: self.default_length})
+                    sigma = self.default_length
 
         if sigma == None:
             print(
@@ -1077,7 +1077,7 @@ class CGModel(object):
 
         abbrev = {"backbone":"bb","sidechain":"sc"}
         for ptype in ["backbone","sidechain"]:
-            epsilon_type = abbrev[ptype]+"_epsilon"
+            epsilon_type = abbrev[ptype]+"_eps"
             if particle_type == ptype:
                 try:
                     epsilon = self.epsilons[epsilon_type]
@@ -1085,14 +1085,14 @@ class CGModel(object):
                     print(
                         f"No Lennard-Jones potential 'epsilon' definition found for particle type: {epsilon_type}"
                         )
-                print(
-                    "Applying a definition based upon the default between particles of this type:"
-                )
-                print(f"{epsilon_type} = {self.default_energyscale}")
-                print("If you observe unusual behavior, it is most likely because")
-                print("this default definition is inappropriate for your model.")
-                self.epsilons.update({epsilon_type: self.default_energyscale})
-                epsilon = self.default_energyscale
+                    print(
+                        "Applying a definition based upon the default between particles of this type:"
+                        )
+                    print(f"{epsilon_type} = {self.default_energyscale}")
+                    print("If you observe unusual behavior, it is most likely because")
+                    print("this default definition is inappropriate for your model.")
+                    self.epsilons.update({epsilon_type: self.default_energyscale})
+                    epsilon = self.default_energyscale
 
         if epsilon == None:
             print(
