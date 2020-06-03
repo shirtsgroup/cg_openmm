@@ -302,16 +302,19 @@ class CGModel(object):
           """
 
         # define some default units
-        self.default_mass = 72 * unit.amu # from martini 3.0 C1
-        self.default_length = 0.47 * unit.nanometers # from martini 3.0 C1 particle
+        self.default_mass = 72 * unit.amu  # from martini 3.0 C1
+        self.default_length = 0.47 * unit.nanometers  # from martini 3.0 C1 particle
         self.default_angle = 0.0 * unit.degrees
-        self.default_energyscale = 3.5 * unit.kilojoule_per_mole # from martini 3.0 C1 particle 
-        self.default_bond_k = 1250.0 * unit.kilojoule_per_mole / unit.nanometer / unit.nanometer # from martini 3.0
+        self.default_energyscale = 3.5 * unit.kilojoule_per_mole  # from martini 3.0 C1 particle
+        self.default_bond_k = (
+            1250.0 * unit.kilojoule_per_mole / unit.nanometer / unit.nanometer
+        )  # from martini 3.0
         self.default_torsion_k = 0.0 * unit.kilojoule_per_mole
-        self.default_angle_k = 10.0 * unit.kilojoule_per_mole / unit.radian / unit.radian  # from martini 3.0
+        self.default_angle_k = (
+            10.0 * unit.kilojoule_per_mole / unit.radian / unit.radian
+        )  # from martini 3.0
         self.default_charge = 0.0 * unit.elementary_charge
         self.default_periodicity = 1
-
 
         if bond_force_constants == None:
             bond_force_constants = {}
@@ -989,7 +992,7 @@ class CGModel(object):
                 print(f"Applying a default definition: charge = {self.default_charge}")
                 self.charges.update({"sidechain_bead_charges": self.default_charge})
                 particle_charge = self.charges["sidechain_bead_charges"]
-                
+
         if particle_charge == None:
             print(
                 "ERROR: No charge definition could be found for particle_type: "
@@ -1023,19 +1026,19 @@ class CGModel(object):
 
         sigma = None
 
-        abbrev = {"backbone":"bb","sidechain":"sc"}
-        for ptype in ["backbone","sidechain"]:
-            sigma_type = abbrev[ptype]+"_sigma"
+        abbrev = {"backbone": "bb", "sidechain": "sc"}
+        for ptype in ["backbone", "sidechain"]:
+            sigma_type = abbrev[ptype] + "_sigma"
             if particle_type == ptype:
                 try:
                     sigma = self.sigmas[sigma_type]
                 except:
                     print(
                         f"No Lennard-Jones potential 'sigma' definition found for particle type: {sigma_type}"
-                        )
+                    )
                     print(
                         "Applying a definition based upon the default between particles of this type:"
-                        )
+                    )
                     print(f"{sigma_type} = {self.default_length}")
                     print("If you observe unusual behavior, it is most likely because")
                     print("this default definition is inappropriate for your model.")
@@ -1075,19 +1078,19 @@ class CGModel(object):
 
         epsilon = None
 
-        abbrev = {"backbone":"bb","sidechain":"sc"}
-        for ptype in ["backbone","sidechain"]:
-            epsilon_type = abbrev[ptype]+"_eps"
+        abbrev = {"backbone": "bb", "sidechain": "sc"}
+        for ptype in ["backbone", "sidechain"]:
+            epsilon_type = abbrev[ptype] + "_eps"
             if particle_type == ptype:
                 try:
                     epsilon = self.epsilons[epsilon_type]
                 except:
                     print(
                         f"No Lennard-Jones potential 'epsilon' definition found for particle type: {epsilon_type}"
-                        )
+                    )
                     print(
                         "Applying a definition based upon the default between particles of this type:"
-                        )
+                    )
                     print(f"{epsilon_type} = {self.default_energyscale}")
                     print("If you observe unusual behavior, it is most likely because")
                     print("this default definition is inappropriate for your model.")
@@ -1188,17 +1191,17 @@ class CGModel(object):
         try:
             bond_length = self.bond_lengths[string_name]
         except:
-                try:
-                    bond_length = self.bond_lengths[reverse_string_name]
-                except: 
-                    print(
-                        f"No bond length definition provided for \'{string_name}\', setting \'{string_name}\'={self.default_length}"
-                        )
-                    self.bond_lengths.update({string_name: self.default_length})
-                    self.bond_lengths.update({reverse_string_name: self.default_length})
-                    bond_length = self.bond_lengths[string_name]
- 
-        # is this code reached?        
+            try:
+                bond_length = self.bond_lengths[reverse_string_name]
+            except:
+                print(
+                    f"No bond length definition provided for '{string_name}', setting '{string_name}'={self.default_length}"
+                )
+                self.bond_lengths.update({string_name: self.default_length})
+                self.bond_lengths.update({reverse_string_name: self.default_length})
+                bond_length = self.bond_lengths[string_name]
+
+        # is this code reached?
         if bond_length == None:
             print("ERROR: No bond length definition was found for the following particle types:")
             print(str(particle_1_type) + " " + str(particle_2_type))
@@ -1245,16 +1248,16 @@ class CGModel(object):
         try:
             bond_force_constant = self.bond_force_constants[string_name]
         except:
-                try:
-                    bond_force_constant = self.bond_force_constants[reverse_string_name]
-                except: 
-                    print(
-                        f"No bond force constant provided for \'{string_name}\', setting \'{string_name}\'={self.default_bond_k}"
-                        )
-                    self.bond_force_constants.update({string_name: self.default_bond_k})
-                    self.bond_force_constants.update({reverse_string_name: self.default_bond_k})
-                    bond_force_constant = self.bond_force_constants[string_name]
-                    
+            try:
+                bond_force_constant = self.bond_force_constants[reverse_string_name]
+            except:
+                print(
+                    f"No bond force constant provided for '{string_name}', setting '{string_name}'={self.default_bond_k}"
+                )
+                self.bond_force_constants.update({string_name: self.default_bond_k})
+                self.bond_force_constants.update({reverse_string_name: self.default_bond_k})
+                bond_force_constant = self.bond_force_constants[string_name]
+
         if bond_force_constant == None:
             print(
                 "ERROR: No bond force constant definition was found for the following particle types:"
@@ -1297,20 +1300,22 @@ class CGModel(object):
         string_name = ""
         reverse_string_name = ""
         for i in range(3):
-            string_name += particle_types[i][0] +  particle_types[i][4] + "_"
+            string_name += particle_types[i][0] + particle_types[i][4] + "_"
         for i in range(3):
-            reverse_string_name += particle_types[i][0] +  particle_types[i][4] + "_"
+            reverse_string_name += particle_types[i][0] + particle_types[i][4] + "_"
 
         string_name += "angle_0"
         reverse_string_name += "angle_0"
 
-        try: 
-             equil_bond_angle = self.equil_bond_angles[string_name]
+        try:
+            equil_bond_angle = self.equil_bond_angles[string_name]
         except:
             try:
                 equil_bond_angles = self.equil_bond_angles[reverse_string_name]
             except:
-                print(f"No equilibrium bond angle definition provided for \'{string_name}\', setting \'{string_name}\'={self.default_angle}")
+                print(
+                    f"No equilibrium bond angle definition provided for '{string_name}', setting '{string_name}'={self.default_angle}"
+                )
                 self.equil_bond_angles.update({string_name: self.default_angle})
                 self.equil_bond_angles.update({reverse_string_name: self.default_angle})
                 equil_bond_angle = self.equil_bond_angles[string_name]
@@ -1319,13 +1324,18 @@ class CGModel(object):
             print(
                 "ERROR: No equilibrium bond angle definition was found for the following particle types:"
             )
-            print(str(particle_types[0]) + " " + str(particle_types[1]) + " " + str(particle_types[3]))
+            print(
+                str(particle_types[0])
+                + " "
+                + str(particle_types[1])
+                + " "
+                + str(particle_types[3])
+            )
             print("This means that at least one of the particle types has not been defined.")
             print("Check the names and definitions for the particle types in your model.")
             exit()
 
         return equil_bond_angle
-
 
     def get_bond_angle_force_constant(self, angle):
         """
@@ -1358,20 +1368,22 @@ class CGModel(object):
         string_name = ""
         reverse_string_name = ""
         for i in range(3):
-            string_name += particle_types[i][0] +  particle_types[i][4] + "_"
+            string_name += particle_types[i][0] + particle_types[i][4] + "_"
         for i in range(3):
-            reverse_string_name += particle_types[i][0] +  particle_types[i][4] + "_"
+            reverse_string_name += particle_types[i][0] + particle_types[i][4] + "_"
 
         string_name += "angle_k"
         reverse_string_name += "angle_k"
 
-        try: 
-             bond_angle_force_constant = self.bond_angle_force_constants[string_name]
+        try:
+            bond_angle_force_constant = self.bond_angle_force_constants[string_name]
         except:
             try:
                 bond_angle_force_constant = self.bond_angle_force_constants[reverse_string_name]
             except:
-                print(f"No bond angle force constant definition provided for \'{string_name}\', setting \'{string_name}\'={self.default_angle_k}")
+                print(
+                    f"No bond angle force constant definition provided for '{string_name}', setting '{string_name}'={self.default_angle_k}"
+                )
                 self.bond_angle_force_constants.update({string_name: self.default_angle_k})
                 self.bond_angle_force_constants.update({reverse_string_name: self.default_angle_k})
                 bond_angle_force_constant = self.bond_angle_force_constants[string_name]
@@ -1380,7 +1392,13 @@ class CGModel(object):
             print(
                 "ERROR: No bond angle force constant definition was found for the following particle types:"
             )
-            print(str(particle_types[0]) + " " + str(particle_types[1]) + " " + str(particle_types[3]))
+            print(
+                str(particle_types[0])
+                + " "
+                + str(particle_types[1])
+                + " "
+                + str(particle_types[3])
+            )
             print("This means that at least one of the particle types has not been defined.")
             print("Check the names and definitions for the particle types in your model.")
             exit()
@@ -1413,25 +1431,27 @@ class CGModel(object):
         string_name = ""
         reverse_string_name = ""
         for i in range(4):
-            string_name += particle_types[i][0] +  particle_types[i][4] + "_"
+            string_name += particle_types[i][0] + particle_types[i][4] + "_"
         for i in range(4):
-            reverse_string_name += particle_types[i][0] +  particle_types[i][4] + "_"
+            reverse_string_name += particle_types[i][0] + particle_types[i][4] + "_"
 
         string_name += "period"
         reverse_string_name += "period"
 
-        try: 
-            torsion_periodicity = self.torsion_periodicities[string_name] 
+        try:
+            torsion_periodicity = self.torsion_periodicities[string_name]
         except:
             try:
-                torsion_periodicity = self.torsion_periodicities[reverse_string_name] 
+                torsion_periodicity = self.torsion_periodicities[reverse_string_name]
             except:
-                print(f"No torsion periodicity definition provided for \'{string_name}\', setting \'{string_name}\'={self.default_periodicity}")
+                print(
+                    f"No torsion periodicity definition provided for '{string_name}', setting '{string_name}'={self.default_periodicity}"
+                )
                 self.torsion_periodicities.update({string_name: self.default_periodicity})
                 self.torsion_periodicities.update({reverse_string_name: self.default_periodicity})
                 torsion_periodicity = self.torsion_periodicities[string_name]
 
-        #does it reach here?        
+        # does it reach here?
         if torsion_periodicity == None:
             print(
                 "ERROR: No torsion periodicity definition was found for the following particle types:"
@@ -1477,25 +1497,27 @@ class CGModel(object):
         string_name = ""
         reverse_string_name = ""
         for i in range(4):
-            string_name += particle_types[i][0] +  particle_types[i][4] + "_"
+            string_name += particle_types[i][0] + particle_types[i][4] + "_"
         for i in range(4):
-            reverse_string_name += particle_types[i][0] +  particle_types[i][4] + "_"
+            reverse_string_name += particle_types[i][0] + particle_types[i][4] + "_"
 
         string_name += "torsion_k"
         reverse_string_name += "torsion_k"
 
-        try: 
-            torsion_force_constant = self.torsion_force_constants[string_name] 
+        try:
+            torsion_force_constant = self.torsion_force_constants[string_name]
         except:
             try:
-                torsion_force_constant = self.torsion_force_constants[reverse_string_name] 
+                torsion_force_constant = self.torsion_force_constants[reverse_string_name]
             except:
-                print(f"No torsion force constant definition provided for \'{string_name}\', setting \'{string_name}\'={self.default_torsion_k}")
-                self.torsion_force_constants.update({string_name:  self.default_torsion_k})
-                self.torsion_force_constants.update({reverse_string_name:  self.default_torsion_k})
+                print(
+                    f"No torsion force constant definition provided for '{string_name}', setting '{string_name}'={self.default_torsion_k}"
+                )
+                self.torsion_force_constants.update({string_name: self.default_torsion_k})
+                self.torsion_force_constants.update({reverse_string_name: self.default_torsion_k})
                 torsion_force_constant = self.torsion_force_constants[string_name]
 
-        # can it reach here?        
+        # can it reach here?
         if torsion_force_constant == None:
             print(
                 "ERROR: No torsion force constant definition was found for the following particle types:"
@@ -1541,20 +1563,22 @@ class CGModel(object):
         string_name = ""
         reverse_string_name = ""
         for i in range(4):
-            string_name += particle_types[i][0] +  particle_types[i][4] + "_"
+            string_name += particle_types[i][0] + particle_types[i][4] + "_"
         for i in range(4):
-            reverse_string_name += particle_types[i][0] +  particle_types[i][4] + "_"
+            reverse_string_name += particle_types[i][0] + particle_types[i][4] + "_"
 
         string_name += "torsion_0"
         reverse_string_name += "torsion_0"
 
-        try: 
-            equil_torsion_angle = self.equil_torsion_angles[string_name] 
+        try:
+            equil_torsion_angle = self.equil_torsion_angles[string_name]
         except:
             try:
-                equil_torsion_angle = self.equil_torsion_angles[reverse_string_name] 
+                equil_torsion_angle = self.equil_torsion_angles[reverse_string_name]
             except:
-                print(f"No equilibrium torsion angle definition provided for \'{string_name}\', setting \'{string_name}\'={self.default_angle}")
+                print(
+                    f"No equilibrium torsion angle definition provided for '{string_name}', setting '{string_name}'={self.default_angle}"
+                )
                 self.equil_torsion_angles.update({string_name: self.default_angle})
                 self.equil_torsion_angles.update({reverse_string_name: self.default_angle})
                 equil_torsion_angle = self.equil_torsion_angles[string_name]
