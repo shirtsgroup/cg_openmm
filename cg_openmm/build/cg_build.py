@@ -178,11 +178,9 @@ def write_xml_file(cgmodel, xml_file_name):
             xml_type_1 = particle_1_name
             # unique_particle_names.index(particle_2_name)
             xml_type_2 = particle_2_name
-            bond_length = cgmodel.get_bond_length(
-                bond[0], bond[1]).in_units_of(
+            bond_length = cgmodel.get_bond_length(bond).in_units_of(
                 unit.nanometer)._value
-            bond_force_constant = cgmodel.get_bond_force_constant(
-                bond[0], bond[1])
+            bond_force_constant = cgmodel.get_bond_force_constant(bond)
             xml_object.write(
                 '  <Bond type1="' +
                 str(xml_type_1) +
@@ -201,10 +199,8 @@ def write_xml_file(cgmodel, xml_file_name):
             if any(angle[i] < len(unique_particle_names) for i in range(3)):
                 unique_angle_list.append(angle)
         for angle in unique_angle_list:
-            bond_angle_force_constant = cgmodel.get_bond_angle_force_constant(
-                angle[0], angle[1], angle[2])
-            equil_bond_angle = cgmodel.get_equil_bond_angle(
-                angle[0], angle[1], angle[2])
+            bond_angle_force_constant = cgmodel.get_bond_angle_force_constant(angle)
+            equil_bond_angle = cgmodel.get_equil_bond_angle(angle)
             particle_1_name = cgmodel.get_particle_name(angle[0])
             particle_2_name = cgmodel.get_particle_name(angle[1])
             particle_3_name = cgmodel.get_particle_name(angle[2])
