@@ -325,6 +325,8 @@ def assign_position_lattice_style(
             ),
             positions.unit,
         )
+    import pdb    
+    pdb.set_trace()
     saved_positions = positions.__deepcopy__(memo={})
 
     bond_list = cgmodel.get_bond_list()
@@ -358,10 +360,9 @@ def assign_position_lattice_style(
         bonded_distance_list = distances(bond_list, positions)
         if not "float" in str(type(positions[0]._value)):
             collision = False
-            for position in positions:
-                for position_2 in positions[1:]:
-                    for direction in range(3):
-                        if position[direction] == position_2[direction]:
+            for i, p1 in enumerate(positions):
+                for p2 in positions[i+1:]:
+                        if p1[0] == p2[0] and p1[1] == p2[1] and p1[2] == p2[2]:
                             collision = True
             if collision:
                 success = False
@@ -745,13 +746,13 @@ def get_random_positions(
     distance_cutoff = 0.99 * cgmodel.bond_lengths["bb_bb_bond_length"]
     nonbonded_list = cgmodel.nonbonded_interaction_list
     lattice_style = True
-    stored_positions = positions[0].__deepcopy__(memo={})
+    stored_positions = positions[0:1].__deepcopy__(memo={}) # copy as an 2d array of length 1
     while total_attempts < max_attempts and len(stored_positions) != len(positions):
         # print("Beginning build attempt #"+str(total_attempts+1)+".",flush=True)
         if str(positions.shape) == "(3,)":
             stored_positions = positions
         else:
-            stored_positions = positions[0].__deepcopy__(memo={})
+            stored_positions = positions[0:1].__deepcopy__(memo={})
 
         bead_index = 0
         last_monomer_bead_list = []
@@ -803,7 +804,8 @@ def get_random_positions(
                     completed_list.append(bead_index)
                     bead_index = bead_index + 1
                 else:
-
+                    import pdb
+                    pdb.set_trace()
                     for bond_index in range(len(monomer_bond_list)):
                         print("Assigning a particle using bond#" + str(bond_index))
                         bond = monomer_bond_list[bond_index]
@@ -814,6 +816,7 @@ def get_random_positions(
                             trial_positions, placement = assign_position_lattice_style(
                                 cgmodel, stored_positions, distance_cutoff, bond[0], bond[1]
                             )
+                            pdb.set_trace()
                             # print("After calling 'assign_positions_lattice_style' the positions are:")
                             # print(trial_positions)
                         else:
@@ -970,6 +973,8 @@ def distance(positions_1, positions_2):
 
     direction_comp = np.zeros(3) * positions_1.unit
 
+    import pdb
+    pdb.set_trace()
     for direction in range(len(direction_comp)):
         direction_comp[direction] = positions_1[direction].__sub__(positions_2[direction])
 
