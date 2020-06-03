@@ -26,6 +26,7 @@ total_simulation_time = 2.0 * unit.nanosecond  # Units = picoseconds
 simulation_time_step = 5.0 * unit.femtosecond
 total_steps = round(total_simulation_time.__div__(simulation_time_step))
 temperature = 300.0 * unit.kelvin
+friction = 1.0 / unit.picosecond
 
 # Coarse grained model settings
 polymer_length = 12
@@ -118,5 +119,6 @@ run_simulation(
     total_simulation_time,
     simulation_time_step,
     temperature,
+	friction,
     print_frequency,
 )
