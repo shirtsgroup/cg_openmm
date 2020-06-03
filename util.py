@@ -325,8 +325,6 @@ def assign_position_lattice_style(
             ),
             positions.unit,
         )
-    import pdb    
-    pdb.set_trace()
     saved_positions = positions.__deepcopy__(memo={})
 
     bond_list = cgmodel.get_bond_list()
@@ -335,7 +333,7 @@ def assign_position_lattice_style(
     success = False
     move_direction_list = []
     while len(move_direction_list) < 6 and not success:
-        bond_length = cgmodel.get_bond_length(parent_bead_index, bead_index)
+        bond_length = cgmodel.get_bond_length([parent_bead_index, bead_index])
         if "float" in str(type(positions[0]._value)):
             new_coordinates, move_direction_list = attempt_lattice_move(
                 positions, bond_length, move_direction_list
@@ -804,8 +802,6 @@ def get_random_positions(
                     completed_list.append(bead_index)
                     bead_index = bead_index + 1
                 else:
-                    import pdb
-                    pdb.set_trace()
                     for bond_index in range(len(monomer_bond_list)):
                         print("Assigning a particle using bond#" + str(bond_index))
                         bond = monomer_bond_list[bond_index]
@@ -816,7 +812,6 @@ def get_random_positions(
                             trial_positions, placement = assign_position_lattice_style(
                                 cgmodel, stored_positions, distance_cutoff, bond[0], bond[1]
                             )
-                            pdb.set_trace()
                             # print("After calling 'assign_positions_lattice_style' the positions are:")
                             # print(trial_positions)
                         else:
@@ -973,8 +968,6 @@ def distance(positions_1, positions_2):
 
     direction_comp = np.zeros(3) * positions_1.unit
 
-    import pdb
-    pdb.set_trace()
     for direction in range(len(direction_comp)):
         direction_comp[direction] = positions_1[direction].__sub__(positions_2[direction])
 
