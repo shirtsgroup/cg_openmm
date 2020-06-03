@@ -59,7 +59,7 @@ r_min = 1.5 * bond_length  # Lennard-Jones potential r_min
 # Factor of /(2.0**(1/6)) is applied to convert r_min to sigma
 sigma = r_min / (2.0 ** (1.0 / 6.0))
 sigmas = {"bb_sigma": sigma, "sc_sigma": sigma}
-epsilon = 0.2 * unit.kilocalorie_per_mole
+epsilon = 0.5 * unit.kilojoule_per_mole
 epsilons = {"bb_eps": epsilon, "sc_eps": epsilon}
 
 # Bond angle definitions
@@ -68,9 +68,8 @@ bond_angle_force_constants = {
     "bb_bb_bb_angle_k": bond_angle_force_constant,
     "bb_bb_sc_angle_k": bond_angle_force_constant,
 }
-# OpenMM requires angle definitions in units of radians
-bb_bb_bb_equil_bond_angle = 120.0 * (np.math.pi / 180.0)
-bb_bb_sc_equil_bond_angle = 120.0 * (np.math.pi / 180.0)
+bb_bb_bb_equil_bond_angle = 120.0 * unit.degrees
+bb_bb_sc_equil_bond_angle = 120.0 * unit.degrees
 equil_bond_angles = {
     "bb_bb_bb_angle_0": bb_bb_bb_equil_bond_angle,
     "bb_bb_sc_angle_0": bb_bb_sc_equil_bond_angle,
@@ -79,9 +78,8 @@ equil_bond_angles = {
 # Torsion angle definitions
 torsion_force_constant = 20.0 * unit.kilocalorie_per_mole
 torsion_force_constants = {"bb_bb_bb_bb_torsion_k": torsion_force_constant}
-# OpenMM requires angle definitions in units of radians
-bb_bb_bb_bb_equil_torsion_angle = 0.0 * (np.math.pi / 180.0)
-bb_bb_bb_sc_equil_torsion_angle = 0.0 * (np.math.pi / 180.0)
+bb_bb_bb_bb_equil_torsion_angle = 78.0 * unit.degrees
+bb_bb_bb_sc_equil_torsion_angle = 78.0 * unit.degrees
 equil_torsion_angles = {"bb_bb_bb_bb_torsion_0": bb_bb_bb_bb_equil_torsion_angle}
 torsion_periodicities = {"bb_bb_bb_bb_period": 3}
 
