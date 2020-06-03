@@ -119,6 +119,6 @@ run_simulation(
     total_simulation_time,
     simulation_time_step,
     temperature,
-	friction,
+    friction,
     print_frequency,
 )
