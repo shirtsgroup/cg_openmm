@@ -4,7 +4,7 @@ from foldamers.cg_model.cgmodel import CGModel
 from cg_openmm.utilities.iotools import write_pdbfile_without_topology
 
 # Coarse grained model settings
-polymer_length = 2
+polymer_length = 12
 backbone_lengths = [1]
 sidechain_lengths = [1]
 sidechain_positions = [0]
@@ -16,7 +16,7 @@ constrain_bonds = True
 random_positions = True
 
 # Bond definitions
-bond_length = 7.5 * unit.angstrom
+bond_length = 1.5 * unit.angstrom
 bond_lengths = {
     "bb_bb_bond_length": bond_length,
     "bb_sc_bond_length": bond_length,
