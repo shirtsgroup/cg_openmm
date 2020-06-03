@@ -641,28 +641,21 @@ def add_force(cgmodel, force_type=None, rosetta_scoring=False):
         for bond_indices in cgmodel.get_bond_list():
             bond_list.append([bond_indices[0], bond_indices[1]])
             if cgmodel.include_bond_forces:
-                bond_force_constant = cgmodel.get_bond_force_constant(
-                    bond_indices[0], bond_indices[1])
-                bond_length = cgmodel.get_bond_length(
-                    bond_indices[0], bond_indices[1]).in_units_of(
-                    unit.nanometer)._value
+                bond_force_constant = cgmodel.get_bond_force_constant(bond_indices)
+                bond_length = cgmodel.get_bond_length(bond_indices)
                 bond_force.addBond(
                     bond_indices[0],
                     bond_indices[1],
-                    bond_length,
-                    bond_force_constant)
+                    bond_length.value_in_unit(unit.nanometer),
+                    bond_force_constant.value_in_unit(unit.kilojoule_per_mole/unit.nanometer**2))
             if cgmodel.constrain_bonds:
-                bond_length = cgmodel.get_bond_length(
-                    bond_indices[0], bond_indices[1]).in_units_of(
-                    unit.nanometer)._value
+                bond_length = cgmodel.get_bond_length(bond_indices)
                 if not cgmodel.include_bond_forces:
-                    bond_force_constant = 0.0 * \
-                        cgmodel.get_bond_force_constant(bond_indices[0], bond_indices[1])
                     bond_force.addBond(
                         bond_indices[0],
                         bond_indices[1],
-                        bond_length,
-                        bond_force_constant)
+                        bond_length.value_in_unit(unit.nanometer),
+                        0.0)
                 cgmodel.system.addConstraint(
                     bond_indices[0], bond_indices[1], bond_length)
 
@@ -722,16 +715,14 @@ def add_force(cgmodel, force_type=None, rosetta_scoring=False):
     if force_type == "Angle":
         angle_force = mm.HarmonicAngleForce()
         for angle in cgmodel.bond_angle_list:
-            bond_angle_force_constant = cgmodel.get_bond_angle_force_constant(
-                angle[0], angle[1], angle[2])
-            equil_bond_angle = cgmodel.get_equil_bond_angle(
-                angle[0], angle[1], angle[2])
+            bond_angle_force_constant = cgmodel.get_bond_angle_force_constant(angle)
+            equil_bond_angle = cgmodel.get_equil_bond_angle(angle)
             angle_force.addAngle(
                 angle[0],
                 angle[1],
                 angle[2],
-                equil_bond_angle,
-                bond_angle_force_constant)
+                equil_bond_angle.value_in_unit(unit.radian),
+                bond_angle_force_constant.value_in_unit(unit.kilojoule_per_mole/unit.radian**2))
         cgmodel.system.addForce(angle_force)
         force = angle_force
 
@@ -748,8 +739,8 @@ def add_force(cgmodel, force_type=None, rosetta_scoring=False):
                 torsion[2],
                 torsion[3],
                 periodicity,
-                equil_torsion_angle,
-                torsion_force_constant)
+                equil_torsion_angle.value_in_unit(unit.radian),
+                torsion_force_constant.value_in_unit(unit.kilojoule_per_mole))
             # print(torsion_force.getNumTorsions())
         cgmodel.system.addForce(torsion_force)
         force = torsion_force
