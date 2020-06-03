@@ -306,9 +306,9 @@ class CGModel(object):
         self.default_length = 0.47 * unit.nanometers # from martini 3.0 C1 particle
         self.default_angle = 0.0 * unit.degrees
         self.default_energyscale = 3.5 * unit.kilojoule_per_mole # from martini 3.0 C1 particle 
-        self.default_torsion_k = 0.0 * unit.kilojoule_per_mole / unit.radian / unit.radian
-        self.default_angle_k = 10.0 * unit.kilojoule_per_mole / unit.radian / unit.radian  # from martini 3.0
         self.default_bond_k = 1250.0 * unit.kilojoule_per_mole / unit.nanometer / unit.nanometer # from martini 3.0
+        self.default_torsion_k = 0.0 * unit.kilojoule_per_mole
+        self.default_angle_k = 10.0 * unit.kilojoule_per_mole / unit.radian / unit.radian  # from martini 3.0
         self.default_charge = 0.0 * unit.elementary_charge
         self.default_periodicity = 1
 
