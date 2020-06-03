@@ -32,16 +32,16 @@ def basic_cgmodel(
         :param sidechain_positions: Designates the indices of backbone beads upon which we will place sidechains, default = [0] (add a sidechain to the first backbone bead in each monomer)
         :type sidechain_positions: List( int )
 
-        :param mass: Mass for all coarse grained beads, default = 100.0 * unit.amu
+        :param mass: Mass for all coarse grained beads, default = 72.0 * unit.amu
         :type mass: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
 
-        :param bond_length: Defines the length for all bond types, default = 7.5 * unit.angstrom
+        :param bond_length: Defines the length for all bond types, default = 0.47 * unit.angstrom
         :type bond_length: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
              
-        :param sigma: Lennard-Jones equilibrium interaction distance (by default, calculated for particles that are separated by 3 or more bonds), default = 18.5 * bond_length (for all interaction types)
+        :param sigma: Lennard-Jones equilibrium interaction distance (by default, calculated for particles that are separated by 3 or more bonds), default = 0.47 * bond_length (for all interaction types)
         :type sigma: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
 
-        :param epsilon: Lennard-Jones equilibrium interaction energy (by default, calculated for particles that are separated by 3 or more bonds), default = 0.5 * unit.kilocalorie_per_mole
+        :param epsilon: Lennard-Jones equilibrium interaction energy (by default, calculated for particles that are separated by 3 or more bonds), default = 3.5 * unit.kilojoule_per_mole
         :type espilon: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
 
         :param positions: Positions for coarse grained particles in the model, default = None
@@ -59,10 +59,10 @@ def basic_cgmodel(
         >>> backbone_length = 1
         >>> sidechain_length = 1
         >>> sidechain_positions = [0]
-        >>> mass = 100.0 * unit.amu
-        >>> bond_length=0.75 * unit.nanometer
-        >>> sigma=1.85*unit.nanometer
-        >>> epsilon=0.5 * unit.kilocalorie_per_mole
+        >>> mass = self.default_mass
+        >>> bond_length=self.default_length
+        >>> sigma=self.default_length
+        >>> epsilon=self.default_epsilon
         >>> cgmodel = basic_cgmodel(polymer_length=polymer_length,backbone_length=backbone_length,sidechain_length=sidechain_length,sidechain_positions=sidechain_positions,mass=mass,bond_length=bond_length,sigma=sigma,epsilon=epsilon) 
 
         """
@@ -305,6 +305,7 @@ class CGModel(object):
         self.default_mass = 72 * unit.amu # from martini 3.0 C1
         self.default_length = 0.47 * unit.nanometers # from martini 3.0 C1 particle
         self.default_angle = 0.0 * unit.degrees
+        self.default_energyscale = 3.5 * unit.kilojoule_per_mole # from martini 3.0 C1 particle 
         self.default_torsion_k = 0.0 * unit.kilojoule_per_mole / unit.radian / unit.radian
         self.default_angle_k = 10.0 * unit.kilojoule_per_mole / unit.radian / unit.radian  # from martini 3.0
         self.default_bond_k = 1250.0 * unit.kilojoule_per_mole / unit.nanometer / unit.nanometer # from martini 3.0
@@ -1024,7 +1025,7 @@ class CGModel(object):
 
         abbrev = {"backbone":"bb","sidechain":"sc"}
         for ptype in ["backbone","sidechain"]:
-            sigma_type = abbrev[type]+"_sigma"
+            sigma_type = abbrev[ptype]+"_sigma"
             if particle_type == ptype:
                 try:
                     sigma = self.sigmas[sigma_type]
@@ -1035,10 +1036,11 @@ class CGModel(object):
                 print(
                     "Applying a definition based upon the default between particles of this type:"
                 )
-                print(f"{sigma_typ]} = {self.default_sigma}")
+                print(f"{sigma_type} = {self.default_length}")
                 print("If you observe unusual behavior, it is most likely because")
                 print("this default definition is inappropriate for your model.")
-                self.sigmas.update({sigma_type: sigma})
+                self.sigmas.update({sigma_type: self.default_length})
+                sigma = self.default_length
 
         if sigma == None:
             print(
@@ -1075,7 +1077,7 @@ class CGModel(object):
 
         abbrev = {"backbone":"bb","sidechain":"sc"}
         for ptype in ["backbone","sidechain"]:
-            epsilon_type = abbrev[type]+"_epsilon"
+            epsilon_type = abbrev[ptype]+"_epsilon"
             if particle_type == ptype:
                 try:
                     epsilon = self.epsilons[epsilon_type]
@@ -1086,10 +1088,11 @@ class CGModel(object):
                 print(
                     "Applying a definition based upon the default between particles of this type:"
                 )
-                print(f"{epsilon_typ]} = {self.default_epsilon}")
+                print(f"{epsilon_type} = {self.default_energyscale}")
                 print("If you observe unusual behavior, it is most likely because")
                 print("this default definition is inappropriate for your model.")
-                self.epsilons.update({epsilon_type: epsilon})
+                self.epsilons.update({epsilon_type: self.default_energyscale})
+                epsilon = self.default_energyscale
 
         if epsilon == None:
             print(
@@ -1149,7 +1152,7 @@ class CGModel(object):
 
         return bond_length
 
-    def get_bond_length(self, particle_1_index, particle_2_index):
+    def get_bond_length(self, bond):
         """
           Determines the correct bond length for two particles, given their indices.
 
@@ -1167,8 +1170,8 @@ class CGModel(object):
 
           """
 
-        particle_1_type = self.get_particle_type(particle_1_index)
-        particle_2_type = self.get_particle_type(particle_2_index)
+        particle_1_type = self.get_particle_type(bond[0])
+        particle_2_type = self.get_particle_type(bond[1])
 
         bond_length = None
 
@@ -1188,12 +1191,12 @@ class CGModel(object):
                 try:
                     bond_length = self.bond_lengths[reverse_string_name]
                 except: 
-               print(
-                    f"No bond length definition provided for \'{string}\', setting \'{string}\'={self_default_length}"
-                )
-                self.bond_lengths.update({string_name: self.default_length})
-                self.bond_lengths.update({reverse_string_name: self.default_length})
-                bond_length = self.bond_lengths[string_name]
+                    print(
+                        f"No bond length definition provided for \'{string_name}\', setting \'{string_name}\'={self.default_length}"
+                        )
+                    self.bond_lengths.update({string_name: self.default_length})
+                    self.bond_lengths.update({reverse_string_name: self.default_length})
+                    bond_length = self.bond_lengths[string_name]
  
         # is this code reached?        
         if bond_length == None:
@@ -1205,7 +1208,7 @@ class CGModel(object):
 
         return bond_length
 
-    def get_bond_force_constant(self, particle_1_index, particle_2_index):
+    def get_bond_force_constant(self, bond):
         """
           Determines the correct bond force constant for two particles, given their indices
 
@@ -1223,8 +1226,8 @@ class CGModel(object):
 
           """
 
-        particle_1_type = self.get_particle_type(particle_1_index)
-        particle_2_type = self.get_particle_type(particle_2_index)
+        particle_1_type = self.get_particle_type(bond[0])
+        particle_2_type = self.get_particle_type(bond[1])
 
         if particle_1_type == "backbone" and particle_2_type == "backbone":
             string_name = reverse_string_name = "bb_bb_bond_length"
@@ -1245,13 +1248,13 @@ class CGModel(object):
                 try:
                     bond_force_constant = self.bond_force_constants[reverse_string_name]
                 except: 
-               print(
-                    f"No bond force constant provided for \'{string}\', setting \'{string}\'={self_default_force_constant}"
-                )
-                self.bond_force_constants.update({string_name: self.default_bond_k})
-                self.bond_force_constants.update({reverse_string_name: self.default_bond_k})
-                bond_force_constant = self.bond_force_constants[string_name]
-
+                    print(
+                        f"No bond force constant provided for \'{string_name}\', setting \'{string_name}\'={self.default_bond_k}"
+                        )
+                    self.bond_force_constants.update({string_name: self.default_bond_k})
+                    self.bond_force_constants.update({reverse_string_name: self.default_bond_k})
+                    bond_force_constant = self.bond_force_constants[string_name]
+                    
         if bond_force_constant == None:
             print(
                 "ERROR: No bond force constant definition was found for the following particle types:"
@@ -1263,7 +1266,7 @@ class CGModel(object):
 
         return bond_force_constant
 
-    def get_equil_bond_angle(self, particle_1_index, particle_2_index, particle_3_index):
+    def get_equil_bond_angle(self, angle):
         """
           Determines the correct equilibrium bond angle between three particles, given their indices within the coarse grained model
 
@@ -1285,9 +1288,9 @@ class CGModel(object):
           """
 
         particle_types = list()
-        particle_types.append(self.get_particle_type(particle_1_index))
-        particle_types.append(self.get_particle_type(particle_2_index))
-        particle_types.append(self.get_particle_type(particle_3_index))
+        particle_types.append(self.get_particle_type(angle[0]))
+        particle_types.append(self.get_particle_type(angle[1]))
+        particle_types.append(self.get_particle_type(angle[2]))
 
         equil_bond_angle = None
 
@@ -1324,7 +1327,7 @@ class CGModel(object):
         return equil_bond_angle
 
 
-    def get_bond_angle_force_constant(self, particle_1_index, particle_2_index, particle_3_index):
+    def get_bond_angle_force_constant(self, angle):
         """
           Determines the correct bond angle force constant for a bond angle between three particles, given their indices within the coarse grained model
 
@@ -1346,9 +1349,9 @@ class CGModel(object):
 
           """
         particle_types = list()
-        particle_types.append(self.get_particle_type(particle_1_index))
-        particle_types.append(self.get_particle_type(particle_2_index))
-        particle_types.append(self.get_particle_type(particle_3_index))
+        particle_types.append(self.get_particle_type(angle[0]))
+        particle_types.append(self.get_particle_type(angle[1]))
+        particle_types.append(self.get_particle_type(angle[2]))
 
         bond_angle_force_constant = None
 
@@ -1368,7 +1371,7 @@ class CGModel(object):
             try:
                 bond_angle_force_constant = self.bond_angle_force_constants[reverse_string_name]
             except:
-                print(f"No bond_angle_force_constant definition provided for \'{string_name}\', setting \'{string_name}\'={self.default_angle_k}")
+                print(f"No bond angle force constant definition provided for \'{string_name}\', setting \'{string_name}\'={self.default_angle_k}")
                 self.bond_angle_force_constants.update({string_name: self.default_angle_k})
                 self.bond_angle_force_constants.update({reverse_string_name: self.default_angle_k})
                 bond_angle_force_constant = self.bond_angle_force_constants[string_name]
