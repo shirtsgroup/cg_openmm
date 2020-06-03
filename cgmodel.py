@@ -1,3 +1,4 @@
+
 import simtk.unit as unit
 import sys, os
 from collections import Counter
@@ -1408,16 +1409,16 @@ class CGModel(object):
     def get_torsion_periodicity(self, torsion):
         """         
         Determines the correct periodicity for a torsion (bond angle involving four particles), given their indices within the coarse grained model
-        
+
         :param CGModel: CGModel() class object
         :type CGModel: class
-        
+
         :param torsion: A list of the indices for the particles in a torsion
         :type torsion: List( int )
-        
-        :returns: 
+
+        :returns:
         - torsion_periodicity ( int ) - The periodicity for the input torsion
-        
+
         """
         particle_1_type = self.get_particle_type(torsion[0])
         particle_2_type = self.get_particle_type(torsion[1])
