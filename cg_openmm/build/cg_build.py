@@ -178,8 +178,8 @@ def write_xml_file(cgmodel, xml_file_name):
             xml_type_1 = particle_1_name
             # unique_particle_names.index(particle_2_name)
             xml_type_2 = particle_2_name
-            bond_length = cgmodel.get_bond_length(bond).in_units_of(
-                unit.nanometer)._value
+            bond_length = cgmodel.get_bond_length(bond).value_in_unit(
+                unit.nanometer)
             bond_force_constant = cgmodel.get_bond_force_constant(bond)
             xml_object.write(
                 '  <Bond type1="' +
