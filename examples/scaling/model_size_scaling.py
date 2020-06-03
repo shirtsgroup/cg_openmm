@@ -9,6 +9,7 @@ from cg_openmm.simulation.tools import *
 total_simulation_time = 100.0 * unit.picosecond
 simulation_time_step = 5.0 * unit.femtosecond
 temperature = 300.0 * unit.kelvin
+friction = 1.0 / unit.picosecond
 
 output_directory = str("model_size_scaling")
 if not os.path.exists(output_directory):
@@ -19,11 +20,11 @@ polymer_length = 12
 backbone_lengths = [1]
 sidechain_lengths = [1]
 sidechain_positions = [0]
-include_bond_forces = False
+include_bond_forces = True
 include_bond_angle_forces = False
 include_nonbonded_forces = True
 include_torsion_forces = True
-constrain_bonds = True
+constrain_bonds = False
 
 # Bond definitions
 bond_length = 7.5 * unit.angstrom
@@ -32,7 +33,7 @@ bond_lengths = {
     "bb_sc_bond_length": bond_length,
     "sc_sc_bond_length": bond_length,
 }
-bond_force_constant = 0 * unit.kilocalorie_per_mole / unit.nanometer / unit.nanometer
+bond_force_constant = 1000 * unit.kilocalorie_per_mole / unit.nanometer / unit.nanometer
 bond_force_constants = {
     "bb_bb_bond_k": bond_force_constant,
     "bb_sc_bond_k": bond_force_constant,
@@ -126,6 +127,7 @@ for polymer_length in [8, 10, 20, 30]:
         total_simulation_time,
         simulation_time_step,
         temperature,
+		friction,
         print_frequency,
     )
 

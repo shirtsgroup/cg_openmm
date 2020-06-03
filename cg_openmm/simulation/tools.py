@@ -13,7 +13,7 @@ from cg_openmm.utilities.iotools import write_bonds
 import sys
 
 def get_simulation_time_step(
-    topology, system, positions, temperature, total_simulation_time, time_step_list=None
+    topology, system, positions, temperature, total_simulation_time, friction=1.0/unit.picosecond, time_step_list=None
 ):
     """
     Determine a suitable simulation time step.
@@ -33,6 +33,9 @@ def get_simulation_time_step(
     :param total_simulation_time: Total run time for individual simulations
     :type total_simulation_time: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
 
+    :param friction: Langevin thermostat friction coefficient, default = 1 / ps
+    :type friction: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
+
     :param time_step_list: List of time steps for which to attempt a simulation in OpenMM.
     :type time_step_list: List, default = None
 
@@ -49,9 +52,10 @@ def get_simulation_time_step(
     >>> system = cgmodel.system
     >>> positions = cgmodel.positions
     >>> temperature = 300.0 * unit.kelvin
+    >>> friction = 1.0 / unit.picosecond
     >>> total_simulation_time = 1.0 * unit.picosecond
     >>> time_step_list = [1.0 * unit.femtosecond, 2.0 * unit.femtosecond, 5.0 * unit.femtosecond]
-    >>> best_time_step,max_force_tolerance = get_simulation_time_step(topology,system,positions,temperature,total_simulation_time,time_step_list=time_step_list)
+    >>> best_time_step,max_force_tolerance = get_simulation_time_step(topology,system,positions,temperature,total_simulation_time,friction=friction,time_step_list=time_step_list)
 
     """
     tolerance = 10.0
@@ -65,7 +69,7 @@ def get_simulation_time_step(
     for time_step in time_step_list:
         integrator = LangevinIntegrator(
             temperature._value,
-            1.0 / unit.picoseconds,
+            friction,
             time_step.in_units_of(unit.picosecond)._value,
         )
 
@@ -98,7 +102,7 @@ def get_simulation_time_step(
                 #            simulation.context.applyConstraints(1.0e-8)
                 integrator = LangevinIntegrator(
                     temperature._value,
-                    1.0 / unit.picoseconds,
+                    friction,
                     time_step.in_units_of(unit.picosecond)._value,
                 )
                 simulation = Simulation(topology, system, integrator)
@@ -118,6 +122,7 @@ def minimize_structure(
     system,
     positions,
     temperature=0.0 * unit.kelvin,
+	friction=1.0 / unit.picosecond,
     simulation_time_step=None,
     total_simulation_time=1.0 * unit.picosecond,
     output_pdb=None,
@@ -139,6 +144,9 @@ def minimize_structure(
     :param temperature: Simulation temperature
     :type temperature: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
 
+    :param friction: Langevin thermostat friction coefficient, default = 1 / ps
+    :type friction: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_	
+	
     :param total_simulation_time: Total run time for individual simulations
     :type total_simulation_time: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
 
@@ -164,12 +172,13 @@ def minimize_structure(
     >>> system = cgmodel.system
     >>> positions = cgmodel.positions
     >>> temperature = 300.0 * unit.kelvin
+	>>> friction = 1.0 / unit.picosecond
     >>> total_simulation_time = 1.0 * unit.picosecond
     >>> simulation_time_step = 1.0 * unit.femtosecond
     >>> output_pdb = "output.pdb"
     >>> output_data = "output.dat"
     >>> print_frequency = 20
-    >>> minimum_energy_structure,potential_energy,openmm_simulation_object = minimize_structure(topology,system,positions,temperature=temperature,simulation_time_step=simulation_time_step,total_simulation_time=total_simulation_time,output_pdb=output_pdb,output_data=output_data,print_frequency=print_frequency)
+    >>> minimum_energy_structure,potential_energy,openmm_simulation_object = minimize_structure(topology,system,positions,temperature=temperature,friction=friction,simulation_time_step=simulation_time_step,total_simulation_time=total_simulation_time,output_pdb=output_pdb,output_data=output_data,print_frequency=print_frequency)
 
     """
     if simulation_time_step is None:
@@ -182,6 +191,7 @@ def minimize_structure(
             positions,
             temperature,
             total_simulation_time,
+			friction,
             simulation_time_step_list,
         )
         if tolerance is None:
@@ -192,7 +202,7 @@ def minimize_structure(
     else:
         time_step = simulation_time_step
     integrator = LangevinIntegrator(
-        temperature._value, 1.0 / unit.picoseconds, time_step.in_units_of(unit.picosecond)._value
+        temperature._value, friction, time_step.in_units_of(unit.picosecond)._value
     )
 
     simulation = Simulation(topology, system, integrator)
@@ -230,6 +240,7 @@ def minimize_structure(
                 system,
                 positions,
                 temperature=temperature,
+				friction=friction,
                 simulation_time_step=time_step,
                 total_simulation_time=total_simulation_time,
                 output_pdb=output_pdb,
@@ -289,6 +300,7 @@ def build_mm_simulation(
     system,
     positions,
     temperature=300.0 * unit.kelvin,
+    friction=1.0 / unit.picosecond,
     simulation_time_step=None,
     total_simulation_time=1.0 * unit.picosecond,
     output_pdb=None,
@@ -310,6 +322,9 @@ def build_mm_simulation(
 
     :param temperature: Simulation temperature, default = 300.0 K
     :type temperature: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
+
+    :param friction: Langevin thermostat friction coefficient, default = 1 / ps
+    :type friction: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
 
     :param simulation_time_step: Simulation integration time step
     :type simulation_time_step: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
@@ -341,12 +356,13 @@ def build_mm_simulation(
     >>> system = cgmodel.system
     >>> positions = cgmodel.positions
     >>> temperature = 300.0 * unit.kelvin
+    >>> friction = 1.0 / unit.picosecond
     >>> simulation_time_step = 5.0 * unit.femtosecond
     >>> total_simulation_time= 1.0 * unit.picosecond
     >>> output_pdb = "output.pdb"
     >>> output_data = "output.dat"
     >>> print_frequency = 20
-    >>> openmm_simulation = build_mm_simulation(topology,system,positions,temperature=temperature,simulation_time_step=simulation_time_step,total_simulation_time=total_simulation_time,output_pdb=output_pdb,output_data=output_data,print_frequency=print_frequency,test_time_step=False)
+    >>> openmm_simulation = build_mm_simulation(topology,system,positions,temperature=temperature,friction=friction,simulation_time_step=simulation_time_step,total_simulation_time=total_simulation_time,output_pdb=output_pdb,output_data=output_data,print_frequency=print_frequency,test_time_step=False)
 
     """
     if simulation_time_step is None:
@@ -358,7 +374,6 @@ def build_mm_simulation(
         simulation_time_step, force_cutoff = get_simulation_time_step(
             topology, system, positions, temperature, total_simulation_time, time_step_list
         )
-    friction = 1.0 / unit.picosecond
 
     integrator = LangevinIntegrator(
         temperature._value, friction, simulation_time_step.in_units_of(unit.picosecond)._value
@@ -413,6 +428,7 @@ def build_mm_simulation(
                         system,
                         positions,
                         temperature=temperature,
+						friction=friction,
                         simulation_time_step=time_step,
                         total_simulation_time=total_simulation_time,
                         output_pdb=output_pdb,
@@ -434,6 +450,7 @@ def run_simulation(
     total_simulation_time,
     simulation_time_step,
     temperature,
+	friction,
     print_frequency,
     minimize=True,
     output_pdb=None,
@@ -457,6 +474,9 @@ def run_simulation(
 
     :param temperature: Simulation temperature, default = 300.0 K
     :type temperature: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
+	
+    :param friction: Langevin thermostat friction coefficient, default = 1 / ps
+    :type friction: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
 
     :param print_frequency: Number of simulation steps to skip when writing to output, Default = 100
     :type print_frequence: int
@@ -471,13 +491,14 @@ def run_simulation(
     >>> system = cgmodel.system
     >>> positions = cgmodel.positions
     >>> temperature = 300.0 * unit.kelvin
+	>>> friction = 1.0 / unit.picosecond
     >>> simulation_time_step = 5.0 * unit.femtosecond
     >>> total_simulation_time= 1.0 * unit.picosecond
     >>> output_directory = os.getcwd()
     >>> output_pdb = "output.pdb"
     >>> output_data = "output.dat"
     >>> print_frequency = 20
-    >>> run_simulation(cgmodel,output_directory,total_simulation_time,simulation_time_step,temperature,print_frequency,output_pdb=output_pdb,output_data=output_data)
+    >>> run_simulation(cgmodel,output_directory,total_simulation_time,simulation_time_step,temperature,friction,print_frequency,output_pdb=output_pdb,output_data=output_data)
 
     .. warning:: When run with default options this subroutine is capable of producing a large number of output files.  For example, by default this subroutine will plot the simulation data that is written to an output file.
 
@@ -501,6 +522,7 @@ def run_simulation(
         total_simulation_time=total_simulation_time,
         simulation_time_step=simulation_time_step,
         temperature=temperature,
+		friction=friction,
         output_pdb=output_pdb,
         output_data=output_data,
         print_frequency=print_frequency,
