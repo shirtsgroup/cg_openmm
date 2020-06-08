@@ -1272,7 +1272,7 @@ class CGModel(object):
     def get_equil_bond_angle(self, angle):
         """
           Determines the correct equilibrium bond angle between three particles, given their indices within the coarse grained model
-        
+
           :param CGModel: CGModel() class object
           :type CGModel: class
 
@@ -1290,8 +1290,11 @@ class CGModel(object):
 
           """
 
-        particle_types = [self.get_particle_type(angle[0]), self.get_particle_type(angle[1]),
-                          self.get_particle_type(angle[2])]
+        particle_types = [
+            self.get_particle_type(angle[0]),
+            self.get_particle_type(angle[1]),
+            self.get_particle_type(angle[2]),
+        ]
 
         equil_bond_angle = None
 
@@ -1300,7 +1303,7 @@ class CGModel(object):
         for i in range(3):
             string_name += particle_types[i][0] + particle_types[i][4] + "_"
         for i in range(3):
-            reverse_string_name += particle_types[2-i][0] + particle_types[2-i][4] + "_"
+            reverse_string_name += particle_types[2 - i][0] + particle_types[2 - i][4] + "_"
 
         string_name += "angle_0"
         reverse_string_name += "angle_0"
@@ -1350,9 +1353,12 @@ class CGModel(object):
 
 
           """
-        particle_types = [self.get_particle_type(angle[0]), self.get_particle_type(angle[1]),
-                          self.get_particle_type(angle[2])]
-        
+        particle_types = [
+            self.get_particle_type(angle[0]),
+            self.get_particle_type(angle[1]),
+            self.get_particle_type(angle[2]),
+        ]
+
         bond_angle_force_constant = None
 
         string_name = ""
@@ -1360,7 +1366,7 @@ class CGModel(object):
         for i in range(3):
             string_name += particle_types[i][0] + particle_types[i][4] + "_"
         for i in range(3):
-            reverse_string_name += particle_types[2-i][0] + particle_types[2-i][4] + "_"
+            reverse_string_name += particle_types[2 - i][0] + particle_types[2 - i][4] + "_"
 
         string_name += "angle_k"
         reverse_string_name += "angle_k"
@@ -1404,8 +1410,12 @@ class CGModel(object):
 
         """
 
-        particle_types = [self.get_particle_type(torsion[0]), self.get_particle_type(torsion[1]),
-                          self.get_particle_type(torsion[2]), self.get_particle_type(torsion[3])]
+        particle_types = [
+            self.get_particle_type(torsion[0]),
+            self.get_particle_type(torsion[1]),
+            self.get_particle_type(torsion[2]),
+            self.get_particle_type(torsion[3]),
+        ]
 
         torsion_periodicity = None
 
@@ -1414,7 +1424,7 @@ class CGModel(object):
         for i in range(4):
             string_name += particle_types[i][0] + particle_types[i][4] + "_"
         for i in range(4):
-            reverse_string_name += particle_types[3-i][0] + particle_types[3-i][4] + "_"
+            reverse_string_name += particle_types[3 - i][0] + particle_types[3 - i][4] + "_"
 
         string_name += "period"
         reverse_string_name += "period"
@@ -1437,7 +1447,9 @@ class CGModel(object):
             print(
                 "ERROR: No torsion periodicity definition was found for the following particle types:"
             )
-            print(f"{particle_types[0]}-{particle_types[1]}-{particle_types[2]}-{particle_types[3]}")
+            print(
+                f"{particle_types[0]}-{particle_types[1]}-{particle_types[2]}-{particle_types[3]}"
+            )
             print("This means that at least one of the particle types has not been defined.")
             print("Check the names and definitions for the particle types in your model.")
             exit()
@@ -1458,8 +1470,12 @@ class CGModel(object):
              - torsion_force_constant ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The assigned torsion force constant for the provided particles
 
           """
-        particle_types = [self.get_particle_type(torsion[0]), self.get_particle_type(torsion[1]),
-                          self.get_particle_type(torsion[2]), self.get_particle_type(torsion[3])]
+        particle_types = [
+            self.get_particle_type(torsion[0]),
+            self.get_particle_type(torsion[1]),
+            self.get_particle_type(torsion[2]),
+            self.get_particle_type(torsion[3]),
+        ]
 
         torsion_force_constant = None
 
@@ -1468,7 +1484,7 @@ class CGModel(object):
         for i in range(4):
             string_name += particle_types[i][0] + particle_types[i][4] + "_"
         for i in range(4):
-            reverse_string_name += particle_types[3-i][0] + particle_types[3-i][4] + "_"
+            reverse_string_name += particle_types[3 - i][0] + particle_types[3 - i][4] + "_"
 
         string_name += "torsion_k"
         reverse_string_name += "torsion_k"
@@ -1491,7 +1507,9 @@ class CGModel(object):
             print(
                 "ERROR: No torsion force constant definition was found for the following particle types:"
             )
-            print(f"{particle_types[0]}-{particle_types[1]}-{particle_types[2]}-{particle_types[3]}")
+            print(
+                f"{particle_types[0]}-{particle_types[1]}-{particle_types[2]}-{particle_types[3]}"
+            )
             print("This means that at least one of the particle types has not been defined.")
             print("Check the names and definitions for the particle types in your model.")
             exit()
@@ -1512,8 +1530,12 @@ class CGModel(object):
              - equil_torsion_angle (float) - The assigned equilibrium torsion angle for the provided particles
 
           """
-        particle_types = [self.get_particle_type(torsion[0]), self.get_particle_type(torsion[1]),
-                          self.get_particle_type(torsion[2]), self.get_particle_type(torsion[3])]
+        particle_types = [
+            self.get_particle_type(torsion[0]),
+            self.get_particle_type(torsion[1]),
+            self.get_particle_type(torsion[2]),
+            self.get_particle_type(torsion[3]),
+        ]
 
         equil_torsion_angle = None
 
@@ -1522,7 +1544,7 @@ class CGModel(object):
         for i in range(4):
             string_name += particle_types[i][0] + particle_types[i][4] + "_"
         for i in range(4):
-            reverse_string_name += particle_types[3-i][0] + particle_types[3-i][4] + "_"
+            reverse_string_name += particle_types[3 - i][0] + particle_types[3 - i][4] + "_"
 
         string_name += "torsion_0"
         reverse_string_name += "torsion_0"
@@ -1545,7 +1567,9 @@ class CGModel(object):
             print(
                 "ERROR: No equilibrium torsion angle definition was found for the following particle types:"
             )
-            print(f"{particle_types[0]}-{particle_types[1]}-{particle_types[2]}-{particle_types[3]}")
+            print(
+                f"{particle_types[0]}-{particle_types[1]}-{particle_types[2]}-{particle_types[3]}"
+            )
             print("This means that at least one of the particle types has not been defined.")
             print("Check the names and definitions for the particle types in your model.")
             exit()
