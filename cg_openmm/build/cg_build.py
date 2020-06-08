@@ -741,7 +741,6 @@ def add_force(cgmodel, force_type=None, rosetta_scoring=False):
                 periodicity,
                 equil_torsion_angle.value_in_unit(unit.radian),
                 torsion_force_constant.value_in_unit(unit.kilojoule_per_mole))
-            # print(torsion_force.getNumTorsions())
         cgmodel.system.addForce(torsion_force)
         force = torsion_force
 
@@ -830,12 +829,13 @@ def build_system(cgmodel, rosetta_scoring=False, verify=True):
     # system.setDefaultPeriodicBoxVectors(box_vectors[0],box_vectors[1],box_vectors[2])
 
     if cgmodel.include_bond_forces or cgmodel.constrain_bonds:
-        # Create bond (harmonic) potentials
-        cgmodel, bond_force = add_force(cgmodel, force_type="Bond")
-        if cgmodel.positions is not None:
-            if not test_force(cgmodel, bond_force, force_type="Bond"):
-                print("ERROR: The bond force definition is giving 'nan'")
-                exit()
+        if len(cgmodel.bond_list) > 0:
+            # Create bond (harmonic) potentials
+            cgmodel, bond_force = add_force(cgmodel, force_type="Bond")
+            if cgmodel.positions is not None:
+                if not test_force(cgmodel, bond_force, force_type="Bond"):
+                    print("ERROR: The bond force definition is giving 'nan'")
+                    exit()
 
     if cgmodel.include_nonbonded_forces:
         # Create nonbonded forces
@@ -849,21 +849,23 @@ def build_system(cgmodel, rosetta_scoring=False, verify=True):
         # exit()
 
     if cgmodel.include_bond_angle_forces:
-        # Create bond angle potentials
-        cgmodel, bond_angle_force = add_force(cgmodel, force_type="Angle")
-        if cgmodel.positions is not None:
-            if not test_force(cgmodel, bond_angle_force, force_type="Angle"):
-                print(
-                    "ERROR: There was a problem with the bond angle force definitions.")
-                exit()
+        if len(cgmodel.bond_angle_list) > 0:
+            # Create bond angle potentials
+            cgmodel, bond_angle_force = add_force(cgmodel, force_type="Angle")
+            if cgmodel.positions is not None:
+                if not test_force(cgmodel, bond_angle_force, force_type="Angle"):
+                    print(
+                        "ERROR: There was a problem with the bond angle force definitions.")
+                    exit()
 
     if cgmodel.include_torsion_forces:
-        # Create torsion potentials
-        cgmodel, torsion_force = add_force(cgmodel, force_type="Torsion")
-        if cgmodel.positions is not None:
-            if not test_force(cgmodel, torsion_force, force_type="Torsion"):
-                print("ERROR: There was a problem with the torsion definitions.")
-                exit()
+        if len(cgmodel.torsion_list) > 0:
+            # Create torsion potentials
+            cgmodel, torsion_force = add_force(cgmodel, force_type="Torsion")
+            if cgmodel.positions is not None:
+                if not test_force(cgmodel, torsion_force, force_type="Torsion"):
+                    print("ERROR: There was a problem with the torsion definitions.")
+                    exit()
 
     if verify:
         if cgmodel.positions is not None:

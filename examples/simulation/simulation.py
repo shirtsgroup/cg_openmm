@@ -40,13 +40,13 @@ include_torsion_forces = True
 constrain_bonds = False
 
 # Bond definitions
-bond_length = 2.0 * unit.angstrom
+bond_length = 0.2 * unit.nanometer
 bond_lengths = {
     "bb_bb_bond_length": bond_length,
     "bb_sc_bond_length": bond_length,
     "sc_sc_bond_length": bond_length,
 }
-bond_force_constant = 1000 * unit.kilocalorie_per_mole / unit.nanometer / unit.nanometer
+bond_force_constant = 1000 * unit.kilojoule_per_mole / unit.nanometer / unit.nanometer
 bond_force_constants = {
     "bb_bb_bond_k": bond_force_constant,
     "bb_sc_bond_k": bond_force_constant,
@@ -64,7 +64,7 @@ epsilon = 0.5 * unit.kilojoule_per_mole
 epsilons = {"bb_eps": epsilon, "sc_eps": epsilon}
 
 # Bond angle definitions
-bond_angle_force_constant = 50.0 * unit.kilocalorie_per_mole / unit.radian / unit.radian
+bond_angle_force_constant = 50.0 * unit.kilojoule_per_mole / unit.radian / unit.radian
 bond_angle_force_constants = {
     "bb_bb_bb_angle_k": bond_angle_force_constant,
     "bb_bb_sc_angle_k": bond_angle_force_constant,
@@ -77,12 +77,14 @@ equil_bond_angles = {
 }
 
 # Torsion angle definitions
-torsion_force_constant = 20.0 * unit.kilocalorie_per_mole
+torsion_force_constant = 20.0 * unit.kilojoule_per_mole
 torsion_force_constants = {"bb_bb_bb_bb_torsion_k": torsion_force_constant}
 bb_bb_bb_bb_equil_torsion_angle = 78.0 * unit.degrees
 bb_bb_bb_sc_equil_torsion_angle = 78.0 * unit.degrees
-equil_torsion_angles = {"bb_bb_bb_bb_torsion_0": bb_bb_bb_bb_equil_torsion_angle}
-torsion_periodicities = {"bb_bb_bb_bb_period": 3}
+equil_torsion_angles = {"bb_bb_bb_bb_torsion_0": bb_bb_bb_bb_equil_torsion_angle,
+                        "bb_bb_bb_sc_torsion_0": bb_bb_bb_sc_equil_torsion_angle
+}
+torsion_periodicities = {"bb_bb_bb_bb_period": 3, "bb_bb_bb_sc_period":3}
 
 # Get initial positions from local file
 positions = PDBFile("helix2.pdb").getPositions()
