@@ -48,7 +48,7 @@ bond_angle_force_constants = {
 
 bb_bb_bb_equil_bond_angle = 120.0 * unit.degrees
 bb_bb_sc_equil_bond_angle = 120.0 * unit.degrees
-bb_sb_sc_equil_bond_angle = 120.0 * unit.degrees
+bb_sc_sc_equil_bond_angle = 120.0 * unit.degrees
 equil_bond_angles = {
     "bb_bb_bb_angle_0": bb_bb_bb_equil_bond_angle,
     "bb_bb_sc_angle_0": bb_bb_sc_equil_bond_angle,
