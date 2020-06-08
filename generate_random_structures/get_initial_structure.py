@@ -4,14 +4,14 @@ from foldamers.cg_model.cgmodel import CGModel
 from cg_openmm.utilities.iotools import write_pdbfile_without_topology
 
 # Coarse grained model settings
-polymer_length = 24
-backbone_lengths = [1]
-sidechain_lengths = [1]
+polymer_length = 12
+backbone_lengths = [2]
+sidechain_lengths = [2]
 sidechain_positions = [0]
 include_bond_forces = True
 include_bond_angle_forces = True
 include_nonbonded_forces = True
-include_torsion_forces = False  # not sure why, but these need to be off for now.
+include_torsion_forces = False  # not sure why, but these need to be 'False' for now.
 constrain_bonds = False
 random_positions = True
 
@@ -39,40 +39,41 @@ epsilon = 0.1 * unit.kilojoule_per_mole
 epsilons = {"bb_eps": epsilon, "sc_eps": epsilon}
 
 # Bond angle definitions
-bond_angle_force_constant = 15.0 * unit.kilojoules_per_mole / unit.radian / unit.radian
+bond_angle_force_constant = 15.0 * unit.kilojoule_per_mole / unit.radian / unit.radian
 bond_angle_force_constants = {
     "bb_bb_bb_angle_k": bond_angle_force_constant,
     "bb_bb_sc_angle_k": bond_angle_force_constant,
     "bb_sc_sc_angle_k": bond_angle_force_constant,
 }
+
 bb_bb_bb_equil_bond_angle = 120.0 * unit.degrees
 bb_bb_sc_equil_bond_angle = 120.0 * unit.degrees
+bb_sb_sc_equil_bond_angle = 120.0 * unit.degrees
 equil_bond_angles = {
     "bb_bb_bb_angle_0": bb_bb_bb_equil_bond_angle,
     "bb_bb_sc_angle_0": bb_bb_sc_equil_bond_angle,
     "bb_sc_sc_angle_0": bb_bb_sc_equil_bond_angle,
 }
 
-# Torsion angle definitions                                                                                                     
+# Torsion angle definitions
 torsion_force_constant = 0 * unit.kilojoule_per_mole
 torsion_force_constants = {
     "bb_bb_bb_bb_torsion_k": torsion_force_constant,
     "bb_bb_bb_sc_torsion_k": torsion_force_constant,
-    "bb_bb_sc_sc_torsion_k": torsion_force_constant
+    "bb_bb_sc_sc_torsion_k": torsion_force_constant,
 }
 
-equil_torsion_angle = 0.0 * unit.degrees
 
+equil_torsion_angle = 0.0 * unit.degrees
 equil_torsion_angles = {
-    "bb_bb_bb_bb_torsion_0":equil_torsion_angle,
-    "bb_bb_bb_sc_torsion_0":equil_torsion_angle,
-    "bb_bb_sc_sc_torsion_0":equil_torsion_angle
+    "bb_bb_bb_bb_torsion_0": equil_torsion_angle,
+    "bb_bb_bb_sc_torsion_0": equil_torsion_angle,
+    "bb_bb_sc_sc_torsion_0": equil_torsion_angle,
 }
 torsion_periodicities = {
     "bb_bb_bb_bb_period": 3,
     "bb_bb_bb_sc_period": 1,
-    "bb_bb_bb_sc_period": 1
-}
+    "bb_bb_sc_sc_period": 1}
 
 # Build a coarse grained model
 cgmodel = CGModel(
@@ -97,15 +98,12 @@ cgmodel = CGModel(
     constrain_bonds=constrain_bonds,
     random_positions=random_positions,
 )
-import pdb
-pdb.set_trace()
-#file_name = "12mer_3b1s_initial_structure.pdb"
-#file_name = "12mer_1b1s_initial_structure.pdb"
-file_name = "24mer_1b1s_initial_structure.pdb"
-#file_name = "12mer_1b2s_initial_structure.pdb"  # this one looks a bit off, and takes a long time
-#file_name = "12mer_2b1s_initial_structure.pdb"
-#file_name = "12mer_2b2s_initial_structure.pdb"
+file_name = "12mer_3b1s_initial_structure.pdb"
+# file_name = "12mer_1b1s_initial_structure.pdb"
+# file_name = "24mer_1b1s_initial_structure.pdb"
+# file_name = "12mer_1b2s_initial_structure.pdb"  # this one looks a bit off, and takes a long time
+# file_name = "12mer_2b1s_initial_structure.pdb"
+# file_name = "12mer_2b2s_initial_structure.pdb"
 
 
 write_pdbfile_without_topology(cgmodel, file_name)
-
