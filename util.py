@@ -7,26 +7,6 @@ from cg_openmm.simulation.tools import *
 from cg_openmm.utilities.iotools import write_pdbfile_without_topology
 
 
-def random_sign(number):
-    """
-        Returns the provided 'number' with a random sign.
-
-        :param number: The number to add a random sign (positive or negative) to
-        :type number: float
-
-        :returns:
-          - number (float) - The provided number with a random sign added
-
-        """
-
-    # 0 = negative, 1 = positive
-    random_int = random.randint(0, 1)
-    if random_int == 0:
-        number = -1.0 * number
-
-    return number
-
-
 def first_bead(positions):
     """
         Determine if the provided 'positions' contain any particles (are the coordinates non-zero).
@@ -126,37 +106,17 @@ def attempt_lattice_move(parent_coordinates, bond_length, move_direction_list):
 
         """
 
-    units = bond_length.unit
-    dist = unit.Quantity(0.0, units)
-
     # Assign the parent coordinates as the initial coordinates for a trial particle
+    while True:
+        move_direction = random.randint(0, 5)
+        if move_direction not in move_direction_list:
+            break
 
-    move_direction = random.randint(1, 3)
-    move_sign = random_sign(move_direction)
-    while move_sign in move_direction_list:
-        move_direction = random.randint(1, 3)
-        move_sign = random_sign(move_direction)
-    move_direction_list.append(move_sign)
-    if move_sign < 0:
-        move_sign = -bond_length
-    else:
-        move_sign = bond_length
-
+    # need to a bit random because of angles - but still doeson't work
     trial_coordinates = parent_coordinates.__deepcopy__(memo={})
-    trial_coordinates[move_direction - 1] = parent_coordinates[move_direction - 1].__add__(
-        move_sign
-    )
-    dist = distance(parent_coordinates, trial_coordinates)
-    if round(dist.in_units_of(unit.angstrom)._value, 2) != round(
-        bond_length.in_units_of(unit.angstrom)._value, 2
-    ):
-
-        print("Error: particles are being placed at a distance different from the bond length")
-        print("The trial coordinates are: " + str(trial_coordinates))
-        print("The parent coordinates are: " + str(parent_coordinates))
-        print("Bond length is: " + str(bond_length))
-        print("The particle distance is: " + str(dist))
-        exit()
+    incrementor = bond_length*((-1)**(move_direction%2) + 0.3*(np.random.random()-0.5))
+    trial_coordinates[move_direction//2] = parent_coordinates[move_direction//2] + incrementor
+    move_direction_list.append(move_direction)
 
     return (trial_coordinates, move_direction_list)
 
@@ -249,13 +209,10 @@ def distances(interaction_list, positions):
     return distance_list
 
 
-def collisions(positions, distance_list, distance_cutoff):
+def collisions(distance_list, distance_cutoff):
     """
         Determine if there are any collisions between non-bonded
         particles, where a "collision" is defined as a distance shorter than 'distance_cutoff'.
-
-        :param positions: Positions for the particles in a coarse grained model.
-        :type positions: np.array( float * unit.angstrom ( num_particles x 3 ) )
 
         :param distance_list: A list of distances.
         :type distance_list: List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )
@@ -272,22 +229,8 @@ def collisions(positions, distance_list, distance_cutoff):
 
     if len(distance_list) > 0:
         for distance in distance_list:
-
-            if round(distance._value, 4) < round(distance_cutoff._value, 4):
-
+            if distance < distance_cutoff:
                 collision = True
-
-    if positions.shape != "(3,)":
-        for position_1_index in range(len(positions)):
-            for position_2_index in range(len(positions)):
-                if position_1_index != position_2_index:
-                    if all(
-                        [
-                            positions[position_1_index][i] == positions[position_2_index][i]
-                            for i in range(len(positions[position_1_index]))
-                        ]
-                    ):
-                        collision = True
 
     return collision
 
@@ -318,66 +261,35 @@ def assign_position_lattice_style(
           - success ( Logical ) - Indicates whether or not a particle was placed successfully.
 
         """
-    if "Vec3" in str(type(positions[0]._value)):
-        positions = unit.Quantity(
-            np.array(
-                [[float(positions[i]._value[j]) for j in range(3)] for i in range(len(positions))]
-            ),
-            positions.unit,
-        )
-    saved_positions = positions.__deepcopy__(memo={})
+    saved_positions = positions.__deepcopy__(memo={}) # save our positions
 
-    bond_list = cgmodel.get_bond_list()
+    bond_list = cgmodel.get_bond_list() # buld the bonded and nonbonded lists
     nonbonded_list = cgmodel.nonbonded_interaction_list
 
     success = False
     move_direction_list = []
-    while len(move_direction_list) < 6 and not success:
-        bond_length = cgmodel.get_bond_length([parent_bead_index, bead_index])
-        if "float" in str(type(positions[0]._value)):
-            new_coordinates, move_direction_list = attempt_lattice_move(
-                positions, bond_length, move_direction_list
-            )
-            positions_list = [positions[i]._value for i in range(len(positions))]
-            positions = unit.Quantity(
-                np.append([positions_list], [[0.0, 0.0, 0.0]], axis=0), bond_length.unit
-            )
-        else:
-            new_coordinates, move_direction_list = attempt_lattice_move(
-                positions[parent_bead_index], bond_length, move_direction_list
-            )
-            print("positions before =" + str(positions))
-            positions_list = [positions[i]._value for i in range(len(positions))]
-            positions = unit.Quantity(
-                np.append(positions_list, [[0.0, 0.0, 0.0]], axis=0), positions.unit
-            )
-            print("positions after 1=" + str(positions))
-        positions[bead_index] = new_coordinates
-        print("positions after 2=" + str(positions))
+    bond_length = cgmodel.get_bond_length([parent_bead_index, bead_index])
+
+    while not success and len(move_direction_list) < 6:
+        success = True
+        new_coordinates, move_direction_list = attempt_lattice_move(
+            positions[parent_bead_index], bond_length, move_direction_list
+        )
+
+        positions = np.insert(positions,bead_index,new_coordinates,axis=0) * positions.unit
+        
         nonbonded_distance_list = distances(nonbonded_list, positions)
         bonded_distance_list = distances(bond_list, positions)
-        if not "float" in str(type(positions[0]._value)):
-            collision = False
-            for i, p1 in enumerate(positions):
-                for p2 in positions[i+1:]:
-                        if p1[0] == p2[0] and p1[1] == p2[1] and p1[2] == p2[2]:
-                            collision = True
-            if collision:
+
+        if collisions(bonded_distance_list, distance_cutoff):  # does this ever fail currently?
+            success = False
+
+        if len(nonbonded_distance_list) > 0:
+            if collisions(nonbonded_distance_list, distance_cutoff):
                 success = False
-                break
 
-        if not collision:
-            if len(nonbonded_distance_list) > 0:
-                if not collisions(
-                    positions, nonbonded_distance_list, distance_cutoff
-                ) and not collisions(
-                    positions, bonded_distance_list, cgmodel.bond_lengths["bb_bb_bond_length"]
-                ):
-                    success = True
-                    break
-
-    if not success:
-        positions = saved_positions
+        if not success:
+            positions = saved_positions # we could not place the monomer, give up, return positions
 
     return (positions, success)
 
@@ -427,7 +339,7 @@ itions.
 
         distance_list = distances(new_coordinates, positions)
 
-        if not collisions(new_coordinates, distance_list, sigma):
+        if not collisions(distance_list, sigma):
             success = True
 
         if attempts > 100:
@@ -583,15 +495,11 @@ def get_structure_from_library(cgmodel, high_energy=False, low_energy=False):
                     write_pdbfile_without_topology(cgmodel, file_name)
                     cgmodel.topology = get_topology_from_pdbfile(file_name)
                     cgmodel.system = build_system(cgmodel)
-                    simulation_time_step = 5.0 * unit.femtosecond
                     positions_after, energy, simulation = minimize_structure(
                         cgmodel.topology,
                         cgmodel.system,
                         cgmodel.positions,
-                        temperature=300.0 * unit.kelvin,
-                        simulation_time_step=5.0 * unit.femtosecond,
-                        total_simulation_time=0.1 * unit.picosecond,
-                        print_frequency=10,
+                        expand=1000  # expand for 1000 steps after
                     )
                     cgmodel.positions = positions_after
                     write_pdbfile_without_topology(cgmodel, file_name)
@@ -675,10 +583,6 @@ def get_structure_from_library(cgmodel, high_energy=False, low_energy=False):
             cgmodel.topology,
             cgmodel.system,
             cgmodel.positions,
-            temperature=300.0 * unit.kelvin,
-            simulation_time_step=5.0 * unit.femtosecond,
-            total_simulation_time=0.1 * unit.picosecond,
-            print_frequency=10,
         )
 
     return positions
@@ -731,44 +635,46 @@ def get_random_positions(
         )
         return positions
 
+    max_attempts_per_monomer = 20
     units = cgmodel.bond_lengths["bb_bb_bond_length"].unit
     positions = np.array([[0.0, 0.0, 0.0] for bead in range(cgmodel.num_beads)]) * units
     bond_list = cgmodel.get_bond_list()
     sequence = cgmodel.sequence
     end_polymer_length = cgmodel.polymer_length
     end_monomer_types_list = cgmodel.monomer_types
-    # print("Building a polymer with "+str(end_polymer_length)+" monomers")
-    # print("and "+str(len(end_monomer_types_list))+" monomer types: "+str([monomer_type for monomer_type in end_monomer_types_list]))
     heteropolymer = cgmodel.heteropolymer
     total_attempts = 0
-    distance_cutoff = 0.99 * cgmodel.bond_lengths["bb_bb_bond_length"]
-    nonbonded_list = cgmodel.nonbonded_interaction_list
+    distance_cutoff = 0.90 * cgmodel.bond_lengths["bb_bb_bond_length"]
     lattice_style = True
-    stored_positions = positions[0:1].__deepcopy__(memo={}) # copy as an 2d array of length 1
+    stored_positions = positions[0:1].__deepcopy__(memo={}) 
     while total_attempts < max_attempts and len(stored_positions) != len(positions):
-        # print("Beginning build attempt #"+str(total_attempts+1)+".",flush=True)
-        if str(positions.shape) == "(3,)":
-            stored_positions = positions
-        else:
-            stored_positions = positions[0:1].__deepcopy__(memo={})
-
+        stored_positions = positions[0:1].__deepcopy__(memo={}) # just the first point
         bead_index = 0
-        last_monomer_bead_list = []
-        for monomer_index in range(end_polymer_length):
-            print("Assigning particle positions for monomer #" + str(monomer_index))
+        previous_monomer_bead_list = []
+        monomer_index = 0
+        monomer_trapped = False
+        monomer_attempts = 0
+        while monomer_index < end_polymer_length and not monomer_trapped:
+            print(f"Assigning particle positions for monomer #{monomer_index}")
             try:
                 monomer_type = sequence[monomer_index]
             except:
-                print("Failed to identify a monomer type for monomer #" + str(monomer_index))
+                print(f"Failed to identify a monomer type for monomer #{monomer_index}")
                 exit()
             num_beads_in_monomer = monomer_type["num_beads"]
+            #which beads are in the monomer.
             monomer_bead_list = [i for i in range(bead_index, bead_index + num_beads_in_monomer)]
 
+            # Build the connectivity (not the positions) of a model one bead longer.
             polymer_length = monomer_index + 1
             test_sequence = sequence[: monomer_index + 1]
             cgmodel.build_polymer(polymer_length, heteropolymer, sequence)
 
-            # Get the bonds for this monomer
+            # store some information for restart
+            stored_positions_last_monomer = stored_positions.__deepcopy__(memo={})
+            bead_index_last_monomer = bead_index
+            
+            # find the bonds in this new monomer
             monomer_bond_list = []
             for bond_index in range(len(bond_list)):
                 bond = bond_list[bond_index]
@@ -778,44 +684,38 @@ def get_random_positions(
 
                 if monomer_index != 0:
                     if bond[0] in monomer_bead_list and bond[1] not in monomer_bead_list:
-                        if bond[1] in last_monomer_bead_list:
+                        if bond[1] in previous_monomer_bead_list:
                             if bond[0] < bond[1]:
                                 monomer_bond_list.append(bond)
                             else:
                                 monomer_bond_list.append([bond[1], bond[0]])
                     if bond[1] in monomer_bead_list and bond[0] not in monomer_bead_list:
-                        if bond[0] in last_monomer_bead_list:
+                        if bond[0] in previous_monomer_bead_list:
                             if bond[0] < bond[1]:
                                 monomer_bond_list.append(bond)
                             else:
                                 monomer_bond_list.append([bond[1], bond[0]])
 
-            last_monomer_bead_list = monomer_bead_list
+            # this information is need to know which bonds to back to the last monomer.                    
+            previous_monomer_bead_list_last_monomer = previous_monomer_bead_list
+            previous_monomer_bead_list = monomer_bead_list
 
-            # print("The bond list is "+str(monomer_bond_list))
-            completed_list = []
-            # print("The list of beads in this monomer is: "+str(monomer_bead_list))
-            while completed_list != monomer_bead_list:
-                # print(completed_list)
-                # print(bead_index)
-                if bead_index == 0:
-                    completed_list.append(bead_index)
-                    bead_index = bead_index + 1
-                else:
-                    for bond_index in range(len(monomer_bond_list)):
-                        print("Assigning a particle using bond#" + str(bond_index))
+            completed_list = [] # list of beads whose positions are assigned.
+            while completed_list != monomer_bead_list and not monomer_trapped:
+                 if bead_index == 0:
+                     completed_list.append(bead_index)
+                     bead_index = bead_index + 1
+                 else:
+                     # place the monomers involved in this bond
+                     for bond_index in range(len(monomer_bond_list)):
                         bond = monomer_bond_list[bond_index]
-
+                        # place the atoms on a pseudogrid
                         if lattice_style:
-                            # print("Before calling 'assign_positions_lattice_style' the positions are:")
-                            # print(stored_positions)
                             trial_positions, placement = assign_position_lattice_style(
                                 cgmodel, stored_positions, distance_cutoff, bond[0], bond[1]
                             )
-                            # print("After calling 'assign_positions_lattice_style' the positions are:")
-                            # print(trial_positions)
                         else:
-
+                            # this choice not working now
                             trial_positions, placement = assign_position(
                                 stored_positions,
                                 cgmodel.bond_length,
@@ -824,103 +724,67 @@ def get_random_positions(
                                 bond[0],
                             )
 
-                        if not placement:
-                            print("Particle placement failed.")
-                            if len(trial_positions) < 3 and cgmodel.num_beads > 6:
-                                print(
-                                    "ERROR: having difficulty assigning random coordinates for this model,"
-                                )
-                                print("even with a small number of particles ( <= 4 ).")
-                                print("The current positions are: " + str(positions))
-                                print(
-                                    "Please check the parameter values and other settings for your coarse grained model."
-                                )
-                                print("Then check the 'random_positions()' subroutine for errors.")
-                                exit()
-                            if bond_index > 4:
-                                start = bond_index - 2
-                            else:
-                                start = 2
-                            print("Restarting random configuration build from bond #" + str(start))
-                            print(
-                                "This attempt produced a model with the following positions:"
-                                + str(trial_positions)
-                            )
-                            total_attempts = total_attempts + 1
-                            stored_positions = trial_positions[
-                                0 : min(bond_list[start])
-                            ].__deepcopy__(memo={})
-                            # print("The new positions are:"+str(stored_positions)+"\n")
-                            break
-                        if placement:
-                            if "float" not in str(type(stored_positions[0]._value)):
-                                if int(len(stored_positions)) != int(len(trial_positions) - 1):
-                                    print(
-                                        "ERROR: coordinates are not being added correctly in the 'random_positions()' subroutine."
-                                    )
-                                    print(
-                                        "The positions before appension are:"
-                                        + str(stored_positions)
-                                    )
-                                    print(
-                                        "The positions after appension are:" + str(trial_positions)
-                                    )
-                                    exit()
-                            else:
-                                if int(len(trial_positions) - 1) != 1:
-                                    print(
-                                        "ERROR: coordinates are not being added correctly in the 'random_positions()' subroutine."
-                                    )
-                                    print(
-                                        "The positions before appension are:"
-                                        + str(stored_positions)
-                                    )
-                                    print(
-                                        "The positions after appension are:" + str(trial_positions)
-                                    )
-                                    exit()
+                        if placement: # if we successfuly placed this atom, move to the next one.
                             stored_positions = trial_positions
                             completed_list.append(bead_index)
                             bead_index = bead_index + 1
+                        else:
+                            # we tried 6 directions, and we couldn't place it. Trapped!
+                            monomer_trapped = True
+                            break
+                        
+            if monomer_trapped:
+                # there is no way to go - start over.
+                # Eventually, put in place to back up recursively.
+                print(f"monomer {monomer_index} trapped; starting over")
+                # start over the whole process.
+                total_attempts +=1
+                continue
 
-            distance_cutoff = 0.99 * cgmodel.bond_lengths["bb_bb_bond_length"]
-            nonbonded_list = cgmodel.nonbonded_interaction_list
+            
+            # We've added a new monomer.
+            # Now check for collisions for the entire polymer
 
-            if cgmodel.num_beads != len(trial_positions):
-                print("The test model has " + str(cgmodel.polymer_length) + " monomers,")
-                print(
-                    "but the current positions array has " + str(len(trial_positions)) + " beads."
-                )
-                exit()
+            cgmodel.positions = trial_positions
+            cgmodel.topology = build_topology(cgmodel)
 
-            distance_list = distances(nonbonded_list, trial_positions)
-            if len(distance_list) == 0 or not collisions(
-                trial_positions, distance_list, distance_cutoff
-            ):
-                cgmodel.positions = trial_positions
-                print(trial_positions)
-                cgmodel.topology = build_topology(cgmodel, use_pdbfile=True)
+            # are the new monomers too close to any of the previous monomers?
+            collision = False
+            distance_cutoff = 0.80 * cgmodel.bond_lengths["bb_bb_bond_length"]
+            #exclusions_distance_list = distances(cgmodel.get_nonbonded_exclusion_list(), trial_positions)
+            #if collisions(exclusions_distance_list, distance_cutoff):
+            #    collision = True
+            nonbonded_distance_list = distances(cgmodel.get_nonbonded_interaction_list(), trial_positions)
+            if collisions(nonbonded_distance_list, distance_cutoff):
+                collision = True
+
+            if collision:
+                print("Error, a particle was placed, but collisions were detected.")
+                print(f"The trial positions are: {trial_positions}")
+                print(f"Backing up")  # backing up
+                total_attempts += 1
+                stored_positions = stored_positions_last_monomer
+                bead_index = bead_index_last_monomer
+                previous_monomer_bead_list = previous_monomer_bead_list_last_monomer
+                monomer_attempts += 1
+                if monomer_attempts > max_attempts_per_monomer:
+                    print(f"Monomer {monomer_index} is too hard to place, starting over.")
+                    break
+            else:
                 cgmodel.system = build_system(cgmodel)
                 stored_positions, energy, simulation = minimize_structure(
                     cgmodel.topology,
                     cgmodel.system,
                     stored_positions,
-                    temperature=1.0 * unit.kelvin,
-                    simulation_time_step=5.0 * unit.femtosecond,
-                    total_simulation_time=0.1 * unit.picosecond,
-                    print_frequency=10,
                 )
-
-            else:
-                print("Error, a particle was placed, but collisions were detected.")
-                print("The particle distance list is: " + str(distance_list))
-                print("The trial positions are: " + str(trial_positions))
-                exit()
-
+                monomer_index +=1
+                print(f"current energy is {energy}")
     positions = stored_positions
     nonbonded_list = cgmodel.nonbonded_interaction_list
-    distance_list = distances(nonbonded_list, positions)
-    if len(distance_list) == 0 or not collisions(positions, distance_list, distance_cutoff):
+    nonbonded_distance_list = distances(nonbonded_list, positions)
+    bonded_list = cgmodel.bond_list
+    bonded_distance_list = distances(bonded_list, positions)
+    if len(nonbonded_distance_list) > 0 and not collisions(nonbonded_distance_list, distance_cutoff):
         cgmodel.positions = positions
         cgmodel.topology = build_topology(cgmodel, use_pdbfile=True)
         cgmodel.system = build_system(cgmodel)
@@ -928,20 +792,15 @@ def get_random_positions(
             cgmodel.topology,
             cgmodel.system,
             positions,
-            temperature=1.0 * unit.kelvin,
-            simulation_time_step=5.0 * unit.femtosecond,
-            total_simulation_time=0.1 * unit.picosecond,
-            print_frequency=10,
         )
 
         return positions
 
     else:
-
         print("Error: A model was successfully built, however,")
         print("particle collisions were detected.\n")
         print("The shortest nonbonded particle distance is:")
-        print(str(min(distance_list)))
+        print(str(min(nonbonded_distance_list)))
         # collision = nonbonded_list[distance_list.index(min(distance_list))]
         print("The nonbonded particle cutoff distance used for")
         print("random structure generation is set to:" + str(distance_cutoff))
