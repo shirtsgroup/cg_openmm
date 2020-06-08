@@ -12,8 +12,15 @@ import csv
 from cg_openmm.utilities.iotools import write_bonds
 import sys
 
+
 def get_simulation_time_step(
-    topology, system, positions, temperature, total_simulation_time, friction=1.0/unit.picosecond, time_step_list=None
+    topology,
+    system,
+    positions,
+    temperature,
+    total_simulation_time,
+    friction=1.0 / unit.picosecond,
+    time_step_list=None,
 ):
     """
     Determine a suitable simulation time step.
@@ -68,9 +75,7 @@ def get_simulation_time_step(
         time_step_list = [time_step_list]
     for time_step in time_step_list:
         integrator = LangevinIntegrator(
-            temperature._value,
-            friction,
-            time_step.in_units_of(unit.picosecond)._value,
+            temperature._value, friction, time_step.in_units_of(unit.picosecond)._value,
         )
 
         simulation = Simulation(topology, system, integrator)
@@ -101,9 +106,7 @@ def get_simulation_time_step(
             try:
                 #            simulation.context.applyConstraints(1.0e-8)
                 integrator = LangevinIntegrator(
-                    temperature._value,
-                    friction,
-                    time_step.in_units_of(unit.picosecond)._value,
+                    temperature._value, friction, time_step.in_units_of(unit.picosecond)._value,
                 )
                 simulation = Simulation(topology, system, integrator)
                 simulation.context.setPositions(positions)
@@ -118,12 +121,7 @@ def get_simulation_time_step(
 
 
 def minimize_structure(
-    topology,
-    system,
-    positions,
-    output_pdb=None,
-    print_frequency=1,
-    expand=None
+    topology, system, positions, output_pdb=None, print_frequency=1, expand=None
 ):
     """
     Minimize the potential energy
@@ -156,16 +154,18 @@ def minimize_structure(
     >>> minimum_energy_structure,potential_energy,openmm_simulation_object = minimize_structure(topology,system,positions,output_pdb=output_pdb,output_data=output_data,print_frequency=print_frequency)
 
     """
-    integrator = LangevinIntegrator(500,1,0.0005) # parameters for expanding the structure.
+    integrator = LangevinIntegrator(500, 1, 0.0005)  # parameters for expanding the structure.
 
     simulation = Simulation(topology, system, integrator)
     simulation.context.setPositions(positions.in_units_of(unit.nanometer))
     if output_pdb is not None:
         simulation.reporters.append(PDBReporter(output_pdb, print_frequency))
     try:
-        simulation.minimizeEnergy(tolerance=10,maxIterations=500)  # Set the simulation type to energy minimization
+        simulation.minimizeEnergy(
+            tolerance=10, maxIterations=500
+        )  # Set the simulation type to energy minimization
     except Exception:
-        print(f"Minimization attempt failed.") 
+        print(f"Minimization attempt failed.")
         return (positions, simulation, np.nan)
     if expand:
         simulation.step(expand)
@@ -176,7 +176,7 @@ def minimize_structure(
         np.array(
             [[float(positions_vec[i]._value[j]) for j in range(3)] for i in range(len(positions))]
         ),
-        positions_vec.unit
+        positions_vec.unit,
     )
 
     potential_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
@@ -297,7 +297,6 @@ def build_mm_simulation(
         temperature._value, friction, simulation_time_step.in_units_of(unit.picosecond)._value
     )
 
-
     simulation = Simulation(topology, system, integrator)
     simulation.context.setPositions(positions)
 
@@ -315,16 +314,23 @@ def build_mm_simulation(
                 temperature=True,
             )
         )
-    simulation.reporters.append(StateDataReporter(sys.stdout, print_frequency, step=True,
-                                                  potentialEnergy=True, temperature=True))
+    simulation.reporters.append(
+        StateDataReporter(
+            sys.stdout, print_frequency, step=True, potentialEnergy=True, temperature=True
+        )
+    )
 
     # minimization
     init_positions = positions
     try:
-        simulation.minimizeEnergy(tolerance=100,maxIterations=1000) # Set the simulation type to energy
+        simulation.minimizeEnergy(
+            tolerance=100, maxIterations=1000
+        )  # Set the simulation type to energy
     except Exception:
         print("Minimization failed on building model")
-        print(f"potential energy was {simulation.context.getState(getEnergy=True).getPotentialEnergy()}")
+        print(
+            f"potential energy was {simulation.context.getState(getEnergy=True).getPotentialEnergy()}"
+        )
         print("initial positions were:")
         print(positions)
 
@@ -337,7 +343,7 @@ def run_simulation(
     total_simulation_time,
     simulation_time_step,
     temperature,
-	friction,
+    friction,
     print_frequency,
     minimize=True,
     output_pdb=None,
@@ -409,7 +415,7 @@ def run_simulation(
         total_simulation_time=total_simulation_time,
         simulation_time_step=simulation_time_step,
         temperature=temperature,
-		friction=friction,
+        friction=friction,
         output_pdb=output_pdb,
         output_data=output_data,
         print_frequency=print_frequency,
@@ -421,7 +427,7 @@ def run_simulation(
     except BaseException:
         plot_simulation_results(
             output_data, output_directory, simulation_time_step, total_simulation_time
-            )
+        )
         print("Error: simulation attempt failed.")
         print("We suggest trying the following changes to see if they fix the problem:")
         print("1) Reduce the simulation time step")
