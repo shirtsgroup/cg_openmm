@@ -154,7 +154,8 @@ def minimize_structure(
     >>> minimum_energy_structure,potential_energy,openmm_simulation_object = minimize_structure(topology,system,positions,output_pdb=output_pdb,output_data=output_data,print_frequency=print_frequency)
 
     """
-    integrator = LangevinIntegrator(500, 1, 0.0005)  # parameters for expanding the structure.
+    # parameters for expanding the structure. This should not be hard-coded.
+    integrator = LangevinIntegrator(500, 1, 0.0005)  
 
     simulation = Simulation(topology, system, integrator)
     simulation.context.setPositions(positions.in_units_of(unit.nanometer))
@@ -162,7 +163,7 @@ def minimize_structure(
         simulation.reporters.append(PDBReporter(output_pdb, print_frequency))
     try:
         simulation.minimizeEnergy(
-            tolerance=10, maxIterations=500
+            tolerance=10, maxIterations=500  # think about making this not hard-coded.
         )  # Set the simulation type to energy minimization
     except Exception:
         print(f"Minimization attempt failed.")
@@ -324,7 +325,7 @@ def build_mm_simulation(
     init_positions = positions
     try:
         simulation.minimizeEnergy(
-            tolerance=100, maxIterations=1000
+            tolerance=100, maxIterations=1000  # probably shouldn't be hard-coded.
         )  # Set the simulation type to energy
     except Exception:
         print("Minimization failed on building model")
