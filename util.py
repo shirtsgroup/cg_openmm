@@ -114,8 +114,8 @@ def attempt_lattice_move(parent_coordinates, bond_length, move_direction_list):
 
     # need to a bit random because of angles - but still doeson't work
     trial_coordinates = parent_coordinates.__deepcopy__(memo={})
-    incrementor = bond_length*((-1)**(move_direction%2) + 0.3*(np.random.random()-0.5))
-    trial_coordinates[move_direction//2] = parent_coordinates[move_direction//2] + incrementor
+    incrementor = bond_length * ((-1) ** (move_direction % 2) + 0.3 * (np.random.random() - 0.5))
+    trial_coordinates[move_direction // 2] = parent_coordinates[move_direction // 2] + incrementor
     move_direction_list.append(move_direction)
 
     return (trial_coordinates, move_direction_list)
@@ -261,9 +261,9 @@ def assign_position_lattice_style(
           - success ( Logical ) - Indicates whether or not a particle was placed successfully.
 
         """
-    saved_positions = positions.__deepcopy__(memo={}) # save our positions
+    saved_positions = positions.__deepcopy__(memo={})  # save our positions
 
-    bond_list = cgmodel.get_bond_list() # buld the bonded and nonbonded lists
+    bond_list = cgmodel.get_bond_list()  # buld the bonded and nonbonded lists
     nonbonded_list = cgmodel.nonbonded_interaction_list
 
     success = False
@@ -276,8 +276,8 @@ def assign_position_lattice_style(
             positions[parent_bead_index], bond_length, move_direction_list
         )
 
-        positions = np.insert(positions,bead_index,new_coordinates,axis=0) * positions.unit
-        
+        positions = np.insert(positions, bead_index, new_coordinates, axis=0) * positions.unit
+
         nonbonded_distance_list = distances(nonbonded_list, positions)
         bonded_distance_list = distances(bond_list, positions)
 
@@ -289,7 +289,9 @@ def assign_position_lattice_style(
                 success = False
 
         if not success:
-            positions = saved_positions # we could not place the monomer, give up, return positions
+            positions = (
+                saved_positions  # we could not place the monomer, give up, return positions
+            )
 
     return (positions, success)
 
@@ -495,11 +497,12 @@ def get_structure_from_library(cgmodel, high_energy=False, low_energy=False):
                     write_pdbfile_without_topology(cgmodel, file_name)
                     cgmodel.topology = get_topology_from_pdbfile(file_name)
                     cgmodel.system = build_system(cgmodel)
+                    #do a little MD after
                     positions_after, energy, simulation = minimize_structure(
                         cgmodel.topology,
                         cgmodel.system,
                         cgmodel.positions,
-                        expand=1000  # expand for 1000 steps after
+                        expand=1000,  # expand for 1000 steps after
                     )
                     cgmodel.positions = positions_after
                     write_pdbfile_without_topology(cgmodel, file_name)
@@ -580,9 +583,7 @@ def get_structure_from_library(cgmodel, high_energy=False, low_energy=False):
     except:
         cgmodel.system = build_system(cgmodel)
         positions, energy, simulation = minimize_structure(
-            cgmodel.topology,
-            cgmodel.system,
-            cgmodel.positions,
+            cgmodel.topology, cgmodel.system, cgmodel.positions,
         )
 
     return positions
@@ -642,13 +643,13 @@ def get_random_positions(
     sequence = cgmodel.sequence
     end_polymer_length = cgmodel.polymer_length
     end_monomer_types_list = cgmodel.monomer_types
-    heteropolymer = cgmodel.heteropolymer
+    heteropolymer = cgmodel.heteropolymer  # doesn't really do anything yet?
     total_attempts = 0
-    distance_cutoff = 0.90 * cgmodel.bond_lengths["bb_bb_bond_length"]
-    lattice_style = True
-    stored_positions = positions[0:1].__deepcopy__(memo={}) 
+    distance_cutoff = 0.80 * cgmodel.bond_lengths["bb_bb_bond_length"]  # haven't examind this much yet
+    lattice_style = True  # the only one implemented now
+    stored_positions = positions[0:1].__deepcopy__(memo={}) # just the first point
     while total_attempts < max_attempts and len(stored_positions) != len(positions):
-        stored_positions = positions[0:1].__deepcopy__(memo={}) # just the first point
+        stored_positions = positions[0:1].__deepcopy__(memo={})  # just the first point
         bead_index = 0
         previous_monomer_bead_list = []
         monomer_index = 0
@@ -662,7 +663,7 @@ def get_random_positions(
                 print(f"Failed to identify a monomer type for monomer #{monomer_index}")
                 exit()
             num_beads_in_monomer = monomer_type["num_beads"]
-            #which beads are in the monomer.
+            # which beads are in the monomer.
             monomer_bead_list = [i for i in range(bead_index, bead_index + num_beads_in_monomer)]
 
             # Build the connectivity (not the positions) of a model one bead longer.
@@ -673,7 +674,7 @@ def get_random_positions(
             # store some information for restart
             stored_positions_last_monomer = stored_positions.__deepcopy__(memo={})
             bead_index_last_monomer = bead_index
-            
+
             # find the bonds in this new monomer
             monomer_bond_list = []
             for bond_index in range(len(bond_list)):
@@ -696,18 +697,18 @@ def get_random_positions(
                             else:
                                 monomer_bond_list.append([bond[1], bond[0]])
 
-            # this information is need to know which bonds to back to the last monomer.                    
+            # this information is need to know which bonds to back to the last monomer.
             previous_monomer_bead_list_last_monomer = previous_monomer_bead_list
             previous_monomer_bead_list = monomer_bead_list
 
-            completed_list = [] # list of beads whose positions are assigned.
+            completed_list = []  # list of beads whose positions are assigned.
             while completed_list != monomer_bead_list and not monomer_trapped:
-                 if bead_index == 0:
-                     completed_list.append(bead_index)
-                     bead_index = bead_index + 1
-                 else:
-                     # place the monomers involved in this bond
-                     for bond_index in range(len(monomer_bond_list)):
+                if bead_index == 0:
+                    completed_list.append(bead_index)
+                    bead_index = bead_index + 1
+                else:
+                    # place the monomers involved in this bond
+                    for bond_index in range(len(monomer_bond_list)):
                         bond = monomer_bond_list[bond_index]
                         # place the atoms on a pseudogrid
                         if lattice_style:
@@ -724,7 +725,7 @@ def get_random_positions(
                                 bond[0],
                             )
 
-                        if placement: # if we successfuly placed this atom, move to the next one.
+                        if placement:  # if we successfuly placed this atom, move to the next one.
                             stored_positions = trial_positions
                             completed_list.append(bead_index)
                             bead_index = bead_index + 1
@@ -732,16 +733,14 @@ def get_random_positions(
                             # we tried 6 directions, and we couldn't place it. Trapped!
                             monomer_trapped = True
                             break
-                        
+
             if monomer_trapped:
-                # there is no way to go - start over.
-                # Eventually, put in place to back up recursively.
+                # there is no way to go - start over with the first monomer.
+                # Eventually, put in place to back up recursively, rather than starting over.
                 print(f"monomer {monomer_index} trapped; starting over")
-                # start over the whole process.
-                total_attempts +=1
+                total_attempts += 1
                 continue
 
-            
             # We've added a new monomer.
             # Now check for collisions for the entire polymer
 
@@ -750,18 +749,17 @@ def get_random_positions(
 
             # are the new monomers too close to any of the previous monomers?
             collision = False
-            distance_cutoff = 0.80 * cgmodel.bond_lengths["bb_bb_bond_length"]
-            #exclusions_distance_list = distances(cgmodel.get_nonbonded_exclusion_list(), trial_positions)
-            #if collisions(exclusions_distance_list, distance_cutoff):
-            #    collision = True
-            nonbonded_distance_list = distances(cgmodel.get_nonbonded_interaction_list(), trial_positions)
+            nonbonded_distance_list = distances(
+                cgmodel.get_nonbonded_interaction_list(), trial_positions
+            )
             if collisions(nonbonded_distance_list, distance_cutoff):
                 collision = True
 
             if collision:
+                # check if anything is too close
                 print("Error, a particle was placed, but collisions were detected.")
                 print(f"The trial positions are: {trial_positions}")
-                print(f"Backing up")  # backing up
+                print(f"Backing up")  # backing up to the last monomer, build this one again.
                 total_attempts += 1
                 stored_positions = stored_positions_last_monomer
                 bead_index = bead_index_last_monomer
@@ -771,29 +769,33 @@ def get_random_positions(
                     print(f"Monomer {monomer_index} is too hard to place, starting over.")
                     break
             else:
+                # if nothing is too close, build the system up to now and minimize the energy
                 cgmodel.system = build_system(cgmodel)
                 stored_positions, energy, simulation = minimize_structure(
-                    cgmodel.topology,
-                    cgmodel.system,
-                    stored_positions,
+                    cgmodel.topology, cgmodel.system, stored_positions,
                 )
-                monomer_index +=1
+                monomer_index += 1
+                #success!  check the currrent energy
                 print(f"current energy is {energy}")
+
     positions = stored_positions
+    # check for collisions again
     nonbonded_list = cgmodel.nonbonded_interaction_list
     nonbonded_distance_list = distances(nonbonded_list, positions)
     bonded_list = cgmodel.bond_list
     bonded_distance_list = distances(bonded_list, positions)
-    if len(nonbonded_distance_list) > 0 and not collisions(nonbonded_distance_list, distance_cutoff):
+    if len(nonbonded_distance_list) > 0 and not collisions(
+        nonbonded_distance_list, distance_cutoff
+    ):
+        #minimize the whole thing again to check
         cgmodel.positions = positions
         cgmodel.topology = build_topology(cgmodel, use_pdbfile=True)
         cgmodel.system = build_system(cgmodel)
         positions, energy, simulation = minimize_structure(
-            cgmodel.topology,
-            cgmodel.system,
-            positions,
+            cgmodel.topology, cgmodel.system, positions,
         )
 
+        # good to go!
         return positions
 
     else:
