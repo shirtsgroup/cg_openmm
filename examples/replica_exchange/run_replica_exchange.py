@@ -80,8 +80,8 @@ bond_angle_force_constants = {
     "bb_bb_sc_angle_k": bond_angle_force_constant,
 }
 # OpenMM requires angle definitions in units of radians
-bb_bb_bb_equil_bond_angle = 120.0 * (np.math.pi / 180.0)
-bb_bb_sc_equil_bond_angle = 120.0 * (np.math.pi / 180.0)
+bb_bb_bb_equil_bond_angle = 120.0 * unit.degrees
+bb_bb_sc_equil_bond_angle = 120.0 * unit.degrees
 equil_bond_angles = {
     "bb_bb_bb_angle_0": bb_bb_bb_equil_bond_angle,
     "bb_bb_sc_angle_0": bb_bb_sc_equil_bond_angle,
@@ -91,8 +91,8 @@ equil_bond_angles = {
 torsion_force_constant = 20.0 * unit.kilocalorie_per_mole
 torsion_force_constants = {"bb_bb_bb_bb_torsion_k": torsion_force_constant}
 # OpenMM requires angle definitions in units of radians
-bb_bb_bb_bb_equil_torsion_angle = 78.0 * (np.math.pi / 180.0)
-bb_bb_bb_sc_equil_torsion_angle = 78.0 * (np.math.pi / 180.0)
+bb_bb_bb_bb_equil_torsion_angle = 78.0 * unit.degrees
+bb_bb_bb_sc_equil_torsion_angle = 78.0 * unit.degrees
 equil_torsion_angles = {"bb_bb_bb_bb_torsion_0": bb_bb_bb_bb_equil_torsion_angle}
 torsion_periodicities = {"bb_bb_bb_bb_period": 1}
 
