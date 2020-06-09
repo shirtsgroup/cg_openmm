@@ -137,7 +137,7 @@ if not os.path.exists(output_data) or overwrite_files == True:
         temperature_list=temperature_list,
         simulation_time_step=simulation_time_step,
         total_simulation_time=total_simulation_time,
-	exchange_frequency=exchange_frequency,
+        exchange_frequency=exchange_frequency,
         print_frequency=print_frequency,
         output_data=output_data,
         output_directory=output_directory,
