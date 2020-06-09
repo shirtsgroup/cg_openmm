@@ -357,7 +357,15 @@ class CGModel(object):
         self.include_torsion_forces = include_torsion_forces
         self.check_energy_conservation = check_energy_conservation
 
-        # Initialize the monomer types
+        # issue some warnings
+        if len(backbone_lengths) == 0 or len(sidechain_lengths) == 0:
+            print("Error:must have backbone and sidechain length lists at least 1")
+            exit()
+        elif len(backbone_lengths) == 1 and backbone_lengths[0] == 1 and len(sidechain_lengths) == 1 and sidechain_lengths[0]==0:
+            print("Error:Cannot use backbone_lengths = [1] and sidechain_lengths = [0] to create a unbranched polymer")
+            print("Error:Instead use backbone_lengths = [n] and sidechain_lengths = [0], with n>1")
+            exit()            
+            # Initialize the monomer types
         if monomer_types == None:
             self.backbone_lengths = backbone_lengths
             self.sidechain_lengths = sidechain_lengths
