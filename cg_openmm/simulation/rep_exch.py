@@ -227,7 +227,7 @@ def run_replica_exchange(
         else:
             exchange_frequency = 10
 			
-	exchange_attempts = math.floor(simulation_steps/exchange_frequency)
+    exchange_attempts = math.floor(simulation_steps/exchange_frequency)
 
     if temperature_list is None:
         temperature_list = [
