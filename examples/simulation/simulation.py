@@ -26,12 +26,12 @@ total_simulation_time = 2.0 * unit.nanosecond  # Units = picoseconds
 simulation_time_step = 5.0 * unit.femtosecond
 total_steps = round(total_simulation_time.__div__(simulation_time_step))
 temperature = 300.0 * unit.kelvin
-friction = 1.0 / unit.picosecond
+friction = 500.0 / unit.picosecond
 
 # Coarse grained model settings
 polymer_length = 12
-backbone_lengths = [1]
-sidechain_lengths = [1]
+backbone_lengths = [2]
+sidechain_lengths = [2]
 sidechain_positions = [0]
 include_bond_forces = True
 include_bond_angle_forces = True
@@ -40,7 +40,7 @@ include_torsion_forces = True
 constrain_bonds = False
 
 # Bond definitions
-bond_length = 0.2 * unit.nanometer
+bond_length = 0.1 * unit.nanometer
 bond_lengths = {
     "bb_bb_bond_length": bond_length,
     "bb_sc_bond_length": bond_length,
@@ -60,11 +60,11 @@ r_min = 1.5 * bond_length  # Lennard-Jones potential r_min
 # Factor of /(2.0**(1/6)) is applied to convert r_min to sigma
 sigma = r_min / (2.0 ** (1.0 / 6.0))
 sigmas = {"bb_sigma": sigma, "sc_sigma": sigma}
-epsilon = 0.5 * unit.kilojoule_per_mole
+epsilon = 2.0 * unit.kilojoule_per_mole
 epsilons = {"bb_eps": epsilon, "sc_eps": epsilon}
 
 # Bond angle definitions
-bond_angle_force_constant = 50.0 * unit.kilojoule_per_mole / unit.radian / unit.radian
+bond_angle_force_constant = 15.0 * unit.kilojoule_per_mole / unit.radian / unit.radian
 bond_angle_force_constants = {
     "bb_bb_bb_angle_k": bond_angle_force_constant,
     "bb_bb_sc_angle_k": bond_angle_force_constant,
@@ -79,15 +79,19 @@ equil_bond_angles = {
 # Torsion angle definitions
 torsion_force_constant = 20.0 * unit.kilojoule_per_mole
 torsion_force_constants = {"bb_bb_bb_bb_torsion_k": torsion_force_constant}
-bb_bb_bb_bb_equil_torsion_angle = 78.0 * unit.degrees
-bb_bb_bb_sc_equil_torsion_angle = 78.0 * unit.degrees
-equil_torsion_angles = {"bb_bb_bb_bb_torsion_0": bb_bb_bb_bb_equil_torsion_angle,
-                        "bb_bb_bb_sc_torsion_0": bb_bb_bb_sc_equil_torsion_angle
+
+equil_torsion_angle = 0.0 * unit.degrees
+
+equil_torsion_angles = {
+    "bb_bb_bb_bb_torsion_0": equil_torsion_angle,
+    "bb_bb_bb_sc_torsion_0": equil_torsion_angle,
+    "bb_bb_sc_sc_torsion_0": equil_torsion_angle,
 }
+
 torsion_periodicities = {"bb_bb_bb_bb_period": 3, "bb_bb_bb_sc_period":3}
 
 # Get initial positions from local file
-positions = PDBFile("helix2.pdb").getPositions()
+positions = PDBFile("12mer_2b2s_initial_structure.pdb").getPositions()
 
 # Build a coarse grained model
 cgmodel = CGModel(

@@ -1,7 +1,6 @@
 import os
 import subprocess
 import numpy as np
-import math
 import matplotlib.pyplot as pyplot
 from simtk import unit
 import openmmtools
@@ -154,7 +153,7 @@ def run_replica_exchange(
     print_frequency=100,
     collision_rate=5,
     verbose_simulation=False,
-    exchange_frequency=None,
+    exchange_frequency=1000,
     test_time_step=False,
     output_directory=None,
     minimize=True
@@ -219,20 +218,12 @@ def run_replica_exchange(
             topology, system, positions, temperature_list[-1], total_simulation_time
             )
         
-    simulation_steps = int(round(total_simulation_time.__div__(simulation_time_step)))
+    simulation_steps = int(np.floor(total_simulation_time/simulation_time_step))
 
-    if exchange_frequency is None:
-        if simulation_steps > 10000:
-            exchange_frequency = 1000 # openmmtools default
-        else:
-            exchange_frequency = 10
-			
-    exchange_attempts = math.floor(simulation_steps/exchange_frequency)
+    exchange_attempts = int(np.floor(simulation_steps/exchange_frequency))
 
     if temperature_list is None:
-        temperature_list = [
-            (300.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(-50, 50, 10)
-            ]
+        temperature_list = [((300.0 + i) * unit.kelvin) for i in range(-50, 50, 10)]
 
     num_replicas = len(temperature_list)
     sampler_states = list()
@@ -289,7 +280,7 @@ def run_replica_exchange(
             "The suggested time step for a simulation with this model is: "
             + str(simulation_time_step)
             )
-        while simulation_time_step.__div__(2.0) > 0.001 * unit.femtosecond:
+        while simulation_time_step/2.0 > 0.001 * unit.femtosecond:
             try:
                 print("Running replica exchange simulations with OpenMM...")
                 print("Using a time step of " + str(simulation_time_step))
@@ -320,8 +311,8 @@ def run_replica_exchange(
                 print(
                     "Simulation attempt failed with a time step of: " + str(simulation_time_step)
                     )
-                if simulation_time_step.__div__(2.0) > 0.001 * unit.femtosecond:
-                    simulation_time_step = simulation_time_step.__div__(2.0)
+                if simulation_time_step/2.0 > 0.001 * unit.femtosecond:
+                    simulation_time_step = simulation_time_step/2.0
                 else:
                     print(
                         "Error: replica exchange simulation attempt failed with a time step of: "
