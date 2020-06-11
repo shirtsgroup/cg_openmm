@@ -126,8 +126,7 @@ def build_mm_simulation(
     total_simulation_time=1.0 * unit.picosecond,
     output_pdb=None,
     output_data=None,
-    print_frequency=100,
-    test_time_step=False,
+    print_frequency=100
 ):
     """
     Build an OpenMM Simulation()
@@ -162,9 +161,6 @@ def build_mm_simulation(
     :param print_frequency: Number of simulation steps to skip when writing to output, Default = 100
     :type print_frequence: int
 
-    :param test_time_step: Logical variable determining if a test of the time step will be performed, Default = False
-    :type test_time_step: Logical
-
     :returns:
          - simulation ( `Simulation() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1simulation_1_1Simulation.html>`_ ) - OpenMM Simulation() object
 
@@ -183,7 +179,7 @@ def build_mm_simulation(
     >>> output_pdb = "output.pdb"
     >>> output_data = "output.dat"
     >>> print_frequency = 20
-    >>> openmm_simulation = build_mm_simulation(topology,system,positions,temperature=temperature,friction=friction,simulation_time_step=simulation_time_step,total_simulation_time=total_simulation_time,output_pdb=output_pdb,output_data=output_data,print_frequency=print_frequency,test_time_step=False)
+    >>> openmm_simulation = build_mm_simulation(topology,system,positions,temperature=temperature,friction=friction,simulation_time_step=simulation_time_step,total_simulation_time=total_simulation_time,output_pdb=output_pdb,output_data=output_data,print_frequency=print_frequency)
 
     """
 
@@ -250,9 +246,6 @@ def run_simulation(
     :param cgmodel: CGModel() object
     :type cgmodel: class
 
-    :param output_directory: Output directory for simulation data
-    :type output_directory: str
-
     :param total_simulation_time: Total run time for individual simulations
     :type total_simulation_time: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
 
@@ -265,8 +258,20 @@ def run_simulation(
     :param friction: Langevin thermostat friction coefficient, default = 1 / ps
     :type friction: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
 
+    :param minimize: Whether or not the structure is energy-minimized before simulating.
+    :type minimize: bool
+
     :param print_frequency: Number of simulation steps to skip when writing to output, Default = 1000
     :type print_frequence: int
+
+    :param output_directory: Output directory for simulation data
+    :type output_directory: str
+
+    :param output_pdb: file to put the output pdb
+    :type output_pdb: str
+
+    :param output_data: file to put the output data as a function of time.
+    :type output_data: str
 
     :Example:
 
@@ -285,7 +290,7 @@ def run_simulation(
     >>> output_pdb = "output.pdb"
     >>> output_data = "output.dat"
     >>> print_frequency = 20
-    >>> run_simulation(cgmodel,output_directory,total_simulation_time,simulation_time_step,temperature,friction,print_frequency,output_pdb=output_pdb,output_data=output_data)
+    >>> run_simulation(cgmodel,total_simulation_time,simulation_time_step,temperature,friction,print_frequency,output_directory=output_directory,minimize=True,output_pdb=output_pdb,output_data=output_data)
 
     .. warning:: When run with default options this subroutine is capable of producing a large number of output files.  For example, by default this subroutine will plot the simulation data that is written to an output file.
 
