@@ -150,7 +150,7 @@ def run_replica_exchange(
     exchange_frequency=1000,
     print_frequency=100,
     output_directory="output",
-    output_data="output.nc"
+    output_data="output.nc",
 ):
 
     """

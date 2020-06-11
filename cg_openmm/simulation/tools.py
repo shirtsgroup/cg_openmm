@@ -126,7 +126,7 @@ def build_mm_simulation(
     total_simulation_time=1.0 * unit.picosecond,
     output_pdb=None,
     output_data=None,
-    print_frequency=100
+    print_frequency=100,
 ):
     """
     Build an OpenMM Simulation()
