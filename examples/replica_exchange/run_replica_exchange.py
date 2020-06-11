@@ -1,7 +1,6 @@
 #!/Users/mrshirts/anaconda3/bin/python
 
 import os
-import pdb
 from simtk import unit
 from foldamers.cg_model.cgmodel import CGModel
 from foldamers.parameters.reweight import get_temperature_list
