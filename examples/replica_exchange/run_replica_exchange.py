@@ -10,11 +10,12 @@ import simtk.openmm as openmm
 import pickle
 
 from openmmtools.cache import global_context_cache
-global_context_cache.platform = openmm.Platform.getPlatformByName('CPU')
+
+global_context_cache.platform = openmm.Platform.getPlatformByName("CPU")
 
 ###
 #
-# This example demonstrates how to run a Yank replica exchange simulation
+# This example demonstrates how to run a OpenMM replica exchange simulation
 # using a "CGModel" object built with the 'foldamers' software package.
 #
 ###
@@ -23,19 +24,19 @@ global_context_cache.platform = openmm.Platform.getPlatformByName('CPU')
 output_directory = "output"
 if not os.path.exists(output_directory):
     os.mkdir(output_directory)
-overwrite_files = True # overwrite files.
+overwrite_files = True  # overwrite files.
 
 # Replica exchange simulation settings
-print_frequency = 10  # Number of steps to skip when printing output
-total_simulation_time = 0.1 * unit.nanosecond
-simulation_time_step = 2.0 * unit.femtosecond
-total_steps = round(total_simulation_time.__div__(simulation_time_step))
+print_frequency = 100  # Number of steps to skip when printing output
+total_simulation_time = 0.5 * unit.nanosecond
+simulation_time_step = 20.0 * unit.femtosecond
+total_steps = int(np.floor(total_simulation_time / simulation_time_step))
 output_data = os.path.join(output_directory, "output.nc")
 number_replicas = 12
 min_temp = 600.0 * unit.kelvin
 max_temp = 1000.0 * unit.kelvin
 temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
-exchange_frequency = 50  # Number of steps between exchange attempts
+exchange_frequency = 500  # Number of steps between exchange attempts
 
 # Coarse grained model settings
 polymer_length = 12
@@ -123,9 +124,9 @@ cgmodel = CGModel(
 )
 
 # kludge - information needed for writing out
-pkl = open('stored_topology.pkl',"wb")
+pkl = open("stored_topology.pkl", "wb")
 # check to make sure that this is the right time interval.
-pickle.dump((temperature_list,exchange_frequency*simulation_time_step,cgmodel.topology),pkl)
+pickle.dump((temperature_list, exchange_frequency * simulation_time_step, cgmodel.topology), pkl)
 pkl.close()
 
 if not os.path.exists(output_data) or overwrite_files == True:
@@ -140,6 +141,6 @@ if not os.path.exists(output_data) or overwrite_files == True:
         print_frequency=print_frequency,
         output_data=output_data,
         output_directory=output_directory,
-        )
+    )
 else:
     print("Replica output files exist")

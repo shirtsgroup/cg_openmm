@@ -13,113 +13,6 @@ from cg_openmm.utilities.iotools import write_bonds
 import sys
 
 
-def get_simulation_time_step(
-    topology,
-    system,
-    positions,
-    temperature,
-    total_simulation_time,
-    friction=1.0 / unit.picosecond,
-    time_step_list=None,
-):
-    """
-    Determine a suitable simulation time step.
-
-    :param topology: OpenMM Topology
-    :type topology: `Topology() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1topology_1_1Topology.html>`_
-
-    :param system: OpenMM System()
-    :type system: `System() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1System.html>`_
-
-    :param positions: Positions array for the model we would like to test
-    :type positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit )
-
-    :param temperature: Simulation temperature
-    :type temperature: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
-
-    :param total_simulation_time: Total run time for individual simulations
-    :type total_simulation_time: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
-
-    :param friction: Langevin thermostat friction coefficient, default = 1 / ps
-    :type friction: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
-
-    :param time_step_list: List of time steps for which to attempt a simulation in OpenMM.
-    :type time_step_list: List, default = None
-
-    :returns:
-         - time_step ( `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_ ) - A successfully-tested simulation time-step for the provided coarse grained model
-         - tolerance ( `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_ ) - The maximum change in forces that will be tolerated when testing the time step.
-
-    :Example:
-
-    >>> from simtk import unit
-    >>> from foldamers.cg_model.cgmodel import CGModel
-    >>> cgmodel = CGModel()
-    >>> topology = cgmodel.topology
-    >>> system = cgmodel.system
-    >>> positions = cgmodel.positions
-    >>> temperature = 300.0 * unit.kelvin
-    >>> friction = 1.0 / unit.picosecond
-    >>> total_simulation_time = 1.0 * unit.picosecond
-    >>> time_step_list = [1.0 * unit.femtosecond, 2.0 * unit.femtosecond, 5.0 * unit.femtosecond]
-    >>> best_time_step,max_force_tolerance = get_simulation_time_step(topology,system,positions,temperature,total_simulation_time,friction=friction,time_step_list=time_step_list)
-
-    """
-    tolerance = 10.0
-    success = False
-
-    if time_step_list is None:
-        time_step_list = [10.0 - i * unit.femtosecond for i in [5.0, 7.5, 9.0, 9.5, 9.9, 9.99]]
-
-    if not isinstance(time_step_list, list):
-        time_step_list = [time_step_list]
-    for time_step in time_step_list:
-        integrator = LangevinIntegrator(
-            temperature._value, friction, time_step.in_units_of(unit.picosecond)._value,
-        )
-
-        simulation = Simulation(topology, system, integrator)
-        simulation.context.setPositions(positions.in_units_of(unit.nanometer))
-        simulation.context.setVelocitiesToTemperature(temperature)
-        simulation.reporters.append(PDBReporter("test.pdb", 1))
-        simulation.reporters.append(
-            StateDataReporter(
-                "test.dat",
-                1,
-                step=True,
-                totalEnergy=True,
-                potentialEnergy=True,
-                kineticEnergy=True,
-                temperature=True,
-            )
-        )
-        total_steps = round(total_simulation_time.__div__(time_step))
-        try:
-            simulation.minimizeEnergy()
-            positions = simulation.context.getState(getPositions=True).getPositions()
-            success = True
-            break
-        except BaseException:
-            continue
-    if not success:
-        for tolerance in [10 ** exponent for exponent in range(2, 10)]:
-            try:
-                #            simulation.context.applyConstraints(1.0e-8)
-                integrator = LangevinIntegrator(
-                    temperature._value, friction, time_step.in_units_of(unit.picosecond)._value,
-                )
-                simulation = Simulation(topology, system, integrator)
-                simulation.context.setPositions(positions)
-                simulation.minimizeEnergy(tolerance=tolerance)
-                success = True
-                break
-            except BaseException:
-                continue
-    if not success:
-        tolerance = None
-    return (time_step, tolerance)
-
-
 def minimize_structure(
     topology, system, positions, output_pdb=None, print_frequency=1, expand=None
 ):
@@ -155,7 +48,7 @@ def minimize_structure(
 
     """
     # parameters for expanding the structure. This should not be hard-coded.
-    integrator = LangevinIntegrator(500, 1, 0.0005)  
+    integrator = LangevinIntegrator(500, 1, 0.0005)
 
     simulation = Simulation(topology, system, integrator)
     simulation.context.setPositions(positions.in_units_of(unit.nanometer))
@@ -340,15 +233,15 @@ def build_mm_simulation(
 
 def run_simulation(
     cgmodel,
-    output_directory,
     total_simulation_time,
     simulation_time_step,
     temperature,
-    friction,
-    print_frequency,
+    friction=1.0 / unit.picosecond,
+    print_frequency=1000,
     minimize=True,
-    output_pdb=None,
-    output_data=None,
+    output_directory="output",
+    output_pdb="simulation.pdb",
+    output_data="simulation.dat",
 ):
     """
 
@@ -372,7 +265,7 @@ def run_simulation(
     :param friction: Langevin thermostat friction coefficient, default = 1 / ps
     :type friction: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
 
-    :param print_frequency: Number of simulation steps to skip when writing to output, Default = 100
+    :param print_frequency: Number of simulation steps to skip when writing to output, Default = 1000
     :type print_frequence: int
 
     :Example:
@@ -385,7 +278,7 @@ def run_simulation(
     >>> system = cgmodel.system
     >>> positions = cgmodel.positions
     >>> temperature = 300.0 * unit.kelvin
-	>>> friction = 1.0 / unit.picosecond
+    >>> friction = 1.0 / unit.picosecond
     >>> simulation_time_step = 5.0 * unit.femtosecond
     >>> total_simulation_time= 1.0 * unit.picosecond
     >>> output_directory = os.getcwd()
@@ -397,17 +290,11 @@ def run_simulation(
     .. warning:: When run with default options this subroutine is capable of producing a large number of output files.  For example, by default this subroutine will plot the simulation data that is written to an output file.
 
     """
-    total_steps = round(total_simulation_time.__div__(simulation_time_step))
+    total_steps = int(np.floor(total_simulation_time / simulation_time_step))
     if not os.path.exists(output_directory):
         os.mkdir(output_directory)
-    if output_pdb is None:
-        output_pdb = str(str(output_directory) + "/simulation.pdb")
-    else:
-        output_pdb = str(str(output_directory) + "/" + str(output_pdb))
-    if output_data is None:
-        output_data = str(str(output_directory) + "/simulation.dat")
-    else:
-        output_data = str(str(output_directory) + "/" + str(output_data))
+    output_pdb = os.path.join(output_directory, output_pdb)
+    output_data = os.path.join(output_directory, output_data)
 
     simulation = build_mm_simulation(
         cgmodel.topology,
@@ -434,7 +321,7 @@ def run_simulation(
         print("1) Reduce the simulation time step")
         print("2) Make sure that the values for the model parameters are reasonable,")
         print("   particularly in comparison with the requested simulation")
-        print(str("   temperature: " + str(temperature)))
+        print(f"   temperature: {temperature}")
         print("3) Make sure that the initial/input structure is reasonable for the")
         print("   input set of model parameters.")
         exit()
@@ -548,11 +435,8 @@ def plot_simulation_data(simulation_times, y_data, plot_type=None, output_direct
         pyplot.title("Simulation Temperature")
 
     pyplot.plot(simulation_times, y_data)
-    if output_directory is None:
-        pyplot.savefig(file_name)
-    else:
-        output_file = str(str(output_directory) + "/" + str(file_name))
-        pyplot.savefig(output_file)
+    output_file = os.path.join(output_directory, file_name)
+    pyplot.savefig(output_file)
     pyplot.close()
     return
 

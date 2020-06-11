@@ -23,13 +23,12 @@ if not os.path.exists(output_directory):
 output_data = os.path.join(output_directory, "output.nc")
 
 # Replica exchange simulation settings
-ft = open("stored_topology.pkl","rb")
-(temperature_list,time_interval,stored_topology) = pickle.load(ft)
+ft = open("stored_topology.pkl", "rb")
+(temperature_list, time_interval, stored_topology) = pickle.load(ft)
 replica_energies, replica_positions, replica_states = process_replica_exchange_data(
     temperature_list=temperature_list,
     output_data=output_data,
     output_directory="output",
-    time_interval = time_interval
-    )
+    time_interval=time_interval,
+)
 make_replica_pdb_files(stored_topology, replica_positions, output_dir=output_directory)
-
