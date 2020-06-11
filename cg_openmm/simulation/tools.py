@@ -12,8 +12,15 @@ import csv
 from cg_openmm.utilities.iotools import write_bonds
 import sys
 
+
 def get_simulation_time_step(
-    topology, system, positions, temperature, total_simulation_time, friction=1.0/unit.picosecond, time_step_list=None
+    topology,
+    system,
+    positions,
+    temperature,
+    total_simulation_time,
+    friction=1.0 / unit.picosecond,
+    time_step_list=None,
 ):
     """
     Determine a suitable simulation time step.
@@ -68,9 +75,7 @@ def get_simulation_time_step(
         time_step_list = [time_step_list]
     for time_step in time_step_list:
         integrator = LangevinIntegrator(
-            temperature._value,
-            friction,
-            time_step.in_units_of(unit.picosecond)._value,
+            temperature._value, friction, time_step.in_units_of(unit.picosecond)._value,
         )
 
         simulation = Simulation(topology, system, integrator)
@@ -101,9 +106,7 @@ def get_simulation_time_step(
             try:
                 #            simulation.context.applyConstraints(1.0e-8)
                 integrator = LangevinIntegrator(
-                    temperature._value,
-                    friction,
-                    time_step.in_units_of(unit.picosecond)._value,
+                    temperature._value, friction, time_step.in_units_of(unit.picosecond)._value,
                 )
                 simulation = Simulation(topology, system, integrator)
                 simulation.context.setPositions(positions)
@@ -118,16 +121,7 @@ def get_simulation_time_step(
 
 
 def minimize_structure(
-    topology,
-    system,
-    positions,
-    temperature=0.0 * unit.kelvin,
-	friction=1.0 / unit.picosecond,
-    simulation_time_step=None,
-    total_simulation_time=1.0 * unit.picosecond,
-    output_pdb=None,
-    output_data=None,
-    print_frequency=1,
+    topology, system, positions, output_pdb=None, print_frequency=1, expand=None
 ):
     """
     Minimize the potential energy
@@ -141,23 +135,8 @@ def minimize_structure(
     :param positions: Positions array for the model we would like to test
     :type positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit )
 
-    :param temperature: Simulation temperature
-    :type temperature: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
-
-    :param friction: Langevin thermostat friction coefficient, default = 1 / ps
-    :type friction: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_	
-	
-    :param total_simulation_time: Total run time for individual simulations
-    :type total_simulation_time: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
-
     :param output_pdb: Output destinaton for PDB-formatted coordinates during the simulation
     :type output_pdb: str
-
-    :param output_data: Output destination for simulation data
-    :type output_data: str
-
-    :param print_frequency: Number of simulation steps to skip when writing data, default = 1
-    :type print_frequency: int
 
     :returns:
          - positions ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit ) ) - Minimized positions
@@ -171,88 +150,37 @@ def minimize_structure(
     >>> topology = cgmodel.topology
     >>> system = cgmodel.system
     >>> positions = cgmodel.positions
-    >>> temperature = 300.0 * unit.kelvin
-	>>> friction = 1.0 / unit.picosecond
-    >>> total_simulation_time = 1.0 * unit.picosecond
-    >>> simulation_time_step = 1.0 * unit.femtosecond
     >>> output_pdb = "output.pdb"
-    >>> output_data = "output.dat"
-    >>> print_frequency = 20
-    >>> minimum_energy_structure,potential_energy,openmm_simulation_object = minimize_structure(topology,system,positions,temperature=temperature,friction=friction,simulation_time_step=simulation_time_step,total_simulation_time=total_simulation_time,output_pdb=output_pdb,output_data=output_data,print_frequency=print_frequency)
+    >>> minimum_energy_structure,potential_energy,openmm_simulation_object = minimize_structure(topology,system,positions,output_pdb=output_pdb,output_data=output_data,print_frequency=print_frequency)
 
     """
-    if simulation_time_step is None:
-        print("Minimizing the structure, but no time step was provided.")
-        exit()
-        simulation_time_step_list = [(10.0 * (0.5 ** i)) * unit.femtosecond for i in range(0, 14)]
-        time_step, tolerance = get_simulation_time_step(
-            topology,
-            system,
-            positions,
-            temperature,
-            total_simulation_time,
-			friction,
-            simulation_time_step_list,
-        )
-        if tolerance is None:
-            #            print("This set of positions is not a reasonable initial configuration.")
-            energy = "NaN"
-            simulation = None
-            return (positions, energy)
-    else:
-        time_step = simulation_time_step
-    integrator = LangevinIntegrator(
-        temperature._value, friction, time_step.in_units_of(unit.picosecond)._value
-    )
+    # parameters for expanding the structure. This should not be hard-coded.
+    integrator = LangevinIntegrator(500, 1, 0.0005)  
 
     simulation = Simulation(topology, system, integrator)
     simulation.context.setPositions(positions.in_units_of(unit.nanometer))
-    simulation.context.setVelocitiesToTemperature(temperature)
-    forces = simulation.context.getState(getForces=True).getForces()
     if output_pdb is not None:
         simulation.reporters.append(PDBReporter(output_pdb, print_frequency))
-    if output_data is not None:
-        simulation.reporters.append(
-            StateDataReporter(
-                output_data,
-                print_frequency,
-                step=True,
-                totalEnergy=True,
-                potentialEnergy=True,
-                kineticEnergy=True,
-                temperature=True,
-            )
-        )
-
-    total_steps = round(total_simulation_time.__div__(time_step))
-    potential_energy = None
     try:
-        simulation.minimizeEnergy()  # Set the simulation type to energy minimization
-        positions = simulation.context.getState(getPositions=True).getPositions()
-        potential_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
-    except BaseException:
-        print("Minimization attempt failed with a time step of: " + str(time_step))
-        if time_step.__gt__(0.01 * unit.femtosecond):
-            time_step = time_step / 2.0
-            print("Attempting minimization with a smaller time step.")
-            positions, potential_energy = minimize_structure(
-                topology,
-                system,
-                positions,
-                temperature=temperature,
-				friction=friction,
-                simulation_time_step=time_step,
-                total_simulation_time=total_simulation_time,
-                output_pdb=output_pdb,
-                output_data=output_data,
-                print_frequency=print_frequency,
-            )
-            time_step = time_step / 2.0
-        if time_step.__le__(0.01 * unit.femtosecond):
-            print("Try using the 'get_simulation_time_step()' function,")
-            print("or changing the 'simulation_time_step',")
-            print("to see if one of these changes solves the problem.")
-            # exit()
+        simulation.minimizeEnergy(
+            tolerance=10, maxIterations=500  # think about making this not hard-coded.
+        )  # Set the simulation type to energy minimization
+    except Exception:
+        print(f"Minimization attempt failed.")
+        return (positions, simulation, np.nan)
+    if expand:
+        simulation.step(expand)
+    positions_vec = simulation.context.getState(getPositions=True).getPositions()
+
+    # turn it into a numpy array of quantity
+    positions = unit.Quantity(
+        np.array(
+            [[float(positions_vec[i]._value[j]) for j in range(3)] for i in range(len(positions))]
+        ),
+        positions_vec.unit,
+    )
+
+    potential_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
 
     return (positions, potential_energy, simulation)
 
@@ -365,15 +293,6 @@ def build_mm_simulation(
     >>> openmm_simulation = build_mm_simulation(topology,system,positions,temperature=temperature,friction=friction,simulation_time_step=simulation_time_step,total_simulation_time=total_simulation_time,output_pdb=output_pdb,output_data=output_data,print_frequency=print_frequency,test_time_step=False)
 
     """
-    if simulation_time_step is None:
-        #          print("No simulation time step provided.")
-        #          print("Going to attempt a range of time steps,")
-        #          print("to confirm their validity for these model settings,")
-        #          print("before performing a full simulation.")
-        time_step_list = [(10.0 * (0.5 ** i)) * unit.femtosecond for i in range(0, 14)]
-        simulation_time_step, force_cutoff = get_simulation_time_step(
-            topology, system, positions, temperature, total_simulation_time, time_step_list
-        )
 
     integrator = LangevinIntegrator(
         temperature._value, friction, simulation_time_step.in_units_of(unit.picosecond)._value
@@ -381,7 +300,6 @@ def build_mm_simulation(
 
     simulation = Simulation(topology, system, integrator)
     simulation.context.setPositions(positions)
-    simulation.context.setVelocitiesToTemperature(temperature)
 
     if output_pdb is not None:
         simulation.reporters.append(PDBReporter(output_pdb, print_frequency))
@@ -397,50 +315,26 @@ def build_mm_simulation(
                 temperature=True,
             )
         )
-    simulation.reporters.append(StateDataReporter(sys.stdout, print_frequency, step=True,
-                                                  potentialEnergy=True, temperature=True))
+    simulation.reporters.append(
+        StateDataReporter(
+            sys.stdout, print_frequency, step=True, potentialEnergy=True, temperature=True
+        )
+    )
 
     # minimization
-    simulation.minimizeEnergy() # Set the simulation type to energy
+    init_positions = positions
+    try:
+        simulation.minimizeEnergy(
+            tolerance=100, maxIterations=1000  # probably shouldn't be hard-coded.
+        )  # Set the simulation type to energy
+    except Exception:
+        print("Minimization failed on building model")
+        print(
+            f"potential energy was {simulation.context.getState(getEnergy=True).getPotentialEnergy()}"
+        )
+        print("initial positions were:")
+        print(positions)
 
-
-    if test_time_step:
-        try:
-            simulation_temp = simulation.__deepcopy__(memo={})
-            simulation_temp.step(100)
-            print("Simulation attempt successful.")
-        except BaseException:
-            #            print("Simulation attempt failed with a time step of: "+str(simulation_time_step))
-            #            print("Going to attempt to identify a smaller time step that allows simulation for this model and its current settings...")
-            time_step_list = [(10.0 * (0.5 ** i)) * unit.femtosecond for i in range(0, 14)]
-            if all(simulation_time_step.__lt__(time_step) for time_step in time_step_list):
-                print("Error: couldn't identify a suitable simulation time step for this model.")
-                print("Check the model settings, consider changing the input time step,")
-                print(
-                    "and if this doesn't fix the problem, try changing the default list of time steps"
-                )
-                print("that are sampled in .build.cg_build.build_mm_simulation.py'")
-                exit()
-            for time_step in time_step_list:
-                if time_step < simulation_time_step:
-                    simulation = build_mm_simulation(
-                        topology,
-                        system,
-                        positions,
-                        temperature=temperature,
-						friction=friction,
-                        simulation_time_step=time_step,
-                        total_simulation_time=total_simulation_time,
-                        output_pdb=output_pdb,
-                        output_data=output_data,
-                        print_frequency=print_frequency,
-                    )
-                    try:
-
-                        simulation_temp.step(100)
-                        return simulation
-                    except BaseException:
-                        continue
     return simulation
 
 
@@ -450,7 +344,7 @@ def run_simulation(
     total_simulation_time,
     simulation_time_step,
     temperature,
-	friction,
+    friction,
     print_frequency,
     minimize=True,
     output_pdb=None,
@@ -522,7 +416,7 @@ def run_simulation(
         total_simulation_time=total_simulation_time,
         simulation_time_step=simulation_time_step,
         temperature=temperature,
-		friction=friction,
+        friction=friction,
         output_pdb=output_pdb,
         output_data=output_data,
         print_frequency=print_frequency,
@@ -534,7 +428,7 @@ def run_simulation(
     except BaseException:
         plot_simulation_results(
             output_data, output_directory, simulation_time_step, total_simulation_time
-            )
+        )
         print("Error: simulation attempt failed.")
         print("We suggest trying the following changes to see if they fix the problem:")
         print("1) Reduce the simulation time step")

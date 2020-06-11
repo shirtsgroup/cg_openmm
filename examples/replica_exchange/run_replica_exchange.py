@@ -1,7 +1,6 @@
 #!/Users/mrshirts/anaconda3/bin/python
 
 import os
-import pdb
 from simtk import unit
 from foldamers.cg_model.cgmodel import CGModel
 from foldamers.parameters.reweight import get_temperature_list
@@ -36,7 +35,7 @@ number_replicas = 12
 min_temp = 600.0 * unit.kelvin
 max_temp = 1000.0 * unit.kelvin
 temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
-exchange_frequency = 50
+exchange_frequency = 50  # Number of steps between exchange attempts
 
 # Coarse grained model settings
 polymer_length = 12
@@ -137,6 +136,7 @@ if not os.path.exists(output_data) or overwrite_files == True:
         temperature_list=temperature_list,
         simulation_time_step=simulation_time_step,
         total_simulation_time=total_simulation_time,
+        exchange_frequency=exchange_frequency,
         print_frequency=print_frequency,
         output_data=output_data,
         output_directory=output_directory,

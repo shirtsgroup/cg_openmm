@@ -153,7 +153,7 @@ def run_replica_exchange(
     print_frequency=100,
     collision_rate=5,
     verbose_simulation=False,
-    exchange_attempts=None,
+    exchange_frequency=1000,
     test_time_step=False,
     output_directory=None,
     minimize=True
@@ -188,9 +188,9 @@ def run_replica_exchange(
 
     :param verbose_simulation: Determines how much output is printed during a simulation run.  Default = False
     :type verbose_simulation: Logical
-
-    :param exchange_attempts: Number of exchange attempts to make during a replica exchange simulation run, Default = None
-    :type exchange_attempts: int
+	
+    :param exchange_frequency: Number of time steps between replica exchange attempts, Default = None
+    :type exchange_frequency: int	
 
     :param test_time_step: Logical variable determining if a test of the time step will be performed, Default = False
     :type test_time_step: Logical
@@ -218,18 +218,12 @@ def run_replica_exchange(
             topology, system, positions, temperature_list[-1], total_simulation_time
             )
         
-    simulation_steps = int(round(total_simulation_time.__div__(simulation_time_step)))
+    simulation_steps = int(np.floor(total_simulation_time/simulation_time_step))
 
-    if exchange_attempts is None:
-        if simulation_steps > 10000:
-            exchange_attempts = round(simulation_steps / 1000)
-        else:
-            exchange_attempts = 10
+    exchange_attempts = int(np.floor(simulation_steps/exchange_frequency))
 
     if temperature_list is None:
-        temperature_list = [
-            (300.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(-50, 50, 10)
-            ]
+        temperature_list = [((300.0 + i) * unit.kelvin) for i in range(-50, 50, 10)]
 
     num_replicas = len(temperature_list)
     sampler_states = list()
@@ -246,11 +240,10 @@ def run_replica_exchange(
     
     # Create and configure simulation object.
 
-    langevin_steps = int(simulation_steps / exchange_attempts)  # check whether dividable?
     move = openmmtools.mcmc.LangevinDynamicsMove(
         timestep=simulation_time_step,
         collision_rate=collision_rate / unit.picosecond,
-        n_steps=langevin_steps,
+        n_steps=exchange_frequency,
         reassign_velocities=False,
         )
 
@@ -287,7 +280,7 @@ def run_replica_exchange(
             "The suggested time step for a simulation with this model is: "
             + str(simulation_time_step)
             )
-        while simulation_time_step.__div__(2.0) > 0.001 * unit.femtosecond:
+        while simulation_time_step/2.0 > 0.001 * unit.femtosecond:
             try:
                 print("Running replica exchange simulations with OpenMM...")
                 print("Using a time step of " + str(simulation_time_step))
@@ -318,8 +311,8 @@ def run_replica_exchange(
                 print(
                     "Simulation attempt failed with a time step of: " + str(simulation_time_step)
                     )
-                if simulation_time_step.__div__(2.0) > 0.001 * unit.femtosecond:
-                    simulation_time_step = simulation_time_step.__div__(2.0)
+                if simulation_time_step/2.0 > 0.001 * unit.femtosecond:
+                    simulation_time_step = simulation_time_step/2.0
                 else:
                     print(
                         "Error: replica exchange simulation attempt failed with a time step of: "
