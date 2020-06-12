@@ -87,7 +87,7 @@ def process_replica_exchange_data(
     >>> from cg_openmm.simulation.rep_exch import *
     >>> cgmodel = CGModel()
     >>> replica_energies,replica_positions,replica_state_indices = run_replica_exchange(cgmodel.topology,cgmodel.system,cgmodel.positions)
-    >>> replica_energies,replica_positions,replica_state_indices = process_replica_exchange_data(temperature_list=,output_data="output.nc",print_frequency=None)
+    >>> replica_energies,replica_positions,replica_state_indices = process_replica_exchange_data(temperature_list=,output_data="output.nc")
 
 
     """
@@ -105,21 +105,42 @@ def process_replica_exchange_data(
     n_particles = np.shape(reporter.read_sampler_states(iteration=0)[0].positions)[0]
     temps = np.array([temp._value for temp in temperature_list])
     beta_k = 1 / (kB * temps)
-    for k in range(len(replica_energies)):
+    n_replicas = len(temperature_list)
+    for k in range(n_replicas):
         replica_energies[:, k, :] *= beta_k[k] ** (-1)
 
     total_steps = len(replica_energies[0][0])
-    replica_positions = unit.Quantity(
-        np.zeros([len(temperature_list), total_steps, n_particles, 3]), unit.nanometer
-    )
+    state_energies = np.zeros([n_replicas, total_steps])
 
+    # there must be some better way to do this as list comprehension.
     for step in range(total_steps):
+        for state in range(n_replicas):
+            state_energies[state, step] = replica_energies[
+                np.where(replica_state_indices[:, step] == state)[0], 0, step
+            ]
+
+    # can run physical-valication on these state_energies
+
+    print("state    mean energies  variance")
+    for state in range(n_replicas):
+        print(
+            f"  {state:4d}    {np.mean(state_energies[state,:]):10.6f} {np.std(state_energies[state,:]):10.6f}"
+        )
+
+    replica_positions = np.zeros([n_replicas, total_steps, n_particles, 3])
+
+    f = open(os.path.join(output_directory, "replica_energies.dat"), "w")
+    for step in range(total_steps):
+        f.write(f"{step:10d}")
         sampler_states = reporter.read_sampler_states(iteration=step)
-        for replica_index in range(len(temperature_list)):
-            for particle in range(n_particles):
-                replica_positions[replica_index][step][particle] = sampler_states[
-                    replica_index
-                ].positions[particle]
+        for replica_index in range(n_replicas):
+            replica_positions[replica_index, step, :, :] = sampler_states[replica_index].positions
+            f.write(f"{replica_energies[replica_index,replica_index,step]:12.6f}")
+        f.write("\n")
+    f.close()
+
+    # doing the array operations gets rid of units, convert back to units
+    replica_positions = replica_positions * sampler_states[0].positions[0].unit
 
     plot_replica_exchange_energies(
         replica_energies,
@@ -148,7 +169,6 @@ def run_replica_exchange(
     friction=1.0 / unit.picosecond,
     minimize=True,
     exchange_frequency=1000,
-    print_frequency=100,
     output_directory="output",
     output_data="output.nc",
 ):
@@ -186,9 +206,6 @@ def run_replica_exchange(
     :param exchange_frequency: Number of time steps between replica exchange attempts, Default = None
     :type exchange_frequency: int	
 
-    :param print_frequency: Number of simulation steps to skip when writing to output, Default = 100
-    :type print_frequence: int
-
     :param output_directory: Path to which we will write the output from simulation runs.
     :type output_directory: str
 
@@ -222,13 +239,15 @@ def run_replica_exchange(
     thermodynamic_states = list()
 
     # Define thermodynamic states.
-    box_vectors = system.getDefaultPeriodicBoxVectors()
+    # box_vectors = system.getDefaultPeriodicBoxVectors()
     for temperature in temperature_list:
         thermodynamic_state = openmmtools.states.ThermodynamicState(
             system=system, temperature=temperature
         )
         thermodynamic_states.append(thermodynamic_state)
-        sampler_states.append(openmmtools.states.SamplerState(positions, box_vectors=box_vectors))
+        sampler_states.append(
+            openmmtools.states.SamplerState(positions)
+        )  # no box vectors, non-periodic system.
 
     # Create and configure simulation object.
 
