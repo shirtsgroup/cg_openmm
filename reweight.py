@@ -7,10 +7,7 @@ import simtk.unit as unit
 import pymbar
 from pymbar import timeseries
 
-kB = unit.Quantity(
-    0.008314462, unit.kilojoule_per_mole
-)  # Boltzmann constant (Gas constant) in kJ/(mol*K)
-
+kB = (unit.MOLAR_GAS_CONSTANT_R).in_units_of(unit.kilojoule / (unit.kelvin * unit.mole))
 
 def bin_samples(sample_kn, n_bins):
     """
@@ -197,10 +194,10 @@ def get_temperature_list(min_temp, max_temp, num_replicas):
     temperature_list = []
     temperature_list.append(min_temp)
     replica_index = 1
-    while len(temperature_list) > 0 and temperature_list[-1].__lt__(max_temp):
+    while len(temperature_list) > 0 and temperature_list[-1] < max_temp:
         delta = calc_temperature_spacing(min_temp, max_temp, num_replicas, replica_index)
         last_temperature = temperature_list[-1]
-        temperature = last_temperature.__add__(delta)
+        temperature = last_temperature + delta
         temperature_list.append(temperature)
         replica_index = replica_index + 1
     return temperature_list
