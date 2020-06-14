@@ -1,23 +1,28 @@
+import os
 import numpy as np
 from foldamers.parameters.reweight import *
 import matplotlib.pyplot as pyplot
+from openmmtools.multistate import MultiStateReporter
+from openmmtools.multistate import ReplicaExchangeAnalyzer
+import pymbar
+from pymbar import timeseries
 
-kB = 0.008314462  # Boltzmann constant (Gas constant) in kJ/(mol*K)
+kB = (unit.MOLAR_GAS_CONSTANT_R).in_units_of(unit.kilojoule / (unit.kelvin * unit.mole)) # Boltzmann constant in kJ/(mol*K)
 
 
 def plot_heat_capacity(C_v, dC_v, temperature_list, file_name="heat_capacity.png"):
     """
         Given an array of temperature-dependent heat capacity values and the uncertainties in their estimates, this function plots the heat capacity curve.
-
+    
         :param C_v: The heat capacity data to plot.
         :type C_v: List( float )
-
+    
         :param dC_v: The uncertainties in the heat capacity data
         :type dC_v: List( float )
-
+    
         :param file_name: The name/path of the file where plotting output will be written, default = "heat_capacity.png"
         :type file_name: str
-
+    
         """
     figure = pyplot.figure(1)
     temperature_list = np.array([temperature for temperature in temperature_list])
@@ -32,51 +37,126 @@ def plot_heat_capacity(C_v, dC_v, temperature_list, file_name="heat_capacity.png
     return
 
 
-def get_heat_capacity(replica_energies, temperature_list, num_intermediate_states=None):
+def get_heat_capacity(temperature_list, output_data="output.nc", output_directory="output", num_intermediate_states=0,frac_dT=0.05):
     """
-        Given a set of trajectories, a temperature list, and a number of intermediate states to insert for the temperature list, this function calculates and plots the heat capacity profile.
 
-        :param replica_energies: List of dimension num_replicas X simulation_steps, which gives the energies for all replicas at all simulation steps 
-        :type replica_energies: List( List( float * simtk.unit.energy for simulation_steps ) for num_replicas )
+    Given a .nc output, a temperature list, and a number of intermediate states to insert for the temperature list, this function calculates and plots the heat capacity profile.
+    
+    :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data, default = None          :type output_data: str                                                                                                    
+                                                                                                                              
+    :param output_directory: directory in which the output data is in, default = "output"                                     
+    :type output_data: str    
 
-        :param temperature_list: List of temperatures for which to perform replica exchange simulations, default = None
-        :type temperature: List( float * simtk.unit.temperature )
+    :param temperature_list: List of temperatures for which to perform replica exchange simulations, default = None
+    :type temperature: List( float * simtk.unit.temperature )
+    
+    :param num_intermediate_states: The number of states to insert between existing states in 'temperature_list'
+    :type num_intermediate_states: int
 
-        :param num_intermediate_states: The number of states to insert between existing states in 'temperature_list'
-        :type num_intermediate_states: int
+    :param frac_dT: The fraction difference between temperatures points used to calculate finite difference derivatives.
+    :type num_intermediate_states: float
 
-        :returns:
+    :returns:
           - C_v ( List( float ) ) - The heat capacity values for all (including inserted intermediates) states
           - dC_v ( List( float ) ) - The uncertainty in the heat capacity values for intermediate states
           - new_temp_list ( List( float * unit.simtk.temperature ) ) - The temperature list corresponding to the heat capacity values in 'C_v'
 
         """
-    if num_intermediate_states == None:
-        num_intermediate_states = 1
-    mbar, E_kn, E_expect, dE_expect, new_temp_list = get_mbar_expectation(
-        replica_energies, temperature_list, num_intermediate_states
-    )
-    mbar, E_kn, DeltaE_expect, dDeltaE_expect, new_temp_list = get_mbar_expectation(
-        E_kn, new_temp_list, num_intermediate_states, mbar=mbar, output="differences"
-    )
-    mbar, E_kn, E2_expect, dE2_expect, new_temp_list = get_mbar_expectation(
-        E_kn ** 2, new_temp_list, num_intermediate_states, mbar=mbar
-    )
-    df_ij, ddf_ij = get_free_energy_differences(mbar)
-    C_v, dC_v = calculate_heat_capacity(
-        E_expect,
-        E2_expect,
-        dE_expect,
-        DeltaE_expect,
-        dDeltaE_expect,
-        df_ij,
-        ddf_ij,
-        new_temp_list,
-        len(temperature_list),
-        num_intermediate_states,
-    )
-    plot_heat_capacity(C_v, dC_v, new_temp_list)
-    return (C_v, dC_v, new_temp_list)
+
+    reporter = MultiStateReporter(os.path.join(output_directory,output_data), open_mode="r")
+    analyzer = ReplicaExchangeAnalyzer(reporter)
+    (
+        replica_energies,
+        unsampled_state_energies,
+        neighborhoods,
+        replica_state_indices,
+    ) = analyzer.read_energies()
+
+    # get the energies, which are already in reduced units
+    # test whether we need this.
+    Tunit = temperature_list[0].unit
+    temps = np.array([temp.value_in_unit(Tunit)  for temp in temperature_list])  # should this just be array to begin with
+    beta_k = 1 / (kB.value_in_unit(unit.kilojoule_per_mole/Tunit) * temps)
+
+    replica_energies = pymbar.utils.kln_to_kn(replica_energies)
+    n_samples = len(replica_energies[0,:])
+    
+    # calculate the number of states we need expectations at.  We want it at all of the original
+    # temperatures, each intermediate temperature, and then temperatures +/- from the original
+    # to take finite derivatives.
+
+
+    num_sampled_T = len(temps)
+    n_unsampled_states = 3*(num_sampled_T + (num_sampled_T-1)*num_intermediate_states)
+    unsampled_state_energies = np.zeros([n_unsampled_states,n_samples])
+    full_T_list = np.zeros(n_unsampled_states)
+
+    delta = np.zeros(num_sampled_T-1)
+    full_T_list[0] = temps[0]
+    t = 0
+    for i in range(num_sampled_T-1):
+        delta[i] = (temps[i+1] - temps[i])/(num_intermediate_states+1)
+        for j in range(num_intermediate_states+1):
+            full_T_list[t] = temps[i] + delta[i]*j
+            t += 1
+    full_T_list[t] = temps[-1]
+    n_T_vals = t+1
+
+    # add additional states for finite difference calculation.    
+    full_T_list[n_T_vals] = full_T_list[0] - delta[0]*frac_dT
+    full_T_list[2*n_T_vals] = full_T_list[0] + delta[0]*frac_dT
+    for i in range(1,n_T_vals-1):
+        ii = i//(num_intermediate_states+1)
+        full_T_list[i + n_T_vals] = full_T_list[i] - delta[ii]*frac_dT
+        full_T_list[i + 2*n_T_vals] = full_T_list[i] + delta[ii]*frac_dT
+    full_T_list[2*n_T_vals-1] = full_T_list[n_T_vals-1] - delta[-1]*frac_dT
+    full_T_list[3*n_T_vals-1] = full_T_list[n_T_vals-1] + delta[-1]*frac_dT        
+    
+    beta_full_k = 1 / (kB.value_in_unit(unit.kilojoule_per_mole/Tunit) * full_T_list)
+
+    ti = 0
+    N_k = np.zeros(n_unsampled_states)
+    for k in range(n_unsampled_states):
+        # MBAR is with the 'unreduced' potential -- we can't take differences of reduced potentials
+        # because the beta is different; math is much more confusing with derivatives of the reduced potentials.
+        unsampled_state_energies[k, :] = replica_energies[0,:]*beta_full_k[k]/beta_k[0]
+        if ti < len(temps):
+            if full_T_list[k] == temps[ti]:
+                ti += 1
+                N_k[k] = n_samples//len(temps)  # these are the states that have samples
+
+    # call MBAR to find weights.
+    mbarT = pymbar.MBAR(unsampled_state_energies,N_k,verbose=False, relative_tolerance=1e-12);
+
+    for k in range(n_unsampled_states):
+        # get the 'unreduced' potential -- we can't take differences of reduced potentials
+        # because the beta is different; math is much more confusing with derivatives of the reduced potentials.
+        unsampled_state_energies[k, :] /= beta_full_k[k]
+
+    results = mbarT.computeExpectations(unsampled_state_energies, state_dependent=True)
+    E_expect = results[0]
+    dE_expect = results[1]
+
+    
+    # expectations for the differences, which we need for numerical derivatives                                               
+    results = mbarT.computeExpectations(unsampled_state_energies, output="differences", state_dependent=True)
+    DeltaE_expect = results[0]
+    dDeltaE_expect = results[1]
+
+    Cv = np.zeros(n_T_vals)
+    dCv = np.zeros(n_T_vals)
+    for k in range(n_T_vals):
+        im = k+n_T_vals
+        ip = k+2*n_T_vals
+        Cv[k] = (DeltaE_expect[im, ip]) / (full_T_list[ip] - full_T_list[im])
+        dCv[k] = (dDeltaE_expect[im, ip]) / (full_T_list[ip] - full_T_list[im])
+        
+    import pdb
+    pdb.set_trace()
+
+
+    plot_heat_capacity(Cv, dCv, full_T_list[0:n_T_vals])
+    return (Cv, dCv, full_T_list[0:n_T_vals])
 
 
 def calculate_heat_capacity(
