@@ -24,7 +24,7 @@ if not os.path.exists(output_directory):
 print_frequency = 5000  # Number of steps to skip when printing output
 total_simulation_time = 2.0 * unit.nanosecond  # Units = picoseconds
 simulation_time_step = 5.0 * unit.femtosecond
-total_steps = round(total_simulation_time.__div__(simulation_time_step))
+total_steps = int(np.floor(total_simulation_time/simulation_time_step))
 temperature = 300.0 * unit.kelvin
 friction = 1.0 / unit.picosecond
 
@@ -121,6 +121,6 @@ run_simulation(
     simulation_time_step,
     temperature,
     friction=friction,
-    print_frequency=5000,
+    print_frequency=print_frequency,
     output_directory=output_directory,
 )
