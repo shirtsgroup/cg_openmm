@@ -117,10 +117,10 @@ cgmodel = CGModel(
 print("Running a simulation.")
 run_simulation(
     cgmodel,
-    output_directory,
     total_simulation_time,
     simulation_time_step,
     temperature,
-    friction,
-    print_frequency,
+    friction=friction,
+    print_frequency=5000,
+    output_directory=output_directory,
 )
