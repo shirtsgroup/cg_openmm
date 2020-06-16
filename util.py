@@ -203,8 +203,7 @@ def distances(interaction_list, positions):
     distance_list = []
 
     for interaction in interaction_list:
-        if interaction[0] < len(positions) and interaction[1] < len(positions):
-            distance_list.append(distance(positions[interaction[0]], positions[interaction[1]]))
+        distance_list.append(distance(positions[interaction[0]], positions[interaction[1]]))
 
     return distance_list
 
@@ -827,22 +826,8 @@ def distance(positions_1, positions_2):
 
         """
 
-    direction_comp = np.zeros(3) * positions_1.unit
-
-    for direction in range(len(direction_comp)):
-        direction_comp[direction] = positions_1[direction].__sub__(positions_2[direction])
-
-    direction_comb = np.zeros(3) * positions_1.unit.__pow__(2.0)
-    for direction in range(3):
-        direction_comb[direction] = direction_comp[direction].__pow__(2.0)
-
-    sqrt_arg = direction_comb[0].__add__(direction_comb[1]).__add__(direction_comb[2])
-
-    value = math.sqrt(sqrt_arg._value)
-    units = sqrt_arg.unit.sqrt()
-    distance = unit.Quantity(value=value, unit=units)
-
-    return distance
+    u = positions_1.unit
+    return u*np.sqrt(np.sum((positions_1-positions_2)**2))
 
 
 def distance_matrix(positions):
