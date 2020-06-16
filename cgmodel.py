@@ -5,7 +5,7 @@ from foldamers.utilities.util import get_random_positions
 from cg_openmm.build.cg_build import *
 from cg_openmm.utilities.iotools import *
 from itertools import chain, combinations, product
-
+import pickle
 
 def basic_cgmodel(
     polymer_length=12,
@@ -418,6 +418,18 @@ class CGModel(object):
                 self.system = build_system(self)
         else:
             self.system = system
+
+    def export(self,filename):
+        """
+        export to a pickle file.
+
+        :param filename: filename for exporting the cgmodel
+        :type CGModel: str
+        """
+
+        pickle_out = open(filename,"wb")
+        pickle.dump(self, pickle_out)
+        pickle_out.close()
 
     def build_polymer(self, polymer_length, heteropolymer, sequence):
         """
