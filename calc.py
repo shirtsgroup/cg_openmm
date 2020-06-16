@@ -7,7 +7,7 @@ from openmmtools.multistate import ReplicaExchangeAnalyzer
 import pymbar
 from pymbar import timeseries
 
-kB = (unit.MOLAR_GAS_CONSTANT_R).in_units_of(unit.kilojoule / (unit.kelvin * unit.mole)) # Boltzmann constant in kJ/(mol*K)
+kB = unit.MOLAR_GAS_CONSTANT_R
 
 
 def plot_heat_capacity(Cv, dCv, temperature_list, file_name="heat_capacity.png"):
