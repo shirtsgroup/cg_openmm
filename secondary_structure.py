@@ -7,7 +7,10 @@ from scipy import spatial
 import matplotlib.pyplot as plt
 from foldamers.utilities.util import *
 from cg_openmm.utilities.iotools import write_pdbfile_without_topology
+from openmmtools.multistate import MultiStateReporter, ReplicaExchangeAnalyzer
+import pymbar
 
+kB = unit.MOLAR_GAS_CONSTANT_R # Boltzmann constant
 
 def get_native_contacts(cgmodel, native_structure, native_contact_distance_cutoff):
     """
@@ -64,7 +67,106 @@ def get_number_native_contacts(cgmodel, native_structure, native_contact_distanc
 
     return contacts
 
+def expectations_fraction_contacts(list_native_contacts, native_pdb, distance_cutoff, temperature_list, output_directory="output", output_data="output.nc", num_intermediate_states=0):
 
+    max_native_contacts = len(list_native_contacts)
+
+    # extract reduced energies and the state indices from the .nc  
+    reporter = MultiStateReporter(os.path.join(output_directory,output_data), open_mode="r")
+    analyzer = ReplicaExchangeAnalyzer(reporter)
+    (
+        replica_energies,
+        unsampled_state_energies,
+        neighborhoods,
+        replica_state_indices,
+    ) = analyzer.read_energies()
+
+    # determine the numerical values of beta at each state in units consisten with the temperature
+    Tunit = temperature_list[0].unit
+    temps = np.array([temp.value_in_unit(Tunit)  for temp in temperature_list])  # should this just be array to begin with
+    beta_k = 1 / (kB.value_in_unit(unit.kilojoule_per_mole/Tunit) * temps)
+
+    # convert the energies from replica/evaluated state/sample form to evaluated state/sample form
+    replica_energies = pymbar.utils.kln_to_kn(replica_energies)
+    n_samples = len(replica_energies[0,:])
+    
+    # calculate the number of states we need expectations at.  We want it at all of the original
+    # temperatures, each intermediate temperature, and then temperatures +/- from the original
+    # to take finite derivatives.
+
+    # create  an array for the temperature and energy for each state, including the
+    # finite different state.
+    n_sampled_T = len(temps)
+    n_unsampled_states = (n_sampled_T + (n_sampled_T-1)*num_intermediate_states)
+    unsampled_state_energies = np.zeros([n_unsampled_states,n_samples])
+    full_T_list = np.zeros(n_unsampled_states)
+
+    # delta is the spacing between temperatures.
+    delta = np.zeros(n_sampled_T-1)
+
+    # fill in a list of temperatures at all original temperatures and all intermediate states.
+    full_T_list[0] = temps[0]  
+    t = 0
+    for i in range(n_sampled_T-1):
+        delta[i] = (temps[i+1] - temps[i])/(num_intermediate_states+1)
+        for j in range(num_intermediate_states+1):
+            full_T_list[t] = temps[i] + delta[i]*j
+            t += 1
+    full_T_list[t] = temps[-1]
+    n_T_vals = t+1
+
+    # calculate betas of all of these temperatures
+    beta_full_k = 1 / (kB.value_in_unit(unit.kilojoule_per_mole/Tunit) * full_T_list)
+    
+    ti = 0
+    N_k = np.zeros(n_unsampled_states)
+    for k in range(n_unsampled_states):
+        # Calculate the reduced energies at all temperatures, sampled and unsample.
+        unsampled_state_energies[k, :] = replica_energies[0,:]*(beta_full_k[k]/beta_k[0])
+        if ti < len(temps):
+            # store in N_k which states do and don't have samples.
+            if full_T_list[k] == temps[ti]:
+                ti += 1
+                N_k[k] = n_samples//len(temps)  # these are the states that have samples
+
+    # call MBAR to find weights at all states, sampled and unsampled
+    mbarT = pymbar.MBAR(unsampled_state_energies,N_k,verbose=False, relative_tolerance=1e-12);
+    
+    # Now we have the weights at all temperatures, so we can
+    # calculate the expectations.  We now need a number of native contacts for each
+    # structure.
+    n_samples_per_replica = n_samples//n_sampled_T
+    Q = np.zeros(n_samples)
+    dunit = distance_cutoff.unit
+
+    # calculate Q (fraction of native contacts) for each structure.
+    # because we need to iterate per state, we have to do some bookkeeping.
+    # The sampled state energies are stored in order of the replicas, so the
+    # samples need to correspond to the same order.
+    iperstate = np.zeros(n_sampled_T,int)
+    for step in range(n_samples_per_replica):
+        for replica_index in range(n_sampled_T):
+            sampler_states = reporter.read_sampler_states(iteration = step)
+            positions = sampler_states[replica_index].positions
+            structure_dists = distances(list_native_contacts, positions)
+            dists = np.array([dist.value_in_unit(dunit) for dist in structure_dists])
+            Q[iperstate[replica_index]+replica_index*n_samples_per_replica] = np.sum(dists < distance_cutoff._value)/max_native_contacts
+            iperstate[replica_index]+=1
+
+    # calculte the expectation of Q at each unsampled states         
+    results = mbarT.computeExpectations(Q)  # compute expectations of Q at all points
+    Q_expect = results[0]
+    dQ_expect = results[1]
+
+    # return the results in a dictionary (better than in a list)
+    return_results = dict()
+    return_results["T"] = full_T_list
+    return_results["Q"] = Q_expect
+    return_results["dQ"] = dQ_expect
+
+    return return_results
+
+    
 def fraction_native_contacts(
     cgmodel,
     positions,
@@ -183,7 +285,7 @@ def get_helical_parameters(cgmodel):
         .. warning:: This function requires a pre-installed version of `kHelios <https://pubs.acs.org/doi/10.1021/acs.jcim.6b00721>`_ .  Because kHelios is formatted to accept input job scripts, this function writes and executes a job script for kHelios.  In order to function properly, the user must redefine the 'helios_path' variable for their system.
 
         """
-    helios_path = str("/home/gmeek/Foldamers/foldamers/foldamers/parameters/helios.o")
+    helios_path = str("../../foldamers/foldamers/parameters/helios.o")
     cgmodel = orient_along_z_axis(cgmodel)
     write_pdbfile_without_topology(cgmodel, "temp_pitch.pdb")
     kHelix_run_file = "run_kHelix.sh"

@@ -284,9 +284,6 @@ def get_mbar_expectation(E_kln, temperature_list, NumIntermediates, output=None,
     if mbar == None:
         NumTemps = len(temperature_list)  # Last TEMP # + 1 (start counting at 1)
 
-        kB = unit.Quantity(
-            0.008314462, unit.kilojoule_per_mole
-        )  # Boltzmann constant (Gas constant) in kJ/(mol*K)
         T_from_file = np.array([temperature._value for temperature in temperature_list])
         E_from_file = E_kln
         originalK = len(T_from_file)
