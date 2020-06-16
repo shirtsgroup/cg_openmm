@@ -1,6 +1,8 @@
 import simtk.unit as unit
-from msmbuilder.cluster.kcenters import KCenters
 import mdtraj as md
+import numpy as np
+from sklearn.cluster import KMeans
+from foldamers.cg_model.cgmodel import CGModel
 from cg_openmm.utilities.iotools import write_pdbfile_without_topology
 
 
@@ -25,40 +27,106 @@ def concatenate_trajectories(pdb_file_list, combined_pdb_file="combined.pdb"):
     return combined_pdb_file
 
 
-def get_cluster_centroid_positions(pdb_file, cgmodel, n_clusters=None):
+def get_cluster_centroid_positions(pdb_file_list, cgmodel, n_clusters=2, frame_start=0, frame_stride=1, frame_end=-1):
     """
-        Given a PDB file and coarse grained model as input, this function performs K-means clustering on the poses in the PDB file, and returns a list of the coordinates for the "centroid" pose of each cluster.
+    Given a PDB file and coarse grained model as input, this function performs K-means clustering on the poses in the PDB file, and returns a list of the coordinates for the "centroid" pose of each cluster.
 
-        :param pdb_file: The path/name of a file from which to read trajectory data
-        :type pdb_file: str
+    :param pdb_file_list: A list of PDB files to read and concatenate
+    :type pdb_file_list: List( str )
 
-        :param cgmodel: A CGModel() class object
-        :type cgmodel: class
+    :param cgmodel: A CGModel() class object
+    :type cgmodel: class
 
-        :param n_clusters: The number of "bins" within which to cluster the poses from the input trajectory.
-        :type n_clusters: int
+    :param n_clusters: The number of "bins" within which to cluster the poses from the input trajectory.
+    :type n_clusters: int
 
-        :returns:
-          - centroid_positions ( List ( np.array( float * unit.angstrom ( num_particles x 3 ) ) ) ) - A list of the poses corresponding to the centroids of all trajectory clusters.
+    :param frame_start: First frame in pdb trajectory file to use for clustering.
+    :type frame_start: int
 
-        """
-    centroid_positions = []
-    traj = md.load(pdb_file)
-    print(traj.n_frames)
-    exit()
-    if n_clusters == None:
-        n_clusters = 50
-    cluster_list = KCenters(n_clusters=n_clusters, metric="rmsd")
-    cluster_list.fit(traj)
-    centroid_list = cluster_list.cluster_centers_
-    centroid_index = 1
-    for centroid in centroid_list:
-        positions = centroid.xyz[0] * unit.nanometer
+    :param frame_stride: Advance by this many frames when reading pdb trajectories.
+    :type frame_stride: int
+
+    :param frame_end: Last frame in pdb trajectory file to use for clustering.
+    :type frame_end: int
+
+    :returns:
+    - centroid_positions ( List ( np.array( float * unit.angstrom ( num_particles x 3 ) ) ) ) - A list of the poses corresponding to the centroids of all trajectory clusters.
+    - medoid_positions ( List ( np.array( float * unit.angstrom ( num_particles x 3 ) ) ) ) - A list of the poses corresponding to the medoids of all trajectory clusters.
+
+    """
+
+    # Load files as {replica number: replica trajectory}
+    rep_traj = {}
+    for i in range(len(pdb_file_list)):
+        rep_traj[i] = md.load(pdb_file_list[i])
+
+    # Combine all trajectories, selecting specified frames
+
+    if frame_end == -1:
+        frame_end = rep_traj[0].n_frames
+
+    if frame_start == -1:
+        frame_start == frame_end
+        # ***Some more error handling needed here.
+
+    traj_all = rep_traj[0][frame_start:frame_end:frame_stride]
+
+    for i in range(len(pdb_file_list)-1):
+        traj_all = traj_all.join(rep_traj[i+1][frame_start:frame_end:frame_stride])
+
+    # Align structures with first frame as reference:
+    for i in range(1,traj_all.n_frames):
+        md.Trajectory.superpose(traj_all[i],traj_all[0])
+        # This rewrites to traj_all
+
+    # Compute pairwise rmsd:
+    distances = np.empty((traj_all.n_frames, traj_all.n_frames))
+    for i in range(traj_all.n_frames):
+        distances[i] = md.rmsd(traj_all, traj_all, i)
+
+    # Cluster with sklearn KMeans
+    kmeans = KMeans(n_clusters=n_clusters).fit(distances)
+    # ***In the future we could generalize to any clustering algorithm, guess number of
+    # optimal clusters.
+
+    # Get indices of frames in each cluster:
+    cluster_indices = {}
+    for k in range(n_clusters):
+        cluster_indices[k] = np.argwhere(kmeans.labels_==k)[:,0]
+
+    # Find the structure closest to each center (medoids):
+    dist_to_centroids = KMeans.transform(kmeans,distances)
+    closest_indices = np.argmin(dist_to_centroids,axis=0)
+    closest_xyz = np.zeros([n_clusters,traj_all.n_atoms,3])
+    for k in range(n_clusters):
+        closest_xyz[k,:,:] = traj_all[closest_indices[k]].xyz[0]
+
+    # Compute the average coordinates (centroid) in each cluster
+    avg_xyz = np.zeros([n_clusters,traj_all.n_atoms,3])
+
+    for k in range(n_clusters):
+        for i in range(len(cluster_indices[k])):
+            avg_xyz[k,:,:] += traj_all[cluster_indices[k][i]].xyz[0]
+        avg_xyz[k,:,:] /= len(cluster_indices[k])
+
+    # Write medoids/centroids to file
+        
+    for k in range(n_clusters):
+        positions = avg_xyz[k,:,:] * unit.nanometer
         cgmodel.positions = positions
-        file_name = str("centroid_" + str(centroid_index) + ".xyz")
+        file_name = str("centroid_" + str(k) + ".pdb")
         write_pdbfile_without_topology(cgmodel, file_name)
-        centroid_positions.append(positions)
-    return centroid_positions
+
+    for k in range(n_clusters):
+        positions = closest_xyz[k] * unit.nanometer
+        cgmodel.positions = positions
+        file_name = str("medoid_" + str(k) + ".pdb")
+        write_pdbfile_without_topology(cgmodel, file_name)
+
+    centroid_positions = avg_xyz
+    medoid_positions = closest_xyz
+        
+    return (centroid_positions, medoid_positions)
 
 
 def align_structures(reference_traj, target_traj):
