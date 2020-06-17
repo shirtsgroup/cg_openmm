@@ -130,41 +130,39 @@ def write_pdbfile_without_topology(CGModel, filename, energy=None):
                     str(
                         "ATOM"
                         + str("{:>7}".format(bead_index))
-                        + " X"
+                        + "  X"
                         + str(element_index)
-                        + str("{:>6}".format(str("MT")))
+                        + str("{:>5}".format(str("MT")))
                         + " A"
                         + str("{:>4}".format(monomer_index + 1))
-                        + "     "
+                        + "    "
                         + str(
-                            "{:>7}".format(
+                            "{:>8}".format(
                                 round(
                                     coordinates[bead_index - 1][0]
                                     .in_units_of(unit.angstrom)
                                     ._value,
-                                    2,
+                                    3,
                                 )
                             )
                         )
-                        + " "
                         + str(
-                            "{:>7}".format(
+                            "{:>8}".format(
                                 round(
                                     coordinates[bead_index - 1][1]
                                     .in_units_of(unit.angstrom)
                                     ._value,
-                                    2,
+                                    3,
                                 )
                             )
                         )
-                        + " "
                         + str(
-                            "{:>7}".format(
+                            "{:>8}".format(
                                 round(
                                     coordinates[bead_index - 1][2]
                                     .in_units_of(unit.angstrom)
                                     ._value,
-                                    2,
+                                    3,
                                 )
                             )
                         )
@@ -176,41 +174,39 @@ def write_pdbfile_without_topology(CGModel, filename, energy=None):
                     str(
                         "ATOM"
                         + str("{:>7}".format(bead_index))
-                        + " X"
+                        + "  X"
                         + str(element_index)
-                        + str("{:>6}".format(str("M")))
+                        + str("{:>5}".format(str("M")))
                         + " A"
                         + str("{:>4}".format(monomer_index + 1))
-                        + "     "
+                        + "    "
                         + str(
-                            "{:>7}".format(
+                            "{:>8}".format(
                                 round(
                                     coordinates[bead_index - 1][0]
                                     .in_units_of(unit.angstrom)
                                     ._value,
-                                    2,
+                                    3,
                                 )
                             )
                         )
-                        + " "
                         + str(
-                            "{:>7}".format(
+                            "{:>8}".format(
                                 round(
                                     coordinates[bead_index - 1][1]
                                     .in_units_of(unit.angstrom)
                                     ._value,
-                                    2,
+                                    3,
                                 )
                             )
                         )
-                        + " "
                         + str(
-                            "{:>7}".format(
+                            "{:>8}".format(
                                 round(
                                     coordinates[bead_index - 1][2]
                                     .in_units_of(unit.angstrom)
                                     ._value,
-                                    2,
+                                    3,
                                 )
                             )
                         )
@@ -227,41 +223,39 @@ def write_pdbfile_without_topology(CGModel, filename, energy=None):
                             str(
                                 "ATOM"
                                 + str("{:>7}".format(bead_index))
-                                + " A"
+                                + "  A"
                                 + str(element_index)
-                                + str("{:>6}".format(str("MT")))
+                                + str("{:>5}".format(str("MT")))
                                 + " A"
                                 + str("{:>4}".format(monomer_index + 1))
-                                + "     "
+                                + "    "
                                 + str(
-                                    "{:>7}".format(
+                                    "{:>8}".format(
                                         round(
                                             coordinates[bead_index - 1][0]
                                             .in_units_of(unit.angstrom)
                                             ._value,
-                                            2,
+                                            3,
                                         )
                                     )
                                 )
-                                + " "
                                 + str(
-                                    "{:>7}".format(
+                                    "{:>8}".format(
                                         round(
                                             coordinates[bead_index - 1][1]
                                             .in_units_of(unit.angstrom)
                                             ._value,
-                                            2,
+                                            3,
                                         )
                                     )
                                 )
-                                + " "
                                 + str(
-                                    "{:>7}".format(
+                                    "{:>8}".format(
                                         round(
                                             coordinates[bead_index - 1][2]
                                             .in_units_of(unit.angstrom)
                                             ._value,
-                                            2,
+                                            3,
                                         )
                                     )
                                 )
@@ -273,41 +267,39 @@ def write_pdbfile_without_topology(CGModel, filename, energy=None):
                             str(
                                 "ATOM"
                                 + str("{:>7}".format(bead_index))
-                                + " A"
+                                + "  A"
                                 + str(element_index)
-                                + str("{:>6}".format(str("M")))
+                                + str("{:>5}".format(str("M")))
                                 + " A"
                                 + str("{:>4}".format(monomer_index + 1))
-                                + "     "
+                                + "    "
                                 + str(
-                                    "{:>7}".format(
+                                    "{:>8}".format(
                                         round(
                                             coordinates[bead_index - 1][0]
                                             .in_units_of(unit.angstrom)
                                             ._value,
-                                            2,
+                                            3,
                                         )
                                     )
                                 )
-                                + " "
                                 + str(
-                                    "{:>7}".format(
+                                    "{:>8}".format(
                                         round(
                                             coordinates[bead_index - 1][1]
                                             .in_units_of(unit.angstrom)
                                             ._value,
-                                            2,
+                                            3,
                                         )
                                     )
                                 )
-                                + " "
                                 + str(
-                                    "{:>7}".format(
+                                    "{:>8}".format(
                                         round(
                                             coordinates[bead_index - 1][2]
                                             .in_units_of(unit.angstrom)
                                             ._value,
-                                            2,
+                                            3,
                                         )
                                     )
                                 )
