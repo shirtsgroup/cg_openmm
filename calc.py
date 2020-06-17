@@ -10,7 +10,7 @@ from pymbar import timeseries
 kB = unit.MOLAR_GAS_CONSTANT_R
 
 
-def plot_heat_capacity(Cv, dCv, temperature_list, file_name="heat_capacity.png"):
+def plot_heat_capacity(Cv, dCv, temperature_list, file_name="heat_capacity.pdf"):
     """
         Given an array of temperature-dependent heat capacity values and the uncertainties in their estimates, this function plots the heat capacity curve.
     
@@ -39,7 +39,7 @@ def plot_heat_capacity(Cv, dCv, temperature_list, file_name="heat_capacity.png")
     return
 
 
-def get_heat_capacity(temperature_list, output_data="output.nc", output_directory="output", num_intermediate_states=0,frac_dT=0.05):
+def get_heat_capacity(temperature_list, output_data="output.nc", output_directory="output", num_intermediate_states=0,frac_dT=0.05, plot_file=None):
     """
 
     Given a .nc output, a temperature list, and a number of intermediate states to insert for the temperature list, this function calculates and plots the heat capacity profile.
@@ -167,7 +167,8 @@ def get_heat_capacity(temperature_list, output_data="output.nc", output_director
     full_T_list *= Tunit
 
     # plot and return the heat capacity (with units)
-    plot_heat_capacity(Cv, dCv, full_T_list[0:n_T_vals])
+    if plot_file is not None:
+        plot_heat_capacity(Cv, dCv, full_T_list[0:n_T_vals],file_name=plot_file)
     return (Cv, dCv, full_T_list[0:n_T_vals])
 
 
