@@ -119,7 +119,6 @@ def write_pdbfile_without_topology(CGModel, filename, energy=None):
         )
 
     coordinates = CGModel.positions
-    print(type(coordinates))
     
     bead_index = 1
     for monomer_index in range(CGModel.polymer_length):
