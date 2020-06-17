@@ -5,7 +5,6 @@ import matplotlib.pyplot as pyplot
 from simtk import unit
 import openmmtools
 from cg_openmm.utilities.util import set_box_vectors, get_box_vectors
-from cg_openmm.simulation.tools import get_simulation_time_step
 from simtk.openmm.app.pdbfile import PDBFile
 from mdtraj.formats import PDBTrajectoryFile
 from mdtraj import Topology
@@ -45,7 +44,7 @@ def make_replica_pdb_files(topology, replica_positions, output_dir=""):
     file_list = []
     for replica_index in range(len(replica_positions)):
         replica_trajectory = replica_positions[replica_index]
-        file_name = os.path.join(output_dir,"replica_"+str(replica_index + 1)+".pdb")
+        file_name = os.path.join(output_dir, "replica_" + str(replica_index + 1) + ".pdb")
         file = open(file_name, "w")
         PDBFile.writeHeader(topology, file=file)
         modelIndex = 1
@@ -58,11 +57,8 @@ def make_replica_pdb_files(topology, replica_positions, output_dir=""):
 
 
 def process_replica_exchange_data(
-    temperature_list=None,
-    output_data="output.nc",
-    output_directory="output",
-    time_interval=None
-    ):
+    temperature_list=None, output_data="output.nc", output_directory="output", time_interval=None
+):
     """
     Read replica exchange simulation data.
     
@@ -91,14 +87,14 @@ def process_replica_exchange_data(
     >>> from cg_openmm.simulation.rep_exch import *
     >>> cgmodel = CGModel()
     >>> replica_energies,replica_positions,replica_state_indices = run_replica_exchange(cgmodel.topology,cgmodel.system,cgmodel.positions)
-    >>> replica_energies,replica_positions,replica_state_indices = process_replica_exchange_data(temperature_list=,output_data="output.nc",print_frequency=None)
+    >>> replica_energies,replica_positions,replica_state_indices = process_replica_exchange_data(temperature_list=,output_data="output.nc")
 
 
     """
     # Read the simulation coordinates for individual temperature replicas
     reporter = MultiStateReporter(output_data, open_mode="r")
     analyzer = ReplicaExchangeAnalyzer(reporter)
-    
+
     (
         replica_energies,
         unsampled_state_energies,
@@ -109,35 +105,56 @@ def process_replica_exchange_data(
     n_particles = np.shape(reporter.read_sampler_states(iteration=0)[0].positions)[0]
     temps = np.array([temp._value for temp in temperature_list])
     beta_k = 1 / (kB * temps)
-    for k in range(len(replica_energies)):
+    n_replicas = len(temperature_list)
+    for k in range(n_replicas):
         replica_energies[:, k, :] *= beta_k[k] ** (-1)
 
     total_steps = len(replica_energies[0][0])
-    replica_positions = unit.Quantity(
-        np.zeros([len(temperature_list), total_steps, n_particles, 3]), unit.nanometer
-    )
+    state_energies = np.zeros([n_replicas, total_steps])
 
+    # there must be some better way to do this as list comprehension.
     for step in range(total_steps):
+        for state in range(n_replicas):
+            state_energies[state, step] = replica_energies[
+                np.where(replica_state_indices[:, step] == state)[0], 0, step
+            ]
+
+    # can run physical-valication on these state_energies
+
+    print("state    mean energies  variance")
+    for state in range(n_replicas):
+        print(
+            f"  {state:4d}    {np.mean(state_energies[state,:]):10.6f} {np.std(state_energies[state,:]):10.6f}"
+        )
+
+    replica_positions = np.zeros([n_replicas, total_steps, n_particles, 3])
+
+    f = open(os.path.join(output_directory, "replica_energies.dat"), "w")
+    for step in range(total_steps):
+        f.write(f"{step:10d}")
         sampler_states = reporter.read_sampler_states(iteration=step)
-        for replica_index in range(len(temperature_list)):
-            for particle in range(n_particles):
-                replica_positions[replica_index][step][particle] = sampler_states[
-                    replica_index
-                ].positions[particle]
+        for replica_index in range(n_replicas):
+            replica_positions[replica_index, step, :, :] = sampler_states[replica_index].positions
+            f.write(f"{replica_energies[replica_index,replica_index,step]:12.6f}")
+        f.write("\n")
+    f.close()
+
+    # doing the array operations gets rid of units, convert back to units
+    replica_positions = replica_positions * sampler_states[0].positions[0].unit
 
     plot_replica_exchange_energies(
         replica_energies,
         temperature_list,
-        time_interval = time_interval,
-        output_directory = output_directory,
-        )
+        time_interval=time_interval,
+        output_directory=output_directory,
+    )
 
     plot_replica_exchange_summary(
         replica_state_indices,
         temperature_list,
-        time_interval = time_interval,
-        output_directory = output_directory,
-        )
+        time_interval=time_interval,
+        output_directory=output_directory,
+    )
 
     return (replica_energies, replica_positions, replica_state_indices)
 
@@ -146,18 +163,15 @@ def run_replica_exchange(
     topology,
     system,
     positions,
-    temperature_list=None,
-    simulation_time_step=None,
     total_simulation_time=1.0 * unit.picosecond,
-    output_data="output.nc",
-    print_frequency=100,
-    collision_rate=5,
-    verbose_simulation=False,
+    simulation_time_step=None,
+    temperature_list=None,
+    friction=1.0 / unit.picosecond,
+    minimize=True,
     exchange_frequency=1000,
-    test_time_step=False,
-    output_directory=None,
-    minimize=True
-    ):
+    output_directory="output",
+    output_data="output.nc",
+):
 
     """
     Run a OpenMMTools replica exchange simulation using an OpenMM coarse grained model.
@@ -171,32 +185,32 @@ def run_replica_exchange(
     :param positions: Positions array for the model we would like to test
     :type positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit )
 
-    :param temperature_list: List of temperatures for which to perform replica exchange simulations, default = None
-    :type temperature: List( float * simtk.unit.temperature )
+    :param total_simulation_time: Total run time for individual simulations
+    :type total_simulation_time: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
 
     :param simulation_time_step: Simulation integration time step
     :type simulation_time_step: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
 
-    :param total_simulation_time: Total run time for individual simulations
-    :type total_simulation_time: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
+    :param temperature_list: List of temperatures for which to perform replica exchange simulations, default = None
+    :type temperature: List( float * simtk.unit.temperature )
+
+    :param friction: Langevin thermostat friction coefficient, default = 1 / ps
+    :type friction: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
+
+    :param minimize: Whether minimization is done before running the simulation
+    :type minimize: bool
 
     :param output_data: Name of NETCDF file where we will write simulation data
     :type output_data: string
 
-    :param print_frequency: Number of simulation steps to skip when writing to output, Default = 100
-    :type print_frequence: int
-
-    :param verbose_simulation: Determines how much output is printed during a simulation run.  Default = False
-    :type verbose_simulation: Logical
-	
     :param exchange_frequency: Number of time steps between replica exchange attempts, Default = None
     :type exchange_frequency: int	
 
-    :param test_time_step: Logical variable determining if a test of the time step will be performed, Default = False
-    :type test_time_step: Logical
-
     :param output_directory: Path to which we will write the output from simulation runs.
     :type output_directory: str
+
+    :param output_pdb: file to put the output .nc 
+    :type output_data: netCDF4 file as generated by OpenMM  
 
     :returns:
         - replica_energies ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.float( [number_replicas,number_simulation_steps] ), simtk.unit ) ) - The potential energies for all replicas at all (printed) time steps
@@ -212,15 +226,10 @@ def run_replica_exchange(
     >>> replica_energies,replica_positions,replica_state_indices = run_replica_exchange(cgmodel.topology,cgmodel.system,cgmodel.positions)
 
     """
-    
-    if simulation_time_step is None:
-        simulation_time_step, force_threshold = get_simulation_time_step(
-            topology, system, positions, temperature_list[-1], total_simulation_time
-            )
-        
-    simulation_steps = int(np.floor(total_simulation_time/simulation_time_step))
 
-    exchange_attempts = int(np.floor(simulation_steps/exchange_frequency))
+    simulation_steps = int(np.floor(total_simulation_time / simulation_time_step))
+
+    exchange_attempts = int(np.floor(simulation_steps / exchange_frequency))
 
     if temperature_list is None:
         temperature_list = [((300.0 + i) * unit.kelvin) for i in range(-50, 50, 10)]
@@ -230,22 +239,24 @@ def run_replica_exchange(
     thermodynamic_states = list()
 
     # Define thermodynamic states.
-    box_vectors = system.getDefaultPeriodicBoxVectors()
+    # box_vectors = system.getDefaultPeriodicBoxVectors()
     for temperature in temperature_list:
         thermodynamic_state = openmmtools.states.ThermodynamicState(
             system=system, temperature=temperature
-            )
+        )
         thermodynamic_states.append(thermodynamic_state)
-        sampler_states.append(openmmtools.states.SamplerState(positions, box_vectors=box_vectors))
-    
+        sampler_states.append(
+            openmmtools.states.SamplerState(positions)
+        )  # no box vectors, non-periodic system.
+
     # Create and configure simulation object.
 
     move = openmmtools.mcmc.LangevinDynamicsMove(
         timestep=simulation_time_step,
-        collision_rate=collision_rate / unit.picosecond,
+        collision_rate=friction,
         n_steps=exchange_frequency,
         reassign_velocities=False,
-        )
+    )
 
     simulation = ReplicaExchangeSampler(mcmc_moves=move, number_of_iterations=exchange_attempts)
 
@@ -257,73 +268,20 @@ def run_replica_exchange(
 
     if minimize:
         simulation.minimize()
-    
-    if not test_time_step:
-        num_attempts = 0
-        while num_attempts < 5:
-            try:
-                simulation.run()
-                # print("Replica exchange simulations succeeded with a time step of: "+str(simulation_time_step))
-                break
-            except BaseException:
-                num_attempts = num_attempts + 1
-        if num_attempts >= 5:
-            print(
-                "Replica exchange simulation attempts failed, try verifying your model/simulation settings."
-                )
-            exit()
-    else:
-        simulation_time_step, force_threshold = get_simulation_time_step(
-            topology, system, positions, temperature_list[-1], total_simulation_time
-            )
-        print(
-            "The suggested time step for a simulation with this model is: "
-            + str(simulation_time_step)
-            )
-        while simulation_time_step/2.0 > 0.001 * unit.femtosecond:
-            try:
-                print("Running replica exchange simulations with OpenMM...")
-                print("Using a time step of " + str(simulation_time_step))
-                print("Running each trial simulation for 1000 steps, with 10 exchange attempts.")
-                move = openmmtools.mcmc.LangevinDynamicsMove(
-                    timestep=simulation_time_step,
-                    collision_rate=20.0 / unit.picosecond,
-                    n_steps=10,
-                    reassign_velocities=True,
-                    )
-                simulation = ReplicaExchangeSampler(
-                    replica_mixing_scheme="swap-neighbors",
-                    mcmc_moves=move,
-                    number_of_iterations=10,
-                    )
-                reporter = MultiStateReporter(output_data, checkpoint_interval=1)
-                simulation.create(thermodynamic_states, sampler_states, reporter)
-                
-                simulation.run()
-                print(
-                    "Replica exchange simulations succeeded with a time step of: "
-                    + str(simulation_time_step)
-                    )
-                break
-            except BaseException:
-                del simulation
-                os.remove(output_data)
-                print(
-                    "Simulation attempt failed with a time step of: " + str(simulation_time_step)
-                    )
-                if simulation_time_step/2.0 > 0.001 * unit.femtosecond:
-                    simulation_time_step = simulation_time_step/2.0
-                else:
-                    print(
-                        "Error: replica exchange simulation attempt failed with a time step of: "
-                        + str(simulation_time_step)
-                        )
-                    print("Please check the model and simulations settings, and try again.")
-                    exit()
 
-def get_minimum_energy_ensemble(topology, replica_energies, 
-                                replica_positions, ensemble_size=5, file_name=None):
-    
+    print("Running replica exchange simulations with OpenMM...")
+    print(f"Using a time step of {simulation_time_step}")
+    try:
+        simulation.run()
+    except BaseException:
+        print("Replica exchange simulation failed, try verifying your model/simulation settings.")
+        exit()
+
+
+def get_minimum_energy_ensemble(
+    topology, replica_energies, replica_positions, ensemble_size=5, file_name=None
+):
+
     """
     Get an ensemble of low (potential) energy poses, and write the lowest energy structure to a PDB file if a file_name is provided.
     
@@ -376,13 +334,14 @@ def get_minimum_energy_ensemble(topology, replica_energies,
         file = open(file_name, "w")
         for pose in ensemble:
             PDBFile.writeFile(topology, pose, file=file)
-            
+
     return ensemble
+
 
 def plot_replica_exchange_energies(
     replica_energies,
     temperature_list,
-    time_interval=1.0*unit.picosecond,
+    time_interval=1.0 * unit.picosecond,
     file_name="rep_ex_ener.png",
     legend=True,
     output_directory=None,
@@ -417,7 +376,7 @@ def plot_replica_exchange_energies(
     for replica in range(len(replica_energies)):
         simulation_times = np.array(
             [
-                step * time_interval.in_units_of(unit.picosecond)._value 
+                step * time_interval.in_units_of(unit.picosecond)._value
                 for step in range(len(replica_energies[replica][replica]))
             ]
         )
@@ -443,7 +402,7 @@ def plot_replica_exchange_energies(
                 title="T (K)",
             )
     if output_directory is not None:
-        output_file = str(str(output_directory) + "/" + str(file_name))
+        output_file = os.path.join(output_directory, file_name)
         pyplot.savefig(output_file, bbox_inches="tight")
     else:
         pyplot.savefig(file_name, bbox_inches="tight")
@@ -455,7 +414,7 @@ def plot_replica_exchange_energies(
 def plot_replica_exchange_summary(
     replica_states,
     temperature_list,
-    time_interval=1.0*unit.picosecond,
+    time_interval=1.0 * unit.picosecond,
     file_name="rep_ex_states.png",
     legend=True,
     output_directory=None,
@@ -514,12 +473,8 @@ def plot_replica_exchange_summary(
                 bbox_to_anchor=(1, 0.5),
                 title="Replica Index",
             )
-    if output_directory is not None:
-        output_file = str(str(output_directory) + "/" + str(file_name))
-        pyplot.savefig(output_file, bbox_inches="tight")
-    else:
-        pyplot.savefig(file_name, bbox_inches="tight")
-    # pyplot.show()
+    output_file = os.path.join(output_directory, file_name)
+    pyplot.savefig(output_file, bbox_inches="tight")
     pyplot.close()
 
     return

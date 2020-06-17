@@ -10,11 +10,12 @@ import simtk.openmm as openmm
 import pickle
 
 from openmmtools.cache import global_context_cache
-global_context_cache.platform = openmm.Platform.getPlatformByName('CPU')
+
+global_context_cache.platform = openmm.Platform.getPlatformByName("CPU")
 
 ###
 #
-# This example demonstrates how to run a Yank replica exchange simulation
+# This example demonstrates how to run a OpenMM replica exchange simulation
 # using a "CGModel" object built with the 'foldamers' software package.
 #
 ###
@@ -23,19 +24,18 @@ global_context_cache.platform = openmm.Platform.getPlatformByName('CPU')
 output_directory = "output"
 if not os.path.exists(output_directory):
     os.mkdir(output_directory)
-overwrite_files = True # overwrite files.
+overwrite_files = True  # overwrite files.
 
 # Replica exchange simulation settings
-print_frequency = 10  # Number of steps to skip when printing output
-total_simulation_time = 0.1 * unit.nanosecond
-simulation_time_step = 2.0 * unit.femtosecond
-total_steps = round(total_simulation_time.__div__(simulation_time_step))
+total_simulation_time = 5.0 * unit.nanosecond
+simulation_time_step = 10.0 * unit.femtosecond
+total_steps = int(np.floor(total_simulation_time / simulation_time_step))
 output_data = os.path.join(output_directory, "output.nc")
 number_replicas = 12
-min_temp = 600.0 * unit.kelvin
-max_temp = 1000.0 * unit.kelvin
+min_temp = 50.0 * unit.kelvin
+max_temp = 600.0 * unit.kelvin
 temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
-exchange_frequency = 50  # Number of steps between exchange attempts
+exchange_frequency = 100  # Number of steps between exchange attempts
 
 # Coarse grained model settings
 polymer_length = 12
@@ -65,15 +65,15 @@ bond_force_constants = {
 # Particle definitions
 mass = 100.0 * unit.amu
 masses = {"backbone_bead_masses": mass, "sidechain_bead_masses": mass}
-r_min = 2.0 * bond_length  # Lennard-Jones potential r_min
+r_min = 1.5 * bond_length  # Lennard-Jones potential r_min
 # Factor of /(2.0**(1/6)) is applied to convert r_min to sigma
 sigma = r_min / (2.0 ** (1.0 / 6.0))
 sigmas = {"bb_sigma": sigma, "sc_sigma": sigma}
-epsilon = 0.2 * unit.kilocalorie_per_mole
+epsilon = 0.5 * unit.kilojoule_per_mole
 epsilons = {"bb_eps": epsilon, "sc_eps": epsilon}
 
 # Bond angle definitions
-bond_angle_force_constant = 100 * unit.kilocalorie_per_mole / unit.radian / unit.radian
+bond_angle_force_constant = 100 * unit.kilojoule_per_mole / unit.radian / unit.radian
 bond_angle_force_constants = {
     "bb_bb_bb_angle_k": bond_angle_force_constant,
     "bb_bb_sc_angle_k": bond_angle_force_constant,
@@ -87,13 +87,13 @@ equil_bond_angles = {
 }
 
 # Torsion angle definitions
-torsion_force_constant = 20.0 * unit.kilocalorie_per_mole
+torsion_force_constant = 20.0 * unit.kilojoule_per_mole
 torsion_force_constants = {"bb_bb_bb_bb_torsion_k": torsion_force_constant}
 # OpenMM requires angle definitions in units of radians
 bb_bb_bb_bb_equil_torsion_angle = 78.0 * unit.degrees
 bb_bb_bb_sc_equil_torsion_angle = 78.0 * unit.degrees
 equil_torsion_angles = {"bb_bb_bb_bb_torsion_0": bb_bb_bb_bb_equil_torsion_angle}
-torsion_periodicities = {"bb_bb_bb_bb_period": 1}
+torsion_periodicities = {"bb_bb_bb_bb_period": 3}
 
 # Get initial positions from local file
 positions = PDBFile("helix.pdb").getPositions()
@@ -123,9 +123,9 @@ cgmodel = CGModel(
 )
 
 # kludge - information needed for writing out
-pkl = open('stored_topology.pkl',"wb")
+pkl = open("stored_topology.pkl", "wb")
 # check to make sure that this is the right time interval.
-pickle.dump((temperature_list,exchange_frequency*simulation_time_step,cgmodel.topology),pkl)
+pickle.dump((temperature_list, exchange_frequency * simulation_time_step, cgmodel.topology), pkl)
 pkl.close()
 
 if not os.path.exists(output_data) or overwrite_files == True:
@@ -137,9 +137,8 @@ if not os.path.exists(output_data) or overwrite_files == True:
         simulation_time_step=simulation_time_step,
         total_simulation_time=total_simulation_time,
         exchange_frequency=exchange_frequency,
-        print_frequency=print_frequency,
         output_data=output_data,
         output_directory=output_directory,
-        )
+    )
 else:
     print("Replica output files exist")
