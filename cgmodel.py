@@ -362,8 +362,6 @@ class CGModel(object):
             print("Error:Instead use backbone_lengths = [n] and sidechain_lengths = [0], with n>1")
             exit()            
             # Initialize the monomer types
-        import pdb
-        pdb.set_trace()
         if monomer_types == None:
             self.backbone_lengths = backbone_lengths
             self.sidechain_lengths = sidechain_lengths
