@@ -195,7 +195,7 @@ class CGModel(object):
         include_bond_angle_forces=True,
         include_torsion_forces=True,
         exclusions=True,
-        rosetta_scoring=False,
+        rosetta_functional_form=False,
         check_energy_conservation=True,
         use_structure_library=False,
         heteropolymer=False,
@@ -348,7 +348,7 @@ class CGModel(object):
           """
 
         # Assign forces based upon input flags
-        self.rosetta_scoring = rosetta_scoring
+        self.rosetta_functional_form = rosetta_functional_form
         self.include_bond_forces = include_bond_forces
         self.constrain_bonds = constrain_bonds
         self.include_bond_angle_forces = include_bond_angle_forces
@@ -412,10 +412,7 @@ class CGModel(object):
             self.topology = topology
         # Define OpenMM system
         if system == None:
-            if self.rosetta_scoring:
-                self.system = build_system(self, rosetta_scoring=rosetta_scoring)
-            else:
-                self.system = build_system(self)
+            self.system = build_system(self, rosetta_functional_form=rosetta_functional_form)
         else:
             self.system = system
 
@@ -465,7 +462,7 @@ class CGModel(object):
         self.torsion_list = self.get_torsion_list()
         if self.exclusions:
             self.nonbonded_exclusion_list = self.get_nonbonded_exclusion_list(
-                rosetta_scoring=self.rosetta_scoring
+                rosetta_functional_form=self.rosetta_functional_form
             )
         else:
             self.nonbonded_exclusion_list = []
@@ -648,7 +645,7 @@ class CGModel(object):
                     interaction_list.append([particle_1, particle_2])
         return interaction_list
 
-    def get_nonbonded_exclusion_list(self, rosetta_scoring=False):
+    def get_nonbonded_exclusion_list(self, rosetta_functional_form=False):
         """
           Get a list of the nonbonded interaction exclusions, which are assigned if two particles are separated by less than three bonds
 
@@ -662,7 +659,7 @@ class CGModel(object):
         bond_list = self.bond_list
         exclusion_list = []
 
-        if rosetta_scoring:
+        if rosetta_functional_form:
             # Remove interactions between particles in the same monomer
             bead_index = 0
             for monomer in self.sequence:
@@ -689,16 +686,16 @@ class CGModel(object):
                 angle[0],
             ] not in exclusion_list:
                 exclusion_list.append([angle[0], angle[2]])
-        if rosetta_scoring:
+        if rosetta_functional_form:
+            # Remove i->i+4 interactions
             for torsion in self.torsion_list:
                 if [torsion[0], torsion[3]] not in exclusion_list and [
                     torsion[3],
                     torsion[0],
                 ] not in exclusion_list:
                     exclusion_list.append([torsion[0], torsion[3]])
-        # print("After removing i+1,i+2, and i+3 interactions, the nonbonded exclusion list is: "+str(exclusion_list))
 
-        if rosetta_scoring:
+        if rosetta_functional_form:
             for i in range(self.num_beads):
                 for j in range(i + 1, self.num_beads):
                     if [i, j] in bond_list or [j, i] in bond_list:
