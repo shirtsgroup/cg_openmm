@@ -7,6 +7,7 @@ from cg_openmm.utilities.iotools import *
 from itertools import chain, combinations, product
 import pickle
 
+
 class CGModel(object):
     """
 
@@ -240,6 +241,7 @@ class CGModel(object):
         self.monomer_types = monomer_types
 
         import pdb
+
         pdb.set_trace()
         # Build a polymer with these model settings
         self.build_polymer(sequence)
@@ -281,7 +283,7 @@ class CGModel(object):
         else:
             self.system = system
 
-    def export(self,filename):
+    def export(self, filename):
         """
         export to a pickle file.
 
@@ -289,7 +291,7 @@ class CGModel(object):
         :type CGModel: str
         """
 
-        pickle_out = open(filename,"wb")
+        pickle_out = open(filename, "wb")
         pickle.dump(self, pickle_out)
         pickle_out.close()
 
@@ -299,7 +301,7 @@ class CGModel(object):
           """
         self.polymer_length = len(sequence)
         self.sequence = sequence
-        self.process_monomers_types()
+        self.process_monomer_types()
         self.num_beads = self.get_num_beads()
         self.particle_list = self.get_particle_list()
 
@@ -331,51 +333,71 @@ class CGModel(object):
 
         for monomer in self.monomer_types:
             if monomer["monomer_name"] is None:
-                print("Error: monomers must have names!")  # figure out how to handle with exceptions.
-                exit()
+                print("Error: monomers must have names!")
+                exit()  # figure out how to handle with exceptions.
+
+            mn = monomer["monomer_name"]
+            if "backbone_length" not in monomer:
+                print(f"Using default length 1 for backbone length monomer {mn}")
+                monomer["backbone_length"] = 1
+
+            if "sidechain_length" not in monomer:
+                print(f"Using default length 1 for sidechain length monomer {mn}")
+                monomer["sidechain_length"] = 1
+
+            if "sidechain_positions" not in monomer:
+                print(f"Using single sidechain at position [0] for monomer {mn}")
+                monomer["sidechain_positions"] = [0]
+
+            if type(monomer["sidechain_positions"]) is not list:
+                monomer["sidechain_positions"] = [monomer["sidechain_positions"]]
+
+            for position in monomer["sidechain_positions"]:
+                if position >= monomer["backbone_length"]:
+                    print(
+                        f"Error: side chain position {position} is too large for backbone length {monomer['backbone_length']}"
+                    )
+                    exit()
+            if "bond_lengths" not in monomer:
+                print(f"Using default bond length {self.default_length} at for monomer {mn}")
+                # could use some error checking if these are not all defined.
+                monomer["bond_lengths"] = {
+                    "bb_bb_bond_lengths": self.default_length,
+                    "bb_sc_bond_lengths": self.default_length,
+                    "sc_sc_bond_lengths": self.default_length,
+                }
+
+            if "epsilons" not in monomer:
+                print(f"Using default epsilon {self.default_energy_scale} for monomer {mn}")
+                # could use some error checking if these are not all defined.
+                monomer["epsilons"] = {
+                    "bb_eps": self.default_energyscale,
+                    "sc_eps": self.default_energyscale,
+                }
+
+            if "sigmas" not in monomer:
+                print(f"Using default sigmas {self.default_length} for monomer {mn}")
+                # could use some error checking if these are not all defined.
+                monomer["sigmas"] = {
+                    "bb_sigma": self.default_length,
+                    "sc_sigma": self.default_length,
+                }
+
+            import pdb
+
+            pdb.set_trace()
+
             num_beads = monomer["backbone_length"]
-            for sidechain_position in self.monomer["sidechain_positions"]:
+            for sidechain_position in monomer["sidechain_positions"]:
                 num_beads = num_beads + monomer["sidechain_length"]
-            if monomer["num_beads"] is None:
+            if num_beads not in monomer:
                 monomer["num_beads"] = num_beads
             elif monomer["num_beads"] != num_beads:
-                print(f"Warning: calculated number of beads {num_beads} is not equal" 
-                      f"to stated {monomer["num_beads"]}.I will use calculated number of beads")
+                print(
+                    f"Warning: calculated number of beads {num_beads} is not equal to stated {monomer['num_beads']}. Using calculated number of beads."
+                )
                 monomer["num_beads"] = num_beads
-            if monomer["monomer_name"] is None:
-                monomer["monomer_name"] = f"CG{backbone_length}{sidechain_length}{"
 
-            mn = mononer[monomer_name]    
-            if monomer_type["backbone_length"] is None:
-                print(f"Using default length 1 for backbone length monomer {mn}")
-                monomer_type["backbone_length"] = 1
-
-            if monomer_type["sidechain_length"] is None:
-                print(f"Using default length 1 for sidechain length monomer {mn}")
-                monomer_type["sidechain_length"] = 1
-
-            if monomer_type["sidechain_positions"] is None:
-                print(f"Using single sidechain at position [0] for monomer {mn}")
-                monomer_type["sidechain_positions"] = [0]
-
-            if monomer_type["bond_lengths"] is None:
-                print(f"Using default bond length {self.default_length} at for monomer {mn}")
-                monomer_type["bond_lengths"] = self.default_length
-                
-            if monomer_type["epsilons"] is None:
-                print(f"Using default epsilon {self.default_energy_scale} for monomer {mn}")
-                monomer_type["epsilons"] = {
-                    "bb_epsilon":self.default_energy_scale,
-                    "sc_epsilon":self.default_energy_scale
-                } 
-                
-            if monomer_type["sigmas"] is None:
-                print(f"Using default sigmas {self.default_length_scale} for monomer {mn}")
-                monomer_type["sigmas"] = {
-                    "bb_sigma":self.default_length,
-                    "sc_sigma":self.default_length
-                } 
-    
     def get_num_beads(self):
         """
           Calculate the number of beads in a coarse-grained model class object
@@ -388,8 +410,8 @@ class CGModel(object):
 
           """
         num_beads = 0
-        for monomer_type in self.sequence:
-            num_beads = num_beads + monomer_type["num_beads"]
+        for monomer in self.sequence:
+            num_beads = num_beads + monomer["num_beads"]
         return num_beads
 
     def get_particle_list(self):
@@ -531,21 +553,24 @@ class CGModel(object):
             bead_index = 0
             for monomer in self.sequence:
                 for beadi in range(monomer["num_beads"]):
-                    for beadj in range(beadi+1,monomer["num_beads"]):
-                        exclusion_list.append([bead_index+beadi,bead_index+beadj])
+                    for beadj in range(beadi + 1, monomer["num_beads"]):
+                        exclusion_list.append([bead_index + beadi, bead_index + beadj])
                 bead_index = bead_index + monomer["num_beads"]
 
         for bond in self.bond_list:
             if bond not in exclusion_list and bond.reverse() not in exclusion_list:
                 exclusion_list.append(bond)
         for angle in self.bond_angle_list:
-            angle_ends = [angle[0],angle[2]]
+            angle_ends = [angle[0], angle[2]]
             if angle_ends not in exclusion_list and angle_ends.reverse() not in exclusion_list:
                 exclusion_list.append(angle_ends)
         if rosetta_functional_form:
             for torsion in self.torsion_list:
-                torsion_ends = [torsion[0],torsion[3]]
-                if torsion_ends not in exclusion_list and torsion_ends.reverse() not in exclusion_list:
+                torsion_ends = [torsion[0], torsion[3]]
+                if (
+                    torsion_ends not in exclusion_list
+                    and torsion_ends.reverse() not in exclusion_list
+                ):
                     exclusion_list.append(torsion_ends)
 
         return exclusion_list
