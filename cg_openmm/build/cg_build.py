@@ -669,7 +669,7 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
             # functional form as the Rosetta cutoff, but it should be somewhat close.
             nonbonded_force.setNonbondedMethod(mm.NonbondedForce.CutoffNonPeriodic)
             nonbonded_force.setCutoffDistance(0.6) # rosetta cutoff distance in nm
-            nonbonded_force.setUseSwitchingFunction()
+            nonbonded_force.setUseSwitchingFunction(True)
             nonbonded_force.setSwitchingDistance(0.45) # start of rosetta switching distance in nm
         else:
             nonbonded_force.setNonbondedMethod(mm.NonbondedForce.NoCutoff)
@@ -837,12 +837,6 @@ def build_system(cgmodel, rosetta_functional_form=False, verify=True):
         cgmodel, nonbonded_force = add_force(
             cgmodel, force_type="Nonbonded", rosetta_functional_form=rosetta_functional_form
         )
-
-        # if cgmodel.positions != None:
-        # print("Testing the nonbonded forces")
-        # if not test_force(cgmodel,nonbonded_force,force_type="Nonbonded"):
-        # print("ERROR: there was a problem with the nonbonded force definitions.")
-        # exit()
 
     if cgmodel.include_bond_forces or cgmodel.constrain_bonds:
         if len(cgmodel.bond_list) > 0:
