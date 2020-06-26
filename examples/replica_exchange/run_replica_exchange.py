@@ -122,11 +122,8 @@ cgmodel = CGModel(
     positions=positions,
 )
 
-# kludge - information needed for writing out
-pkl = open("stored_topology.pkl", "wb")
-# check to make sure that this is the right time interval.
-pickle.dump((temperature_list, exchange_frequency * simulation_time_step, cgmodel.topology), pkl)
-pkl.close()
+#store the cg model so that we can do various analyses.
+cgmodel.export('stored_cgmodel.pkl')
 
 if not os.path.exists(output_data) or overwrite_files == True:
     run_replica_exchange(

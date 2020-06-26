@@ -570,7 +570,6 @@ def test_force(cgmodel, force, force_type=None):
 def add_rosetta_exception_parameters(cgmodel, nonbonded_force, particle_index_1, particle_index_2):
     """
     """
-    rosetta_15_scaling = 0.2
     exception_list = []
     for exception in range(nonbonded_force.getNumExceptions()):
         index_1, index_2, charge, sigma, epsilon = nonbonded_force.getExceptionParameters(
@@ -589,16 +588,15 @@ def add_rosetta_exception_parameters(cgmodel, nonbonded_force, particle_index_1,
         charge_2 = cgmodel.get_particle_charge(particle_index_2)
         sigma_2 = cgmodel.get_sigma(particle_index_2).in_units_of(unit.nanometer)
         epsilon_2 = cgmodel.get_epsilon(particle_index_2).in_units_of(unit.kilojoule_per_mole)
-        sigma = (sigma_1+sigma_2) / 2.0
-        epsilon = rosetta_15_scaling * unit.sqrt(epsilon_1*epsilon_2)
-        # Not clear we want the charge scaling here - charge potentials are more complex than needed.
+        sigma = (sigma_1.__add__(sigma_2)) / 2.0
+        epsilon = 0.2 * unit.sqrt(epsilon_1.__mul__(epsilon_2))
         nonbonded_force.addException(
-            particle_index_1, particle_index_2, rosetta_15_scaling * charge_1 * charge_2, sigma, epsilon
+            particle_index_1, particle_index_2, 0.2 * charge_1 * charge_2, sigma, epsilon
         )
     return nonbonded_force
 
 
-def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
+def add_force(cgmodel, force_type=None, rosetta_scoring=False):
     """
 
     Given a 'cgmodel' and 'force_type' as input, this function adds
@@ -664,6 +662,7 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
     if force_type == "Nonbonded":
 
         nonbonded_force = mm.NonbondedForce()
+
         if rosetta_functional_form:
             # rosetta has a 4.5-6 A vdw cutoff.  Note the OpenMM cutoff may not be quite the same
             # functional form as the Rosetta cutoff, but it should be somewhat close.
@@ -681,17 +680,12 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
             nonbonded_force.addParticle(charge, sigma, epsilon)
 
         if len(cgmodel.bond_list) >= 1:
-            if not rosetta_functional_form:
-                # remove i+2 and i+3 bonds, do not scale i+4 bonds.
+            if not rosetta_scoring:
                 nonbonded_force.createExceptionsFromBonds(cgmodel.bond_list, 1.0, 1.0)
-            else:
-                # Remove i+2, i+3, i+4 interactions
+            if rosetta_scoring:
+                # Remove i+3 interactions
                 nonbonded_force.createExceptionsFromBonds(cgmodel.bond_list, 0.0, 0.0)
-                # Reduce the strength of i+5 interactions, per rosetta functional form
-                # we find the i+5 interactions by looping over the torsions, and if
-                # a bond has one atom on the end (position 0 or 3) of the torsion,
-                # then the OTHER atom in bond is a i+5 interaction with the torsion atom
-                # on the OTHER end of the torsion.
+                # Reduce the strength of i+4 interactions
                 for torsion in cgmodel.torsion_list:
                     for bond in cgmodel.bond_list:
                         if bond[0] not in torsion:
@@ -714,6 +708,8 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
                                 )
         cgmodel.system.addForce(nonbonded_force)
         force = nonbonded_force
+        # for particle in range(cgmodel.num_beads):
+        # print(force.getParticleParameters(particle))
 
     if force_type == "Angle":
         angle_force = mm.HarmonicAngleForce()
@@ -807,7 +803,7 @@ def test_forces(cgmodel):
     return success
 
 
-def build_system(cgmodel, rosetta_functional_form=False, verify=True):
+def build_system(cgmodel, rosetta_scoring=False, verify=True):
     """
     Builds an OpenMM `System() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1System.html>`_ object, given a CGModel() as input.
 
@@ -832,11 +828,9 @@ def build_system(cgmodel, rosetta_functional_form=False, verify=True):
         system.addParticle(mass)
     cgmodel.system = system
 
-    if cgmodel.include_nonbonded_forces:
-        # Create nonbonded forces
-        cgmodel, nonbonded_force = add_force(
-            cgmodel, force_type="Nonbonded", rosetta_functional_form=rosetta_functional_form
-        )
+    # length_scale = cgmodel.bond_lengths['bb_bb_bond_length']
+    # box_vectors = [[100.0*length_scale._value,0.0,0.0],[0.0,100.0*length_scale._value,0.0],[0.0,0.0,100.0*length_scale._value]]
+    # system.setDefaultPeriodicBoxVectors(box_vectors[0],box_vectors[1],box_vectors[2])
 
     if cgmodel.include_bond_forces or cgmodel.constrain_bonds:
         if len(cgmodel.bond_list) > 0:
@@ -846,6 +840,29 @@ def build_system(cgmodel, rosetta_functional_form=False, verify=True):
                 if not test_force(cgmodel, bond_force, force_type="Bond"):
                     print("ERROR: The bond force definition is giving 'nan'")
                     exit()
+
+    if cgmodel.include_nonbonded_forces:
+        # Create nonbonded forces
+        cgmodel, nonbonded_force = add_force(
+            cgmodel, force_type="Nonbonded", rosetta_scoring=rosetta_scoring
+        )
+
+<<<<<<< HEAD
+        # if cgmodel.positions != None:
+        # print("Testing the nonbonded forces")
+        # if not test_force(cgmodel,nonbonded_force,force_type="Nonbonded"):
+        # print("ERROR: there was a problem with the nonbonded force definitions.")
+        # exit()
+=======
+    if cgmodel.include_bond_forces or cgmodel.constrain_bonds:
+        if len(cgmodel.bond_list) > 0:
+            # Create bond (harmonic) potentials
+            cgmodel, bond_force = add_force(cgmodel, force_type="Bond")
+            if cgmodel.positions is not None:
+                if not test_force(cgmodel, bond_force, force_type="Bond"):
+                    print("ERROR: The bond force definition is giving 'nan'")
+                    exit()
+>>>>>>> master
 
     if cgmodel.include_bond_angle_forces:
         if len(cgmodel.bond_angle_list) > 0:
