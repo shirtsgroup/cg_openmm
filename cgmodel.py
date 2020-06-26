@@ -659,52 +659,30 @@ class CGModel(object):
         bond_list = self.bond_list
         exclusion_list = []
 
-        if rosetta_functional_form:
+        # for now, we are INCLUDING intraresidue interactions, even though
+        # this isn't traditional Rosetta functional form.
+        remove_intraresidue_interactions = False
+        if rosetta_functional_form and remove_intraresidue_interactions:
             # Remove interactions between particles in the same monomer
             bead_index = 0
             for monomer in self.sequence:
-                exclusion = []
-                for bead in range(monomer["num_beads"]):
-                    if len(exclusion) == 1:
-                        exclusion.append(bead_index)
-                        exclusion_list.append(exclusion)
-                    if len(exclusion) == 0:
-                        exclusion.append(bead_index)
-                    if len(exclusion) == 2:
-                        exclusion = []
-                    bead_index = bead_index + 1
+                for beadi in range(monomer["num_beads"]):
+                    for beadj in range(beadi+1,monomer["num_beads"]):
+                        exclusion_list.append([bead_index+beadi,bead_index+beadj])
+                bead_index = bead_index + monomer["num_beads"]
 
         for bond in self.bond_list:
-            if [bond[0], bond[1]] not in exclusion_list and [
-                bond[1],
-                bond[0],
-            ] not in exclusion_list:
-                exclusion_list.append([bond[0], bond[1]])
+            if bond not in exclusion_list and bond.reverse() not in exclusion_list:
+                exclusion_list.append(bond)
         for angle in self.bond_angle_list:
-            if [angle[0], angle[2]] not in exclusion_list and [
-                angle[2],
-                angle[0],
-            ] not in exclusion_list:
-                exclusion_list.append([angle[0], angle[2]])
+            angle_ends = [angle[0],angle[2]]
+            if angle_ends not in exclusion_list and angle_ends.reverse() not in exclusion_list:
+                exclusion_list.append(angle_ends)
         if rosetta_functional_form:
-            # Remove i->i+4 interactions
             for torsion in self.torsion_list:
-                if [torsion[0], torsion[3]] not in exclusion_list and [
-                    torsion[3],
-                    torsion[0],
-                ] not in exclusion_list:
-                    exclusion_list.append([torsion[0], torsion[3]])
-
-        if rosetta_functional_form:
-            for i in range(self.num_beads):
-                for j in range(i + 1, self.num_beads):
-                    if [i, j] in bond_list or [j, i] in bond_list:
-                        if [i, j] not in exclusion_list:
-                            exclusion_list.append([i, j])
-                    for angle in self.bond_angle_list:
-                        if i in angle and j in angle:
-                            if [i, j] not in exclusion_list:
-                                exclusion_list.append([i, j])
+                torsion_ends = [torsion[0],torsion[3]]
+                if torsion_ends not in exclusion_list and torsion_ends.reverse() not in exclusion_list:
+                    exclusion_list.append(torsion_ends)
 
         return exclusion_list
 
