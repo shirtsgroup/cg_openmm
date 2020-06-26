@@ -1,4 +1,4 @@
-name: test
+name: test2
 channels:
   - conda-forge
   - omnia
@@ -10,6 +10,7 @@ dependencies:
   - arpack=3.7.0=hc6cf775_1
   - arrow=0.15.7=py37hc8dfbb8_0
   - astor=0.7.1=py_0
+  - attrs=19.3.0=py_0
   - babel=2.8.0=py_0
   - backcall=0.1.0=py_0
   - binaryornot=0.4.4=py_1
@@ -24,6 +25,7 @@ dependencies:
   - chardet=3.0.4=py37hc8dfbb8_1006
   - click=7.1.2=pyh9f0ad1d_0
   - cookiecutter=1.7.2=pyh9f0ad1d_0
+  - coverage=5.1=py37h8f50634_0
   - cryptography=2.9.2=py37hb09aad4_0
   - curl=7.69.1=h33f0ec9_0
   - cycler=0.10.0=py_2
@@ -38,6 +40,8 @@ dependencies:
   - icu=64.2=he1b5a44_1
   - idna=2.9=py_1
   - imagesize=1.2.0=py_0
+  - importlib-metadata=1.6.1=py37hc8dfbb8_0
+  - importlib_metadata=1.6.1=0
   - ipython=7.15.0=py37hc8dfbb8_0
   - ipython_genutils=0.2.0=py_1
   - jedi=0.17.1=py37hc8dfbb8_0
@@ -48,7 +52,7 @@ dependencies:
   - kiwisolver=1.2.0=py37h99015e2_0
   - krb5=1.17.1=h2fd8d38_0
   - latexcodec=2.0.0=py_0
-  - ld_impl_linux-64=2.34=h53a641e_4
+  - ld_impl_linux-64
   - libblas=3.8.0=16_openblas
   - libcblas=3.8.0=16_openblas
   - libcurl=7.69.1=hf7181ac_0
@@ -71,6 +75,7 @@ dependencies:
   - matplotlib-base=3.2.2=py37h30547a4_0
   - mdtraj=1.9.4=py37h4112681_0
   - mock=4.0.2=py37hc8dfbb8_0
+  - more-itertools=8.4.0=py_0
   - mpi=1.0=mpich
   - mpi4py=3.0.3=py37h0c5ec45_1
   - mpich=3.3.2=hc856adb_0
@@ -91,10 +96,12 @@ dependencies:
   - pexpect=4.8.0=py37hc8dfbb8_1
   - pickleshare=0.7.5=py37hc8dfbb8_1001
   - pip=20.1.1=py_1
+  - pluggy=0.13.1=py37hc8dfbb8_2
   - poyo=0.5.0=py_0
   - prompt-toolkit=3.0.5=py_0
   - pthread-stubs=0.4=h14c3975_1001
   - ptyprocess=0.6.0=py_1001
+  - py=1.9.0=pyh9f0ad1d_0
   - pybtex=0.22.2=py37hc8dfbb8_1
   - pybtex-docutils=0.2.2=py37hc8dfbb8_1
   - pycparser=2.20=py_0
@@ -104,6 +111,8 @@ dependencies:
   - pyparsing=2.4.7=pyh9f0ad1d_0
   - pysocks=1.7.1=py37hc8dfbb8_1
   - pytables=3.6.1=py37h56451d4_2
+  - pytest=5.4.3=py37hc8dfbb8_0
+  - pytest-cov=2.10.0=pyh9f0ad1d_0
   - python=3.7.6=cpython_h8356626_6
   - python-dateutil=2.8.1=py_0
   - python-slugify=4.0.0=pyh9f0ad1d_1
@@ -149,21 +158,11 @@ dependencies:
   - xorg-xproto=7.0.31=h14c3975_1007
   - xz=5.2.5=h516909a_0
   - yaml=0.2.4=h516909a_0
+  - zipp=3.1.0=py_0
   - zlib=1.2.11=h516909a_1006
-
-    # Testing
-  - pytest
-  - pytest-cov
 
   # Pip-only installs
   - pip:
-    - amberlite==16.0
-    - ambertools==17.0
-    - codecov
-    - mmpbsa-py==16.0
-    - packmol-memgen==1.1.0rc0
-    - parmed==at20RC5+54.g5702a232fe.dirty
-    - pdb4amber==1.7.dev0
-    - pytraj==2.0.5
-    - sander==16.0
+    - codecov==2.1.7
+
 
