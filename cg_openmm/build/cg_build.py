@@ -662,7 +662,16 @@ def add_force(cgmodel, force_type=None, rosetta_scoring=False):
     if force_type == "Nonbonded":
 
         nonbonded_force = mm.NonbondedForce()
-        nonbonded_force.setNonbondedMethod(mm.NonbondedForce.NoCutoff)
+
+        if rosetta_functional_form:
+            # rosetta has a 4.5-6 A vdw cutoff.  Note the OpenMM cutoff may not be quite the same
+            # functional form as the Rosetta cutoff, but it should be somewhat close.
+            nonbonded_force.setNonbondedMethod(mm.NonbondedForce.CutoffNonPeriodic)
+            nonbonded_force.setCutoffDistance(0.6) # rosetta cutoff distance in nm
+            nonbonded_force.setUseSwitchingFunction(True)
+            nonbonded_force.setSwitchingDistance(0.45) # start of rosetta switching distance in nm
+        else:
+            nonbonded_force.setNonbondedMethod(mm.NonbondedForce.NoCutoff)
 
         for particle in range(cgmodel.num_beads):
             charge = cgmodel.get_particle_charge(particle)
@@ -838,11 +847,22 @@ def build_system(cgmodel, rosetta_scoring=False, verify=True):
             cgmodel, force_type="Nonbonded", rosetta_scoring=rosetta_scoring
         )
 
+<<<<<<< HEAD
         # if cgmodel.positions != None:
         # print("Testing the nonbonded forces")
         # if not test_force(cgmodel,nonbonded_force,force_type="Nonbonded"):
         # print("ERROR: there was a problem with the nonbonded force definitions.")
         # exit()
+=======
+    if cgmodel.include_bond_forces or cgmodel.constrain_bonds:
+        if len(cgmodel.bond_list) > 0:
+            # Create bond (harmonic) potentials
+            cgmodel, bond_force = add_force(cgmodel, force_type="Bond")
+            if cgmodel.positions is not None:
+                if not test_force(cgmodel, bond_force, force_type="Bond"):
+                    print("ERROR: The bond force definition is giving 'nan'")
+                    exit()
+>>>>>>> master
 
     if cgmodel.include_bond_angle_forces:
         if len(cgmodel.bond_angle_list) > 0:
