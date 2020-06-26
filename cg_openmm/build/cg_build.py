@@ -828,18 +828,6 @@ def build_system(cgmodel, rosetta_scoring=False, verify=True):
         system.addParticle(mass)
     cgmodel.system = system
 
-    # length_scale = cgmodel.bond_lengths['bb_bb_bond_length']
-    # box_vectors = [[100.0*length_scale._value,0.0,0.0],[0.0,100.0*length_scale._value,0.0],[0.0,0.0,100.0*length_scale._value]]
-    # system.setDefaultPeriodicBoxVectors(box_vectors[0],box_vectors[1],box_vectors[2])
-
-    if cgmodel.include_bond_forces or cgmodel.constrain_bonds:
-        if len(cgmodel.bond_list) > 0:
-            # Create bond (harmonic) potentials
-            cgmodel, bond_force = add_force(cgmodel, force_type="Bond")
-            if cgmodel.positions is not None:
-                if not test_force(cgmodel, bond_force, force_type="Bond"):
-                    print("ERROR: The bond force definition is giving 'nan'")
-                    exit()
 
     if cgmodel.include_nonbonded_forces:
         # Create nonbonded forces
@@ -847,13 +835,6 @@ def build_system(cgmodel, rosetta_scoring=False, verify=True):
             cgmodel, force_type="Nonbonded", rosetta_scoring=rosetta_scoring
         )
 
-<<<<<<< HEAD
-        # if cgmodel.positions != None:
-        # print("Testing the nonbonded forces")
-        # if not test_force(cgmodel,nonbonded_force,force_type="Nonbonded"):
-        # print("ERROR: there was a problem with the nonbonded force definitions.")
-        # exit()
-=======
     if cgmodel.include_bond_forces or cgmodel.constrain_bonds:
         if len(cgmodel.bond_list) > 0:
             # Create bond (harmonic) potentials
@@ -862,8 +843,7 @@ def build_system(cgmodel, rosetta_scoring=False, verify=True):
                 if not test_force(cgmodel, bond_force, force_type="Bond"):
                     print("ERROR: The bond force definition is giving 'nan'")
                     exit()
->>>>>>> master
-
+        
     if cgmodel.include_bond_angle_forces:
         if len(cgmodel.bond_angle_list) > 0:
             # Create bond angle potentials
