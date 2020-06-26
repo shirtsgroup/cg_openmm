@@ -7,97 +7,6 @@ from cg_openmm.utilities.iotools import *
 from itertools import chain, combinations, product
 import pickle
 
-def basic_cgmodel(
-    polymer_length=12,
-    backbone_length=1,
-    sidechain_length=1,
-    sidechain_positions=[0],
-    mass=72 * unit.amu,
-    bond_length=0.47 * unit.nanometer,
-    sigma=0.47 * unit.nanometer,
-    epsilon=3.5 * unit.kilojoule_per_mole,
-    positions=None,
-):
-
-    r"""
-        :param polymer_length: Number of monomer units, default = 8
-        :type polymer_length: int
-
-        :param backbone_length: Number of beads in the backbone for individual monomers within a coarse-grained model, default = 1
-        :type backbone_length: int
-
-        :param sidechain_length: Number of beads in the sidechain for individual monomers within a coarse-grained model, default = 1
-        :type sidechain_length: int
-
-        :param sidechain_positions: Designates the indices of backbone beads upon which we will place sidechains, default = [0] (add a sidechain to the first backbone bead in each monomer)
-        :type sidechain_positions: List( int )
-
-        :param mass: Mass for all coarse-grained beads, default = 72.0 * unit.amu
-        :type mass: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
-
-        :param bond_length: Defines the length for all bond types, default = 0.47 * unit.angstrom
-        :type bond_length: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
-             
-        :param sigma: Lennard-Jones equilibrium interaction distance (by default, calculated for particles that are separated by 3 or more bonds), default = 0.47 * bond_length (for all interaction types)
-        :type sigma: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
-
-        :param epsilon: Lennard-Jones equilibrium interaction energy (by default, calculated for particles that are separated by 3 or more bonds), default = 3.5 * unit.kilojoule_per_mole
-        :type espilon: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
-
-        :param positions: Positions for coarse-grained particles in the model, default = None
-        :type positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit )
-
-        :returns: 
-          - cgmodel (class) - CGModel() class object
-
-        .. warning:: this function has significant limitations, in comparison with building a coarse-grained model with the CGModel() class.  In particular, this function makes it more difficult to build heteropolymers, and is best-suited for the simulation of homopolymers.
-
-        :Example:
-
-        >>> from simtk import unit
-        >>> polymer_length = 20
-        >>> backbone_length = 1
-        >>> sidechain_length = 1
-        >>> sidechain_positions = [0]
-        >>> mass = self.default_mass
-        >>> bond_length=self.default_length
-        >>> sigma=self.default_length
-        >>> epsilon=self.default_epsilon
-        >>> cgmodel = basic_cgmodel(polymer_length=polymer_length,backbone_length=backbone_length,sidechain_length=sidechain_length,sidechain_positions=sidechain_positions,mass=mass,bond_length=bond_length,sigma=sigma,epsilon=epsilon) 
-
-        """
-    backbone_lengths = [backbone_length]  # Number of backbone beads in unique monomer types
-    sidechain_lengths = [sidechain_length]  # Number of sidechain beads in unique monomer types
-    masses = {"backbone_bead_masses": mass, "sidechain_bead_masses": mass}  # List of bead masses
-    sigmas = {
-        "bb_bb_sigma": sigma,
-        "bb_sc_sigma": sigma,
-        "sc_sc_sigma": sigma,
-    }  # Lennard-Jones interaction distances.  List of unique interaction types
-    bond_lengths = {
-        "bb_bb_bond_length": bond_length,
-        "bb_sc_bond_length": bond_length,
-        "sc_sc_bond_length": bond_length,
-    }  # bond length
-    epsilons = {
-        "bb_bb_eps": epsilon,
-        "bb_sc_eps": epsilon,
-        "sc_sc_eps": epsilon,
-    }  # Lennard-Jones interaction strength.  List of unique interaction types
-    cgmodel = CGModel(
-        positions=positions,
-        polymer_length=polymer_length,
-        backbone_lengths=backbone_lengths,
-        sidechain_lengths=sidechain_lengths,
-        sidechain_positions=sidechain_positions,
-        masses=masses,
-        sigmas=sigmas,
-        epsilons=epsilons,
-        bond_lengths=bond_lengths,
-    )
-    return cgmodel
-
-
 class CGModel(object):
     """
 
@@ -174,10 +83,6 @@ class CGModel(object):
     def __init__(
         self,
         positions=None,
-        polymer_length=12,
-        backbone_lengths=[1],
-        sidechain_lengths=[1],
-        sidechain_positions=[0],
         masses=None,
         sigmas=None,
         epsilons=None,
@@ -214,18 +119,6 @@ class CGModel(object):
           :param positions: Positions for the particles in the coarse-grained model, default = None
           :type positions: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit )
 
-          :param polymer_length: Number of monomer units, default = 12
-          :type polymer_length: integer
-
-          :param backbone_lengths: List of the number of beads in the backbone for unique monomer types within the coarse-grained model, default = [1]
-          :type backbone_lengths: List( int )
-
-          :param sidechain_lengths: List of the number of beads in the sidechain for unique monomer types within the coarse-grained model, default = [1]
-          :type sidechain_lengths: List( int )
-
-          :param sidechain_positions: List of the indices of backbone beads upon which we will place sidechains, default = [0] (add a sidechain to the first backbone bead in each monomer)
-          :type sidechain_positions: List( integer )
-
           :param masses: Masses of all particle types, default = None
           :type masses: dict( 'backbone_bead_masses': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ , 'sidechain_bead_masses': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )
 
@@ -256,10 +149,7 @@ class CGModel(object):
           :param charges: Charges for all particles, default = None
           :type charges: dict( 'backbone_bead_charges': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ,'sidechain_bead_charges': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )
 
-          :param num_beads: Total number of particles in the coarse-grained model, default = None (The total number of particles in a length=12 1-1 coarse-grained model)
-          :type num_beads: int
-
-          :param system: OpenMM System() object, which stores the forces for the coarse-grained model, default = None
+          :param system: OpenMM System() object, which stores the forces for the coarse grained model, default = None
           :type system: `System() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1System.html>`_
 
           :param topology: OpenMM Topology() object, which stores bonds, angles, and other structural attributes of the coarse-grained model, default = None
@@ -288,6 +178,16 @@ class CGModel(object):
 
           :param monomer_types: A list of dictionary objects containing the properties for unique monomer types (used to construct a heteropolymeric coarse-grained model, default = None
           :type monomer_types: List( dict( 'monomer_name': str, 'backbone_length': int, 'sidechain_length': int, 'sidechain_positions': List( int ), 'num_beads': int, 'bond_lengths': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ), 'epsilons': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ), 'sigmas': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) ) )
+
+          :param backbone_lengths: List of the number of beads in the backbone for unique monomer types within the coarse grained model, default = 1
+          :type backbone_lengths: int
+
+          :param sidechain_lengths: List of the number of beads in the sidechain for unique monomer types within the coarse grained model, default = 1
+          :type sidechain_lengths: int
+
+          :param sidechain_positions: List of the indices of backbone beads upon which we will place sidechains, default = [0] (add a sidechain to the first backbone bead in each monomer)
+          :type sidechain_positions: List( integer )
+
 
           :param sequence: The sequence from which to build a heteropolymer.  Defined using a list of 'monomer_types', each of which contains the properties for that monomer, default = None (Homopolymer)
           :type sequence: List( dict( 'monomer_name': str, 'backbone_length': int, 'sidechain_length': int, 'sidechain_positions': List( int ), 'num_beads': int, 'bond_lengths': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ), 'epsilons': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ), 'sigmas': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) ) )
@@ -324,24 +224,9 @@ class CGModel(object):
             equil_bond_angles = {}
         if equil_torsion_angles == None:
             equil_torsion_angles = {}
-        if charges == None:
-            charges = {}
-        if masses == None:
-            masses = {}
-        if sigmas == None:
-            sigmas = {}
-        if epsilons == None:
-            epsilons = {}
-        if bond_lengths == None:
-            bond_lengths = {
-                "bb_bb_bond_length": self.default_bond_length,
-                "bb_sc_bond_length": self.default_bond_length,
-                "sc_sc_bond_length": self.default_bond_length,
-            }
-
         """
-          Initialize user-defined input.
-          """
+        Initialize user-defined input.
+        """
 
         # Assign forces based upon input flags
         self.rosetta_functional_form = rosetta_functional_form
@@ -352,32 +237,12 @@ class CGModel(object):
         self.exclusions = exclusions
         self.include_torsion_forces = include_torsion_forces
         self.check_energy_conservation = check_energy_conservation
-
-        # issue some warnings
-        if len(backbone_lengths) == 0 or len(sidechain_lengths) == 0:
-            print("Error:must have backbone and sidechain length lists at least 1")
-            exit()
-        elif len(backbone_lengths) == 1 and backbone_lengths[0] == 1 and len(sidechain_lengths) == 1 and sidechain_lengths[0]==0:
-            print("Error:Cannot use backbone_lengths = [1] and sidechain_lengths = [0] to create a unbranched polymer")
-            print("Error:Instead use backbone_lengths = [n] and sidechain_lengths = [0], with n>1")
-            exit()            
-            # Initialize the monomer types
-        if monomer_types == None:
-            self.backbone_lengths = backbone_lengths
-            self.sidechain_lengths = sidechain_lengths
-            self.sidechain_positions = sidechain_positions
-            self.bond_lengths = bond_lengths
-            self.sigmas = sigmas
-            self.epsilons = epsilons
-            self.monomer_types = self.get_monomer_types()
-        else:
-            self.monomer_types = monomer_types
+        self.monomer_types = monomer_types
 
         import pdb
         pdb.set_trace()
         # Build a polymer with these model settings
-        if sequence is not None:
-            self.build_polymer(polymer_length, sequence)
+        self.build_polymer(sequence)
 
         # Assign particle properties
         self.masses = masses
@@ -428,21 +293,14 @@ class CGModel(object):
         pickle.dump(self, pickle_out)
         pickle_out.close()
 
-    def build_polymer(self, polymer_length, sequence):
+    def build_polymer(self, sequence):
         """
           Used to build a polymer, or reset the properties for a polymer after parameters such as the polymer_length or sequence have been modified.
           """
-        self.polymer_length = polymer_length
-
-        if sequence == None:
-            sequence = []
-            monomer_type = self.monomer_types[0]
-            for monomer in range(self.polymer_length):
-                sequence.append(monomer_type)
-        else:
-            self.sequence = sequence
-
-            self.num_beads = self.get_num_beads()
+        self.polymer_length = len(sequence)
+        self.sequence = sequence
+        self.process_monomers_types()
+        self.num_beads = self.get_num_beads()
         self.particle_list = self.get_particle_list()
 
         if self.include_bond_forces or self.constrain_bonds:
@@ -462,49 +320,62 @@ class CGModel(object):
 
         self.nonbonded_interaction_list = self.get_nonbonded_interaction_list()
 
-        return
-
-    def get_monomer_types(self):
+    def process_monomer_types(self):
         """
-          Get a list of 'monomer_types' for all unique monomers.
+          Clean up a list of 'monomer_types' for all unique monomers.
 
           :param CGModel: CGModel() class object
           :type CGModel: class
 
-          :returns: 
-             - monomer_types ( List( dict( 'monomer_name': str, 'backbone_length': int, 'sidechain_length': int, 'sidechain_positions': List( int ), 'num_beads': int, 'bond_lengths': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ), 'epsilons': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ), 'sigmas': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) ) ) ) - A list of unique monomer types in the coarse-grained model
-
           """
-        monomer_name_modifier = ["A", "B", "C", "D", "E", "F", "G", "H"]
-        monomer_types = []
-        monomer_type_index = 0
-        for backbone_length, sidechain_length in zip(
-            self.backbone_lengths, self.sidechain_lengths
-        ):
-            num_beads = backbone_length
-            for sidechain_position in self.sidechain_positions:
-                num_beads = num_beads + sidechain_length
-            monomer_name = str("CG" + str(backbone_length) + str(sidechain_length))
-            if monomer_name in monomer_types:
-                modifier_index = 0
-                while monomer_name in monomer_types:
-                    monomer_name = str(
-                        "CG" + str(backbone_length) + str(sidechain_length) + str(modifier_index)
-                    )
-                    modifier_index = modifier_index + 1
-            monomer_type = {
-                "monomer_name": monomer_name,
-                "backbone_length": backbone_length,
-                "sidechain_length": sidechain_length,
-                "sidechain_positions": sidechain_position,
-                "num_beads": num_beads,
-                "bond_lengths": self.bond_lengths,
-                "epsilons": self.epsilons,
-                "sigmas": self.sigmas,
-            }
-            monomer_types.append(monomer_type)
-        return monomer_types
 
+        for monomer in self.monomer_types:
+            if monomer["monomer_name"] is None:
+                print("Error: monomers must have names!")  # figure out how to handle with exceptions.
+                exit()
+            num_beads = monomer["backbone_length"]
+            for sidechain_position in self.monomer["sidechain_positions"]:
+                num_beads = num_beads + monomer["sidechain_length"]
+            if monomer["num_beads"] is None:
+                monomer["num_beads"] = num_beads
+            elif monomer["num_beads"] != num_beads:
+                print(f"Warning: calculated number of beads {num_beads} is not equal" 
+                      f"to stated {monomer["num_beads"]}.I will use calculated number of beads")
+                monomer["num_beads"] = num_beads
+            if monomer["monomer_name"] is None:
+                monomer["monomer_name"] = f"CG{backbone_length}{sidechain_length}{"
+
+            mn = mononer[monomer_name]    
+            if monomer_type["backbone_length"] is None:
+                print(f"Using default length 1 for backbone length monomer {mn}")
+                monomer_type["backbone_length"] = 1
+
+            if monomer_type["sidechain_length"] is None:
+                print(f"Using default length 1 for sidechain length monomer {mn}")
+                monomer_type["sidechain_length"] = 1
+
+            if monomer_type["sidechain_positions"] is None:
+                print(f"Using single sidechain at position [0] for monomer {mn}")
+                monomer_type["sidechain_positions"] = [0]
+
+            if monomer_type["bond_lengths"] is None:
+                print(f"Using default bond length {self.default_length} at for monomer {mn}")
+                monomer_type["bond_lengths"] = self.default_length
+                
+            if monomer_type["epsilons"] is None:
+                print(f"Using default epsilon {self.default_energy_scale} for monomer {mn}")
+                monomer_type["epsilons"] = {
+                    "bb_epsilon":self.default_energy_scale,
+                    "sc_epsilon":self.default_energy_scale
+                } 
+                
+            if monomer_type["sigmas"] is None:
+                print(f"Using default sigmas {self.default_length_scale} for monomer {mn}")
+                monomer_type["sigmas"] = {
+                    "bb_sigma":self.default_length,
+                    "sc_sigma":self.default_length
+                } 
+    
     def get_num_beads(self):
         """
           Calculate the number of beads in a coarse-grained model class object
@@ -652,53 +523,30 @@ class CGModel(object):
         bond_list = self.bond_list
         exclusion_list = []
 
-        if rosetta_functional_form:
+        # for now, we are INCLUDING intraresidue interactions, even though
+        # this isn't traditional Rosetta functional form.
+        remove_intraresidue_interactions = False
+        if rosetta_functional_form and remove_intraresidue_interactions:
             # Remove interactions between particles in the same monomer
             bead_index = 0
             for monomer in self.sequence:
-                exclusion = []
-                for bead in range(monomer["num_beads"]):
-                    if len(exclusion) == 1:
-                        exclusion.append(bead_index)
-                        exclusion_list.append(exclusion)
-                    if len(exclusion) == 0:
-                        exclusion.append(bead_index)
-                    if len(exclusion) == 2:
-                        exclusion = []
-                    bead_index = bead_index + 1
+                for beadi in range(monomer["num_beads"]):
+                    for beadj in range(beadi+1,monomer["num_beads"]):
+                        exclusion_list.append([bead_index+beadi,bead_index+beadj])
+                bead_index = bead_index + monomer["num_beads"]
 
         for bond in self.bond_list:
-            if [bond[0], bond[1]] not in exclusion_list and [
-                bond[1],
-                bond[0],
-            ] not in exclusion_list:
-                exclusion_list.append([bond[0], bond[1]])
-
+            if bond not in exclusion_list and bond.reverse() not in exclusion_list:
+                exclusion_list.append(bond)
         for angle in self.bond_angle_list:
-            if [angle[0], angle[2]] not in exclusion_list and [
-                angle[2],
-                angle[0],
-            ] not in exclusion_list:
-                exclusion_list.append([angle[0], angle[2]])
-
+            angle_ends = [angle[0],angle[2]]
+            if angle_ends not in exclusion_list and angle_ends.reverse() not in exclusion_list:
+                exclusion_list.append(angle_ends)
         if rosetta_functional_form:
             for torsion in self.torsion_list:
-                if [torsion[0], torsion[3]] not in exclusion_list and [
-                    torsion[3],
-                    torsion[0],
-                ] not in exclusion_list:
-                    exclusion_list.append([torsion[0], torsion[3]])
-
-        if rosetta_functional_form:
-            for i in range(self.num_beads):
-                for j in range(i + 1, self.num_beads):
-                    if [i, j] in bond_list or [j, i] in bond_list:
-                        if [i, j] not in exclusion_list:
-                            exclusion_list.append([i, j])
-                    for angle in self.bond_angle_list:
-                        if i in angle and j in angle:
-                            if [i, j] not in exclusion_list:
-                                exclusion_list.append([i, j])
+                torsion_ends = [torsion[0],torsion[3]]
+                if torsion_ends not in exclusion_list and torsion_ends.reverse() not in exclusion_list:
+                    exclusion_list.append(torsion_ends)
 
         return exclusion_list
 
