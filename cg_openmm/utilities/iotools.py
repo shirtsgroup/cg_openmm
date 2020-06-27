@@ -146,7 +146,7 @@ def write_pdbfile_without_topology(CGModel, filename, energy=None):
             bead_index = bead_index + 1
             element_index = element_index + 1
 
-            if backbone_bead in [monomer_type["sidechain_positions"]]:
+            if backbone_bead in monomer_type["sidechain_positions"]:
                 for sidechain_bead in range(monomer_type["sidechain_length"]):
                     if monomer_index in list([0, CGModel.polymer_length - 1]):
                         pdb_object.write(

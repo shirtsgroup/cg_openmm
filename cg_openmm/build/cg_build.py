@@ -20,7 +20,7 @@ def add_new_elements(cgmodel):
     :type cgmodel: class
 
     :returns:
-       - particle_list (list) - a list of the particles that were added to OpenMM's 'Element' List.
+       - new_particles (list) - a list of the particle names that were added to OpenMM's 'Element' List.
 
     :Example:
 
@@ -32,31 +32,17 @@ def add_new_elements(cgmodel):
 
     """
     element_index = 117
-    cg_particle_index = 1
-    particle_list = []
+    new_particles = []
 
-    for monomer_type in cgmodel.monomer_types:
-        for backbone_bead in range(monomer_type["backbone_length"]):
-            particle_name = str("X" + str(cg_particle_index))
-            particle_symbol = str("X" + str(cg_particle_index))
-            if particle_symbol not in elem.Element._elements_by_symbol:
-                mass = cgmodel.get_particle_mass(cg_particle_index - 1)
-                elem.Element(element_index, particle_name, particle_symbol, mass)
-                particle_list.append(particle_symbol)
-                element_index = element_index + 1
-            cg_particle_index = cg_particle_index + 1
-            if backbone_bead in monomer_type["sidechain_positions"]:
-                for sidechain in range(monomer_type["sidechain_length"]):
-                    particle_name = str("A" + str(cg_particle_index))
-                    particle_symbol = str("A" + str(cg_particle_index))
-                    if particle_symbol not in elem.Element._elements_by_symbol:
-                        mass = cgmodel.get_particle_mass(cg_particle_index - 1)
-                        elem.Element(element_index, particle_name, particle_symbol, mass)
-                        particle_list.append(particle_symbol)
-                        element_index = element_index + 1
-                    cg_particle_index = cg_particle_index + 1
-    return particle_list
+    for particle in cgmodel.particle_list:
+        particle_name = particle["name"]
+        if particle_name not in elem.Element._elements_by_symbol:
+            mass = cgmodel.get_particle_mass(particle['index'])
+            elem.Element(element_index, particle_name, particle_name, mass)
+            element_index = element_index + 1
+            new_particles.append(particle_name)
 
+    return new_particles
 
 def write_xml_file(cgmodel, xml_file_name):
     """
