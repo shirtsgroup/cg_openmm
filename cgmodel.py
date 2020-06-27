@@ -928,7 +928,7 @@ class CGModel(object):
             epsilon_type = abbrev[ptype] + "_eps"
             if particle_type == ptype:
                 try:
-                    epsilon = monomer_type['epsilon'][epsilon_type]
+                    epsilon = monomer_type['epsilons'][epsilon_type]
                 except:
                     print(
                         f"No Lennard-Jones potential 'epsilon' definition found for particle type: {monomer_type['monomer_name']}:{epsilon_type}"
@@ -981,10 +981,10 @@ class CGModel(object):
         if particle_1_type == "sidechain" and particle_2_type == "sidechain":
             string_name = reverse_string_name = "sc_sc_bond_length"
         try:
-            bond_length = self.monomer_type["bond_lengths"][string_name]
+            bond_length = monomer_type["bond_lengths"][string_name]
         except:
             try:
-                bond_length = self.monomer_type["bond_lengths"][reverse_string_name]
+                bond_length = monomer_type["bond_lengths"][reverse_string_name]
             except:
                 print(
                     f"No bond length definition provided for '{string_name}', setting '{string_name}'={self.default_length}"
