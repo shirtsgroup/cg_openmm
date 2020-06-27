@@ -592,7 +592,7 @@ def add_rosetta_exception_parameters(cgmodel, nonbonded_force, particle_index_1,
     return nonbonded_force
 
 
-def add_force(cgmodel, force_type=None, rosetta_functiona_form=False):
+def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
     """
 
     Given a 'cgmodel' and 'force_type' as input, this function adds
