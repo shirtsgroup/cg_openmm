@@ -82,32 +82,32 @@ class CGModel(object):
     )
 
     def __init__(
-            self,
-            positions=None,
-            charges={},
-            masses={},
-            bond_lengths={},
-            bond_force_constants={},
-            bond_angle_force_constants={},
-            torsion_force_constants={},
-            torsion_periodicities={},
-            equil_bond_angles={},
-            equil_torsion_angles={},
-            constrain_bonds=True,
-            include_bond_forces=False,
-            include_nonbonded_forces=True,
-            include_bond_angle_forces=True,
-            include_torsion_forces=True,
-            exclusions=True,
-            rosetta_functional_form=False,
-            check_energy_conservation=True,
-            use_structure_library=False,
-            random_positions=False,
-            system=None,
-            topology=None,
-            simulation=None,
-            monomer_types=None,
-            sequence=None,
+        self,
+        positions=None,
+        charges={},
+        masses={},
+        bond_lengths={},
+        bond_force_constants={},
+        bond_angle_force_constants={},
+        torsion_force_constants={},
+        torsion_periodicities={},
+        equil_bond_angles={},
+        equil_torsion_angles={},
+        constrain_bonds=True,
+        include_bond_forces=False,
+        include_nonbonded_forces=True,
+        include_bond_angle_forces=True,
+        include_torsion_forces=True,
+        exclusions=True,
+        rosetta_functional_form=False,
+        check_energy_conservation=True,
+        use_structure_library=False,
+        random_positions=False,
+        system=None,
+        topology=None,
+        simulation=None,
+        monomer_types=None,
+        sequence=None,
     ):
 
         """
@@ -412,9 +412,9 @@ class CGModel(object):
                 particle["type"] = "backbone"
                 # will need to come up with a better naming scheme than X
                 # X for backbones and A for monomers
-                particle["name"] = f"X{cg_particle_index}"  
+                particle["name"] = f"X{cg_particle_index}"
                 particle["index"] = cg_particle_index
-                particle["monomer"] = i 
+                particle["monomer"] = i
                 particle["monomer_type"] = monomer
                 particle_list.append(particle)
                 cg_particle_index += 1
@@ -423,7 +423,7 @@ class CGModel(object):
                         particle["type"] = "sidechain"
                         particle["name"] = f"A{cg_particle_index}"
                         particle["index"] = cg_particle_index
-                        particle["monomer"] = i 
+                        particle["monomer"] = i
                         particle["monomer_type"] = monomer
                         particle_list.append(particle)
                         cg_particle_index += 1
@@ -737,7 +737,7 @@ class CGModel(object):
             - particle_name ( str ) - The name of the particle
 
           """
-        particle_name = self.particle_list[particle_index]['name']
+        particle_name = self.particle_list[particle_index]["name"]
         return particle_name
 
     def get_particle_type(self, particle_index):
@@ -754,9 +754,9 @@ class CGModel(object):
              - particle_type (str) - 'backbone' or 'sidechain'
 
           """
-        if self.particle_list[particle_index]['type'] == 'backbone':
+        if self.particle_list[particle_index]["type"] == "backbone":
             particle_type = "backbone"
-        elif self.particle_list[particle_index]['type'] == 'sidechain':
+        elif self.particle_list[particle_index]["type"] == "sidechain":
             particle_type = "sidechain"
         else:
             print(f"ERROR: The particle type definition could not be found for {particle_index}")
@@ -777,7 +777,7 @@ class CGModel(object):
              - monomer_type (dict) : monomer type
 
           """
-        return self.particle_list[particle_index]['monomer_type']
+        return self.particle_list[particle_index]["monomer_type"]
 
     def get_particle_mass(self, particle_index):
         """
@@ -884,7 +884,7 @@ class CGModel(object):
             sigma_type = abbrev[ptype] + "_sigma"
             if particle_type == ptype:
                 try:
-                    sigma = monomer_type['sigmas'][sigma_type]
+                    sigma = monomer_type["sigmas"][sigma_type]
                 except:
                     print(
                         f"No Lennard-Jones potential 'sigma' definition found for particle type: {monomer_type['monomer_name']}:{sigma_type}"
@@ -895,7 +895,7 @@ class CGModel(object):
                     print(f"{sigma_type} = {self.default_length}")
                     print("If you observe unusual behavior, it is most likely because")
                     print("this default definition is inappropriate for your model.")
-                    monomer_type['sigmas'].update({sigma_type: self.default_length})
+                    monomer_type["sigmas"].update({sigma_type: self.default_length})
                     sigma = self.default_length
 
         return sigma
@@ -920,7 +920,7 @@ class CGModel(object):
           """
         particle_type = self.get_particle_type(particle_index)
         monomer_type = self.get_particle_monomer(particle_index)
-        
+
         epsilon = None
 
         abbrev = {"backbone": "bb", "sidechain": "sc"}
@@ -928,7 +928,7 @@ class CGModel(object):
             epsilon_type = abbrev[ptype] + "_eps"
             if particle_type == ptype:
                 try:
-                    epsilon = monomer_type['epsilons'][epsilon_type]
+                    epsilon = monomer_type["epsilons"][epsilon_type]
                 except:
                     print(
                         f"No Lennard-Jones potential 'epsilon' definition found for particle type: {monomer_type['monomer_name']}:{epsilon_type}"
@@ -939,7 +939,7 @@ class CGModel(object):
                     print(f"{epsilon_type} = {self.default_energyscale}")
                     print("If you observe unusual behavior, it is most likely because")
                     print("this default definition is inappropriate for your model.")
-                    monomer_type['epsilons'].update({epsilon_type: self.default_energyscale})
+                    monomer_type["epsilons"].update({epsilon_type: self.default_energyscale})
                     epsilon = self.default_energyscale
 
         return epsilon
