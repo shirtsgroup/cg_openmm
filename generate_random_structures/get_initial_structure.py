@@ -67,13 +67,18 @@ equil_torsion_angles = {
     "bb_bb_bb_sc_torsion_0": equil_torsion_angle,
     "bb_bb_sc_sc_torsion_0": equil_torsion_angle,
 }
-torsion_periodicities = {
-    "bb_bb_bb_bb_period": 3,
-    "bb_bb_bb_sc_period": 1,
-    "bb_bb_sc_sc_period": 1}
+torsion_periodicities = {"bb_bb_bb_bb_period": 3, "bb_bb_bb_sc_period": 1, "bb_bb_sc_sc_period": 1}
 
-A = {'monomer_name': "A", 'backbone_length': 2, 'sidechain_length': 1, 'sidechain_positions': [0], 'bond_lengths': bond_lengths, 'epsilons': epsilons, 'sigmas': sigmas}
-sequence = 12*[A]
+A = {
+    "monomer_name": "A",
+    "backbone_length": 2,
+    "sidechain_length": 1,
+    "sidechain_positions": [0],
+    "bond_lengths": bond_lengths,
+    "epsilons": epsilons,
+    "sigmas": sigmas,
+}
+sequence = 12 * [A]
 
 # Build a coarse grained model
 cgmodel = CGModel(
@@ -88,10 +93,10 @@ cgmodel = CGModel(
     include_bond_forces=include_bond_forces,
     include_bond_angle_forces=include_bond_angle_forces,
     include_torsion_forces=include_torsion_forces,
-    monomer_types = [A],
-    sequence = sequence,
+    monomer_types=[A],
+    sequence=sequence,
     constrain_bonds=constrain_bonds,
-    random_positions=random_positions
+    random_positions=random_positions,
 )
 file_name = "12mer_2b1s_initial_structure.pdb"
 # file_name = "12mer_1b1s_initial_structure.pdb"
