@@ -4,16 +4,14 @@ from foldamers.cg_model.cgmodel import CGModel
 from cg_openmm.utilities.iotools import write_pdbfile_without_topology
 
 # Coarse grained model settings
-polymer_length = 12
-backbone_lengths = [2]
-sidechain_lengths = [2]
-sidechain_positions = [0]
 include_bond_forces = True
 include_bond_angle_forces = True
 include_nonbonded_forces = True
 include_torsion_forces = False  # not sure why, but these need to be 'False' for now.
 constrain_bonds = False
 random_positions = True
+
+sequence = 12*[A]
 
 # Bond definitions
 bond_length = 1.0 * unit.angstrom
