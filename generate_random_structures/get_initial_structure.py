@@ -11,8 +11,6 @@ include_torsion_forces = False  # not sure why, but these need to be 'False' for
 constrain_bonds = False
 random_positions = True
 
-sequence = 12*[A]
-
 # Bond definitions
 bond_length = 1.0 * unit.angstrom
 bond_lengths = {
@@ -20,6 +18,7 @@ bond_lengths = {
     "bb_sc_bond_length": bond_length,
     "sc_sc_bond_length": bond_length,
 }
+
 bond_force_constant = 500.0 * unit.kilojoules_per_mole / unit.nanometer / unit.nanometer
 bond_force_constants = {
     "bb_bb_bond_k": bond_force_constant,
@@ -54,7 +53,7 @@ equil_bond_angles = {
 }
 
 # Torsion angle definitions
-torsion_force_constant = 0 * unit.kilojoule_per_mole
+torsion_force_constant = 10 * unit.kilojoule_per_mole
 torsion_force_constants = {
     "bb_bb_bb_bb_torsion_k": torsion_force_constant,
     "bb_bb_bb_sc_torsion_k": torsion_force_constant,
@@ -73,16 +72,12 @@ torsion_periodicities = {
     "bb_bb_bb_sc_period": 1,
     "bb_bb_sc_sc_period": 1}
 
+A = {'monomer_name': "A", 'backbone_length': 2, 'sidechain_length': 1, 'sidechain_positions': [0], 'bond_lengths': bond_lengths, 'epsilons': epsilons, 'sigmas': sigmas}
+sequence = 12*[A]
+
 # Build a coarse grained model
 cgmodel = CGModel(
-    polymer_length=polymer_length,
-    backbone_lengths=backbone_lengths,
-    sidechain_lengths=sidechain_lengths,
-    sidechain_positions=sidechain_positions,
     masses=masses,
-    sigmas=sigmas,
-    epsilons=epsilons,
-    bond_lengths=bond_lengths,
     bond_force_constants=bond_force_constants,
     bond_angle_force_constants=bond_angle_force_constants,
     torsion_force_constants=torsion_force_constants,
@@ -93,10 +88,12 @@ cgmodel = CGModel(
     include_bond_forces=include_bond_forces,
     include_bond_angle_forces=include_bond_angle_forces,
     include_torsion_forces=include_torsion_forces,
+    monomer_types = [A],
+    sequence = sequence,
     constrain_bonds=constrain_bonds,
-    random_positions=random_positions,
+    random_positions=random_positions
 )
-file_name = "12mer_3b1s_initial_structure.pdb"
+file_name = "12mer_2b1s_initial_structure.pdb"
 # file_name = "12mer_1b1s_initial_structure.pdb"
 # file_name = "24mer_1b1s_initial_structure.pdb"
 # file_name = "12mer_1b2s_initial_structure.pdb"  # this one looks a bit off, and takes a long time
