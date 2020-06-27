@@ -37,12 +37,13 @@ def add_new_elements(cgmodel):
     for particle in cgmodel.particle_list:
         particle_name = particle["name"]
         if particle_name not in elem.Element._elements_by_symbol:
-            mass = cgmodel.get_particle_mass(particle['index'])
+            mass = cgmodel.get_particle_mass(particle["index"])
             elem.Element(element_index, particle_name, particle_name, mass)
             element_index = element_index + 1
             new_particles.append(particle_name)
 
     return new_particles
+
 
 def write_xml_file(cgmodel, xml_file_name):
     """
@@ -649,9 +650,9 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
             # rosetta has a 4.5-6 A vdw cutoff.  Note the OpenMM cutoff may not be quite the same
             # functional form as the Rosetta cutoff, but it should be somewhat close.
             nonbonded_force.setNonbondedMethod(mm.NonbondedForce.CutoffNonPeriodic)
-            nonbonded_force.setCutoffDistance(0.6) # rosetta cutoff distance in nm
+            nonbonded_force.setCutoffDistance(0.6)  # rosetta cutoff distance in nm
             nonbonded_force.setUseSwitchingFunction(True)
-            nonbonded_force.setSwitchingDistance(0.45) # start of rosetta switching distance in nm
+            nonbonded_force.setSwitchingDistance(0.45)  # start of rosetta switching distance in nm
         else:
             nonbonded_force.setNonbondedMethod(mm.NonbondedForce.NoCutoff)
 
@@ -808,7 +809,6 @@ def build_system(cgmodel, rosetta_functional_form=False, verify=True):
         system.addParticle(mass)
     cgmodel.system = system
 
-
     if cgmodel.include_nonbonded_forces:
         # Create nonbonded forces
         cgmodel, nonbonded_force = add_force(
@@ -823,7 +823,7 @@ def build_system(cgmodel, rosetta_functional_form=False, verify=True):
                 if not test_force(cgmodel, bond_force, force_type="Bond"):
                     print("ERROR: The bond force definition is giving 'nan'")
                     exit()
-        
+
     if cgmodel.include_bond_angle_forces:
         if len(cgmodel.bond_angle_list) > 0:
             # Create bond angle potentials
