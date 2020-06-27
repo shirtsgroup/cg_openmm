@@ -45,11 +45,7 @@ def add_new_elements(cgmodel):
                 particle_list.append(particle_symbol)
                 element_index = element_index + 1
             cg_particle_index = cg_particle_index + 1
-            if isinstance(monomer_type["sidechain_positions"], int):
-                sidechain_positions = [monomer_type["sidechain_positions"]]
-            else:
-                sidechain_positions = monomer_type["sidechain_positions"]
-            if backbone_bead in sidechain_positions:
+            if backbone_bead in monomer_type["sidechain_positions"]:
                 for sidechain in range(monomer_type["sidechain_length"]):
                     particle_name = str("A" + str(cg_particle_index))
                     particle_symbol = str("A" + str(cg_particle_index))
@@ -388,7 +384,7 @@ def build_topology(cgmodel, use_pdbfile=False, pdbfile=None):
                     topology.addBond(particle, last_backbone_particle)
             last_backbone_particle = particle
             cg_particle_index = cg_particle_index + 1
-            if backbone_bead in [monomer_type["sidechain_positions"]]:
+            if backbone_bead in monomer_type["sidechain_positions"]:
                 for sidechain_bead in range(monomer_type["sidechain_length"]):
                     particle_symbol = cgmodel.get_particle_name(cg_particle_index)
                     element = elem.Element.getBySymbol(particle_symbol)
@@ -596,7 +592,7 @@ def add_rosetta_exception_parameters(cgmodel, nonbonded_force, particle_index_1,
     return nonbonded_force
 
 
-def add_force(cgmodel, force_type=None, rosetta_scoring=False):
+def add_force(cgmodel, force_type=None, rosetta_functiona_form=False):
     """
 
     Given a 'cgmodel' and 'force_type' as input, this function adds
@@ -680,9 +676,9 @@ def add_force(cgmodel, force_type=None, rosetta_scoring=False):
             nonbonded_force.addParticle(charge, sigma, epsilon)
 
         if len(cgmodel.bond_list) >= 1:
-            if not rosetta_scoring:
+            if not rosetta_functional_form:
                 nonbonded_force.createExceptionsFromBonds(cgmodel.bond_list, 1.0, 1.0)
-            if rosetta_scoring:
+            if rosetta_functional_form:
                 # Remove i+3 interactions
                 nonbonded_force.createExceptionsFromBonds(cgmodel.bond_list, 0.0, 0.0)
                 # Reduce the strength of i+4 interactions
@@ -708,8 +704,6 @@ def add_force(cgmodel, force_type=None, rosetta_scoring=False):
                                 )
         cgmodel.system.addForce(nonbonded_force)
         force = nonbonded_force
-        # for particle in range(cgmodel.num_beads):
-        # print(force.getParticleParameters(particle))
 
     if force_type == "Angle":
         angle_force = mm.HarmonicAngleForce()
@@ -803,7 +797,7 @@ def test_forces(cgmodel):
     return success
 
 
-def build_system(cgmodel, rosetta_scoring=False, verify=True):
+def build_system(cgmodel, rosetta_functional_form=False, verify=True):
     """
     Builds an OpenMM `System() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1System.html>`_ object, given a CGModel() as input.
 
@@ -832,7 +826,7 @@ def build_system(cgmodel, rosetta_scoring=False, verify=True):
     if cgmodel.include_nonbonded_forces:
         # Create nonbonded forces
         cgmodel, nonbonded_force = add_force(
-            cgmodel, force_type="Nonbonded", rosetta_scoring=rosetta_scoring
+            cgmodel, force_type="Nonbonded", rosetta_functional_form=rosetta_functional_form
         )
 
     if cgmodel.include_bond_forces or cgmodel.constrain_bonds:
