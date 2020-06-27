@@ -262,13 +262,17 @@ def assign_position_lattice_style(
         """
     saved_positions = positions.__deepcopy__(memo={})  # save our positions
 
-    bond_list = cgmodel.get_bond_list()  # buld the bonded and nonbonded lists
+    bond_list = cgmodel.get_bond_list()  # build the bonded and nonbonded lists
     nonbonded_list = cgmodel.nonbonded_interaction_list
-
+    import pdb
+    pdb.set_trace()
+    
     success = False
     move_direction_list = []
     bond_length = cgmodel.get_bond_length([parent_bead_index, bead_index])
 
+    import pdb
+    pdb.set_trace()
     while not success and len(move_direction_list) < 6:
         success = True
         new_coordinates, move_direction_list = attempt_lattice_move(
@@ -636,15 +640,17 @@ def get_random_positions(
         return positions
 
     max_attempts_per_monomer = 20
-    units = cgmodel.bond_lengths["bb_bb_bond_length"].unit
+    bond_lengths = []
+    for monomer in cgmodel.monomer_types:
+        bond_lengths.append(monomer["bond_lengths"]["bb_bb_bond_length"])
+    base_bond_length = min(bond_lengths)  # not sure if min or max works better
+    units = base_bond_length.unit
     positions = np.array([[0.0, 0.0, 0.0] for bead in range(cgmodel.num_beads)]) * units
     bond_list = cgmodel.get_bond_list()
     sequence = cgmodel.sequence
-    end_polymer_length = cgmodel.polymer_length
-    end_monomer_types_list = cgmodel.monomer_types
-    heteropolymer = cgmodel.heteropolymer  # doesn't really do anything yet?
+    final_polymer_length = len(sequence)
     total_attempts = 0
-    distance_cutoff = 0.80 * cgmodel.bond_lengths["bb_bb_bond_length"]  # haven't examind this much yet
+    distance_cutoff = 0.80 * base_bond_length  # haven't examined this setting much yet
     lattice_style = True  # the only one implemented now
     stored_positions = positions[0:1].__deepcopy__(memo={}) # just the first point
     while total_attempts < max_attempts and len(stored_positions) != len(positions):
@@ -654,7 +660,7 @@ def get_random_positions(
         monomer_index = 0
         monomer_trapped = False
         monomer_attempts = 0
-        while monomer_index < end_polymer_length and not monomer_trapped:
+        while monomer_index < final_polymer_length and not monomer_trapped:
             print(f"Assigning particle positions for monomer #{monomer_index}")
             try:
                 monomer_type = sequence[monomer_index]
@@ -667,8 +673,7 @@ def get_random_positions(
 
             # Build the connectivity (not the positions) of a model one bead longer.
             polymer_length = monomer_index + 1
-            test_sequence = sequence[: monomer_index + 1]
-            cgmodel.build_polymer(polymer_length, heteropolymer, sequence)
+            cgmodel.build_polymer(sequence[:polymer_length])
 
             # store some information for restart
             stored_positions_last_monomer = stored_positions.__deepcopy__(memo={})
@@ -718,7 +723,7 @@ def get_random_positions(
                             # this choice not working now
                             trial_positions, placement = assign_position(
                                 stored_positions,
-                                cgmodel.bond_length,
+                                monomer_type['bond_lengths'],
                                 distance_cutoff,
                                 bond[1],
                                 bond[0],
@@ -739,6 +744,9 @@ def get_random_positions(
                 print(f"monomer {monomer_index} trapped; starting over")
                 total_attempts += 1
                 continue
+
+            import pdb
+            pdb.set_trace()
 
             # We've added a new monomer.
             # Now check for collisions for the entire polymer
