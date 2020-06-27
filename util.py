@@ -265,14 +265,14 @@ def assign_position_lattice_style(
     # build the bonded and nonbonded lists we have positions for
     bond_list = []
     for bond in cgmodel.bond_list:
-        if bond[0] <= len(positions) and bond[1] <= len(positions): 
+        if bond[0] <= len(positions) and bond[1] <= len(positions):
             bond_list.append(bond)
 
     nonbonded_list = []
     for interaction in cgmodel.nonbonded_interaction_list:
-        if interaction[0] <= len(positions) and interaction[1] <= len(positions): 
+        if interaction[0] <= len(positions) and interaction[1] <= len(positions):
             nonbonded_list.append(interaction)
-    
+
     success = False
     move_direction_list = []
     bond_length = cgmodel.get_bond_length([parent_bead_index, bead_index])
@@ -504,7 +504,7 @@ def get_structure_from_library(cgmodel, high_energy=False, low_energy=False):
                     write_pdbfile_without_topology(cgmodel, file_name)
                     cgmodel.topology = get_topology_from_pdbfile(file_name)
                     cgmodel.system = build_system(cgmodel)
-                    #do a little MD after
+                    # do a little MD after
                     positions_after, energy, simulation = minimize_structure(
                         cgmodel.topology,
                         cgmodel.system,
@@ -656,7 +656,7 @@ def get_random_positions(
     total_attempts = 0
     distance_cutoff = 0.80 * base_bond_length  # haven't examined this setting much yet
     lattice_style = True  # the only one implemented now
-    stored_positions = positions[0:1].__deepcopy__(memo={}) # just the first point
+    stored_positions = positions[0:1].__deepcopy__(memo={})  # just the first point
     while total_attempts < max_attempts and len(stored_positions) != len(positions):
         stored_positions = positions[0:1].__deepcopy__(memo={})  # just the first point
         bead_index = 0
@@ -727,7 +727,7 @@ def get_random_positions(
                             # this choice not working now
                             trial_positions, placement = assign_position(
                                 stored_positions,
-                                monomer_type['bond_lengths'],
+                                monomer_type["bond_lengths"],
                                 distance_cutoff,
                                 bond[1],
                                 bond[0],
@@ -783,7 +783,7 @@ def get_random_positions(
                     cgmodel.topology, cgmodel.system, stored_positions,
                 )
                 monomer_index += 1
-                #success!  check the currrent energy
+                # success!  check the currrent energy
                 print(f"current energy is {energy}")
 
     positions = stored_positions
@@ -795,7 +795,7 @@ def get_random_positions(
     if len(nonbonded_distance_list) > 0 and not collisions(
         nonbonded_distance_list, distance_cutoff
     ):
-        #minimize the whole thing again to check
+        # minimize the whole thing again to check
         cgmodel.positions = positions
         cgmodel.topology = build_topology(cgmodel, use_pdbfile=True)
         cgmodel.system = build_system(cgmodel)
@@ -836,7 +836,7 @@ def distance(positions_1, positions_2):
         """
 
     u = positions_1.unit
-    return u*np.sqrt(np.sum((positions_1-positions_2)**2))
+    return u * np.sqrt(np.sum((positions_1 - positions_2) ** 2))
 
 
 def distance_matrix(positions):
