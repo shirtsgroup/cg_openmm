@@ -262,17 +262,21 @@ def assign_position_lattice_style(
         """
     saved_positions = positions.__deepcopy__(memo={})  # save our positions
 
-    bond_list = cgmodel.get_bond_list()  # build the bonded and nonbonded lists
-    nonbonded_list = cgmodel.nonbonded_interaction_list
-    import pdb
-    pdb.set_trace()
+    # build the bonded and nonbonded lists we have positions for
+    bond_list = []
+    for bond in cgmodel.bond_list:
+        if bond[0] <= len(positions) and bond[1] <= len(positions): 
+            bond_list.append(bond)
+
+    nonbonded_list = []
+    for interaction in cgmodel.nonbonded_interaction_list:
+        if interaction[0] <= len(positions) and interaction[1] <= len(positions): 
+            nonbonded_list.append(interaction)
     
     success = False
     move_direction_list = []
     bond_length = cgmodel.get_bond_length([parent_bead_index, bead_index])
 
-    import pdb
-    pdb.set_trace()
     while not success and len(move_direction_list) < 6:
         success = True
         new_coordinates, move_direction_list = attempt_lattice_move(
@@ -744,9 +748,6 @@ def get_random_positions(
                 print(f"monomer {monomer_index} trapped; starting over")
                 total_attempts += 1
                 continue
-
-            import pdb
-            pdb.set_trace()
 
             # We've added a new monomer.
             # Now check for collisions for the entire polymer
