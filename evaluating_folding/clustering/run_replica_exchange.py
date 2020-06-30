@@ -4,7 +4,6 @@ import mdtraj as md
 import numpy as np
 import matplotlib.pyplot as plt
 from foldamers.cg_model.cgmodel import CGModel
-from foldamers.ensembles.cluster import *
 from cg_openmm.simulation.rep_exch import *
 import pickle
 
@@ -34,6 +33,7 @@ number_replicas = 24
 min_temp = 50.0 * unit.kelvin
 max_temp = 400.0 * unit.kelvin
 exchange_frequency = 100  # Number of steps between exchange attempts
+output_data = os.path.join(output_directory, "output.nc")
 
 # Bond definitions
 bond_length = 1.5 * unit.angstrom
