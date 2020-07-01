@@ -47,40 +47,6 @@ class CGModel(object):
 
         """
 
-    _BUILT_IN_REGIONS = (
-        "polymer_length",
-        "backbone_lengths",
-        "sidechain_lengths",
-        "sidechain_positions",
-        "masses",
-        "sigmas",
-        "epsilons",
-        "bond_lengths",
-        "bond_force_constants",
-        "bond_angle_force_constants",
-        "torsion_force_constants",
-        "equil_torsion_angles",
-        "equil_bond_angles",
-        "charges",
-        "num_beads",
-        "positions",
-        "system",
-        "topology",
-        "simulation",
-        "constrain_bonds",
-        "bond_list",
-        "nonbonded_interaction_list",
-        "nonbonded_exclusion_list",
-        "bond_angle_list",
-        "torsion_list",
-        "include_bond_forces",
-        "include_nonbonded_forces",
-        "include_bond_angle_forces",
-        "include_torsion_forces",
-        "use_structure_library",
-        "check_energy_conservation",
-    )
-
     def __init__(
         self,
         positions=None,
@@ -765,12 +731,12 @@ class CGModel(object):
 
     def get_particle_monomer(self, particle_index):
         """
-          Indicates if a particle is a backbone bead or a sidechain bead
+          Indicates which type of monomer a particle belongs to
 
           :param CGModel: CGModel() class object
           :type CGModel: class
 
-          :param particle_index: Index of the particle for which we would like to determine the monomer
+          :param particle_index: Index of the particle for which we would like to determine the monomer type
           :type particle_index: int
 
           :returns: 
