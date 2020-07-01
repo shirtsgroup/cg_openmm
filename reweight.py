@@ -194,12 +194,11 @@ def get_temperature_list(min_temp, max_temp, num_replicas):
     temperature_list = []
     temperature_list.append(min_temp)
     replica_index = 1
-    while len(temperature_list) > 0 and temperature_list[-1] < max_temp:
+    for i in range(1,num_replicas):
         delta = calc_temperature_spacing(min_temp, max_temp, num_replicas, replica_index)
-        last_temperature = temperature_list[-1]
-        temperature = last_temperature + delta
+        temperature = temperature_list[-1] + delta
         temperature_list.append(temperature)
-        replica_index = replica_index + 1
+        replica_index += 1
     return temperature_list
 
 
