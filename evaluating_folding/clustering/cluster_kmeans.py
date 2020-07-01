@@ -11,7 +11,7 @@ import pickle
 cgmodel = pickle.load(open( "stored_cgmodel.pkl", "rb" ))
 
 # Create list of trajectory files for clustering analysis
-number_replicas = 48
+number_replicas = 24
 pdb_file_list = []
 for i in range(number_replicas):
     pdb_file_list.append("output/replica_%s.pdb" %(i+1))
