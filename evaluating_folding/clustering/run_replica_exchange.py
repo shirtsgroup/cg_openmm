@@ -32,6 +32,7 @@ total_steps = int(np.floor(total_simulation_time / simulation_time_step))
 number_replicas = 24
 min_temp = 50.0 * unit.kelvin
 max_temp = 400.0 * unit.kelvin
+temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
 exchange_frequency = 100  # Number of steps between exchange attempts
 output_data = os.path.join(output_directory, "output.nc")
 
