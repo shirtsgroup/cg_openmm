@@ -412,32 +412,24 @@ class CGModel(object):
             for monomer in range(len(self.sequence)):
                 monomer_type = self.sequence[monomer]
                 for backbone_bead in range(monomer_type["backbone_length"]):
-                    if (
-                        int(monomer) != 0
-                        and backbone_bead == 0
-                        and monomer_type["backbone_length"] - 1
-                        in monomer_type["sidechain_positions"]
-                    ) or (
-                        backbone_bead != 0
-                        and (backbone_bead - 1) in monomer_type["sidechain_positions"]
-                    ):
+                    if (monomer != 0 and backbone_bead == 0): 
+                        parent_index = last_backbone_bead # first backbone bead is attached to the last backbone bead of previous monomer.
+                    elif (backbone_bead - 1) in monomer_type["sidechain_positions"]:
+                        # if the previous backbone bead has a sidechain
                         parent_index = bead_index - monomer_type["sidechain_length"] - 1
                     else:
-                        parent_index = bead_index - 1
-                    if bead_index != 0:
-                        if parent_index < bead_index:
-                            bond_list.append([parent_index, bead_index])
-                        else:
-                            bond_list.append([bead_index, parent_index])
-                    bead_index = bead_index + 1
-
-                    if int(backbone_bead) in monomer_type["sidechain_positions"]:
+                        parent_index = bead_index - 1  # otherwise, the parent of this bead is the previous bead.
+                    if bead_index != 0: # if it's the first bead, obviously don't count it.
+                        indices = [parent_index, bead_index]
+                        bond_list.append([min(indices),max(indices)])
+                    if backbone_bead == monomer_type["backbone_length"] - 1:
+                        last_backbone_bead = bead_index
+                    bead_index = bead_index + 1 # move on to next bead
+                    if backbone_bead in monomer_type["sidechain_positions"]:
                         for sidechain_bead in range(monomer_type["sidechain_length"]):
                             parent_index = bead_index - 1
-                            if parent_index < bead_index:
-                                bond_list.append([parent_index, bead_index])
-                            else:
-                                bond_list.append([bead_index, parent_index])
+                            indices = [parent_index, bead_index]
+                            bond_list.append([min(indices),max(indices)])
                             bead_index = bead_index + 1
         return bond_list
 
