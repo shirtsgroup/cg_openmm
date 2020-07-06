@@ -1,21 +1,16 @@
-#!/Users/mrshirts/anaconda3/bin/python
-
 import os
 from simtk import unit
+import foldamers
+import cg_openmm
+from simtk.openmm.app.pdbfile import PDBFile
 from foldamers.cg_model.cgmodel import CGModel
-from foldamers.parameters.reweight import get_temperature_list
-from cg_openmm.simulation.rep_exch import *
+from cg_openmm.simulation.tools import run_simulation
 import numpy as np
-import simtk.openmm as openmm
-import pickle
-
-from openmmtools.cache import global_context_cache
-
-global_context_cache.platform = openmm.Platform.getPlatformByName("CPU")
 
 ###
 #
-# This example demonstrates how to run a OpenMM replica exchange simulation
+# This example demonstrates how to run an NVT
+# simulation for a coarse grained model in OpenMM,
 # using a "CGModel" object built with the 'foldamers' software package.
 #
 ###
@@ -24,18 +19,14 @@ global_context_cache.platform = openmm.Platform.getPlatformByName("CPU")
 output_directory = "output"
 if not os.path.exists(output_directory):
     os.mkdir(output_directory)
-overwrite_files = True  # overwrite files.
 
-# Replica exchange simulation settings
-total_simulation_time = 5.0 * unit.nanosecond
-simulation_time_step = 10.0 * unit.femtosecond
-total_steps = int(np.floor(total_simulation_time / simulation_time_step))
-output_data = os.path.join(output_directory, "output.nc")
-number_replicas = 12
-min_temp = 50.0 * unit.kelvin
-max_temp = 600.0 * unit.kelvin
-temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
-exchange_frequency = 100  # Number of steps between exchange attempts
+# OpenMM simulation settings
+print_frequency = 5000  # Number of steps to skip when printing output
+total_simulation_time = 2.0 * unit.nanosecond  # Units = picoseconds
+simulation_time_step = 5.0 * unit.femtosecond
+total_steps = int(np.floor(total_simulation_time/simulation_time_step))
+temperature = 300.0 * unit.kelvin
+friction = 1.0 / unit.picosecond
 
 # Coarse grained model settings
 polymer_length = 12
@@ -47,15 +38,16 @@ include_bond_angle_forces = True
 include_nonbonded_forces = True
 include_torsion_forces = True
 constrain_bonds = False
+rosetta_functional_form = True
 
 # Bond definitions
-bond_length = 1.5 * unit.angstrom
+bond_length = 0.2 * unit.nanometer
 bond_lengths = {
     "bb_bb_bond_length": bond_length,
     "bb_sc_bond_length": bond_length,
     "sc_sc_bond_length": bond_length,
 }
-bond_force_constant = 1000 * unit.kilocalorie_per_mole / unit.nanometer / unit.nanometer
+bond_force_constant = 1000 * unit.kilojoule_per_mole / unit.nanometer / unit.nanometer
 bond_force_constants = {
     "bb_bb_bond_k": bond_force_constant,
     "bb_sc_bond_k": bond_force_constant,
@@ -73,12 +65,11 @@ epsilon = 0.5 * unit.kilojoule_per_mole
 epsilons = {"bb_eps": epsilon, "sc_eps": epsilon}
 
 # Bond angle definitions
-bond_angle_force_constant = 100 * unit.kilojoule_per_mole / unit.radian / unit.radian
+bond_angle_force_constant = 50.0 * unit.kilojoule_per_mole / unit.radian / unit.radian
 bond_angle_force_constants = {
     "bb_bb_bb_angle_k": bond_angle_force_constant,
     "bb_bb_sc_angle_k": bond_angle_force_constant,
 }
-# OpenMM requires angle definitions in units of radians
 bb_bb_bb_equil_bond_angle = 120.0 * unit.degrees
 bb_bb_sc_equil_bond_angle = 120.0 * unit.degrees
 equil_bond_angles = {
@@ -89,14 +80,15 @@ equil_bond_angles = {
 # Torsion angle definitions
 torsion_force_constant = 20.0 * unit.kilojoule_per_mole
 torsion_force_constants = {"bb_bb_bb_bb_torsion_k": torsion_force_constant}
-# OpenMM requires angle definitions in units of radians
 bb_bb_bb_bb_equil_torsion_angle = 78.0 * unit.degrees
 bb_bb_bb_sc_equil_torsion_angle = 78.0 * unit.degrees
-equil_torsion_angles = {"bb_bb_bb_bb_torsion_0": bb_bb_bb_bb_equil_torsion_angle}
-torsion_periodicities = {"bb_bb_bb_bb_period": 3}
+equil_torsion_angles = {"bb_bb_bb_bb_torsion_0": bb_bb_bb_bb_equil_torsion_angle,
+                        "bb_bb_bb_sc_torsion_0": bb_bb_bb_sc_equil_torsion_angle
+}
+torsion_periodicities = {"bb_bb_bb_bb_period": 3, "bb_bb_bb_sc_period":3}
 
 # Get initial positions from local file
-positions = PDBFile("helix.pdb").getPositions()
+positions = PDBFile("helix2.pdb").getPositions()
 
 # Build a coarse grained model
 cgmodel = CGModel(
@@ -119,23 +111,18 @@ cgmodel = CGModel(
     include_bond_angle_forces=include_bond_angle_forces,
     include_torsion_forces=include_torsion_forces,
     constrain_bonds=constrain_bonds,
+    rosetta_functional_form=rosetta_functional_form,
     positions=positions,
 )
 
-#store the cg model so that we can do various analyses.
-cgmodel.export('stored_cgmodel.pkl')
-
-if not os.path.exists(output_data) or overwrite_files == True:
-    run_replica_exchange(
-        cgmodel.topology,
-        cgmodel.system,
-        cgmodel.positions,
-        temperature_list=temperature_list,
-        simulation_time_step=simulation_time_step,
-        total_simulation_time=total_simulation_time,
-        exchange_frequency=exchange_frequency,
-        output_data=output_data,
-        output_directory=output_directory,
-    )
-else:
-    print("Replica output files exist")
+# Run a simulation
+print("Running a simulation.")
+run_simulation(
+    cgmodel,
+    total_simulation_time,
+    simulation_time_step,
+    temperature,
+    friction=friction,
+    print_frequency=print_frequency,
+    output_directory=output_directory,
+)

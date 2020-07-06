@@ -57,7 +57,7 @@ def make_replica_pdb_files(topology, replica_positions, output_dir=""):
 
 
 def process_replica_exchange_data(
-    temperature_list=None, output_data="output.nc", output_directory="output", time_interval=None
+    output_data="output.nc", output_directory="output"
 ):
     """
     Read replica exchange simulation data.
@@ -93,6 +93,18 @@ def process_replica_exchange_data(
     """
     # Read the simulation coordinates for individual temperature replicas
     reporter = MultiStateReporter(output_data, open_mode="r")
+
+    # figure out what the time between output is.
+    # We assume all use the same time step (which i think is required)
+    mcmove = reporter.read_mcmc_moves()[0]
+    time_interval = mcmove.n_steps*mcmove.timestep
+
+    # figure out what the temperature list is
+    states = reporter.read_thermodynamic_states()[0]
+    temperature_list = []
+    for s in states:
+        temperature_list.append(s.temperature)
+
     analyzer = ReplicaExchangeAnalyzer(reporter)
 
     (
