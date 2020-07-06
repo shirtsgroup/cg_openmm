@@ -124,11 +124,12 @@ def write_pdbfile_without_topology(CGModel, filename, energy=None):
     for monomer_index in range(CGModel.polymer_length):
         monomer_type = CGModel.sequence[monomer_index]
         element_index = 1
+        monomer_name = monomer_type["monomer_name"]
         for backbone_bead in range(monomer_type["backbone_length"]):
 
             if monomer_index in list([0, CGModel.polymer_length - 1]):
                 pdb_object.write(
-                    f"ATOM{bead_index:>7d}  X{element_index}   MT A{monomer_index+1:>4}    "
+                    f"ATOM{bead_index:>7d}  X{element_index}   {monomer_name}T A{monomer_index+1:>4}    "
                     f"{coordinates[bead_index-1][0].value_in_unit(unit.angstrom):>8.3f}"
                     f"{coordinates[bead_index-1][1].value_in_unit(unit.angstrom):>8.3f}"
                     f"{coordinates[bead_index-1][2].value_in_unit(unit.angstrom):>8.3f}"
@@ -136,7 +137,7 @@ def write_pdbfile_without_topology(CGModel, filename, energy=None):
                 )
             else:
                 pdb_object.write(
-                    f"ATOM{bead_index:>7d}  X{element_index}    M A{monomer_index+1:>4}    "
+                    f"ATOM{bead_index:>7d}  X{element_index}    {monomer_name} A{monomer_index+1:>4}    "
                     f"{coordinates[bead_index-1][0].value_in_unit(unit.angstrom):>8.3f}"
                     f"{coordinates[bead_index-1][1].value_in_unit(unit.angstrom):>8.3f}"
                     f"{coordinates[bead_index-1][2].value_in_unit(unit.angstrom):>8.3f}"
@@ -146,11 +147,11 @@ def write_pdbfile_without_topology(CGModel, filename, energy=None):
             bead_index = bead_index + 1
             element_index = element_index + 1
 
-            if backbone_bead in [monomer_type["sidechain_positions"]]:
+            if backbone_bead in monomer_type["sidechain_positions"]:
                 for sidechain_bead in range(monomer_type["sidechain_length"]):
                     if monomer_index in list([0, CGModel.polymer_length - 1]):
                         pdb_object.write(
-                            f"ATOM{bead_index:>7d}  A{element_index}   MT A{monomer_index+1:>4}    "
+                            f"ATOM{bead_index:>7d}  A{element_index}   {monomer_name}T A{monomer_index+1:>4}    "
                             f"{coordinates[bead_index-1][0].value_in_unit(unit.angstrom):>8.3f}"
                             f"{coordinates[bead_index-1][1].value_in_unit(unit.angstrom):>8.3f}"
                             f"{coordinates[bead_index-1][2].value_in_unit(unit.angstrom):>8.3f}"
@@ -158,7 +159,7 @@ def write_pdbfile_without_topology(CGModel, filename, energy=None):
                         )
                     else:
                         pdb_object.write(
-                            f"ATOM{bead_index:>7d}  A{element_index}    M A{monomer_index+1:>4}    "
+                            f"ATOM{bead_index:>7d}  A{element_index}    {monomer_name} A{monomer_index+1:>4}    "
                             f"{coordinates[bead_index-1][0].value_in_unit(unit.angstrom):>8.3f}"
                             f"{coordinates[bead_index-1][1].value_in_unit(unit.angstrom):>8.3f}"
                             f"{coordinates[bead_index-1][2].value_in_unit(unit.angstrom):>8.3f}"
