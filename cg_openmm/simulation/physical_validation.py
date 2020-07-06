@@ -5,12 +5,12 @@ from physical_validation.data.observable_data import ObservableData
 from physical_validation.data.ensemble_data import EnsembleData
 from physical_validation.data.unit_data import UnitData
 import matplotlib.pyplot as pyplot
-from simtk import unit
+import simtk.unit as unit
 import numpy as np
 from openmmtools.multistate import MultiStateReporter, MultiStateSampler, ReplicaExchangeSampler
 from openmmtools.multistate import ReplicaExchangeAnalyzer
 
-kB = (unit.MOLAR_GAS_CONSTANT_R).in_units_of(unit.kilojoule / (unit.kelvin * unit.mole))
+kB = unit.MOLAR_GAS_CONSTANT_R # Boltzmann constant
 
 def physical_validation_ensemble(
     temperature_list, ref_state_index=0, output_data="output.nc", output_directory="ouput", plotfile='ensemble_check'
@@ -44,8 +44,9 @@ def physical_validation_ensemble(
     ) = analyzer.read_energies()
 
     n_particles = np.shape(reporter.read_sampler_states(iteration=0)[0].positions)[0]
-    temps = np.array([temp._value for temp in temperature_list])
-    beta_k = 1 / (kB * temps)
+    T_unit = temperature_list[0].unit
+    temps = np.array([temp.value_in_unit(T_unit) for temp in temperature_list])
+    beta_k = 1 / (kB.value_in_unit(unit.kilojoule_per_mole/T_unit) * temps)
     n_replicas = len(temperature_list)
     for k in range(n_replicas):
         replica_energies[:, k, :] *= beta_k[k] ** (-1)
@@ -60,7 +61,6 @@ def physical_validation_ensemble(
             ]
 
     state_energies *= unit.kilojoule_per_mole
-
 
     # Find optimal state pair for ensemble check:
     # Compute standard deviations of each energy distribution:
@@ -77,13 +77,12 @@ def physical_validation_ensemble(
     # Find closest match
     T_array = np.zeros(len(temperature_list))
     for i in range(len(temperature_list)):
-        T_array[i] = temperature_list[i]._value
+        T_array[i] = temperature_list[i].value_in_unit(T_unit)
 
-    T_diff = np.abs(T_ref._value-T_array)
+    T_diff = np.abs(T_ref.value_in_unit(T_unit)-T_array)
 
-    T_opt_index = np.argmin(np.abs(deltaT._value - T_diff))
+    T_opt_index = np.argmin(np.abs(deltaT.value_in_unit(T_unit) - T_diff))
     T_opt = temperature_list[T_opt_index]
-    #print(T_opt)
 
     # Set SimulationData for physical validation
 
@@ -102,9 +101,8 @@ def physical_validation_ensemble(
         temperature=T_array[state1_index]
         )
         
-    # Check that these are correct units and conversions to Gromacs units reference set
     sim_data1.units = UnitData(
-        kb=kB._value,
+        kb=kB.value_in_unit(unit.kilojoule_per_mole/T_unit),
         energy_conversion=1,
         length_conversion=1,
         volume_conversion=1,
@@ -133,22 +131,7 @@ def physical_validation_ensemble(
         temperature=T_array[state2_index]
         )
         
-    # Check that these are correct units and conversions to Gromacs units reference set
-    sim_data2.units = UnitData(
-        kb=kB._value,
-        energy_conversion=1,
-        length_conversion=1,
-        volume_conversion=1,
-        temperature_conversion=1,
-        pressure_conversion=1,
-        time_conversion=1,
-        energy_str='KJ/mol',
-        length_str='nm',
-        volume_str='nm^3',
-        temperature_str='K',
-        pressure_str='bar',
-        time_str='ps'
-        )
+    sim_data2.units = sim_data1.units
         
     # Run physical validation
     quantiles = pv.ensemble.check(
