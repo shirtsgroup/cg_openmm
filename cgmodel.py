@@ -172,7 +172,7 @@ class CGModel(object):
         )  # from martini 3.0
         self.default_torsion_k = 0.0 * unit.kilojoule_per_mole
         self.default_angle_k = (
-            10.0 * unit.kilojoule_per_mole / unit.radian / unit.radian
+            0.0 * unit.kilojoule_per_mole / unit.radian / unit.radian
         )  # from martini 3.0
         self.default_charge = 0.0 * unit.elementary_charge
         self.default_periodicity = 1
@@ -370,11 +370,11 @@ class CGModel(object):
             - particle_list ( List( str ) ) - A list of unique particles in the coarse-grained model
 
           """
+        cg_particle_index = 0
         particle_list = []
         for i, monomer in enumerate(self.sequence):
-            particle = dict()
-            cg_particle_index = 1
             for backbone_bead in range(monomer["backbone_length"]):
+                particle = dict()
                 particle["type"] = "backbone"
                 # will need to come up with a better naming scheme than X
                 # X for backbones and A for monomers
@@ -386,6 +386,7 @@ class CGModel(object):
                 cg_particle_index += 1
                 if backbone_bead in monomer["sidechain_positions"]:
                     for sidechain in range(monomer["sidechain_length"]):
+                        particle = dict()
                         particle["type"] = "sidechain"
                         particle["name"] = f"A{cg_particle_index}"
                         particle["index"] = cg_particle_index
