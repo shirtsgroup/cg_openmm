@@ -1,7 +1,6 @@
 import os
 from simtk import unit
 from foldamers.cg_model.cgmodel import CGModel
-from foldamers.parameters.reweight import get_temperature_list
 from cg_openmm.simulation.physical_validation import *
 from cg_openmm.simulation.rep_exch import *
 import numpy as np
@@ -26,4 +25,3 @@ quantiles = physical_validation_ensemble(
     ref_state_index=0
 )
 
-print(quantiles)
