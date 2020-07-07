@@ -13,29 +13,34 @@ from openmmtools.multistate import ReplicaExchangeAnalyzer
 kB = unit.MOLAR_GAS_CONSTANT_R # Boltzmann constant
 
 def physical_validation_ensemble(
-    temperature_list, ref_state_index=0, output_data="output.nc", output_directory="ouput", plotfile='ensemble_check'
+    output_data="output.nc", output_directory="ouput", plotfile='ensemble_check', 
+    pairs='single',ref_state_index=0
 ):
     """
     Run ensemble physical validation test for 2 states in replica exchange simulation
 
-    :param temperature_list: List of temperatures that will be used to define different replicas (thermodynamics states)
-    :type temperature_list: List( `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_ * number_replicas )
-
-    :param ref_state_index: Index in temperature_list to use as one of the states in the ensemble check. The other state will be chosen based on the energy standard deviation at the reference state
-    :type ref_state_index: int
-    
     :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data
     :type output_data: str
     
     :param plotfile: Filename for outputting ensemble check plot
     :type plotfile: str
     
+    :param pairs: Option for running ensemble validation on all replica pair combinations ('all'), adjacent pairs ('adjacent'), or single pair with optimal spacing ('single')
+    
+    :param ref_state_index: Index in temperature_list to use as one of the states in the ensemble check. The other state will be chosen based on the energy standard deviation at the reference state. Ignored if pairs='all'
+    :type ref_state_index: int
+    
     """
 
-    # Read the energies for individual temperature replicas
+    # Get temperature list and read the energies for individual temperature replicas
     reporter = MultiStateReporter(output_data, open_mode="r")
     analyzer = ReplicaExchangeAnalyzer(reporter)
 
+    states = reporter.read_thermodynamic_states()[0]
+    temperature_list = []
+    for s in states:
+        temperature_list.append(s.temperature)
+    
     (
         replica_energies,
         unsampled_state_energies,
@@ -61,84 +66,217 @@ def physical_validation_ensemble(
             ]
 
     state_energies *= unit.kilojoule_per_mole
-
-    # Find optimal state pair for ensemble check:
-    # Compute standard deviations of each energy distribution:
-    state_energies_std = np.std(state_energies,axis=1)
-
-    # Select reference state point
-    T_ref = temperature_list[ref_state_index]
-    std_ref = state_energies_std[ref_state_index]
-
-    # Compute optimal spacing:
-    deltaT = 2*kB*T_ref**2/std_ref
-    #print("DeltaT: %r" %deltaT) 
-
-    # Find closest match
+    
     T_array = np.zeros(len(temperature_list))
     for i in range(len(temperature_list)):
         T_array[i] = temperature_list[i].value_in_unit(T_unit)
+    
+    if pairs.lower() != 'single' and pairs.lower() != 'adjacent' and pairs.lower() != 'all':
+        print(f"Error: Pair option '{pairs}' not recognized, using default option 'single'")
+        pairs = 'single'
 
-    T_diff = np.abs(T_ref.value_in_unit(T_unit)-T_array)
+    if pairs.lower() == 'single': 
+    # Run ensemble validation on one optimally spaced temperature pair
+    
+        # Find optimal state pair for ensemble check:
+        # Compute standard deviations of each energy distribution:
+        state_energies_std = np.std(state_energies,axis=1)
 
-    T_opt_index = np.argmin(np.abs(deltaT.value_in_unit(T_unit) - T_diff))
-    T_opt = temperature_list[T_opt_index]
+        # Select reference state point
+        T_ref = temperature_list[ref_state_index]
+        std_ref = state_energies_std[ref_state_index]
 
-    # Set SimulationData for physical validation
+        # Compute optimal spacing:
+        deltaT = 2*kB*T_ref**2/std_ref
+        #print("DeltaT: %r" %deltaT) 
 
-    # State 1
-    state1_index = ref_state_index
+        # Find closest match
+        T_diff = np.abs(T_ref.value_in_unit(T_unit)-T_array)
 
-    sim_data1 = SimulationData()
+        T_opt_index = np.argmin(np.abs(deltaT.value_in_unit(T_unit) - T_diff))
+        T_opt = temperature_list[T_opt_index]
 
-    sim_data1.observables = ObservableData(
-        potential_energy=state_energies[state1_index,:],
-        )
+        # Set SimulationData for physical validation
+
+        # State 1
+        state1_index = ref_state_index
+
+        sim_data1 = SimulationData()
+
+        sim_data1.observables = ObservableData(
+            potential_energy=state_energies[state1_index,:],
+            )
+            
+        sim_data1.ensemble = EnsembleData(
+            ensemble='NVT',
+            energy=state_energies[state1_index,:],
+            temperature=T_array[state1_index]
+            )
+            
+        sim_data1.units = UnitData(
+            kb=kB.value_in_unit(unit.kilojoule_per_mole/T_unit),
+            energy_conversion=1,
+            length_conversion=1,
+            volume_conversion=1,
+            temperature_conversion=1,
+            pressure_conversion=1,
+            time_conversion=1,
+            energy_str='KJ/mol',
+            length_str='nm',
+            volume_str='nm^3',
+            temperature_str='K',
+            pressure_str='bar',
+            time_str='ps'
+            )
+            
+        # State 2
+        state2_index = T_opt_index
+        sim_data2 = SimulationData()
+
+        sim_data2.observables = ObservableData(
+            potential_energy=state_energies[state2_index,:],
+            )
+            
+        sim_data2.ensemble = EnsembleData(
+            ensemble='NVT',
+            energy=state_energies[state2_index,:],
+            temperature=T_array[state2_index]
+            )
+            
+        sim_data2.units = sim_data1.units
         
-    sim_data1.ensemble = EnsembleData(
-        ensemble='NVT',
-        energy=state_energies[state1_index,:],
-        temperature=T_array[state1_index]
-        )
+        # Run physical validation
+        quantiles = pv.ensemble.check(
+            sim_data1,
+            sim_data2,
+            total_energy=False,
+            filename=plotfile
+            )
         
-    sim_data1.units = UnitData(
-        kb=kB.value_in_unit(unit.kilojoule_per_mole/T_unit),
-        energy_conversion=1,
-        length_conversion=1,
-        volume_conversion=1,
-        temperature_conversion=1,
-        pressure_conversion=1,
-        time_conversion=1,
-        energy_str='KJ/mol',
-        length_str='nm',
-        volume_str='nm^3',
-        temperature_str='K',
-        pressure_str='bar',
-        time_str='ps'
-        )
-        
-    # State 2
-    state2_index = T_opt_index
-    sim_data2 = SimulationData()
+    elif pairs.lower() == 'adjacent':
+    # Run ensemble validation on all adjacent temperature pairs
+        quantiles = []
 
-    sim_data2.observables = ObservableData(
-        potential_energy=state_energies[state2_index,:],
-        )
-        
-    sim_data2.ensemble = EnsembleData(
-        ensemble='NVT',
-        energy=state_energies[state2_index,:],
-        temperature=T_array[state2_index]
-        )
-        
-    sim_data2.units = sim_data1.units
-        
-    # Run physical validation
-    quantiles = pv.ensemble.check(
-        sim_data1,
-        sim_data2,
-        total_energy=False,
-        filename=plotfile
-        )
+        for i in range(len(temperature_list)-1):
+            # Set SimulationData for physical validation
+
+            # State 1
+            state1_index = i
+
+            sim_data1 = SimulationData()
+
+            sim_data1.observables = ObservableData(
+                potential_energy=state_energies[state1_index,:],
+                )
+                
+            sim_data1.ensemble = EnsembleData(
+                ensemble='NVT',
+                energy=state_energies[state1_index,:],
+                temperature=T_array[state1_index]
+                )
+                
+            sim_data1.units = UnitData(
+                kb=kB.value_in_unit(unit.kilojoule_per_mole/T_unit),
+                energy_conversion=1,
+                length_conversion=1,
+                volume_conversion=1,
+                temperature_conversion=1,
+                pressure_conversion=1,
+                time_conversion=1,
+                energy_str='KJ/mol',
+                length_str='nm',
+                volume_str='nm^3',
+                temperature_str='K',
+                pressure_str='bar',
+                time_str='ps'
+                )
+                
+            # State 2
+            state2_index = i+1
+            sim_data2 = SimulationData()
+
+            sim_data2.observables = ObservableData(
+                potential_energy=state_energies[state2_index,:],
+                )
+                
+            sim_data2.ensemble = EnsembleData(
+                ensemble='NVT',
+                energy=state_energies[state2_index,:],
+                temperature=T_array[state2_index]
+                )
+                
+            sim_data2.units = sim_data1.units
+            
+            # Run physical validation
+            quantiles_ij = pv.ensemble.check(
+                sim_data1,
+                sim_data2,
+                total_energy=False,
+                filename=f"{plotfile}_{state1_index}_{state2_index}"
+                )
+                
+            quantiles.append(quantiles_ij[0])
+    
+    elif pairs.lower() == 'all':
+    # Run ensemble validation on all combinations of temperature pairs
+        quantiles = []
+        for i in range(len(temperature_list)):
+            for j in range(i+1,len(temperature_list)):
+                # State 1
+                state1_index = i
+
+                sim_data1 = SimulationData()
+
+                sim_data1.observables = ObservableData(
+                    potential_energy=state_energies[state1_index,:],
+                    )
+                    
+                sim_data1.ensemble = EnsembleData(
+                    ensemble='NVT',
+                    energy=state_energies[state1_index,:],
+                    temperature=T_array[state1_index]
+                    )
+                    
+                sim_data1.units = UnitData(
+                    kb=kB.value_in_unit(unit.kilojoule_per_mole/T_unit),
+                    energy_conversion=1,
+                    length_conversion=1,
+                    volume_conversion=1,
+                    temperature_conversion=1,
+                    pressure_conversion=1,
+                    time_conversion=1,
+                    energy_str='KJ/mol',
+                    length_str='nm',
+                    volume_str='nm^3',
+                    temperature_str='K',
+                    pressure_str='bar',
+                    time_str='ps'
+                    )
+                    
+                # State 2
+                state2_index = j
+                sim_data2 = SimulationData()
+
+                sim_data2.observables = ObservableData(
+                    potential_energy=state_energies[state2_index,:],
+                    )
+                    
+                sim_data2.ensemble = EnsembleData(
+                    ensemble='NVT',
+                    energy=state_energies[state2_index,:],
+                    temperature=T_array[state2_index]
+                    )
+                    
+                sim_data2.units = sim_data1.units
+                
+                # Run physical validation
+                quantiles_ij = pv.ensemble.check(
+                    sim_data1,
+                    sim_data2,
+                    total_energy=False,
+                    filename=f"{plotfile}_{state1_index}_{state2_index}"
+                    )
+                    
+                quantiles.append(quantiles_ij[0])
 
     return quantiles

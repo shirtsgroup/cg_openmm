@@ -16,16 +16,14 @@ if not os.path.exists(output_directory):
     os.mkdir(output_directory)
 output_data = os.path.join(output_directory, "output.nc")
 
-# Get replica exchange temperature list
-ft = open("stored_topology.pkl", "rb")
-(temperature_list, time_interval, stored_topology) = pickle.load(ft)
+# Temperature list is now determined from the .nc file internally.
 
 quantiles = physical_validation_ensemble(
-    temperature_list=temperature_list,
-    ref_state_index=0,
     output_data=output_data,
     output_directory="output",
-    plotfile='ensemble_check'
+    plotfile='ensemble_check',
+    pairs='adjacent',
+    ref_state_index=0
 )
 
 print(quantiles)
