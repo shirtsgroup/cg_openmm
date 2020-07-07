@@ -2,9 +2,7 @@ import os
 from simtk import unit
 from foldamers.cg_model.cgmodel import CGModel
 from cg_openmm.simulation.physical_validation import *
-from cg_openmm.simulation.rep_exch import *
 import numpy as np
-import pickle
 
 # This example shows how to run an ensemble check on replica exchange simulation output
 # using the physical validation package.
