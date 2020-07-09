@@ -97,53 +97,15 @@ def physical_validation_ensemble(
         T_opt = temperature_list[T_opt_index]
 
         # Set SimulationData for physical validation
-
-        # State 1
         state1_index = ref_state_index
-
-        sim_data1 = SimulationData()
-
-        sim_data1.observables = ObservableData(
-            potential_energy=state_energies[state1_index,:],
-            )
-            
-        sim_data1.ensemble = EnsembleData(
-            ensemble='NVT',
-            energy=state_energies[state1_index,:],
-            temperature=T_array[state1_index]
-            )
-            
-        sim_data1.units = UnitData(
-            kb=kB.value_in_unit(unit.kilojoule_per_mole/T_unit),
-            energy_conversion=1,
-            length_conversion=1,
-            volume_conversion=1,
-            temperature_conversion=1,
-            pressure_conversion=1,
-            time_conversion=1,
-            energy_str='KJ/mol',
-            length_str='nm',
-            volume_str='nm^3',
-            temperature_str='K',
-            pressure_str='bar',
-            time_str='ps'
-            )
-            
-        # State 2
         state2_index = T_opt_index
-        sim_data2 = SimulationData()
 
-        sim_data2.observables = ObservableData(
-            potential_energy=state_energies[state2_index,:],
+        sim_data1, sim_data2 = set_simulation_data(
+            state_energies,
+            T_array,
+            state1_index,
+            state2_index
             )
-            
-        sim_data2.ensemble = EnsembleData(
-            ensemble='NVT',
-            energy=state_energies[state2_index,:],
-            temperature=T_array[state2_index]
-            )
-            
-        sim_data2.units = sim_data1.units
         
         # Run physical validation
         quantiles = pv.ensemble.check(
@@ -159,53 +121,15 @@ def physical_validation_ensemble(
 
         for i in range(len(temperature_list)-1):
             # Set SimulationData for physical validation
-
-            # State 1
             state1_index = i
-
-            sim_data1 = SimulationData()
-
-            sim_data1.observables = ObservableData(
-                potential_energy=state_energies[state1_index,:],
-                )
-                
-            sim_data1.ensemble = EnsembleData(
-                ensemble='NVT',
-                energy=state_energies[state1_index,:],
-                temperature=T_array[state1_index]
-                )
-                
-            sim_data1.units = UnitData(
-                kb=kB.value_in_unit(unit.kilojoule_per_mole/T_unit),
-                energy_conversion=1,
-                length_conversion=1,
-                volume_conversion=1,
-                temperature_conversion=1,
-                pressure_conversion=1,
-                time_conversion=1,
-                energy_str='KJ/mol',
-                length_str='nm',
-                volume_str='nm^3',
-                temperature_str='K',
-                pressure_str='bar',
-                time_str='ps'
-                )
-                
-            # State 2
             state2_index = i+1
-            sim_data2 = SimulationData()
-
-            sim_data2.observables = ObservableData(
-                potential_energy=state_energies[state2_index,:],
+            
+            sim_data1, sim_data2 = set_simulation_data(
+                state_energies,
+                T_array,
+                state1_index,
+                state2_index
                 )
-                
-            sim_data2.ensemble = EnsembleData(
-                ensemble='NVT',
-                energy=state_energies[state2_index,:],
-                temperature=T_array[state2_index]
-                )
-                
-            sim_data2.units = sim_data1.units
             
             # Run physical validation
             quantiles_ij = pv.ensemble.check(
@@ -222,52 +146,16 @@ def physical_validation_ensemble(
         quantiles = []
         for i in range(len(temperature_list)):
             for j in range(i+1,len(temperature_list)):
-                # State 1
+                # Set SimulationData for physical validation
                 state1_index = i
-
-                sim_data1 = SimulationData()
-
-                sim_data1.observables = ObservableData(
-                    potential_energy=state_energies[state1_index,:],
-                    )
-                    
-                sim_data1.ensemble = EnsembleData(
-                    ensemble='NVT',
-                    energy=state_energies[state1_index,:],
-                    temperature=T_array[state1_index]
-                    )
-                    
-                sim_data1.units = UnitData(
-                    kb=kB.value_in_unit(unit.kilojoule_per_mole/T_unit),
-                    energy_conversion=1,
-                    length_conversion=1,
-                    volume_conversion=1,
-                    temperature_conversion=1,
-                    pressure_conversion=1,
-                    time_conversion=1,
-                    energy_str='KJ/mol',
-                    length_str='nm',
-                    volume_str='nm^3',
-                    temperature_str='K',
-                    pressure_str='bar',
-                    time_str='ps'
-                    )
-                    
-                # State 2
                 state2_index = j
-                sim_data2 = SimulationData()
 
-                sim_data2.observables = ObservableData(
-                    potential_energy=state_energies[state2_index,:],
+                sim_data1, sim_data2 = set_simulation_data(
+                    state_energies,
+                    T_array,
+                    state1_index,
+                    state2_index
                     )
-                    
-                sim_data2.ensemble = EnsembleData(
-                    ensemble='NVT',
-                    energy=state_energies[state2_index,:],
-                    temperature=T_array[state2_index]
-                    )
-                    
-                sim_data2.units = sim_data1.units
                 
                 # Run physical validation
                 quantiles_ij = pv.ensemble.check(
@@ -280,3 +168,60 @@ def physical_validation_ensemble(
                 quantiles.append(quantiles_ij[0])
 
     return quantiles
+    
+def set_simulation_data(
+    state_energies, T_array, state1_index, state2_index
+):
+    """
+    Create and set SimulationData objects for a pair of specified states
+    
+    """
+    
+    # Set default UnitData object
+    default_UnitData = UnitData(
+        kb=kB.value_in_unit(unit.kilojoule_per_mole/unit.kelvin),
+        energy_conversion=1,
+        length_conversion=1,
+        volume_conversion=1,
+        temperature_conversion=1,
+        pressure_conversion=1,
+        time_conversion=1,
+        energy_str='KJ/mol',
+        length_str='nm',
+        volume_str='nm^3',
+        temperature_str='K',
+        pressure_str='bar',
+        time_str='ps'
+        )
+    
+    # State 1
+    sim_data1 = SimulationData()
+
+    sim_data1.observables = ObservableData(
+        potential_energy=state_energies[state1_index,:],
+        )
+        
+    sim_data1.ensemble = EnsembleData(
+        ensemble='NVT',
+        energy=state_energies[state1_index,:],
+        temperature=T_array[state1_index]
+        )
+        
+    sim_data1.units = default_UnitData
+        
+    # State 2
+    sim_data2 = SimulationData()
+
+    sim_data2.observables = ObservableData(
+        potential_energy=state_energies[state2_index,:],
+        )
+        
+    sim_data2.ensemble = EnsembleData(
+        ensemble='NVT',
+        energy=state_energies[state2_index,:],
+        temperature=T_array[state2_index]
+        )
+        
+    sim_data2.units = default_UnitData
+    
+    return sim_data1, sim_data2
