@@ -79,7 +79,7 @@ C = {   # a 1-2 bead
     "end": 0,
 }
 
-sequence = 4 * [A, B, C]
+sequence = 5 * [A, B, C]
 
 # Build a coarse grained model
 cgmodel = CGModel(
@@ -99,5 +99,5 @@ cgmodel = CGModel(
     sequence=sequence,
     monomer_types=[A, B, C],
 )
-file_name = "9mer_ABC4s_initial_structure.pdb"
+file_name = "20mer_ABC5_initial_structure.pdb"
 write_pdbfile_without_topology(cgmodel, file_name)

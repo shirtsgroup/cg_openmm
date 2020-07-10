@@ -11,18 +11,7 @@ include_torsion_forces = False  # not sure why, but these need to be 'False' for
 constrain_bonds = False
 random_positions = True
 
-# Bond definitions
-bond_lengths = {
-    "default_bond_length": 1.0 * unit.angstrom,
-}
-
-bond_force_constant = 500.0 * unit.kilojoules_per_mole / unit.nanometer / unit.nanometer
-bond_force_constants = {
-    "default_bond_force_constant" : bond_force_constant
-}
-
 # Particle definitions
-# mass and charge are defaults.
 bb = {
     "particle_type_name": "bb",
     "sigma": 0.2 * unit.nanometers,
@@ -34,6 +23,17 @@ sc = {
     "sigma": 0.2 * unit.nanometers,
     "epsilon":0.1 * unit.kilojoules_per_mole,
     "mass":100.0 * unit.amu }
+
+
+# Bond definitions
+bond_lengths = {
+    "default_bond_length": 1.0 * unit.angstrom,
+}
+
+bond_force_constant = 500.0 * unit.kilojoules_per_mole / unit.nanometer / unit.nanometer
+bond_force_constants = {
+    "default_bond_force_constant" : bond_force_constant
+}
 
 # Bond angle definitions
 bond_angle_force_constants = {
