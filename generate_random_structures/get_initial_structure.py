@@ -12,77 +12,67 @@ constrain_bonds = False
 random_positions = True
 
 # Bond definitions
-bond_length = 1.0 * unit.angstrom
 bond_lengths = {
-    "bb_bb_bond_length": bond_length,
-    "bb_sc_bond_length": bond_length,
-    "sc_sc_bond_length": bond_length,
+    "default_bond_length": 1.0 * unit.angstrom,
 }
 
 bond_force_constant = 500.0 * unit.kilojoules_per_mole / unit.nanometer / unit.nanometer
 bond_force_constants = {
-    "bb_bb_bond_k": bond_force_constant,
-    "bb_sc_bond_k": bond_force_constant,
-    "sc_sc_bond_k": bond_force_constant,
+    "default_bond_force_constant" : bond_force_constant
 }
 
 # Particle definitions
-mass = 100.0 * unit.amu
-masses = {"backbone_bead_masses": mass, "sidechain_bead_masses": mass}
-r_min = 2.0 * bond_length  # Lennard-Jones potential r_min
-sigma = r_min / (2.0 ** (1 / 6))  # Factor of /(2.0**(1/6)) is applied to convert r_min to sigma
-sigmas = {"bb_sigma": sigma, "sc_sigma": sigma}
-epsilon = 0.1 * unit.kilojoule_per_mole
-epsilons = {"bb_eps": epsilon, "sc_eps": epsilon}
+# mass and charge are defaults.
+bb = {
+    "particle_type_name": "bb",
+    "sigma": 0.2 * unit.nanometers,
+    "epsilon":0.1 * unit.kilojoules_per_mole,
+    "mass":100.0 * unit.amu
+}
+sc = {
+    "particle_type_name": "sc",
+    "sigma": 0.2 * unit.nanometers,
+    "epsilon":0.1 * unit.kilojoules_per_mole,
+    "mass":100.0 * unit.amu }
 
 # Bond angle definitions
-bond_angle_force_constant = 15.0 * unit.kilojoule_per_mole / unit.radian / unit.radian
 bond_angle_force_constants = {
-    "bb_bb_bb_angle_k": bond_angle_force_constant,
-    "bb_bb_sc_angle_k": bond_angle_force_constant,
-    "bb_sc_sc_angle_k": bond_angle_force_constant,
+    "default_bond_angle_force_constant" : 15.0 * unit.kilojoule_per_mole / unit.radian / unit.radian
 }
 
-bb_bb_bb_equil_bond_angle = 120.0 * unit.degrees
-bb_bb_sc_equil_bond_angle = 120.0 * unit.degrees
-bb_sc_sc_equil_bond_angle = 120.0 * unit.degrees
 equil_bond_angles = {
-    "bb_bb_bb_angle_0": bb_bb_bb_equil_bond_angle,
-    "bb_bb_sc_angle_0": bb_bb_sc_equil_bond_angle,
-    "bb_sc_sc_angle_0": bb_bb_sc_equil_bond_angle,
+    "default_equil_bond_angle" : 120.0 * unit.degrees
 }
 
 # Torsion angle definitions
-torsion_force_constant = 10 * unit.kilojoule_per_mole
 torsion_force_constants = {
-    "bb_bb_bb_bb_torsion_k": torsion_force_constant,
-    "bb_bb_bb_sc_torsion_k": torsion_force_constant,
-    "bb_bb_sc_sc_torsion_k": torsion_force_constant,
+    "default_torsion_force_constant" : 10 * unit.kilojoule_per_mole
 }
 
-
-equil_torsion_angle = 0.0 * unit.degrees
 equil_torsion_angles = {
-    "bb_bb_bb_bb_torsion_0": equil_torsion_angle,
-    "bb_bb_bb_sc_torsion_0": equil_torsion_angle,
-    "bb_bb_sc_sc_torsion_0": equil_torsion_angle,
+    "default_equil_torsion_angle" : 0.0 * unit.degrees
 }
-torsion_periodicities = {"bb_bb_bb_bb_period": 3, "bb_bb_bb_sc_period": 1, "bb_bb_sc_sc_period": 1}
 
+torsion_periodicities = {
+    "default_torsion_periodicity": 1,
+    "bb_bb_bb_bb_period": 3,
+}
+
+# define the monomer
 A = {
     "monomer_name": "A",
-    "backbone_length": 2,
-    "sidechain_length": 1,
-    "sidechain_positions": [0],
-    "bond_lengths": bond_lengths,
-    "epsilons": epsilons,
-    "sigmas": sigmas,
+    "particle_sequence":[bb,bb,sc],
+    "bond_list":[[0,1],[1,2]],
+    "start": 0,
+    "end": 1
 }
+
 sequence = 12 * [A]
 
 # Build a coarse grained model
 cgmodel = CGModel(
-    masses=masses,
+    particle_type_list=[bb,sc],
+    bond_lengths=bond_lengths,
     bond_force_constants=bond_force_constants,
     bond_angle_force_constants=bond_angle_force_constants,
     torsion_force_constants=torsion_force_constants,
@@ -93,10 +83,10 @@ cgmodel = CGModel(
     include_bond_forces=include_bond_forces,
     include_bond_angle_forces=include_bond_angle_forces,
     include_torsion_forces=include_torsion_forces,
-    monomer_types=[A],
     sequence=sequence,
     constrain_bonds=constrain_bonds,
     random_positions=random_positions,
+    monomer_types=[A],
 )
 file_name = "12mer_2b1s_initial_structure.pdb"
 # file_name = "12mer_1b1s_initial_structure.pdb"
