@@ -645,8 +645,8 @@ def get_random_positions(
 
     max_attempts_per_monomer = 20
     bond_lengths = []
-    for monomer in cgmodel.monomer_types:
-        bond_lengths.append(monomer["bond_lengths"]["bb_bb_bond_length"])
+    for bond in cgmodel.bond_list:
+        bond_lengths.append(cgmodel.get_bond_length(bond))
     base_bond_length = min(bond_lengths)  # not sure if min or max works better
     units = base_bond_length.unit
     positions = np.array([[0.0, 0.0, 0.0] for bead in range(cgmodel.num_beads)]) * units
@@ -683,7 +683,8 @@ def get_random_positions(
             stored_positions_last_monomer = stored_positions.__deepcopy__(memo={})
             bead_index_last_monomer = bead_index
 
-            # find the bonds in this new monomer
+            # find the bonds in this new monomer. Can we leave this out at some point.
+
             monomer_bond_list = []
             for bond_index in range(len(bond_list)):
                 bond = bond_list[bond_index]
@@ -718,6 +719,8 @@ def get_random_positions(
                     # place the monomers involved in this bond
                     for bond_index in range(len(monomer_bond_list)):
                         bond = monomer_bond_list[bond_index]
+                        if bond[0] in completed_list and bond[1] in completed_list:
+                            continue  # if bond atoms in completed list, go in to the next bond
                         # place the atoms on a pseudogrid
                         if lattice_style:
                             trial_positions, placement = assign_position_lattice_style(
@@ -727,7 +730,7 @@ def get_random_positions(
                             # this choice not working now
                             trial_positions, placement = assign_position(
                                 stored_positions,
-                                monomer_type["bond_lengths"],
+                                get_bond_length[bond],
                                 distance_cutoff,
                                 bond[1],
                                 bond[0],
