@@ -261,7 +261,7 @@ class CGModel(object):
             self.equil_bond_angles.update({"default_equil_bond_angle": self.default_angle})            
         if "default_bond_angle_force_constant" not in self.bond_angle_force_constants:
             print(f"Warning: No default bond angle force constant: setting to {self.default_angle_k}")
-            self.angle_force_constants.update({"default_bond_angle_force_constant": self.default_angle_k})
+            self.bond_angle_force_constants.update({"default_bond_angle_force_constant": self.default_angle_k})
         if "default_equil_torsion_angle" not in self.equil_torsion_angles:
             print(f"Warning: No default equilibrium torsion angle: setting to {self.default_angle}")
             self.equil_torsion_angles.update({"default_equil_torsion_angle": self.default_angle})            
@@ -285,12 +285,12 @@ class CGModel(object):
             )
             particle_type_list = list()
             particle = dict()
-            particle["particle_type_name"] = default_particle_name
+            particle["particle_type_name"] = default_particle_type_name
             particle_type_list.append(particle)
 
         for particle in particle_type_list:
             if "particle_type_name" not in particle:
-                print(f'Particle {particle_id} has no attribute "particle_type_name": Exiting now')
+                print(f'Particle has no attribute \"particle_type_name\": Exiting now')
                 exit()
             name = particle["particle_type_name"]
             if "sigma" not in particle:
@@ -313,6 +313,7 @@ class CGModel(object):
                     f"charge not defined for particle type {name} using default epsilon: {self.default_charge}"
                 )
                 particle["charge"] = self.default_charge
+                
         return particle_type_list
 
     def build_polymer(self, sequence):
@@ -438,7 +439,7 @@ class CGModel(object):
             - particle_list ( List( str ) ) - A list of unique particles in the coarse-grained model
 
           """
-        cg_particle_index = 0
+        particle_index = 0
         particle_list = []
         for i, monomer in enumerate(self.sequence):
             seq = monomer["particle_sequence"]
@@ -447,12 +448,15 @@ class CGModel(object):
                 particle["type"] = bead
                 # will need to come up with a better naming scheme than X
                 # X for backbones and A for monomers
-                particle["name"] = f"{bead['particle_type_name']}{cg_particle_index}"
-                particle["index"] = cg_particle_index
+                if 'particle_type_name' not in bead:
+                    print("\'particle_type_name\' not defined, cannot contiue") 
+                    exit()
+                particle["name"] = f"{bead['particle_type_name']}{particle_index}"
+                particle["index"] = particle_index
                 particle["monomer"] = i
                 particle["monomer_type"] = monomer
                 particle_list.append(particle)
-                cg_particle_index += 1
+                particle_index += 1
         return particle_list
 
     def get_bond_list(self):
