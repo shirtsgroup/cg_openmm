@@ -270,7 +270,7 @@ class CGModel(object):
             self.torsion_force_constants.update({"default_torsion_force_constant": self.default_torsion_k})
         if "default_torsion_periodicity" not in self.torsion_periodicities:
             print(f"Warning: No default torsion periodicity: setting to {self.default_periodicity}")
-            self.torsion_periodicities.update({"default_periodicity": self.default_periodicity})
+            self.torsion_periodicities.update({"default_torsion_periodicity": self.default_periodicity})
         
     def validate_particle_type_list(self,particle_type_list):
         """
@@ -963,7 +963,7 @@ class CGModel(object):
                 bond_length = self.bond_lengths[reverse_string_name]
             except:
                 print(
-                    f"No bond length definition provided for '{string_name}', setting '{string_name}'={default_length}"
+                    f"No bond length definition provided for '{string_name}', setting '{string_name}' = {default_length}"
                 )
                 self.bond_lengths.update({string_name: default_length})
                 self.bond_lengths.update({reverse_string_name: default_length})
@@ -1005,7 +1005,7 @@ class CGModel(object):
                 bond_force_constant = self.bond_force_constants[reverse_string_name]
             except:
                 print(
-                    f"No bond force constant provided for '{string_name}', setting '{string_name}'={default_bond_k}"
+                    f"No bond force constant provided for '{string_name}', setting '{string_name}' = {default_bond_k}"
                 )
                 self.bond_force_constants.update({string_name: default_bond_k})
                 self.bond_force_constants.update({reverse_string_name: default_bond_k})
@@ -1244,7 +1244,7 @@ class CGModel(object):
                 torsion_force_constant = self.torsion_force_constants[reverse_string_name]
             except:
                 print(
-                    f"No torsion force constant definition provided for '{string_name}', setting '{string_name}'={default_torsion_k}"
+                    f"No torsion force constant definition provided for '{string_name}', setting '{string_name}' = {default_torsion_k}"
                 )
                 self.torsion_force_constants.update({string_name: default_torsion_k})
                 self.torsion_force_constants.update({reverse_string_name: default_torsion_k})
