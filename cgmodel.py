@@ -251,8 +251,8 @@ class CGModel(object):
     def validate_bonded_forces(self):
 
         if "default_bond_length" not in self.bond_lengths:
-            print(f"Warning: No default bond length: setting to {self.default_bond_length}")
-            self.bond_force_constants.update({"default_bond_length": self.default_length})
+            print(f"Warning: No default bond length: setting to {self.default_length}")
+            self.bond_lengths.update({"default_bond_length": self.default_length})
         if "default_bond_force_constant" not in self.bond_force_constants:
             print(f"Warning: No default bond force constant: setting to {self.default_bond_k}")
             self.bond_force_constants.update({"default_bond_force_constant": self.default_bond_k})
