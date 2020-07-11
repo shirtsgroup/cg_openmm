@@ -167,11 +167,11 @@ class CGModel(object):
         self.default_length = 0.47 * unit.nanometers  # from martini 3.0 C1 particle
         self.default_angle = 0.0 * unit.degrees
         self.default_energyscale = 3.5 * unit.kilojoule_per_mole  # from martini 3.0 C1 particle
-        self.default_bond_k = (
+        self.default_bond_force_constant = (
             1250.0 * unit.kilojoule_per_mole / unit.nanometer / unit.nanometer
         )  # from martini 3.0
-        self.default_torsion_k = 0.0 * unit.kilojoule_per_mole
-        self.default_angle_k = (
+        self.default_torsion_force_constant = 0.0 * unit.kilojoule_per_mole
+        self.default_bond_angle_force_constant = (
             0.0 * unit.kilojoule_per_mole / unit.radian / unit.radian
         )  # from martini 3.0
         self.default_charge = 0.0 * unit.elementary_charge
@@ -250,28 +250,65 @@ class CGModel(object):
 
     def validate_bonded_forces(self):
 
-        if "default_bond_length" not in self.bond_lengths:
-            print(f"Warning: No default bond length: setting to {self.default_length}")
-            self.bond_lengths.update({"default_bond_length": self.default_length})
-        if "default_bond_force_constant" not in self.bond_force_constants:
-            print(f"Warning: No default bond force constant: setting to {self.default_bond_k}")
-            self.bond_force_constants.update({"default_bond_force_constant": self.default_bond_k})
-        if "default_equil_bond_angle" not in self.equil_bond_angles:
-            print(f"Warning: No default equilibrium bond angle: setting to {self.default_angle}")
-            self.equil_bond_angles.update({"default_equil_bond_angle": self.default_angle})            
-        if "default_bond_angle_force_constant" not in self.bond_angle_force_constants:
-            print(f"Warning: No default bond angle force constant: setting to {self.default_angle_k}")
-            self.bond_angle_force_constants.update({"default_bond_angle_force_constant": self.default_angle_k})
-        if "default_equil_torsion_angle" not in self.equil_torsion_angles:
-            print(f"Warning: No default equilibrium torsion angle: setting to {self.default_angle}")
-            self.equil_torsion_angles.update({"default_equil_torsion_angle": self.default_angle})            
-        if "default_torsion_force_constant" not in self.torsion_force_constants:
-            print(f"Warning: No default torsion angle force constant: setting to {self.default_torsion_k}")
-            self.torsion_force_constants.update({"default_torsion_force_constant": self.default_torsion_k})
-        if "default_torsion_periodicity" not in self.torsion_periodicities:
-            print(f"Warning: No default torsion periodicity: setting to {self.default_periodicity}")
-            self.torsion_periodicities.update({"default_torsion_periodicity": self.default_periodicity})
-        
+        # check the names that are included in the dictionaries to make sure
+        # there are no mispellings.
+
+        # dictionary of the force attributes
+
+        # for each force attribute, define certain properties.
+        # we are trying to minimize the number of places adding new forces changes the code.
+        self.bonded_force_attributes = {
+            'bond_lengths': {
+                'default_name' : "default_bond_length",
+                'default_value' : self.default_length,
+                'suffix' : "bond_length"
+            },
+            'bond_force_constants' : {
+                'default_name' : "default_bond_force_constant",
+                'default_value' : self.default_bond_force_constant,
+	 	'suffix' : 'bond_force_constant'
+            },
+            'equil_bond_angles' : {
+                'default_name' : "default_equil_bond_angle",
+                'default_value' : self.default_angle,
+		'suffix' : 'equil_bond_angle'             
+            },
+            'bond_angle_force_constants' : {
+                'default_name' : "default_angle_bond_force_constant",
+                'default_value' : self.default_bond_angle_force_constant,
+		'suffix' : 'bond_angle_force_constant'
+            },
+            'equil_torsion_angles' : {
+                'default_name' : "default_equil_torsion_angle",
+                'default_value' : self.default_angle,
+		'suffix' : 'equil_torsion_angle'             
+            },
+            'torsion_force_constants' : {
+                'default_name' : "default_torsion_force_constant",
+                'default_value' : self.default_torsion_force_constant,
+		'suffix' : 'torsion_force_constant'
+            },
+            'torsion_periodicities' : {
+                'default_name' : "default_torsion_periodicity",
+                'default_value' : self.default_periodicity,
+		'suffix' : 'torsion_periodicity'
+            },
+        }
+
+        # make sure all the property values are internally consistent
+        for attribute in self.bonded_force_attributes:
+            if hasattr(self,attribute):
+                properties = self.bonded_force_attributes[attribute]
+                default_name = properties['default_name'] 
+                if default_name not in getattr(self,attribute):
+                    default_value = properties['default_value']
+                    print(f"Warning: No {default_name}: setting to {default_value}")
+                default_suffix = properties['suffix']
+                for force in getattr(self,attribute):
+                    if default_suffix not in force:
+                        print(f"Warning: force term \'{force}\' does not have proper suffix of {default_suffix}")
+                        exit()
+
     def validate_particle_type_list(self,particle_type_list):
         """
         check each of the defined particles:
@@ -929,6 +966,49 @@ class CGModel(object):
 
         return self.get_particle_attribute(particle,"epsilon")        
 
+    def _get_bonded_parameter(self, particle_types, force):
+
+        '''
+        internal function for returning any force value.
+
+        parameters: the string name of the bonded force of interest
+
+        returns: the value of the parameter for the atoms involved in the interaction
+        '''
+
+        # get the details for this force
+        properties = self.bonded_force_attributes[force]
+        suffix = properties['suffix']
+        default_name = properties['default_name']
+        default_value = properties['default_value']
+        
+        # first, construct the name of the force that is needed.
+        string_name = ""
+        reverse_string_name = ""
+        for particle in particle_types:
+            string_name += f"{particle}_"
+        for particle in reversed(particle_types):
+            reverse_string_name += f"{particle}_"
+
+        string_name += suffix
+        reverse_string_name += suffix
+            
+        parameter_value = None
+        forces = getattr(self,force)
+        try:
+            parameter_value = forces[string_name]
+        except:
+            try:
+                parameter_value = forces[reverse_string_name]
+            except:
+                print(
+                    f"No {force} definition provided for '{string_name}', setting to {default_value}"
+                )
+                forces.update({string_name: default_value})
+                forces.update({reverse_string_name: default_value})
+                parameter_value = forces[string_name]
+
+        return parameter_value
     
     def get_bond_length(self, bond):
         """
@@ -948,28 +1028,13 @@ class CGModel(object):
 
           """
 
-        particle_1_type = self.get_particle_type_name(bond[0])
-        particle_2_type = self.get_particle_type_name(bond[1])
+        particle_types = [
+            self.get_particle_type_name(bond[0]),
+            self.get_particle_type_name(bond[1]),
+        ]
 
-        string_name = f"{particle_1_type}_{particle_2_type}_bond_length"
-        reverse_string_name = f"{particle_2_type}_{particle_1_type}_bond_length"
-
-        bond_length = None
-        default_length = self.bond_lengths["default_bond_length"]
-        try:
-            bond_length = self.bond_lengths[string_name]
-        except:
-            try:
-                bond_length = self.bond_lengths[reverse_string_name]
-            except:
-                print(
-                    f"No bond length definition provided for '{string_name}', setting '{string_name}' = {default_length}"
-                )
-                self.bond_lengths.update({string_name: default_length})
-                self.bond_lengths.update({reverse_string_name: default_length})
-                bond_length = self.bond_lengths[string_name]
-
-        return bond_length
+        return self._get_bonded_parameter(particle_types, 'bond_lengths')
+        
 
     def get_bond_force_constant(self, bond):
         """
@@ -989,30 +1054,13 @@ class CGModel(object):
 
           """
 
-        particle_1_type = self.get_particle_type_name(bond[0])
-        particle_2_type = self.get_particle_type_name(bond[1])
+        particle_types = [
+            self.get_particle_type_name(bond[0]),
+            self.get_particle_type_name(bond[1]),
+        ]
 
-        string_name = f"{particle_1_type}_{particle_2_type}_bond_force_constant"
-        reverse_string_name = f"{particle_2_type}_{particle_1_type}_bond_force_constant"
-
-        bond_force_constant = None
-        default_bond_k = self.bond_force_constants["default_bond_force_constant"]
-        
-        try:
-            bond_force_constant = self.bond_force_constants[string_name]
-        except:
-            try:
-                bond_force_constant = self.bond_force_constants[reverse_string_name]
-            except:
-                print(
-                    f"No bond force constant provided for '{string_name}', setting '{string_name}' = {default_bond_k}"
-                )
-                self.bond_force_constants.update({string_name: default_bond_k})
-                self.bond_force_constants.update({reverse_string_name: default_bond_k})
-                bond_force_constant = self.bond_force_constants[string_name]
-
-        return bond_force_constant
-
+        return self._get_bonded_parameter(particle_types, 'bond_force_constants')
+    
     def get_equil_bond_angle(self, angle):
         """
           Determines the correct equilibrium bond angle between three particles, given their indices within the coarse-grained model
@@ -1040,42 +1088,7 @@ class CGModel(object):
             self.get_particle_type_name(angle[2]),
         ]
 
-        equil_bond_angle = None
-        default_angle = self.equil_bond_angles["default_equil_bond_angle"]
-        
-        string_name = ""
-        reverse_string_name = ""
-        for i in range(3):
-            string_name += f"{particle_types[i]}_"
-        for i in range(3):
-            reverse_string_name += f"{particle_types[2 - i]}_"
-
-        string_name += "angle_0"
-        reverse_string_name += "angle_0"
-
-        try:
-            equil_bond_angle = self.equil_bond_angles[string_name]
-        except:
-            try:
-                equil_bond_angle = self.equil_bond_angles[reverse_string_name]
-            except:
-                print(
-                    f"No equilibrium bond angle definition provided for '{string_name}', setting '{string_name}' = {default_angle}"
-                )
-                self.equil_bond_angles.update({string_name: default_angle})
-                self.equil_bond_angles.update({reverse_string_name: default_angle})
-                equil_bond_angle = self.equil_bond_angles[string_name]
-
-        if equil_bond_angle == None:
-            print(
-                "ERROR: No equilibrium bond angle definition was found for the following particle types:"
-            )
-            print(f"{particle_types[0]}-{particle_types[1]}-{particle_types[2]}")
-            print("This means that at least one of the particle types has not been defined.")
-            print("Check the names and definitions for the particle types in your model.")
-            exit()
-
-        return equil_bond_angle
+        return self._get_bonded_parameter(particle_types, 'equil_bond_angles')        
 
     def get_bond_angle_force_constant(self, angle):
         """
@@ -1104,42 +1117,7 @@ class CGModel(object):
             self.get_particle_type_name(angle[2]),
         ]
 
-        bond_angle_force_constant = None
-        default_angle_k = self.bond_angle_force_constants["default_bond_angle_force_constant"]
-        
-        string_name = ""
-        reverse_string_name = ""
-        for i in range(3):
-            string_name += f"{particle_types[i]}_"
-        for i in range(3):
-            reverse_string_name += f"{particle_types[2 - i]}_"
-
-        string_name += "angle_k"
-        reverse_string_name += "angle_k"
-
-        try:
-            bond_angle_force_constant = self.bond_angle_force_constants[string_name]
-        except:
-            try:
-                bond_angle_force_constant = self.bond_angle_force_constants[reverse_string_name]
-            except:
-                print(
-                    f"No bond angle force constant definition provided for '{string_name}', setting '{string_name}' = {default_angle_k}"
-                )
-                self.bond_angle_force_constants.update({string_name: default_angle_k})
-                self.bond_angle_force_constants.update({reverse_string_name: default_angle_k})
-                bond_angle_force_constant = self.bond_angle_force_constants[string_name]
-
-        if bond_angle_force_constant == None:
-            print(
-                "ERROR: No bond angle force constant definition was found for the following particle types:"
-            )
-            print(f"{particle_types[0]}-{particle_types[1]}-{particle_types[2]}")
-            print("This means that at least one of the particle types has not been defined.")
-            print("Check the names and definitions for the particle types in your model.")
-            exit()
-
-        return bond_angle_force_constant
+        return self._get_bonded_parameter(particle_types, 'bond_angle_force_constants')
 
     def get_torsion_periodicity(self, torsion):
         """         
@@ -1163,45 +1141,7 @@ class CGModel(object):
             self.get_particle_type_name(torsion[3]),
         ]
 
-        torsion_periodicity = None
-        default_torsion_periodicity = self.torsion_periodicities["default_torsion_periodicity"]
-
-        string_name = ""
-        reverse_string_name = ""
-        for i in range(4):
-            string_name += f"{particle_types[i]}_"
-        for i in range(4):
-            reverse_string_name += f"{particle_types[3 - i]}_"
-
-        string_name += "period"
-        reverse_string_name += "period"
-
-        try:
-            torsion_periodicity = self.torsion_periodicities[string_name]
-        except:
-            try:
-                torsion_periodicity = self.torsion_periodicities[reverse_string_name]
-            except:
-                print(
-                    f"No torsion periodicity definition provided for '{string_name}', setting '{string_name}' = {default_torsion_periodicity}"
-                )
-                self.torsion_periodicities.update({string_name: default_torsion_periodicity})
-                self.torsion_periodicities.update({reverse_string_name: default_torsion_periodicity})
-                torsion_periodicity = self.torsion_periodicities[string_name]
-
-        # does it reach here?
-        if torsion_periodicity == None:
-            print(
-                "ERROR: No torsion periodicity definition was found for the following particle types:"
-            )
-            print(
-                f"{particle_types[0]}-{particle_types[1]}-{particle_types[2]}-{particle_types[3]}"
-            )
-            print("This means that at least one of the particle types has not been defined.")
-            print("Check the names and definitions for the particle types in your model.")
-            exit()
-
-        return torsion_periodicity
+        return self._get_bonded_parameter(particle_types, 'torsion_periodicities')
 
     def get_torsion_force_constant(self, torsion):
         """         
@@ -1224,33 +1164,7 @@ class CGModel(object):
             self.get_particle_type_name(torsion[3]),
         ]
 
-        torsion_force_constant = None
-        default_torsion_k = self.torsion_force_constants["default_torsion_force_constant"]
-        
-        string_name = ""
-        reverse_string_name = ""
-        for i in range(4):
-            string_name += f"{particle_types[i]}_"
-        for i in range(4):
-            reverse_string_name += f"{particle_types[3 - i]}_"
-
-        string_name += "torsion_k"
-        reverse_string_name += "torsion_k"
-
-        try:
-            torsion_force_constant = self.torsion_force_constants[string_name]
-        except:
-            try:
-                torsion_force_constant = self.torsion_force_constants[reverse_string_name]
-            except:
-                print(
-                    f"No torsion force constant definition provided for '{string_name}', setting '{string_name}' = {default_torsion_k}"
-                )
-                self.torsion_force_constants.update({string_name: default_torsion_k})
-                self.torsion_force_constants.update({reverse_string_name: default_torsion_k})
-                torsion_force_constant = self.torsion_force_constants[string_name]
-
-        return torsion_force_constant
+        return self._get_bonded_parameter(particle_types, 'torsion_force_constants')
 
     def get_equil_torsion_angle(self, torsion):
         """         
@@ -1273,30 +1187,4 @@ class CGModel(object):
             self.get_particle_type_name(torsion[3]),
         ]
 
-        equil_torsion_angle = None
-        default_equil_torsion_angle = self.equil_torsion_angles["default_equil_torsion_angle"]
-        
-        string_name = ""
-        reverse_string_name = ""
-        for i in range(4):
-            string_name += f"{particle_types[i]}_"
-        for i in range(4):
-            reverse_string_name += f"{particle_types[3 - i]}_"
-
-        string_name += "torsion_0"
-        reverse_string_name += "torsion_0"
-
-        try:
-            equil_torsion_angle = self.equil_torsion_angles[string_name]
-        except:
-            try:
-                equil_torsion_angle = self.equil_torsion_angles[reverse_string_name]
-            except:
-                print(
-                    f"No equilibrium torsion angle definition provided for '{string_name}', setting '{string_name}' = {default_equil_torsion_angle}"
-                )
-                self.equil_torsion_angles.update({string_name: default_equil_torsion_angle})
-                self.equil_torsion_angles.update({reverse_string_name: default_equil_torsion_angle})
-                equil_torsion_angle = self.equil_torsion_angles[string_name]
-
-        return equil_torsion_angle
+        return self._get_bonded_parameter(particle_types, 'equil_torsion_angles')
