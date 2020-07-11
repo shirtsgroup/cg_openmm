@@ -210,7 +210,7 @@ class CGModel(object):
         self.torsion_periodicities = torsion_periodicities
         self.equil_torsion_angles = equil_torsion_angles
         self._validate_bonded_forces()
-        
+
         # Assign positions
         if positions == None:
             if random_positions:
@@ -264,62 +264,64 @@ class CGModel(object):
         # and this should help with that.
 
         self.bonded_force_attributes = {
-            'bond_lengths': {
-                'default_name' : "default_bond_length",
-                'default_value' : self.default_length,
-                'suffix' : "bond_length"
+            "bond_lengths": {
+                "default_name": "default_bond_length",
+                "default_value": self.default_length,
+                "suffix": "bond_length",
             },
-            'bond_force_constants' : {
-                'default_name' : "default_bond_force_constant",
-                'default_value' : self.default_bond_force_constant,
-	 	'suffix' : 'bond_force_constant'
+            "bond_force_constants": {
+                "default_name": "default_bond_force_constant",
+                "default_value": self.default_bond_force_constant,
+                "suffix": "bond_force_constant",
             },
-            'equil_bond_angles' : {
-                'default_name' : "default_equil_bond_angle",
-                'default_value' : self.default_angle,
-		'suffix' : 'equil_bond_angle'             
+            "equil_bond_angles": {
+                "default_name": "default_equil_bond_angle",
+                "default_value": self.default_angle,
+                "suffix": "equil_bond_angle",
             },
-            'bond_angle_force_constants' : {
-                'default_name' : "default_angle_bond_force_constant",
-                'default_value' : self.default_bond_angle_force_constant,
-		'suffix' : 'bond_angle_force_constant'
+            "bond_angle_force_constants": {
+                "default_name": "default_angle_bond_force_constant",
+                "default_value": self.default_bond_angle_force_constant,
+                "suffix": "bond_angle_force_constant",
             },
-            'equil_torsion_angles' : {
-                'default_name' : "default_equil_torsion_angle",
-                'default_value' : self.default_angle,
-		'suffix' : 'equil_torsion_angle'             
+            "equil_torsion_angles": {
+                "default_name": "default_equil_torsion_angle",
+                "default_value": self.default_angle,
+                "suffix": "equil_torsion_angle",
             },
-            'torsion_force_constants' : {
-                'default_name' : "default_torsion_force_constant",
-                'default_value' : self.default_torsion_force_constant,
-		'suffix' : 'torsion_force_constant'
+            "torsion_force_constants": {
+                "default_name": "default_torsion_force_constant",
+                "default_value": self.default_torsion_force_constant,
+                "suffix": "torsion_force_constant",
             },
-            'torsion_periodicities' : {
-                'default_name' : "default_torsion_periodicity",
-                'default_value' : self.default_periodicity,
-		'suffix' : 'torsion_periodicity'
+            "torsion_periodicities": {
+                "default_name": "default_torsion_periodicity",
+                "default_value": self.default_periodicity,
+                "suffix": "torsion_periodicity",
             },
         }
 
         # make sure all the property values are internally consistent
         for attribute in self.bonded_force_attributes:
             # for the bonded force attributes
-            if hasattr(self,attribute):
+            if hasattr(self, attribute):
                 properties = self.bonded_force_attributes[attribute]
-                default_name = properties['default_name']
+                default_name = properties["default_name"]
                 # if the default name hasn't been defined for this model
-                if default_name not in getattr(self,attribute):
-                    default_value = properties['default_value']
+                if default_name not in getattr(self, attribute):
+                    default_value = properties["default_value"]
                     # set it to the the default for the program.
                     print(f"Warning: No {default_name}: setting to {default_value}")
-                default_suffix = properties['suffix']
-                for force in getattr(self,attribute):
+                default_suffix = properties["suffix"]
+                for force in getattr(self, attribute):
                     # make sure all forces have the corresponding suffix.
                     if default_suffix not in force:
-                        print(f"Warning: force term \'{force}\' does not have proper suffix of {default_suffix}")
+                        print(
+                            f"Warning: force term '{force}' does not have proper suffix of {default_suffix}"
+                        )
                         exit()
 
-    def _validate_particle_type_list(self,particle_type_list):
+    def _validate_particle_type_list(self, particle_type_list):
         """
         parameters: list of particle types
 
@@ -339,7 +341,7 @@ class CGModel(object):
 
         for particle in particle_type_list:
             if "particle_type_name" not in particle:
-                print(f'Particle has no attribute \"particle_type_name\": Exiting now')
+                print(f'Particle has no attribute "particle_type_name": Exiting now')
                 exit()
             name = particle["particle_type_name"]
             if "sigma" not in particle:
@@ -362,7 +364,7 @@ class CGModel(object):
                     f"charge not defined for particle type {name} using default epsilon: {self.default_charge}"
                 )
                 particle["charge"] = self.default_charge
-                
+
         return particle_type_list
 
     def build_polymer(self, sequence):
@@ -442,24 +444,21 @@ class CGModel(object):
                         f"Error: monomer {mn} has a bond [{bond[0]},{bond[1]}] with a particle index too high (>={monomer['num_beads']})"
                     )
                     exit()  # figure out how to handle with exceptions.
-                    
+
             # are there any particles with no bonds?
             unbonded = True
             for i in range(monomer["num_beads"]):
                 for bond in monomer["bond_list"]:
-                    if i in (bond[0],bond[1]):
+                    if i in (bond[0], bond[1]):
                         unbonded = False
                         break
                 if unbonded == False:
                     break
-                    
+
             if unbonded:
-                    print(
-                        f"Error: particle {i} in monomer {mm} has no bonds."
-                    )
-                    exit()  
-            
-                
+                print(f"Error: particle {i} in monomer {mm} has no bonds.")
+                exit()
+
     def get_num_beads(self):
         """
           Calculate the number of beads in a coarse-grained model class object
@@ -497,8 +496,8 @@ class CGModel(object):
                 particle["type"] = bead
                 # will need to come up with a better naming scheme than X
                 # X for backbones and A for monomers
-                if 'particle_type_name' not in bead:
-                    print("\'particle_type_name\' not defined, cannot contiue") 
+                if "particle_type_name" not in bead:
+                    print("'particle_type_name' not defined, cannot contiue")
                     exit()
                 particle["name"] = f"{bead['particle_type_name']}{particle_index}"
                 particle["index"] = particle_index
@@ -534,7 +533,7 @@ class CGModel(object):
                         bond_list.append([last_backbone_bead, bead_index])
                     if j == monomer["end"]:
                         last_backbone_bead = bead_index
-                    bead_index = bead_index + 1 # increment for bookkeeping
+                    bead_index = bead_index + 1  # increment for bookkeeping
                 bond_list += monomer_bond_list
         return bond_list
 
@@ -674,7 +673,7 @@ class CGModel(object):
                         bond_angles.append(bond_angle)
         return bond_angles
 
-    def get_torsion_list(self):   # MRS: really slow, should be looked at.
+    def get_torsion_list(self):  # MRS: really slow, should be looked at.
         """
           Construct a list of particle indices from which to define torsions for the coarse-grained model
 
@@ -791,19 +790,19 @@ class CGModel(object):
         get various attributes of a particle, given either the index or the particle dictionary
 
         """
-        
-        if attribute in ['monomer', 'monomer_type', 'name', 'index', 'type']:
+
+        if attribute in ["monomer", "monomer_type", "name", "index", "type"]:
             # these are attributes of the particles in the list
             if type(particle) == dict:
-                return particle[attribute] 
+                return particle[attribute]
             elif type(particle) == int:
                 return self.particle_list[particle][attribute]
-        elif attribute in ['mass','charge','epsilon','sigma','particle_type_name']:
+        elif attribute in ["mass", "charge", "epsilon", "sigma", "particle_type_name"]:
             # these are attributes of the partilce type
             if type(particle) == dict:
-                return particle["type"][attribute] 
+                return particle["type"][attribute]
             elif type(particle) == int:
-                return self.particle_list[particle]["type"][attribute]        
+                return self.particle_list[particle]["type"][attribute]
         return
 
     def get_particle_name(self, particle):
@@ -820,8 +819,7 @@ class CGModel(object):
             - particle_name ( str ) - The name of the particle
 
           """
-        return self.get_particle_attribute(particle,"name")
-
+        return self.get_particle_attribute(particle, "name")
 
     def get_particle_index(self, particle):
         """
@@ -838,7 +836,7 @@ class CGModel(object):
             - particle_name ( str ) - The name of the particle
 
           """
-        return self.get_particle_attribute(particle,"index")
+        return self.get_particle_attribute(particle, "index")
 
     def get_particle_type(self, particle):
         """
@@ -854,8 +852,8 @@ class CGModel(object):
              - particle_type (str):
 
           """
-        
-        return self.get_particle_attribute(particle,"type")
+
+        return self.get_particle_attribute(particle, "type")
 
     def get_particle_type_name(self, particle):
         """
@@ -871,10 +869,9 @@ class CGModel(object):
              - particle_type (str):
 
           """
-        
-        return self.get_particle_attribute(particle,"particle_type_name")
 
-    
+        return self.get_particle_attribute(particle, "particle_type_name")
+
     def get_particle_monomer_type(self, particle):
         """
           Indicates which type of monomer a particle belongs to
@@ -889,10 +886,10 @@ class CGModel(object):
              - monomer_type (dict) : monomer type
 
           """
-        return self.get_particle_attribute(particle,"monomer_type")
+        return self.get_particle_attribute(particle, "monomer_type")
 
     def get_particle_monomer(self, particle):
-        
+
         """
           Indicates which monomer index a particle belongs to
 
@@ -906,7 +903,7 @@ class CGModel(object):
              - monomer_type (dict) : monomer type
 
           """
-        return self.get_particle_attribute(particle,"monomer")
+        return self.get_particle_attribute(particle, "monomer")
 
     def get_particle_mass(self, particle):
         """
@@ -924,9 +921,8 @@ class CGModel(object):
 
           """
 
-        return self.get_particle_attribute(particle,"epsilon")        
+        return self.get_particle_attribute(particle, "epsilon")
 
-    
     def get_particle_charge(self, particle):
         """
           Returns the charge for a particle, given its index within the coarse-grained model, or the dict
@@ -941,10 +937,10 @@ class CGModel(object):
             - particle_charge ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The charge for the provided particle index
 
           """
-        return self.get_particle_attribute(particle,"charge")
+        return self.get_particle_attribute(particle, "charge")
 
     def get_particle_sigma(self, particle):
-        
+
         """
           Returns the Lennard-Jones potential sigma value for a particle, given the particle index
 
@@ -958,7 +954,7 @@ class CGModel(object):
             - sigma ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The assigned Lennard-Jones sigma value for the provided particle index
 
           """
-        return self.get_particle_attribute(particle,"sigma")
+        return self.get_particle_attribute(particle, "sigma")
 
     def get_particle_epsilon(self, particle):
         """
@@ -976,24 +972,24 @@ class CGModel(object):
 
           """
 
-        return self.get_particle_attribute(particle,"epsilon")        
+        return self.get_particle_attribute(particle, "epsilon")
 
     def _get_bonded_parameter(self, particle_types, force):
 
-        '''
+        """
         internal function for returning any force value.
 
         parameters: the string name of the bonded force of interest
 
         returns: the value of the parameter for the atoms involved in the interaction
-        '''
+        """
 
         # get the details for this force
         properties = self.bonded_force_attributes[force]
-        suffix = properties['suffix']
-        default_name = properties['default_name']
-        default_value = properties['default_value']
-        
+        suffix = properties["suffix"]
+        default_name = properties["default_name"]
+        default_value = properties["default_value"]
+
         # first, construct the name of the force that is needed.
         string_name = ""
         reverse_string_name = ""
@@ -1004,9 +1000,9 @@ class CGModel(object):
 
         string_name += suffix
         reverse_string_name += suffix
-            
+
         parameter_value = None
-        forces = getattr(self,force)
+        forces = getattr(self, force)
         try:
             parameter_value = forces[string_name]
         except:
@@ -1021,7 +1017,7 @@ class CGModel(object):
                 parameter_value = forces[string_name]
 
         return parameter_value
-    
+
     def get_bond_length(self, bond):
         """
           Determines the correct bond length for two particles, given their indices.
@@ -1045,8 +1041,7 @@ class CGModel(object):
             self.get_particle_type_name(bond[1]),
         ]
 
-        return self._get_bonded_parameter(particle_types, 'bond_lengths')
-        
+        return self._get_bonded_parameter(particle_types, "bond_lengths")
 
     def get_bond_force_constant(self, bond):
         """
@@ -1071,8 +1066,8 @@ class CGModel(object):
             self.get_particle_type_name(bond[1]),
         ]
 
-        return self._get_bonded_parameter(particle_types, 'bond_force_constants')
-    
+        return self._get_bonded_parameter(particle_types, "bond_force_constants")
+
     def get_equil_bond_angle(self, angle):
         """
           Determines the correct equilibrium bond angle between three particles, given their indices within the coarse-grained model
@@ -1100,7 +1095,7 @@ class CGModel(object):
             self.get_particle_type_name(angle[2]),
         ]
 
-        return self._get_bonded_parameter(particle_types, 'equil_bond_angles')        
+        return self._get_bonded_parameter(particle_types, "equil_bond_angles")
 
     def get_bond_angle_force_constant(self, angle):
         """
@@ -1129,7 +1124,7 @@ class CGModel(object):
             self.get_particle_type_name(angle[2]),
         ]
 
-        return self._get_bonded_parameter(particle_types, 'bond_angle_force_constants')
+        return self._get_bonded_parameter(particle_types, "bond_angle_force_constants")
 
     def get_torsion_periodicity(self, torsion):
         """         
@@ -1153,7 +1148,7 @@ class CGModel(object):
             self.get_particle_type_name(torsion[3]),
         ]
 
-        return self._get_bonded_parameter(particle_types, 'torsion_periodicities')
+        return self._get_bonded_parameter(particle_types, "torsion_periodicities")
 
     def get_torsion_force_constant(self, torsion):
         """         
@@ -1176,7 +1171,7 @@ class CGModel(object):
             self.get_particle_type_name(torsion[3]),
         ]
 
-        return self._get_bonded_parameter(particle_types, 'torsion_force_constants')
+        return self._get_bonded_parameter(particle_types, "torsion_force_constants")
 
     def get_equil_torsion_angle(self, torsion):
         """         
@@ -1199,4 +1194,4 @@ class CGModel(object):
             self.get_particle_type_name(torsion[3]),
         ]
 
-        return self._get_bonded_parameter(particle_types, 'equil_torsion_angles')
+        return self._get_bonded_parameter(particle_types, "equil_torsion_angles")
