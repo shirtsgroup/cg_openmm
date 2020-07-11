@@ -52,7 +52,7 @@ torsion_force_constants = {
 
 
 equil_torsion_angles = {
-    "a_a_a_b_torsion_force_constant": 0.0 * kj,
+    "a_a_a_b_equil_torsion_angle": 0.0 * unit.radians,
 }
 
 A = {  # a weird triangular backbone, with 2-bead side chain

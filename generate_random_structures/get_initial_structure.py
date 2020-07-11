@@ -55,7 +55,7 @@ equil_torsion_angles = {
 
 torsion_periodicities = {
     "default_torsion_periodicity": 1,
-    "bb_bb_bb_bb_period": 3,
+    "bb_bb_bb_bb_torsion_periodicity": 3,
 }
 
 # define the monomer
