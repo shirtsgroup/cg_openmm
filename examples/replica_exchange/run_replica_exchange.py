@@ -82,21 +82,18 @@ bond_angle_force_constants = {
 equil_bond_angles = {"default_equil_bond_angle": 120.0 * unit.degrees}
 
 # torsion angle definitions
-torsion_force_constants = {"bb_bb_bb_bb_torsion_k": 20.0 * unit.kilojoule_per_mole}
+torsion_force_constants = {"bb_bb_bb_bb_torsion_force_constant": 20.0 * unit.kilojoule_per_mole}
 
 torsion_angle = 78.0 * unit.degrees
 equil_torsion_angles = {
-    "bb_bb_bb_bb_torsion_0": torsion_angle,
-    "bb_bb_bb_sc_torsion_0": torsion_angle,
+    "bb_bb_bb_bb_equil_torsion_angle": torsion_angle,
+    "bb_bb_bb_sc_equil_torsion_angle": torsion_angle,
 }
 
-torsion_periodicities = {"bb_bb_bb_bb_period": 3, "bb_bb_bb_sc_period": 3}
+torsion_periodicities = {"bb_bb_bb_bb_torsion_periodicity": 3, "bb_bb_bb_sc_torsion_periodicity": 3}
 
 # Get initial positions from local file
 positions = PDBFile("helix2.pdb").getPositions()
-
-# Get initial positions from local file
-positions = PDBFile("helix.pdb").getPositions()
 
 # Build a coarse grained model
 cgmodel = CGModel(
