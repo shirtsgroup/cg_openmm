@@ -194,7 +194,7 @@ class CGModel(object):
         self.bond_lengths = bond_lengths
 
         # fill in defaults in particle list
-        self.particle_type_list = self.validate_particle_type_list(particle_type_list)
+        self.particle_type_list = self._validate_particle_type_list(particle_type_list)
 
         # Build a polymer with these model settings
         self.build_polymer(sequence)
@@ -209,7 +209,7 @@ class CGModel(object):
         self.torsion_force_constants = torsion_force_constants
         self.torsion_periodicities = torsion_periodicities
         self.equil_torsion_angles = equil_torsion_angles
-        self.validate_bonded_forces()
+        self._validate_bonded_forces()
         
         # Assign positions
         if positions == None:
@@ -248,15 +248,21 @@ class CGModel(object):
         pickle.dump(self, pickle_out)
         pickle_out.close()
 
-    def validate_bonded_forces(self):
+    def _validate_bonded_forces(self):
 
         # check the names that are included in the dictionaries to make sure
         # there are no mispellings.
 
         # dictionary of the force attributes
 
-        # for each force attribute, define certain properties.
-        # we are trying to minimize the number of places adding new forces changes the code.
+        # for each force attribute, which appears in the dictionary defining the forces,
+        # define certain properties;
+        #     "default name" : the name to look for default definitions of those nonboded forces.
+        #     "default value" : the value to store if the default is not given,
+        #     "suffix" : the suffix that those forces should have
+        # We are trying to minimize the number of places adding new forces changes the code,
+        # and this should help with that.
+
         self.bonded_force_attributes = {
             'bond_lengths': {
                 'default_name' : "default_bond_length",
@@ -297,21 +303,27 @@ class CGModel(object):
 
         # make sure all the property values are internally consistent
         for attribute in self.bonded_force_attributes:
+            # for the bonded force attributes
             if hasattr(self,attribute):
                 properties = self.bonded_force_attributes[attribute]
-                default_name = properties['default_name'] 
+                default_name = properties['default_name']
+                # if the default name hasn't been defined for this model
                 if default_name not in getattr(self,attribute):
                     default_value = properties['default_value']
+                    # set it to the the default for the program.
                     print(f"Warning: No {default_name}: setting to {default_value}")
                 default_suffix = properties['suffix']
                 for force in getattr(self,attribute):
+                    # make sure all forces have the corresponding suffix.
                     if default_suffix not in force:
                         print(f"Warning: force term \'{force}\' does not have proper suffix of {default_suffix}")
                         exit()
 
-    def validate_particle_type_list(self,particle_type_list):
+    def _validate_particle_type_list(self,particle_type_list):
         """
-        check each of the defined particles:
+        parameters: list of particle types
+
+        Check each of the defined particles to make sure it's properly defined
 
         """
         if particle_type_list is None or len(particle_type_list) == 0:
