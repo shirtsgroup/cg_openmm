@@ -58,7 +58,7 @@ equil_bond_angles = {
 A = {
     "monomer_name": "A",
     "particle_sequence": [abb,asc],
-    "bond_list" : [[0,1]],
+    "bond_list" : [[0,1]], # sidechain is on first bead
     "start": 0,
     "end": 0
 }
@@ -66,7 +66,7 @@ A = {
 B = {
     "monomer_name": "B",
     "particle_sequence": [bbb,bbb,bsc],
-    "bond_list" : [[0,1],[0,2]],
+    "bond_list" : [[0,1],[0,2]],  # sidechain is on first bead
     "start": 0,
     "end": 1
 }
@@ -74,7 +74,7 @@ B = {
 C = {
     "monomer_name": "C",
     "particle_sequence": [cbb,cbb,cbb,csc],
-    "bond_list" : [[0,1],[1,2],[1,3]],
+    "bond_list" : [[0,1],[1,2],[1,3]], # sidechain is on 2nd bead
     "start": 0,
     "end": 2
 }
