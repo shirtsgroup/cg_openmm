@@ -280,7 +280,7 @@ class CGModel(object):
                 "suffix": "equil_bond_angle",
             },
             "bond_angle_force_constants": {
-                "default_name": "default_angle_bond_force_constant",
+                "default_name": "default_bond_angle_force_constant",
                 "default_value": self.default_bond_angle_force_constant,
                 "suffix": "bond_angle_force_constant",
             },
@@ -361,7 +361,7 @@ class CGModel(object):
                 particle["epsilon"] = self.default_energyscale
             if "charge" not in particle:
                 print(
-                    f"charge not defined for particle type {name} using default epsilon: {self.default_charge}"
+                    f"charge not defined for particle type {name} using default charge: {self.default_charge}"
                 )
                 particle["charge"] = self.default_charge
 
@@ -921,7 +921,7 @@ class CGModel(object):
 
           """
 
-        return self.get_particle_attribute(particle, "epsilon")
+        return self.get_particle_attribute(particle, "mass")
 
     def get_particle_charge(self, particle):
         """
