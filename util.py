@@ -730,7 +730,7 @@ def get_random_positions(
                             # this choice not working now
                             trial_positions, placement = assign_position(
                                 stored_positions,
-                                get_bond_length[bond],
+                                get_bond_length(bond),
                                 distance_cutoff,
                                 bond[1],
                                 bond[0],
