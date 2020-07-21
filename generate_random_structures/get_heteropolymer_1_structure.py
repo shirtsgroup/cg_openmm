@@ -35,12 +35,12 @@ particle_type_list = [abb,asc,bbb,bsc,cbb,csc]
 bond_length = 2.0 * unit.angstroms
 bond_lengths = {
     "default_bond_length" : bond_length,
-    "bbb_bbb bond_length" : 0.5 * bond_length,
-    "bbb_bsc bond_length" : 0.5 * bond_length,
-    "bsc_bsc bond_length" : 0.5 * bond_length,
-    "cbb_cbb bond_length" : 1.5 * bond_length,
-    "cbb_csc bond_length" : 1.5 * bond_length,
-    "csc_csc bond_length" : 1.5 * bond_length,
+    "bbb_bbb_bond_length" : 0.5 * bond_length,
+    "bbb_bsc_bond_length" : 0.5 * bond_length,
+    "bsc_bsc_bond_length" : 0.5 * bond_length,
+    "cbb_cbb_bond_length" : 1.5 * bond_length,
+    "cbb_csc_bond_length" : 1.5 * bond_length,
+    "csc_csc_bond_length" : 1.5 * bond_length,
 }
 
 bond_force_constants = {
