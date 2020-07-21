@@ -24,12 +24,14 @@ def test_cg_openmm_imported():
     # check if simulation.pdb file is created with expected number of frames
     # check if simulation.dat file is created with expected lines of output
     
-def test_run_simulation():
+def test_run_simulation(tmpdir):
     """Run a short MD simulation of a 24mer 1b1s model"""
     
     # Set output directory
     # In pytest we need to use a temp directory
-    output_directory = pytest.tmpdir.mkdir("output")
+    # tmpdir is a fixture - hence we need to pass it into test function, not import it
+    
+    output_directory = tmpdir.mkdir("output")
     
     # OpenMM simulation settings
     print_frequency = 5000  # Number of steps to skip when printing output
