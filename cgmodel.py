@@ -315,7 +315,7 @@ class CGModel(object):
                 default_suffix = properties["suffix"]
                 for force in getattr(self, attribute):
                     # make sure all forces have the corresponding suffix.
-                    if default_suffix not in force:
+                    if ('_'+default_suffix) not in force:
                         print(
                             f"Warning: force term '{force}' does not have proper suffix of {default_suffix}"
                         )
@@ -987,8 +987,6 @@ class CGModel(object):
         # get the details for this force
         properties = self.bonded_force_attributes[force]
         suffix = properties["suffix"]
-        default_name = properties["default_name"]
-        default_value = properties["default_value"]
 
         # first, construct the name of the force that is needed.
         string_name = ""
@@ -1003,6 +1001,10 @@ class CGModel(object):
 
         parameter_value = None
         forces = getattr(self, force)
+
+        default_name = properties["default_name"]
+        default_value = forces[default_name]
+
         try:
             parameter_value = forces[string_name]
         except:
