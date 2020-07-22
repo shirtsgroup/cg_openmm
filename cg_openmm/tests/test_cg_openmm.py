@@ -18,12 +18,15 @@ def test_cg_openmm_imported():
     """Sample test, will always pass so long as import statement worked"""
     assert "cg_openmm" in sys.modules
     
-# Test import topology
-
 
 # Test run simulation    
     # check if simulation.pdb file is created with expected number of frames
     # check if simulation.dat file is created with expected lines of output
+
+    
+current_path = os.path.dirname(os.path.abspath(__file__))
+data_path = os.path.join(current_path, 'test_structures')
+    
     
 def test_run_simulation(tmpdir):
     """Run a short MD simulation of a 24mer 1b1s model"""
@@ -33,7 +36,8 @@ def test_run_simulation(tmpdir):
     # tmpdir is a fixture - hence we need to pass it into test function, not import it
     
     output_directory = tmpdir.mkdir("output")
-    
+    pdb_path = os.path.join(data_path, "24mer_1b1s_initial_structure.pdb")
+      
     # OpenMM simulation settings
     print_frequency = 10  # Number of steps to skip when printing output
     total_simulation_time = 1.0 * unit.picosecond
@@ -119,7 +123,8 @@ def test_run_simulation(tmpdir):
     sequence = 24 * [A]
         
     # Get initial positions from local file
-    positions = PDBFile("24mer_1b1s_initial_structure.pdb").getPositions()
+    
+    positions = PDBFile(pdb_path).getPositions()
 
     # Build a coarse grained model
     cgmodel = CGModel(
