@@ -120,12 +120,11 @@ def write_pdbfile_without_topology(CGModel, filename, energy=None):
 
     coordinates = CGModel.positions
     old_monomer_index = 0
-
     for particle in CGModel.particle_list:
         bead_index = CGModel.get_particle_index(particle)
-        particle_name = CGModel.get_particle_name(particle)
-        if len(particle_name) > 3:
-            particle_name = particle_name[0:3]
+        particle_type_name = CGModel.get_particle_type(particle)['particle_type_name']
+        if len(particle_type_name) > 3:
+            particle_type_name = particle_type_name[0:3]
         monomer_name = CGModel.get_particle_monomer_type(particle)["monomer_name"]
         if len(monomer_name) > 3:
             monomer_name = monomer_name[0:3]
@@ -134,7 +133,7 @@ def write_pdbfile_without_topology(CGModel, filename, energy=None):
             old_monomer_index = monomer_index
             element_index = 1
         pdb_object.write(
-            f"ATOM{bead_index+1:>7d} {particle_name:>3s}{element_index} {monomer_name:>3s} A{monomer_index:>4}    "
+            f"ATOM{bead_index+1:>7d} {particle_type_name:>3s}{element_index} {monomer_name:>3s} A{monomer_index:>4}    "
             f"{coordinates[bead_index][0].value_in_unit(unit.angstrom):>8.3f}"
             f"{coordinates[bead_index][1].value_in_unit(unit.angstrom):>8.3f}"
             f"{coordinates[bead_index][2].value_in_unit(unit.angstrom):>8.3f}"
