@@ -312,6 +312,11 @@ class CGModel(object):
                     default_value = properties["default_value"]
                     # set it to the the default for the program.
                     print(f"Warning: No {default_name}: setting to {default_value}")
+                    parameter_dict = getattr(self,attribute)
+                    # actually add the default force to the dictionary.
+                    default_dict = {default_name : default_value}
+                    parameter_dict.update(default_dict)
+                    setattr(self,attribute,parameter_dict)
                 default_suffix = properties["suffix"]
                 for force in getattr(self, attribute):
                     # make sure all forces have the corresponding suffix.
