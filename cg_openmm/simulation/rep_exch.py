@@ -160,6 +160,13 @@ def process_replica_exchange_data(
         time_interval=time_interval,
         output_directory=output_directory,
     )
+    
+    plot_replica_exchange_energy_histograms(
+        state_energies,
+        temperature_list,
+        file_name="rep_ex_ener_hist.png",
+        output_directory=output_directory,
+    )
 
     plot_replica_exchange_summary(
         replica_state_indices,
@@ -421,7 +428,69 @@ def plot_replica_exchange_energies(
     pyplot.close()
 
     return
+    
 
+def plot_replica_exchange_energy_histograms(
+    state_energies,
+    temperature_list,
+    file_name="rep_ex_ener_hist.png",
+    legend=True,
+    output_directory=None,
+):
+    """
+    Plot the potential energies for a batch of replica exchange trajectories
+
+    :param state_energies: List of dimension num_replicas X simulation_steps, which gives the energies for all replicas at all simulation steps
+    :type state_energies: List( List( float * simtk.unit.energy for simulation_steps ) for num_replicas )
+
+    :param temperature_list: List of temperatures for which to perform replica exchange simulations, default = [(300.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(-20,100,10)]
+    :type temperature: List( float * simtk.unit.temperature )
+
+    :param file_name: The pathname of the output file for plotting results, default = "replica_exchange_energies.png"
+    :type file_name: str
+
+    :param output_directory: Path to which we will write the output from simulation runs, Default = None
+    :type output_directory: str
+
+    :param legend: Controls whether a legend is added to the plot
+    :type legend: Logical
+
+    """
+
+    figure = pyplot.figure(0)
+
+    for state in range(len(temperature_list)):
+        n_out, bin_edges_out = np.histogram(
+            state_energies[state,:],bins=20,density=True,
+        )
+        
+        bin_centers = np.zeros((len(bin_edges)-1,1))
+        for i in range(len(bin_edges)-1):
+            bin_centers[i] = (bin_edges[i]+bin_edges[i+1])/2
+        
+        pyplot.plot(bin_centers,n_out,'o-',alpha=0.5,linewidth=1,markersize=6)
+            
+
+    pyplot.xlabel("Potential Energy ( kJ / mol )")
+    pyplot.ylabel("Probability")
+    pyplot.title("Replica Exchange Energy Histogram")
+    
+    if legend:
+        pyplot.legend(
+            [round(temperature._value, 1) for temperature in temperature_list],
+            loc="center left",
+            bbox_to_anchor=(1, 0.5),
+            title="T (K)",
+        )
+    if output_directory is not None:
+        output_file = os.path.join(output_directory, file_name)
+        pyplot.savefig(output_file, bbox_inches="tight")
+    else:
+        pyplot.savefig(file_name, bbox_inches="tight")
+    pyplot.close()
+
+    return
+    
 
 def plot_replica_exchange_summary(
     replica_states,
