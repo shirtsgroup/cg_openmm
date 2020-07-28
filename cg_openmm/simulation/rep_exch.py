@@ -464,9 +464,9 @@ def plot_replica_exchange_energy_histograms(
             state_energies[state,:],bins=20,density=True,
         )
         
-        bin_centers = np.zeros((len(bin_edges)-1,1))
-        for i in range(len(bin_edges)-1):
-            bin_centers[i] = (bin_edges[i]+bin_edges[i+1])/2
+        bin_centers = np.zeros((len(bin_edges_out)-1,1))
+        for i in range(len(bin_edges_out)-1):
+            bin_centers[i] = (bin_edges_out[i]+bin_edges_out[i+1])/2
         
         pyplot.plot(bin_centers,n_out,'o-',alpha=0.5,linewidth=1,markersize=6)
             
