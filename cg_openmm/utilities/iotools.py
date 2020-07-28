@@ -119,54 +119,27 @@ def write_pdbfile_without_topology(CGModel, filename, energy=None):
         )
 
     coordinates = CGModel.positions
-    
-    bead_index = 1
-    for monomer_index in range(CGModel.polymer_length):
-        monomer_type = CGModel.sequence[monomer_index]
-        element_index = 1
-        monomer_name = monomer_type["monomer_name"]
-        for backbone_bead in range(monomer_type["backbone_length"]):
-
-            if monomer_index in list([0, CGModel.polymer_length - 1]):
-                pdb_object.write(
-                    f"ATOM{bead_index:>7d}  X{element_index}   {monomer_name}T A{monomer_index+1:>4}    "
-                    f"{coordinates[bead_index-1][0].value_in_unit(unit.angstrom):>8.3f}"
-                    f"{coordinates[bead_index-1][1].value_in_unit(unit.angstrom):>8.3f}"
-                    f"{coordinates[bead_index-1][2].value_in_unit(unit.angstrom):>8.3f}"
-                    f"  1.00  0.00\n"
-                )
-            else:
-                pdb_object.write(
-                    f"ATOM{bead_index:>7d}  X{element_index}    {monomer_name} A{monomer_index+1:>4}    "
-                    f"{coordinates[bead_index-1][0].value_in_unit(unit.angstrom):>8.3f}"
-                    f"{coordinates[bead_index-1][1].value_in_unit(unit.angstrom):>8.3f}"
-                    f"{coordinates[bead_index-1][2].value_in_unit(unit.angstrom):>8.3f}"
-                    f"  1.00  0.00\n"
-                )
-
-            bead_index = bead_index + 1
-            element_index = element_index + 1
-
-            if backbone_bead in monomer_type["sidechain_positions"]:
-                for sidechain_bead in range(monomer_type["sidechain_length"]):
-                    if monomer_index in list([0, CGModel.polymer_length - 1]):
-                        pdb_object.write(
-                            f"ATOM{bead_index:>7d}  A{element_index}   {monomer_name}T A{monomer_index+1:>4}    "
-                            f"{coordinates[bead_index-1][0].value_in_unit(unit.angstrom):>8.3f}"
-                            f"{coordinates[bead_index-1][1].value_in_unit(unit.angstrom):>8.3f}"
-                            f"{coordinates[bead_index-1][2].value_in_unit(unit.angstrom):>8.3f}"
-                            f"  1.00  0.00\n"
-                        )
-                    else:
-                        pdb_object.write(
-                            f"ATOM{bead_index:>7d}  A{element_index}    {monomer_name} A{monomer_index+1:>4}    "
-                            f"{coordinates[bead_index-1][0].value_in_unit(unit.angstrom):>8.3f}"
-                            f"{coordinates[bead_index-1][1].value_in_unit(unit.angstrom):>8.3f}"
-                            f"{coordinates[bead_index-1][2].value_in_unit(unit.angstrom):>8.3f}"
-                            f"  1.00  0.00\n"
-                        )
-                    bead_index = bead_index + 1
-                    element_index = element_index + 1
+    old_monomer_index = 0
+    for particle in CGModel.particle_list:
+        bead_index = CGModel.get_particle_index(particle)
+        particle_type_name = CGModel.get_particle_type(particle)['particle_type_name']
+        if len(particle_type_name) > 3:
+            particle_type_name = particle_type_name[0:3]
+        monomer_name = CGModel.get_particle_monomer_type(particle)["monomer_name"]
+        if len(monomer_name) > 3:
+            monomer_name = monomer_name[0:3]
+        monomer_index = CGModel.get_particle_monomer(particle)+1
+        if old_monomer_index < monomer_index:
+            old_monomer_index = monomer_index
+            element_index = 1
+        pdb_object.write(
+            f"ATOM{bead_index+1:>7d} {particle_type_name:>3s}{element_index} {monomer_name:>3s} A{monomer_index:>4}    "
+            f"{coordinates[bead_index][0].value_in_unit(unit.angstrom):>8.3f}"
+            f"{coordinates[bead_index][1].value_in_unit(unit.angstrom):>8.3f}"
+            f"{coordinates[bead_index][2].value_in_unit(unit.angstrom):>8.3f}"
+            f"  1.00  0.00\n"
+        )
+        element_index += 1
     pdb_object.write("TER\n")
 
     write_bonds(CGModel, pdb_object)
