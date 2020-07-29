@@ -4,6 +4,7 @@ import matplotlib.pyplot as pyplot
 import mdtraj as md
 from simtk import unit
 from foldamers.cg_model.cgmodel import CGModel
+from foldamers.utilities.plot import plot_distribution
 
 # These functions calculate and plot bond angle and torsion distributions from a CGModel object and pdb trajectory
 
@@ -111,15 +112,21 @@ def calc_bond_angle_distribution(
         ang_val_array = (180/np.pi)*np.reshape(ang_val_array, (nframes*n_i[i][0],1))
         
         # Histogram and plot results:
+        
         n_out, bin_edges_out = np.histogram(
             ang_val_array, bins=angle_bin_edges,density=True)
-        pyplot.plot(angle_bin_centers,n_out,'o-r',linewidth=1,markersize=6)    
-        pyplot.xlim(0,180)
-        pyplot.title(f"Angle distribution for type ({inv_ang_dict[str(i+1)]})")
-        pyplot.xlabel("Bond angle (degrees)")
-        pyplot.ylabel("Probability density")
-        pyplot.savefig(f"{plotfile}_{inv_ang_dict[str(i+1)]}.pdf")
-        pyplot.close()
+            
+        plot_distribution(
+            xdata=angle_bin_centers,
+            ydata=n_out,
+            xlabel="Bond angle (degrees)",
+            ylabel="Probability density",
+            xlim=[0,180],
+            plot_title=f"Angle distribution for type ({inv_ang_dict[str(i+1)]})",
+            file_name=f"{plotfile}_{inv_ang_dict[str(i+1)]}",
+            marker_string='o-r',
+        )
+        
         angle_hist_data[f"{inv_ang_dict[str(i+1)]}_density"]=n_out
         angle_hist_data[f"{inv_ang_dict[str(i+1)]}_bin_edges"]=bin_edges_out
         
@@ -235,14 +242,19 @@ def calc_torsion_distribution(
         # Histogram and plot results:
         n_out, bin_edges_out = np.histogram(
             torsion_val_array, bins=torsion_bin_edges,density=True)
-        pyplot.plot(torsion_bin_centers,n_out,'o-b',linewidth=1,markersize=6)    
-        pyplot.xlim(-180,180)
-        pyplot.title(f"Torsion distribution for type ({inv_torsion_dict[str(i+1)]})")
-        pyplot.xlabel("Torsion angle (degrees)")
-        pyplot.ylabel("Probability density")
-        pyplot.savefig(f"{plotfile}_{inv_torsion_dict[str(i+1)]}.pdf")
-        pyplot.close()
+            
+        plot_distribution(
+            xdata=torsion_bin_centers,
+            ydata=n_out,
+            xlabel="Torsion angle (degrees)",
+            ylabel="Probability density",
+            xlim=[-180,180],
+            plot_title=f"Torsion distribution for type ({inv_torsion_dict[str(i+1)]})",
+            file_name=f"{plotfile}_{inv_torsion_dict[str(i+1)]}",
+            marker_string='o-b',
+        )
+        
         torsion_hist_data[f"{inv_torsion_dict[str(i+1)]}_density"]=n_out
-        torsion_hist_data[f"{inv_torsion_dict[str(i+1)]}_bin_edges"]=bin_edges_out
+        torsion_hist_data[f"{inv_torsion_dict[str(i+1)]}_bin_edges"]=bin_edges_out  
         
     return torsion_hist_data    
