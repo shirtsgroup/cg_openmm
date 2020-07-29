@@ -3,55 +3,72 @@ import numpy as np
 
 
 def plot_distribution(
-    x_data,
-    y_data,
-    file_name=None,
-    plot_type=None,
-    multiple=False,
-    legend=None,
-    legend_title=None,
+    xdata,
+    ydata,
+    xlabel=None,
+    ylabel=None,
+    xlim=None,
+    ylim=None,
     plot_title=None,
+    file_name=None,
+    marker_string='o-k',
+    linewidth=1,
+    markersize=6,
 ):
     """
-        """
-    index = 0
-    figure = pyplot.figure(1)
-    if plot_type == "Torsions":
-        if file_name == None:
-            file_name = "torsion_distribution.png"
-        pyplot.title("Torsion Distribution")
-        pyplot.xlabel("Torsion Angle (Degrees)")
-    if plot_type == "Angles":
-        if file_name == None:
-            file_name = "bond_angle_distribution.png"
-        pyplot.title("Bond Angle Distribution")
-        pyplot.xlabel("Bond Angle (Degrees)")
-
-    pyplot.ylabel("Counts")
-    if multiple:
-        x_data = np.array([[float(n) for n in x] for x in x_data])
-        y_data = np.array([[float(n) for n in y] for y in y_data])
-        for x, y in zip(x_data, y_data):
-            (line,) = pyplot.plot(x, y)
-            if legend:
-                line.set_label(str(legend[index]))
-            index = index + 1
-        if legend != None:
-            if legend_title != None:
-                pyplot.legend(title=legend_title)
-            else:
-                pyplot.legend()
-    else:
-        x_data = np.array([float(x) for x in x_data])
-        y_data = np.array([float(y) for y in y_data])
-        if legend != None:
-            (line,) = pyplot.plot(x_data, y_data)
-            line.set_label(str(legend[index]))
-        else:
-            pyplot.plot(x_data, y_data)
+    Plot a single distribution and save to file.
+    
+    :param x_data: x data series 
+    :type x_data: 1D-numpy array
+    
+    :param y_data: y data series 
+    :type y_data: 1D-numpy array   
+    
+    :param xlabel: label for x-axis
+    :type x_label: str
+    
+    :param ylabel: label for y-axis
+    :type y_label: str
+    
+    :param xlim: limits for x-axis
+    :type xlim: list[xlo, xhi]
+    
+    :param ylim: limits for y-axis
+    :type ylim: list(ylo, yhi)
+    
+    :param plot_title: title of plot
+    :type plot_title: str
+    
+    :param file name: name of file, excluding pdf extension
+    :type file_name: str
+    
+    :param marker_string: pyplot format string for line type, color, and symbol type (default = 'o-k')
+    :type marker_string: str
+    
+    :param linewidth: width of plotted line (default=1)
+    :type linewidth: float
+    
+    :param markersize: size of plotted markers (default=6 pts)
+    :type markersize: float
+   
+    """
+    
+    pyplot.plot(
+        xdata,ydata,marker_string,linewidth=linewidth,markersize=markersize
+    )
+    
+    if xlim != None:
+        pyplot.xlim(xlim[0],xlim[1])
+    if ylim != None:
+        pyplot.ylim(ylim[0],ylim[1])
+    if xlabel != None:
+        pyplot.xlabel(xlabel)
+    if ylabel != None:
+        pyplot.ylabel(ylabel)
     if plot_title != None:
         pyplot.title(plot_title)
-    pyplot.savefig(file_name)
+        
+    pyplot.savefig(f"{file_name}.pdf")
     pyplot.close()
-
+    
     return
