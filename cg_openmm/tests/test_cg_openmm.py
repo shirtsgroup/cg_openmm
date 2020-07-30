@@ -43,7 +43,7 @@ def test_run_simulation(tmpdir):
     total_simulation_time = 1.0 * unit.picosecond
     simulation_time_step = 5.0 * unit.femtosecond
     total_steps = int(np.floor(total_simulation_time/simulation_time_step))
-    temperature = 187.8 * unit.kelvin
+    temperature = 200 * unit.kelvin
     friction = 1.0 / unit.picosecond
 
     # Coarse grained model settings
@@ -62,62 +62,61 @@ def test_run_simulation(tmpdir):
     }
     bond_force_constant = 1000 * unit.kilojoule_per_mole / unit.nanometer / unit.nanometer
     bond_force_constants = {
-        "bb_bb_bond_k": bond_force_constant,
-        "bb_sc_bond_k": bond_force_constant,
-        "sc_sc_bond_k": bond_force_constant,
+        "bb_bb_bond_force_constant": bond_force_constant,
+        "bb_sc_bond_force_constant": bond_force_constant,
+        "sc_sc_bond_force_constant": bond_force_constant,
     }
 
     # Particle definitions
     mass = 100.0 * unit.amu
-    masses = {"backbone_bead_masses": mass, "sidechain_bead_masses": mass}
     r_min = 1.5 * bond_length  # Lennard-Jones potential r_min
     # Factor of /(2.0**(1/6)) is applied to convert r_min to sigma
     sigma = r_min / (2.0 ** (1.0 / 6.0))
-    sigmas = {"bb_sigma": sigma, "sc_sigma": sigma}
     epsilon = 0.5 * unit.kilojoule_per_mole
-    epsilons = {"bb_eps": epsilon, "sc_eps": epsilon}
+    
+    bb = {"particle_type_name": "bb", "sigma": sigma, "epsilon": epsilon, "mass": mass}
+    sc = {"particle_type_name": "sc", "sigma": sigma, "epsilon": epsilon, "mass": mass}
+
 
     # Bond angle definitions
     bond_angle_force_constant = 100 * unit.kilojoule_per_mole / unit.radian / unit.radian
     bond_angle_force_constants = {
-        "bb_bb_bb_angle_k": bond_angle_force_constant,
-        "bb_bb_sc_angle_k": bond_angle_force_constant,
+        "bb_bb_bb_bond_angle_force_constant": bond_angle_force_constant,
+        "bb_bb_sc_bond_angle_force_constant": bond_angle_force_constant,
     }
     # OpenMM requires angle definitions in units of radians
     bb_bb_bb_equil_bond_angle = 120.0 * unit.degrees
     bb_bb_sc_equil_bond_angle = 120.0 * unit.degrees
     equil_bond_angles = {
-        "bb_bb_bb_angle_0": bb_bb_bb_equil_bond_angle,
-        "bb_bb_sc_angle_0": bb_bb_sc_equil_bond_angle,
+        "bb_bb_bb_equil_bond_angle": bb_bb_bb_equil_bond_angle,
+        "bb_bb_sc_equil_bond_angle": bb_bb_sc_equil_bond_angle,
     }
 
     # Torsion angle definitions
     torsion_force_constant = 20.0 * unit.kilojoule_per_mole
     torsion_force_constants = {
-        "bb_bb_bb_bb_torsion_k": torsion_force_constant,
-        "bb_bb_bb_sc_torsion_k": torsion_force_constant
+        "bb_bb_bb_bb_torsion_force_constant": torsion_force_constant,
+        "bb_bb_bb_sc_torsion_force_constant": torsion_force_constant
     }
 
-    bb_bb_bb_bb_equil_torsion_angle = 78.0 * unit.degrees
-    bb_bb_bb_sc_equil_torsion_angle = 78.0 * unit.degrees
+    bb_bb_bb_bb_equil_torsion_angle = 75.0 * unit.degrees
+    bb_bb_bb_sc_equil_torsion_angle = 75.0 * unit.degrees
 
     equil_torsion_angles = {
-        "bb_bb_bb_bb_torsion_0": bb_bb_bb_bb_equil_torsion_angle,
-        "bb_bb_bb_sc_torsion_0": bb_bb_bb_sc_equil_torsion_angle
+        "bb_bb_bb_bb_equil_torsion_angle": bb_bb_bb_bb_equil_torsion_angle,
+        "bb_bb_bb_sc_equil_torsion_angle": bb_bb_bb_sc_equil_torsion_angle
     }
     torsion_periodicities = {
-        "bb_bb_bb_bb_period": 3,
-        "bb_bb_bb_sc_period": 3}
+        "bb_bb_bb_bb_torsion_periodicity": 3,
+        "bb_bb_bb_sc_torsion_periodicity": 3}
 
     # Monomer definitions
     A = {
         "monomer_name": "A",
-        "backbone_length": 1,
-        "sidechain_length": 1,
-        "sidechain_positions": [0],
-        "bond_lengths": bond_lengths,
-        "epsilons": epsilons,
-        "sigmas": sigmas,
+        "particle_sequence": [bb, sc],
+        "bond_list": [[0, 1]],
+        "start": 0,
+        "end": 0,
     }
         
     sequence = 24 * [A]
@@ -128,7 +127,8 @@ def test_run_simulation(tmpdir):
 
     # Build a coarse grained model
     cgmodel = CGModel(
-        masses=masses,
+        particle_type_list=[bb, sc],
+        bond_lengths=bond_lengths,
         bond_force_constants=bond_force_constants,
         bond_angle_force_constants=bond_angle_force_constants,
         torsion_force_constants=torsion_force_constants,
@@ -139,11 +139,12 @@ def test_run_simulation(tmpdir):
         include_bond_forces=include_bond_forces,
         include_bond_angle_forces=include_bond_angle_forces,
         include_torsion_forces=include_torsion_forces,
-        monomer_types=[A],
-        sequence=sequence,
         constrain_bonds=constrain_bonds,
         positions=positions,
+        sequence=sequence,
+        monomer_types=[A],
     )
+
     
     run_simulation(
         cgmodel,
