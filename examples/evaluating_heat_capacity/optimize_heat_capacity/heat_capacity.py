@@ -2,10 +2,10 @@ import os
 import numpy as np
 import matplotlib.pyplot as pyplot
 from simtk import unit
-from foldamers.cg_model.cgmodel import CGModel
-from foldamers.thermo.calc import *
-from foldamers.parameters.optimize import *
-from foldamers.parameters.reweight import *
+from cg_model.cgmodel import CGModel
+from cg_openmm.thermo.calc import *
+from cg_openmm.parameters.optimize import *
+from cg_openmm.parameters.reweight import *
 from cg_openmm.simulation.rep_exch import *
 
 # Job settings

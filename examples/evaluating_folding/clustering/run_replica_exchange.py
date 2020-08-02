@@ -3,8 +3,8 @@ from simtk import unit
 import mdtraj as md
 import numpy as np
 import matplotlib.pyplot as plt
-from foldamers.cg_model.cgmodel import CGModel
-from foldamers.parameters.reweight import get_temperature_list
+from cg_model.cgmodel import CGModel
+from cg_openmm.parameters.reweight import get_temperature_list
 from cg_openmm.simulation.rep_exch import *
 import pickle
 

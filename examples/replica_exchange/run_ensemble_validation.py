@@ -1,6 +1,6 @@
 import os
 from simtk import unit
-from foldamers.cg_model.cgmodel import CGModel
+from cg_model.cgmodel import CGModel
 from cg_openmm.simulation.physical_validation import *
 import numpy as np
 

@@ -7,12 +7,12 @@ import random
 from statistics import mean
 from simtk import unit
 from simtk.openmm.app.pdbfile import PDBFile
-from foldamers.cg_model.cgmodel import CGModel
-from foldamers.parameters.reweight import *
-from foldamers.parameters.secondary_structure import *
-from foldamers.thermo.calc import *
-from foldamers.utilities.iotools import *
-from foldamers.utilities.util import random_positions
+from cg_model.cgmodel import CGModel
+from cg_openmm.parameters.reweight import *
+from cg_openmm.parameters.secondary_structure import *
+from cg_openmm.thermo.calc import *
+from cg_openmm.utilities.iotools import *
+from cg_openmm.utilities.random_builder import random_positions
 from cg_openmm.build.cg_build import build_topology
 from cg_openmm.simulation.rep_exch import *
 

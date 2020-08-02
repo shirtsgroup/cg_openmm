@@ -2,9 +2,9 @@ import os
 import numpy as np
 import matplotlib.pyplot as pyplot
 from simtk import unit
-from foldamers.cg_model.cgmodel import CGModel
-from foldamers.parameters.reweight import *
-from foldamers.thermo.calc import calculate_heat_capacity
+from cg_model.cgmodel import CGModel
+from cg_openmm.parameters.reweight import *
+from cg_openmm.thermo.calc import calculate_heat_capacity
 from cg_openmm.simulation.rep_exch import *
 
 # Job settings

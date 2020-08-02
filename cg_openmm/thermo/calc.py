@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from foldamers.parameters.reweight import *
+from cg_openmm.parameters.reweight import *
 import matplotlib.pyplot as pyplot
 from openmmtools.multistate import MultiStateReporter
 from openmmtools.multistate import ReplicaExchangeAnalyzer

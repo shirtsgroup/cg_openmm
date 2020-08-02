@@ -2,9 +2,9 @@ import os
 import numpy as np
 import matplotlib.pyplot as pyplot
 from simtk import unit
-from foldamers.cg_model.cgmodel import CGModel
-from foldamers.thermo.calc import *
-from foldamers.parameters.reweight import get_temperature_list
+from cg_model.cgmodel import CGModel
+from cg_openmm.thermo.calc import *
+from cg_openmm.parameters.reweight import get_temperature_list
 
 # Replica exchange simulation settings.
 #These must match the simulations that are being analyzed.

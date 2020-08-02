@@ -2,7 +2,7 @@ import os
 import timeit
 from statistics import mean
 from simtk import unit
-from foldamers.cg_model.cgmodel import CGModel
+from cg_model.cgmodel import CGModel
 from cg_openmm.simulation.tools import *
 
 # Simulation settings

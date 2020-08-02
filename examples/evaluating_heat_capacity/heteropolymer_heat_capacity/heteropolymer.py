@@ -2,14 +2,14 @@ import os
 import numpy as np
 import matplotlib.pyplot as pyplot
 from simtk import unit
-from foldamers.cg_model.cgmodel import CGModel
-from foldamers.parameters.reweight import *
-from foldamers.thermo.calc import calculate_heat_capacity
-from foldamers.utilities.util import random_positions
+from cg_model.cgmodel import CGModel
+from cg_openmm.parameters.reweight import *
+from cg_openmm.thermo.calc import calculate_heat_capacity
+from cg_openmm.utilities.random_builder import random_positions
 from cg_openmm.build.cg_build import build_topology
 from cg_openmm.simulation.rep_exch import *
-from foldamers.ensembles.ens_build import *
-from foldamers.thermo.calc import *
+from cg_openmm.ensembles.ens_build import *
+from cg_openmm.thermo.calc import *
 
 # Job settings
 top_directory = "output"
