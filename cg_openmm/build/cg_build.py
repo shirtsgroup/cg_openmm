@@ -37,8 +37,7 @@ def add_new_elements(cgmodel):
     for particle in cgmodel.particle_list:
         particle_name = particle["name"]
         if particle_name not in elem.Element._elements_by_symbol:
-            mass = cgmodel.get_particle_mass(particle["index"])
-            elem.Element(element_index, particle_name, particle_name, mass)
+            elem.Element(element_index, particle_name, particle_name, cgmodel.get_particle_mass(particle))
             element_index = element_index + 1
             new_particles.append(particle_name)
 
@@ -68,7 +67,7 @@ def write_xml_file(cgmodel, xml_file_name):
     xml_object.write("<ForceField>\n")
     xml_object.write(" <Info>\n")
     date = str(datetime.datetime.today()).split()[0]
-    xml_object.write("  <DateGenerated> " + str(date) + " </DateGenerated>\n")
+    xml_object.write(f"  <DateGenerated> {date} </DateGenerated>\n")
     xml_object.write("  <Source> https://github.com/shirtsgroup/cg_openmm </Source>\n")
     xml_object.write("  <Reference>\n")
     xml_object.write("  </Reference>\n")
@@ -81,7 +80,7 @@ def write_xml_file(cgmodel, xml_file_name):
             unique_particle_names.append(cgmodel.particle_list[particle_index])
             unique_masses.append(cgmodel.get_particle_mass(particle_index))
     for particle_index in range(len(unique_particle_names)):
-        particle_type = cgmodel.get_particle_type(particle_index)
+        particle_type = cgmodel.get_particle_type_name(particle_index)
         xml_object.write(
             '  <Type name="'
             + str(unique_particle_names[particle_index])
@@ -252,20 +251,10 @@ def write_xml_file(cgmodel, xml_file_name):
         xml_object.write(' <NonbondedForce coulomb14scale="0.833333" lj14scale="0.5">\n')
         for particle_index in range(len(unique_particle_names)):
             charge = cgmodel.get_particle_charge(particle_index)._value
-            sigma = cgmodel.get_sigma(particle_index).in_units_of(unit.nanometer)._value
-            epsilon = cgmodel.get_epsilon(particle_index)._value
+            sigma = cgmodel.get_particle_sigma(particle_index).in_units_of(unit.nanometer)._value
+            epsilon = cgmodel.get_particle_epsilon(particle_index)._value
             particle_name = cgmodel.get_particle_name(particle_index)
-            xml_object.write(
-                '  <Atom type="'
-                + str(particle_name)
-                + '" charge="'
-                + str(charge)
-                + '" sigma="'
-                + str(sigma)
-                + '" epsilon="'
-                + str(epsilon)
-                + '"/>\n'
-            )
+            xml_object.write(f'  <Atom type=\"{particle_name}\" charge=\"{charge}\" sigma=\"{charge} epsilon=\"{epsilon}\"/>\n')
         xml_object.write(" </NonbondedForce>\n")
     xml_object.write("</ForceField>\n")
     xml_object.close()
@@ -288,6 +277,7 @@ def verify_topology(cgmodel):
     .. warning:: The function will force an error exit if the topology is invalid, and will proceed as normal if the topology is valid.
 
     """
+
     if cgmodel.num_beads != cgmodel.topology.getNumAtoms():
         print("ERROR: The number of particles in the coarse grained model\n")
         print("does not match the number of particles in the OpenMM topology.\n")
@@ -358,33 +348,21 @@ def build_topology(cgmodel, use_pdbfile=False, pdbfile=None):
     topology = Topology()
 
     chain = topology.addChain()
-    residue_index = 1
-    cg_particle_index = 0
-    for monomer_type in cgmodel.sequence:
-        residue = topology.addResidue(str(residue_index), chain)
-        for backbone_bead in range(monomer_type["backbone_length"]):
-            particle_symbol = cgmodel.get_particle_name(cg_particle_index)
-            element = elem.Element.getBySymbol(particle_symbol)
-            particle = topology.addAtom(particle_symbol, element, residue)
-            if backbone_bead == 0 and residue_index != 1:
-                if cgmodel.include_bond_forces or cgmodel.constrain_bonds:
-                    topology.addBond(particle, last_backbone_particle)
-            last_backbone_particle = particle
-            cg_particle_index = cg_particle_index + 1
-            if backbone_bead in monomer_type["sidechain_positions"]:
-                for sidechain_bead in range(monomer_type["sidechain_length"]):
-                    particle_symbol = cgmodel.get_particle_name(cg_particle_index)
-                    element = elem.Element.getBySymbol(particle_symbol)
-                    particle = topology.addAtom(particle_symbol, element, residue)
-                    if sidechain_bead == 0:
-                        if cgmodel.include_bond_forces or cgmodel.constrain_bonds:
-                            topology.addBond(particle, last_backbone_particle)
-                    if sidechain_bead != 0:
-                        if cgmodel.include_bond_forces or cgmodel.constrain_bonds:
-                            topology.addBond(particle, last_sidechain_particle)
-                    last_sidechain_particle = particle
-                    cg_particle_index = cg_particle_index + 1
-        residue_index = residue_index + 1
+    residue_index = -1
+    openmm_particle_list = list()
+    for particle in cgmodel.particle_list:
+        if particle["monomer"] > residue_index:
+            residue_index = particle["monomer"]
+            residue = topology.addResidue(str(residue_index), chain)
+        particle_symbol = particle["name"]
+        element = elem.Element.getBySymbol(particle_symbol)
+        openmm_particle = topology.addAtom(particle_symbol, element, residue)
+        openmm_particle_list.append(particle)
+
+    if cgmodel.include_bond_forces or cgmodel.constrain_bonds:
+        for bond in cgmodel.bond_list:
+            topology.addBond(openmm_particle_list[bond[0]],openmm_particle_list[bond[1]])
+
     cgmodel.topology = topology
     verify_topology(cgmodel)
     return topology
@@ -517,8 +495,8 @@ def test_force(cgmodel, force, force_type=None):
         for nonbonded_interaction in cgmodel.nonbonded_interaction_list:
             particle_1_positions = cgmodel.positions[nonbonded_interaction[0]]
             particle_2_positions = cgmodel.positions[nonbonded_interaction[1]]
-            sigma = cgmodel.get_sigma(nonbonded_interaction[0])
-            epsilon = cgmodel.get_epsilon(nonbonded_interaction[0])
+            sigma = cgmodel.get_particle_sigma(nonbonded_interaction[0])
+            epsilon = cgmodel.get_particle_epsilon(nonbonded_interaction[0])
             int_energy = lj_v(particle_1_positions, particle_2_positions, sigma, epsilon)
             total_nonbonded_energy = total_nonbonded_energy.__add__(int_energy)
 
@@ -566,13 +544,13 @@ def add_rosetta_exception_parameters(cgmodel, nonbonded_force, particle_index_1,
         particle_index_1,
     ] not in exception_list:
         charge_1 = cgmodel.get_particle_charge(particle_index_1)
-        sigma_1 = cgmodel.get_sigma(particle_index_1).in_units_of(unit.nanometer)
-        epsilon_1 = cgmodel.get_epsilon(particle_index_1).in_units_of(unit.kilojoule_per_mole)
+        sigma_1 = cgmodel.get_particle_sigma(particle_index_1).in_units_of(unit.nanometer)
+        epsilon_1 = cgmodel.get_particle_epsilon(particle_index_1).in_units_of(unit.kilojoule_per_mole)
         charge_2 = cgmodel.get_particle_charge(particle_index_2)
-        sigma_2 = cgmodel.get_sigma(particle_index_2).in_units_of(unit.nanometer)
-        epsilon_2 = cgmodel.get_epsilon(particle_index_2).in_units_of(unit.kilojoule_per_mole)
-        sigma = (sigma_1.__add__(sigma_2)) / 2.0
-        epsilon = 0.2 * unit.sqrt(epsilon_1.__mul__(epsilon_2))
+        sigma_2 = cgmodel.get_particle_sigma(particle_index_2).in_units_of(unit.nanometer)
+        epsilon_2 = cgmodel.get_particle_epsilon(particle_index_2).in_units_of(unit.kilojoule_per_mole)
+        sigma = (sigma_1 + sigma_2) / 2.0
+        epsilon = 0.2 * unit.sqrt(epsilon_1 * epsilon_2)
         nonbonded_force.addException(
             particle_index_1, particle_index_2, 0.2 * charge_1 * charge_2, sigma, epsilon
         )
@@ -658,8 +636,8 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
 
         for particle in range(cgmodel.num_beads):
             charge = cgmodel.get_particle_charge(particle)
-            sigma = cgmodel.get_sigma(particle)
-            epsilon = cgmodel.get_epsilon(particle)
+            sigma = cgmodel.get_particle_sigma(particle)
+            epsilon = cgmodel.get_particle_epsilon(particle)
             nonbonded_force.addParticle(charge, sigma, epsilon)
 
         if len(cgmodel.bond_list) >= 1:
@@ -804,9 +782,8 @@ def build_system(cgmodel, rosetta_functional_form=False, verify=True):
     """
     # Create system
     system = mm.System()
-    for particle in range(cgmodel.num_beads):
-        mass = cgmodel.get_particle_mass(particle)
-        system.addParticle(mass)
+    for particle in cgmodel.particle_list:
+        system.addParticle(particle["type"]["mass"])
     cgmodel.system = system
 
     if cgmodel.include_nonbonded_forces:
