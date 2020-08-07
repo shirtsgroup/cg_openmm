@@ -2,7 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as pyplot
 from simtk import unit
-from cg_model.cgmodel import CGModel
+from cg_openmm.cg_model.cgmodel import CGModel
 from cg_openmm.thermo.calc import *
 from cg_openmm.parameters.reweight import get_temperature_list
 

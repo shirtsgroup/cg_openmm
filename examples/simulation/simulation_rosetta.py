@@ -2,7 +2,7 @@ import os
 from simtk import unit
 import cg_openmm
 from simtk.openmm.app.pdbfile import PDBFile
-from cg_model.cgmodel import CGModel
+from cg_openmm.cg_model.cgmodel import CGModel
 from cg_openmm.simulation.tools import run_simulation
 import numpy as np
 
