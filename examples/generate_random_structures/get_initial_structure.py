@@ -1,6 +1,6 @@
 import os
 from simtk import unit
-from cg_model.cgmodel import CGModel
+from cg_openmm.cg_model.cgmodel import CGModel
 from cg_openmm.utilities.iotools import write_pdbfile_without_topology
 
 # Coarse grained model settings

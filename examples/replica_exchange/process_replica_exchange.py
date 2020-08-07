@@ -3,7 +3,7 @@
 import os
 import pdb
 from simtk import unit
-from cg_model.cgmodel import CGModel
+from cg_openmm.cg_model.cgmodel import CGModel
 from cg_openmm.parameters.reweight import get_temperature_list
 from cg_openmm.simulation.rep_exch import *
 import numpy as np

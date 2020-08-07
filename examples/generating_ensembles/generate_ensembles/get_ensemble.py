@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as pyplot
 from simtk import unit
 from simtk.openmm.app.pdbfile import PDBFile
-from cg_model.cgmodel import CGModel
+from cg_openmm.cg_model.cgmodel import CGModel
 from cg_openmm.parameters.reweight import *
 from cg_openmm.ensembles.ens_build import *
 from cg_openmm.simulation.rep_exch import *

@@ -7,7 +7,7 @@ import matplotlib.pyplot as pyplot
 from statistics import mean, stdev
 from simtk import unit
 from simtk.openmm.app.pdbfile import PDBFile
-from cg_model.cgmodel import CGModel
+from cg_openmm.cg_model.cgmodel import CGModel
 from cg_openmm.parameters.reweight import *
 from cg_openmm.parameters.secondary_structure import *
 from cg_openmm.thermo.calc import *
