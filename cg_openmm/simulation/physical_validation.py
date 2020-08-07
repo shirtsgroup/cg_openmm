@@ -4,6 +4,7 @@ from physical_validation.data.simulation_data import SimulationData
 from physical_validation.data.observable_data import ObservableData
 from physical_validation.data.ensemble_data import EnsembleData
 from physical_validation.data.unit_data import UnitData
+from physical_validation.util.error import InputError
 import matplotlib.pyplot as pyplot
 import simtk.unit as unit
 import numpy as np
@@ -77,6 +78,7 @@ def physical_validation_ensemble(
 
     if pairs.lower() == 'single': 
     # Run ensemble validation on one optimally spaced temperature pair
+        quantiles = {}
     
         # Find optimal state pair for ensemble check:
         # Compute standard deviations of each energy distribution:
@@ -108,16 +110,18 @@ def physical_validation_ensemble(
             )
         
         # Run physical validation
-        quantiles = pv.ensemble.check(
+        quantiles_ij = pv.ensemble.check(
             sim_data1,
             sim_data2,
             total_energy=False,
             filename=plotfile
             )
+            
+        quantiles[f"state{state1_index}_state{state2_index}"] = quantiles_ij[0]  
         
     elif pairs.lower() == 'adjacent':
     # Run ensemble validation on all adjacent temperature pairs
-        quantiles = []
+        quantiles = {}
 
         for i in range(len(temperature_list)-1):
             # Set SimulationData for physical validation
@@ -132,18 +136,22 @@ def physical_validation_ensemble(
                 )
             
             # Run physical validation
-            quantiles_ij = pv.ensemble.check(
-                sim_data1,
-                sim_data2,
-                total_energy=False,
-                filename=f"{plotfile}_{state1_index}_{state2_index}"
-                )
+            try:
+                quantiles_ij = pv.ensemble.check(
+                    sim_data1,
+                    sim_data2,
+                    total_energy=False,
+                    filename=f"{plotfile}_{state1_index}_{state2_index}"
+                    )
+                    
+                quantiles[f"state{state1_index}_state{state2_index}"] = quantiles_ij[0]
                 
-            quantiles.append(quantiles_ij[0])
+            except InputError:
+                print(f"Insufficient overlap between trajectories for states {state1_index} and {state2_index}. Skipping...")
     
     elif pairs.lower() == 'all':
     # Run ensemble validation on all combinations of temperature pairs
-        quantiles = []
+        quantiles = {}
         for i in range(len(temperature_list)):
             for j in range(i+1,len(temperature_list)):
                 # Set SimulationData for physical validation
@@ -158,15 +166,20 @@ def physical_validation_ensemble(
                     )
                 
                 # Run physical validation
-                quantiles_ij = pv.ensemble.check(
-                    sim_data1,
-                    sim_data2,
-                    total_energy=False,
-                    filename=f"{plotfile}_{state1_index}_{state2_index}"
-                    )
+                try:              
+                    quantiles_ij = pv.ensemble.check(
+                        sim_data1,
+                        sim_data2,
+                        total_energy=False,
+                        filename=f"{plotfile}_{state1_index}_{state2_index}"
+                        )
+                        
+                    quantiles[f"state{state1_index}_state{state2_index}"] = quantiles_ij[0]
+                
+                except InputError:
+                    print(f"Insufficient overlap between trajectories for states {state1_index} and {state2_index}. Skipping...")
                     
-                quantiles.append(quantiles_ij[0])
-
+                    
     return quantiles
     
 def set_simulation_data(

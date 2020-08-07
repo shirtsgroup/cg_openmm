@@ -1,9 +1,8 @@
 import os
 from simtk import unit
-import foldamers
 import cg_openmm
 from simtk.openmm.app.pdbfile import PDBFile
-from foldamers.cg_model.cgmodel import CGModel
+from cg_model.cgmodel import CGModel
 from cg_openmm.simulation.tools import run_simulation
 import numpy as np
 
