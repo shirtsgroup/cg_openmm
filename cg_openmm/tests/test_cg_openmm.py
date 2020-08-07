@@ -9,7 +9,7 @@ import pytest
 import sys
 import os
 from simtk.openmm.app.pdbfile import PDBFile
-from cg_model.cgmodel import CGModel
+from cg_openmm.cg_model.cgmodel import CGModel
 from cg_openmm.simulation.tools import run_simulation
 import numpy as np
 
