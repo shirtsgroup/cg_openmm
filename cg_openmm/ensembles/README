@@ -1,0 +1,21 @@
+This file describes the sub-directory structure and naming conventions
+for the foldamers/ensembles directory.
+
+By default, all ensemble directories contain 100 structures, named as:
+"cg1.pdb", "cg2.pdb", etc.
+
+Glossary:
+
+"b-b"=backbone-backbone
+"s-s"=sidechain-sidechain
+"b-s"=backbone-sidechain
+
+The sub-directories are named as follows:
+
+> "backbone_length"_"sidechain_length"_"sidechain_positions"
+
+-----> bonds_"b-b-bond-length"_"s-s-bond-length"_"b-s-bond-length"
+
+-----> bonds_"b-b-bond-length"_"s-s-bond-length"_"b-s-bond-length"_low_energy
+
+-----> bonds_"b-b-bond-length"_"s-s-bond-length"_"b-s-bond-length"_high_energy
