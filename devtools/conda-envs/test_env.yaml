@@ -25,5 +25,4 @@ dependencies:
   - pip:
     - codecov
     - git+https://github.com/shirtsgroup/physical-validation.git
-    - git+https://github.com/shirtsgroup/foldamers.git
 
