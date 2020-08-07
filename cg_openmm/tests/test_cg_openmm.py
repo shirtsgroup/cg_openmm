@@ -4,13 +4,12 @@ Unit and regression test for the cg_openmm package.
 
 # Import package, test suite, and other packages as needed
 import cg_openmm
-import foldamers
 from simtk import unit
 import pytest
 import sys
 import os
 from simtk.openmm.app.pdbfile import PDBFile
-from foldamers.cg_model.cgmodel import CGModel
+from cg_model.cgmodel import CGModel
 from cg_openmm.simulation.tools import run_simulation
 import numpy as np
 
