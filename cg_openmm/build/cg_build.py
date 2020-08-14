@@ -36,7 +36,7 @@ def add_new_elements(cgmodel):
 
     for particle in cgmodel.particle_list:
         particle_name = particle["name"]
-        if particle_name not in elem.Element._elements_by_symbol:
+        if particle_name.upper() not in elem.Element._elements_by_symbol:
             elem.Element(element_index, particle_name, particle_name, cgmodel.get_particle_mass(particle))
             element_index = element_index + 1
             new_particles.append(particle_name)
