@@ -160,7 +160,12 @@ def test_run_simulation(tmpdir):
 
     
 def test_run_replica_exchange(tmpdir):
-    """Run a short replica exchange MD simulation of a 24mer 1b1s model"""
+    """
+    Run a short replica exchange MD simulation of a 24mer 1b1s model
+    Test replica exchange processing (write pdb files)
+    Test heat capacity analysis code
+    Test physical validation code
+    """
 
     global_context_cache.platform = openmm.Platform.getPlatformByName("CPU")
     
@@ -300,4 +305,5 @@ def test_run_replica_exchange(tmpdir):
     
     assert os.path.isfile(f"{output_directory}/output.nc")
     assert os.path.isfile(f"{output_directory}/replica_4.pdb")
+    
     
