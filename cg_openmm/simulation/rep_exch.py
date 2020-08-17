@@ -40,7 +40,6 @@ def make_replica_pdb_files(topology, replica_positions, output_dir=""):
     >>> pdb_file_list = make_replica_pdb_files(cgmodel.topology,replica_positions)
 
     """
-    replica_index = 1
     file_list = []
     for replica_index in range(len(replica_positions)):
         replica_trajectory = replica_positions[replica_index]
@@ -49,6 +48,47 @@ def make_replica_pdb_files(topology, replica_positions, output_dir=""):
         PDBFile.writeHeader(topology, file=file)
         modelIndex = 1
         for positions in replica_trajectory:
+            PDBFile.writeModel(topology, positions, file=file, modelIndex=modelIndex)
+        PDBFile.writeFooter(topology, file=file)
+        file.close()
+        file_list.append(file_name)
+    return file_list
+
+    
+def make_state_pdb_files(topology, replica_positions, replica_state_indices, output_dir=""):
+    """
+    Make PDB files by state from replica exchange simulation trajectory data.
+    Note: these are discontinuous trajectories with constant temperature state.
+    
+    :param topology: OpenMM Topology
+    :type topology: `Topology() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1topology_1_1Topology.html>`_
+    
+    :param replica_positions: Positions array for the replica exchange data for which we will write PDB files
+    :type replica_positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [n_replicas,cgmodel.num_beads,3] ), simtk.unit )
+
+    
+    :param replica_state_indices: The thermodynamic state assignments for all replicas at all (printed) time steps
+    :type replica_state_indices: ( np.int64( [number_replicas,number_simulation_steps] ), simtk.unit ) 
+    
+    :returns:
+        - file_list ( List( str ) ) - A list of names for the files that were written
+    """
+    file_list = []
+    state_positions = np.zeros_like(replica_positions)
+    
+    for replica_index in range(len(replica_positions)):
+        for frame in range(len(replica_state_indices[0,:])):
+            # For each frame, assign replica_positions to state positions
+            state_positions[replica_state_indices[replica_index,frame],frame,:,:]=replica_positions[replica_index][frame]
+        
+    for state_index in range(len(replica_positions)):
+        state_trajectory = state_positions[state_index]
+    
+        file_name = os.path.join(output_dir, "state_" + str(state_index + 1) + ".pdb")
+        file = open(file_name, "w")
+        PDBFile.writeHeader(topology, file=file)
+        modelIndex = 1
+        for positions in state_trajectory:
             PDBFile.writeModel(topology, positions, file=file, modelIndex=modelIndex)
         PDBFile.writeFooter(topology, file=file)
         file.close()
@@ -155,7 +195,7 @@ def process_replica_exchange_data(
     replica_positions = replica_positions * sampler_states[0].positions[0].unit
 
     plot_replica_exchange_energies(
-        replica_energies,
+        state_energies,
         temperature_list,
         time_interval=time_interval,
         output_directory=output_directory,
@@ -164,7 +204,6 @@ def process_replica_exchange_data(
     plot_replica_exchange_energy_histograms(
         state_energies,
         temperature_list,
-        file_name="rep_ex_ener_hist.png",
         output_directory=output_directory,
     )
 
@@ -358,18 +397,18 @@ def get_minimum_energy_ensemble(
 
 
 def plot_replica_exchange_energies(
-    replica_energies,
+    state_energies,
     temperature_list,
     time_interval=1.0 * unit.picosecond,
-    file_name="rep_ex_ener.png",
+    file_name="rep_ex_ener.pdf",
     legend=True,
     output_directory=None,
 ):
     """
     Plot the potential energies for a batch of replica exchange trajectories
 
-    :param replica_energies: List of dimension num_replicas X simulation_steps, which gives the energies for all replicas at all simulation steps
-    :type replica_energies: List( List( float * simtk.unit.energy for simulation_steps ) for num_replicas )
+    :param state_energies: List of dimension num_replicas X simulation_steps, which gives the energies for all replicas at all simulation steps
+    :type state_energies: List( List( float * simtk.unit.energy for simulation_steps ) for num_replicas )
 
     :param temperature_list: List of temperatures for which to perform replica exchange simulations, default = [(300.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(-20,100,10)]
     :type temperature: List( float * simtk.unit.temperature )
@@ -386,40 +425,87 @@ def plot_replica_exchange_energies(
     :param legend: Controls whether a legend is added to the plot
     :type legend: Logical
 
-    ..warning:: If more than 10 replica exchange trajectories are provided as input data, by default, this function will only plot the first 10 thermodynamic states.  These thermodynamic states are chosen based upon their indices, not their instantaneous temperature (ensemble) assignment.
-
     """
 
     figure = pyplot.figure(0)
 
-    for replica in range(len(replica_energies)):
-        simulation_times = np.array(
-            [
-                step * time_interval.in_units_of(unit.picosecond)._value
-                for step in range(len(replica_energies[replica][replica]))
-            ]
-        )
-        energies = np.array([float(energy) for energy in replica_energies[replica][replica]])
-        pyplot.plot(simulation_times, energies, figure=figure)
-
-    pyplot.xlabel("Simulation Time ( Picoseconds )")
-    pyplot.ylabel("Potential Energy ( kJ / mol )")
-    pyplot.title("Replica Exchange Simulation")
-    if legend:
-        if len(temperature_list) > 10:
-            pyplot.legend(
-                [round(temperature._value, 1) for temperature in temperature_list[0:9]],
-                loc="center left",
-                bbox_to_anchor=(1, 0.5),
-                title="T (K)",
+    simulation_times = np.array(
+        [
+            step * time_interval.value_in_unit(unit.picosecond)
+            for step in range(len(state_energies[0]))
+        ]
+    )
+    
+    # If more than 12 replicas, split into separate subplots for better visibility
+    nmax = 12
+    ncol = 1
+    nrow = int(np.ceil(len(temperature_list)/nmax))
+    
+    figure, axs = pyplot.subplots(nrow,ncol)
+    
+    for state in range(len(temperature_list)):
+        if nrow != 1:
+            axs[int(np.ceil((state+1)/nmax))-1].plot(
+                simulation_times,
+                state_energies[state,:],
+                figure=figure,
+                alpha=0.5,
+                linewidth=1
             )
         else:
-            pyplot.legend(
-                [round(temperature._value, 1) for temperature in temperature_list],
-                loc="center left",
-                bbox_to_anchor=(1, 0.5),
-                title="T (K)",
-            )
+            axs.plot(
+                simulation_times,
+                state_energies[state,:],
+                figure=figure,
+                alpha=0.5,
+                linewidth=1
+            )            
+        
+    # Add text to each subplot
+    for j in range(nrow):
+        if nrow != 1:
+            axs[j].set(xlabel="Simulation Time ( Picoseconds )")
+            axs[j].set(ylabel="Potential Energy ( kJ / mol )")
+            axs[j].set_title("Replica Exchange Simulation")
+        else:
+            axs.set(xlabel="Simulation Time ( Picoseconds )")
+            axs.set(ylabel="Potential Energy ( kJ / mol )")
+            axs.set_title("Replica Exchange Simulation")
+    
+        if legend:
+            if nrow !=1:
+                if (j+1)*nmax <= len(temperature_list):
+                    axs[j].legend(
+                        [round(temperature.value_in_unit(unit.kelvin), 1) for temperature in temperature_list[(0+j*nmax):((j+1)*nmax)]],
+                        loc="center left",
+                        bbox_to_anchor=(1, 0.5),
+                        title="T (K)",
+                    )
+                else:
+                    axs[j].legend(
+                        [round(temperature.value_in_unit(unit.kelvin), 1) for temperature in temperature_list[(0+j*nmax):(len(temperature_list))]],
+                        [i for i in range(j*nmax,len(temperature_list))],
+                        loc="center left",
+                        bbox_to_anchor=(1, 0.5),
+                        title="T (K)",
+                    )
+            else:
+                if (j+1)*nmax <= len(temperature_list):
+                    axs.legend(
+                        [round(temperature.value_in_unit(unit.kelvin), 1) for temperature in temperature_list[(0+j*nmax):((j+1)*nmax)]],
+                        loc="center left",
+                        bbox_to_anchor=(1, 0.5),
+                        title="T (K)",
+                    )
+                else:
+                    axs.legend(
+                        [round(temperature.value_in_unit(unit.kelvin), 1) for temperature in temperature_list[(0+j*nmax):(len(temperature_list))]],
+                        [i for i in range(j*nmax,len(temperature_list))],
+                        loc="center left",
+                        bbox_to_anchor=(1, 0.5),
+                        title="T (K)",
+                    )
+        
     if output_directory is not None:
         output_file = os.path.join(output_directory, file_name)
         pyplot.savefig(output_file, bbox_inches="tight")
@@ -433,7 +519,7 @@ def plot_replica_exchange_energies(
 def plot_replica_exchange_energy_histograms(
     state_energies,
     temperature_list,
-    file_name="rep_ex_ener_hist.png",
+    file_name="rep_ex_ener_hist.pdf",
     legend=True,
     output_directory=None,
 ):
@@ -496,7 +582,7 @@ def plot_replica_exchange_summary(
     replica_states,
     temperature_list,
     time_interval=1.0 * unit.picosecond,
-    file_name="rep_ex_states.png",
+    file_name="rep_ex_states.pdf",
     legend=True,
     output_directory=None,
 ):
@@ -524,36 +610,84 @@ def plot_replica_exchange_summary(
     ..warning:: If more than 10 replica exchange trajectories are provided as input data, by default, this function will only plot the first 10 thermodynamic states.  These thermodynamic states are chosen based upon their indices, not their instantaneous temperature (ensemble) assignment.
 
     """
-
-    figure = pyplot.figure(1)
+    
+    simulation_times = np.array(
+        [
+            step * time_interval.value_in_unit(unit.picosecond)
+            for step in range(len(replica_states[0]))
+        ]
+    )
+    
+    # If more than 12 replicas, split into separate subplots for better visibility
+    nmax = 12
+    ncol = 1
+    nrow = int(np.ceil(len(replica_states)/nmax))
+    
+    figure, axs = pyplot.subplots(nrow,ncol)
+    
     for replica in range(len(replica_states)):
-        simulation_times = np.array(
-            [
-                step * time_interval.in_units_of(unit.picosecond)._value
-                for step in range(len(replica_states[replica]))
-            ]
-        )
         state_indices = np.array([int(round(state)) for state in replica_states[replica]])
-        pyplot.plot(simulation_times, state_indices, figure=figure)
-
-    pyplot.xlabel("Simulation Time ( Picoseconds )")
-    pyplot.ylabel("Thermodynamic State Index")
-    pyplot.title("State Exchange Summary")
-    if legend:
-        if len(replica_states) > 10:
-            pyplot.legend(
-                [i for i in range(len(replica_states[0:9]))],
-                loc="center left",
-                bbox_to_anchor=(1, 0.5),
-                title="Replica Index",
+        
+        if nrow != 1:
+            axs[int(np.ceil((replica+1)/nmax))-1].plot(
+                simulation_times,
+                state_indices,
+                figure=figure,
+                alpha=0.5,
+                linewidth=1
             )
         else:
-            pyplot.legend(
-                [i for i in range(len(replica_states))],
-                loc="center left",
-                bbox_to_anchor=(1, 0.5),
-                title="Replica Index",
+            axs.plot(
+                simulation_times,
+                state_indices,
+                figure=figure,
+                alpha=0.5,
+                linewidth=1
             )
+
+    # Add text to each subplot
+    for j in range(nrow):
+        if nrow != 1:
+            axs[j].set(xlabel="Simulation Time ( Picoseconds )")
+            axs[j].set(ylabel="Thermodynamic State Index")
+            axs[j].set_title("State Exchange Summary")
+        else:
+            axs.set(xlabel="Simulation Time ( Picoseconds )")
+            axs.set(ylabel="Thermodynamic State Index")
+            axs.set_title("State Exchange Summary")            
+    
+        if legend:
+            if nrow != 1:
+                if (j+1)*nmax <= len(replica_states):
+                    axs[j].legend(
+                        [i for i in range(j*nmax,(j+1)*nmax)],
+                        loc="center left",
+                        bbox_to_anchor=(1, 0.5),
+                        title="Replica Index",
+                    )
+                else:
+                    axs[j].legend(
+                        [i for i in range(j*nmax,len(replica_states))],
+                        loc="center left",
+                        bbox_to_anchor=(1, 0.5),
+                        title="Replica Index",
+                    )
+            else:
+                if (j+1)*nmax <= len(replica_states):
+                    axs.legend(
+                        [i for i in range(j*nmax,(j+1)*nmax)],
+                        loc="center left",
+                        bbox_to_anchor=(1, 0.5),
+                        title="Replica Index",
+                    )
+                else:
+                    axs.legend(
+                        [i for i in range(j*nmax,len(replica_states))],
+                        loc="center left",
+                        bbox_to_anchor=(1, 0.5),
+                        title="Replica Index",
+                    )
+        
     output_file = os.path.join(output_directory, file_name)
     pyplot.savefig(output_file, bbox_inches="tight")
     pyplot.close()
