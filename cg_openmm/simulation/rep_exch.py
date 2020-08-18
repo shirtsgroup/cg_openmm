@@ -2,6 +2,7 @@ import os
 import subprocess
 import numpy as np
 import matplotlib.pyplot as pyplot
+from matplotlib.backends.backend_pdf import PdfPages
 from simtk import unit
 import openmmtools
 from cg_openmm.utilities.util import set_box_vectors, get_box_vectors
@@ -97,7 +98,7 @@ def make_state_pdb_files(topology, replica_positions, replica_state_indices, out
 
 
 def process_replica_exchange_data(
-    output_data="output.nc", output_directory="output"
+    output_data="output.nc", output_directory="output", series_per_page=6
 ):
     """
     Read replica exchange simulation data.
@@ -111,9 +112,8 @@ def process_replica_exchange_data(
     :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data, default = None
     :type output_data: str
 
-    :param time_interval: Time between samples, default = None
-    :type time_interval: int
-
+    :param series_per_page: number of data series to plot per pdf page (default=12)
+    :type series_per_page: int
 
     :returns:
         - replica_energies ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.float( [number_replicas,number_simulation_steps] ), simtk.unit ) ) - The potential energies for all replicas at all (printed) time steps
@@ -197,21 +197,20 @@ def process_replica_exchange_data(
     plot_replica_exchange_energies(
         state_energies,
         temperature_list,
+        series_per_page,
         time_interval=time_interval,
-        output_directory=output_directory,
     )
     
     plot_replica_exchange_energy_histograms(
         state_energies,
         temperature_list,
-        output_directory=output_directory,
     )
 
     plot_replica_exchange_summary(
         replica_state_indices,
         temperature_list,
+        series_per_page,
         time_interval=time_interval,
-        output_directory=output_directory,
     )
 
     return (replica_energies, replica_positions, replica_state_indices)
@@ -399,10 +398,10 @@ def get_minimum_energy_ensemble(
 def plot_replica_exchange_energies(
     state_energies,
     temperature_list,
+    series_per_page,
     time_interval=1.0 * unit.picosecond,
     file_name="rep_ex_ener.pdf",
     legend=True,
-    output_directory=None,
 ):
     """
     Plot the potential energies for a batch of replica exchange trajectories
@@ -419,15 +418,10 @@ def plot_replica_exchange_energies(
     :param file_name: The pathname of the output file for plotting results, default = "replica_exchange_energies.png"
     :type file_name: str
 
-    :param output_directory: Path to which we will write the output from simulation runs, Default = None
-    :type output_directory: str
-
     :param legend: Controls whether a legend is added to the plot
     :type legend: Logical
 
     """
-
-    figure = pyplot.figure(0)
 
     simulation_times = np.array(
         [
@@ -436,83 +430,46 @@ def plot_replica_exchange_energies(
         ]
     )
     
-    # If more than 12 replicas, split into separate subplots for better visibility
-    nmax = 12
-    ncol = 1
-    nrow = int(np.ceil(len(temperature_list)/nmax))
+    # If more than series_per_page replicas, split into separate pages for better visibility
+    nmax = series_per_page
+    npage = int(np.ceil(len(temperature_list)/nmax))
     
-    figure, axs = pyplot.subplots(nrow,ncol)
-    
-    for state in range(len(temperature_list)):
-        if nrow != 1:
-            axs[int(np.ceil((state+1)/nmax))-1].plot(
-                simulation_times,
-                state_energies[state,:],
-                figure=figure,
-                alpha=0.5,
-                linewidth=1
-            )
-        else:
-            axs.plot(
-                simulation_times,
-                state_energies[state,:],
-                figure=figure,
-                alpha=0.5,
-                linewidth=1
-            )            
-        
-    # Add text to each subplot
-    for j in range(nrow):
-        if nrow != 1:
-            axs[j].set(xlabel="Simulation Time ( Picoseconds )")
-            axs[j].set(ylabel="Potential Energy ( kJ / mol )")
-            axs[j].set_title("Replica Exchange Simulation")
-        else:
-            axs.set(xlabel="Simulation Time ( Picoseconds )")
-            axs.set(ylabel="Potential Energy ( kJ / mol )")
-            axs.set_title("Replica Exchange Simulation")
-    
-        if legend:
-            if nrow !=1:
-                if (j+1)*nmax <= len(temperature_list):
-                    axs[j].legend(
-                        [round(temperature.value_in_unit(unit.kelvin), 1) for temperature in temperature_list[(0+j*nmax):((j+1)*nmax)]],
+    with PdfPages(file_name) as pdf:
+        page_num=1
+        plotted_per_page=0
+        pyplot.figure()
+        for state in range(len(temperature_list)):
+            print(f"state: {state}")
+            print(f"page_num: {page_num}")
+            
+            if plotted_per_page <= (nmax):
+                pyplot.plot(
+                    simulation_times,
+                    state_energies[state,:],
+                    alpha=0.5,
+                    linewidth=1
+                )
+                plotted_per_page += 1
+                
+            if (plotted_per_page >= nmax) or (state==(len(temperature_list)-1)):
+                # Save and close previous page
+                pyplot.xlabel("Simulation Time ( Picoseconds )")
+                pyplot.ylabel("Potential Energy ( kJ / mol )")
+                pyplot.title("Replica Exchange Simulation")
+                
+                if legend:
+                    pyplot.legend(
+                        [round(temperature.value_in_unit(unit.kelvin), 1) for temperature in temperature_list[(0+(page_num-1)*nmax):(page_num*nmax)]],
                         loc="center left",
                         bbox_to_anchor=(1, 0.5),
                         title="T (K)",
-                    )
-                else:
-                    axs[j].legend(
-                        [round(temperature.value_in_unit(unit.kelvin), 1) for temperature in temperature_list[(0+j*nmax):(len(temperature_list))]],
-                        [i for i in range(j*nmax,len(temperature_list))],
-                        loc="center left",
-                        bbox_to_anchor=(1, 0.5),
-                        title="T (K)",
-                    )
-            else:
-                if (j+1)*nmax <= len(temperature_list):
-                    axs.legend(
-                        [round(temperature.value_in_unit(unit.kelvin), 1) for temperature in temperature_list[(0+j*nmax):((j+1)*nmax)]],
-                        loc="center left",
-                        bbox_to_anchor=(1, 0.5),
-                        title="T (K)",
-                    )
-                else:
-                    axs.legend(
-                        [round(temperature.value_in_unit(unit.kelvin), 1) for temperature in temperature_list[(0+j*nmax):(len(temperature_list))]],
-                        [i for i in range(j*nmax,len(temperature_list))],
-                        loc="center left",
-                        bbox_to_anchor=(1, 0.5),
-                        title="T (K)",
-                    )
-        
-    if output_directory is not None:
-        output_file = os.path.join(output_directory, file_name)
-        pyplot.savefig(output_file, bbox_inches="tight")
-    else:
-        pyplot.savefig(file_name, bbox_inches="tight")
-    pyplot.close()
-
+                    )  
+                
+                pdf.savefig(bbox_inches="tight") # Save current fig to pdf page
+                pyplot.close()
+                plotted_per_page = 0
+                page_num += 1
+                
     return
     
 
@@ -521,7 +478,6 @@ def plot_replica_exchange_energy_histograms(
     temperature_list,
     file_name="rep_ex_ener_hist.pdf",
     legend=True,
-    output_directory=None,
 ):
     """
     Plot the potential energies for a batch of replica exchange trajectories
@@ -535,15 +491,12 @@ def plot_replica_exchange_energy_histograms(
     :param file_name: The pathname of the output file for plotting results, default = "replica_exchange_energies.png"
     :type file_name: str
 
-    :param output_directory: Path to which we will write the output from simulation runs, Default = None
-    :type output_directory: str
-
     :param legend: Controls whether a legend is added to the plot
     :type legend: Logical
 
     """
 
-    figure = pyplot.figure(0)
+    figure = pyplot.figure(figsize=(8.5,11))
 
     for state in range(len(temperature_list)):
         n_out, bin_edges_out = np.histogram(
@@ -568,11 +521,8 @@ def plot_replica_exchange_energy_histograms(
             bbox_to_anchor=(1, 0.5),
             title="T (K)",
         )
-    if output_directory is not None:
-        output_file = os.path.join(output_directory, file_name)
-        pyplot.savefig(output_file, bbox_inches="tight")
-    else:
-        pyplot.savefig(file_name, bbox_inches="tight")
+
+    pyplot.savefig(file_name, bbox_inches="tight")
     pyplot.close()
 
     return
@@ -581,10 +531,10 @@ def plot_replica_exchange_energy_histograms(
 def plot_replica_exchange_summary(
     replica_states,
     temperature_list,
+    series_per_page,
     time_interval=1.0 * unit.picosecond,
     file_name="rep_ex_states.pdf",
     legend=True,
-    output_directory=None,
 ):
     """
     Plot the thermodynamic state assignments for individual temperature replicas as a function of the simulation time, in order to obtain a visual summary of the replica exchanges from a OpenMM simulation.
@@ -604,9 +554,6 @@ def plot_replica_exchange_summary(
     :param legend: Controls whether a legend is added to the plot
     :type legend: Logical
 
-    :param output_directory: Path to which we will write the output from simulation runs, default = None
-    :type output_directory: str
-
     ..warning:: If more than 10 replica exchange trajectories are provided as input data, by default, this function will only plot the first 10 thermodynamic states.  These thermodynamic states are chosen based upon their indices, not their instantaneous temperature (ensemble) assignment.
 
     """
@@ -618,78 +565,43 @@ def plot_replica_exchange_summary(
         ]
     )
     
-    # If more than 12 replicas, split into separate subplots for better visibility
-    nmax = 12
-    ncol = 1
-    nrow = int(np.ceil(len(replica_states)/nmax))
-    
-    figure, axs = pyplot.subplots(nrow,ncol)
-    
-    for replica in range(len(replica_states)):
-        state_indices = np.array([int(round(state)) for state in replica_states[replica]])
+    # If more than series_per_page replicas, split into separate pages for better visibility
+    nmax = series_per_page
+    npage = int(np.ceil(len(temperature_list)/nmax))
         
-        if nrow != 1:
-            axs[int(np.ceil((replica+1)/nmax))-1].plot(
-                simulation_times,
-                state_indices,
-                figure=figure,
-                alpha=0.5,
-                linewidth=1
-            )
-        else:
-            axs.plot(
-                simulation_times,
-                state_indices,
-                figure=figure,
-                alpha=0.5,
-                linewidth=1
-            )
-
-    # Add text to each subplot
-    for j in range(nrow):
-        if nrow != 1:
-            axs[j].set(xlabel="Simulation Time ( Picoseconds )")
-            axs[j].set(ylabel="Thermodynamic State Index")
-            axs[j].set_title("State Exchange Summary")
-        else:
-            axs.set(xlabel="Simulation Time ( Picoseconds )")
-            axs.set(ylabel="Thermodynamic State Index")
-            axs.set_title("State Exchange Summary")            
-    
-        if legend:
-            if nrow != 1:
-                if (j+1)*nmax <= len(replica_states):
-                    axs[j].legend(
-                        [i for i in range(j*nmax,(j+1)*nmax)],
+    with PdfPages(file_name) as pdf:
+        page_num=1
+        plotted_per_page=0
+        pyplot.figure()
+        for replica in range(len(replica_states)):
+            state_indices = np.array([int(round(state)) for state in replica_states[replica]])
+            
+            if plotted_per_page <= (nmax):
+                pyplot.plot(
+                    simulation_times,
+                    state_indices,
+                    alpha=0.5,
+                    linewidth=1
+                )
+                plotted_per_page += 1
+                
+            if (plotted_per_page >= nmax) or (replica==(len(replica_states)-1)):
+                # Save and close previous page
+                pyplot.xlabel("Simulation Time ( Picoseconds )")
+                pyplot.ylabel("Thermodynamic State Index")
+                pyplot.title("State Exchange Summary")
+                
+                if legend:
+                    pyplot.legend(
+                        [i for i in range((page_num-1)*nmax,page_num*nmax)],
                         loc="center left",
                         bbox_to_anchor=(1, 0.5),
                         title="Replica Index",
                     )
-                else:
-                    axs[j].legend(
-                        [i for i in range(j*nmax,len(replica_states))],
-                        loc="center left",
-                        bbox_to_anchor=(1, 0.5),
-                        title="Replica Index",
-                    )
-            else:
-                if (j+1)*nmax <= len(replica_states):
-                    axs.legend(
-                        [i for i in range(j*nmax,(j+1)*nmax)],
-                        loc="center left",
-                        bbox_to_anchor=(1, 0.5),
-                        title="Replica Index",
-                    )
-                else:
-                    axs.legend(
-                        [i for i in range(j*nmax,len(replica_states))],
-                        loc="center left",
-                        bbox_to_anchor=(1, 0.5),
-                        title="Replica Index",
-                    )
-        
-    output_file = os.path.join(output_directory, file_name)
-    pyplot.savefig(output_file, bbox_inches="tight")
-    pyplot.close()
+                
+                pdf.savefig(bbox_inches="tight") # Save current fig to pdf page
+                pyplot.close()
+                plotted_per_page = 0
+                page_num += 1
 
     return
