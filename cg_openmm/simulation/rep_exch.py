@@ -9,6 +9,7 @@ from cg_openmm.utilities.util import set_box_vectors, get_box_vectors
 from simtk.openmm.app.pdbfile import PDBFile
 from mdtraj.formats import PDBTrajectoryFile
 from mdtraj import Topology
+from mdtraj.Trajectory import superpose
 
 from openmmtools.multistate import MultiStateReporter, MultiStateSampler, ReplicaExchangeSampler
 from openmmtools.multistate import ReplicaExchangeAnalyzer
@@ -59,7 +60,7 @@ def make_replica_pdb_files(topology, replica_positions, output_dir="", stride=1)
     return file_list
 
     
-def make_state_pdb_files(topology, replica_positions, replica_state_indices, output_dir="", stride=1):
+def make_state_pdb_files(topology, replica_positions, replica_state_indices, output_dir="", stride=1, align=True):
     """
     Make PDB files by state from replica exchange simulation trajectory data.
     Note: these are discontinuous trajectories with constant temperature state.
@@ -75,7 +76,10 @@ def make_state_pdb_files(topology, replica_positions, replica_state_indices, out
     :type replica_state_indices: ( np.int64( [number_replicas,number_simulation_steps] ), simtk.unit ) 
     
     :param stride: advance by this many frames when writing pdb trajectories
-    :type stride: int    
+    :type stride: int   
+
+    :param align: option to align the structures in the discontinuous state trajectory (default=True)
+    :type align: Boolean
     
     :returns:
         - file_list ( List( str ) ) - A list of names for the files that were written
@@ -96,6 +100,9 @@ def make_state_pdb_files(topology, replica_positions, replica_state_indices, out
         PDBFile.writeHeader(topology, file=file)
         modelIndex = 1
         for positions in state_trajectory[::stride]:
+            # Align to first frame:
+            if align==True:
+                positions = superpose(positions,state_trajectory[0])
             PDBFile.writeModel(topology, positions, file=file, modelIndex=modelIndex)
         PDBFile.writeFooter(topology, file=file)
         file.close()
