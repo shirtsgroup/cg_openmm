@@ -19,7 +19,7 @@ MultiStateSampler._global_citation_silence = True
 kB = (unit.MOLAR_GAS_CONSTANT_R).in_units_of(unit.kilojoule / (unit.kelvin * unit.mole))
 
 
-def make_replica_pdb_files(topology, replica_positions, output_dir=""):
+def make_replica_pdb_files(topology, replica_positions, output_dir="", stride=1):
     """
     Make PDB files from replica exchange simulation trajectory data
     
@@ -29,6 +29,9 @@ def make_replica_pdb_files(topology, replica_positions, output_dir=""):
     :param replica_positions: Positions array for the replica exchange data for which we will write PDB files
     :type replica_positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [n_replicas,cgmodel.num_beads,3] ), simtk.unit )
 
+    :param stride: advance by this many frames when writing pdb trajectories
+    :type stride: int
+    
     :returns:
         - file_list ( List( str ) ) - A list of names for the files that were written
 
@@ -48,7 +51,7 @@ def make_replica_pdb_files(topology, replica_positions, output_dir=""):
         file = open(file_name, "w")
         PDBFile.writeHeader(topology, file=file)
         modelIndex = 1
-        for positions in replica_trajectory:
+        for positions in replica_trajectory[::stride]:
             PDBFile.writeModel(topology, positions, file=file, modelIndex=modelIndex)
         PDBFile.writeFooter(topology, file=file)
         file.close()
@@ -56,7 +59,7 @@ def make_replica_pdb_files(topology, replica_positions, output_dir=""):
     return file_list
 
     
-def make_state_pdb_files(topology, replica_positions, replica_state_indices, output_dir=""):
+def make_state_pdb_files(topology, replica_positions, replica_state_indices, output_dir="", stride=1):
     """
     Make PDB files by state from replica exchange simulation trajectory data.
     Note: these are discontinuous trajectories with constant temperature state.
@@ -70,6 +73,9 @@ def make_state_pdb_files(topology, replica_positions, replica_state_indices, out
     
     :param replica_state_indices: The thermodynamic state assignments for all replicas at all (printed) time steps
     :type replica_state_indices: ( np.int64( [number_replicas,number_simulation_steps] ), simtk.unit ) 
+    
+    :param stride: advance by this many frames when writing pdb trajectories
+    :type stride: int    
     
     :returns:
         - file_list ( List( str ) ) - A list of names for the files that were written
@@ -89,7 +95,7 @@ def make_state_pdb_files(topology, replica_positions, replica_state_indices, out
         file = open(file_name, "w")
         PDBFile.writeHeader(topology, file=file)
         modelIndex = 1
-        for positions in state_trajectory:
+        for positions in state_trajectory[::stride]:
             PDBFile.writeModel(topology, positions, file=file, modelIndex=modelIndex)
         PDBFile.writeFooter(topology, file=file)
         file.close()
@@ -112,7 +118,7 @@ def process_replica_exchange_data(
     :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data, default = None
     :type output_data: str
 
-    :param series_per_page: number of data series to plot per pdf page (default=12)
+    :param series_per_page: number of data series to plot per pdf page (default=6)
     :type series_per_page: int
 
     :returns:
