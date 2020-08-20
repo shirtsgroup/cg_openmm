@@ -9,7 +9,6 @@ from cg_openmm.utilities.util import set_box_vectors, get_box_vectors
 from simtk.openmm.app.pdbfile import PDBFile
 from mdtraj.formats import PDBTrajectoryFile
 from mdtraj import Topology
-from mdtraj.Trajectory import superpose
 
 from openmmtools.multistate import MultiStateReporter, MultiStateSampler, ReplicaExchangeSampler
 from openmmtools.multistate import ReplicaExchangeAnalyzer
@@ -60,7 +59,7 @@ def make_replica_pdb_files(topology, replica_positions, output_dir="", stride=1)
     return file_list
 
     
-def make_state_pdb_files(topology, replica_positions, replica_state_indices, output_dir="", stride=1, align=True):
+def make_state_pdb_files(topology, replica_positions, replica_state_indices, output_dir="", stride=1, center=True):
     """
     Make PDB files by state from replica exchange simulation trajectory data.
     Note: these are discontinuous trajectories with constant temperature state.
@@ -78,8 +77,8 @@ def make_state_pdb_files(topology, replica_positions, replica_state_indices, out
     :param stride: advance by this many frames when writing pdb trajectories
     :type stride: int   
 
-    :param align: option to align the structures in the discontinuous state trajectory (default=True)
-    :type align: Boolean
+    :param center: align the center of mass of each structure in the discontuous state trajectory (default=True)
+    :type center: Boolean
     
     :returns:
         - file_list ( List( str ) ) - A list of names for the files that were written
@@ -97,12 +96,24 @@ def make_state_pdb_files(topology, replica_positions, replica_state_indices, out
     
         file_name = os.path.join(output_dir, "state_" + str(state_index + 1) + ".pdb")
         file = open(file_name, "w")
+
         PDBFile.writeHeader(topology, file=file)
         modelIndex = 1
+        
+        #***Note: if we have different masses for particle types, need to update this
+        if center==True:
+            center_x = np.mean(state_trajectory[0,:,0])
+            center_y = np.mean(state_trajectory[0,:,1])
+            center_z = np.mean(state_trajectory[0,:,2])
+        
         for positions in state_trajectory[::stride]:
-            # Align to first frame:
-            if align==True:
-                positions = superpose(positions,state_trajectory[0])
+            if center==True:
+                positions[:,0] += (center_x - np.mean(positions[:,0]))
+                positions[:,1] += (center_y - np.mean(positions[:,1]))
+                positions[:,2] += (center_z - np.mean(positions[:,2]))
+                
+            # Add the units consistent with replica_energies, such that PDBFile will write in angstroms.
+            positions *= replica_positions.unit
             PDBFile.writeModel(topology, positions, file=file, modelIndex=modelIndex)
         PDBFile.writeFooter(topology, file=file)
         file.close()
@@ -452,9 +463,6 @@ def plot_replica_exchange_energies(
         plotted_per_page=0
         pyplot.figure()
         for state in range(len(temperature_list)):
-            print(f"state: {state}")
-            print(f"page_num: {page_num}")
-            
             if plotted_per_page <= (nmax):
                 pyplot.plot(
                     simulation_times,
