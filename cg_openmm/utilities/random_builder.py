@@ -838,8 +838,7 @@ def distance(positions_1, positions_2):
 
         """
 
-    u = positions_1.unit
-    return u * np.sqrt(np.sum((positions_1 - positions_2) ** 2))
+    return np.sqrt(np.sum(np.power((positions_1 - positions_2),2)))
 
 
 def distance_matrix(positions):
