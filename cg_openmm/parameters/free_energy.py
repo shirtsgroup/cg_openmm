@@ -74,7 +74,7 @@ def expectations_free_energy(array_folded_states, temperature_list, output_direc
     delta = np.zeros(n_sampled_T-1)
 
     # fill in a list of temperatures at all original temperatures and all intermediate states.
-    full_T_list[0] = temps[0]  
+    full_T_list[0] = temps[0]
     t = 0
     for i in range(n_sampled_T-1):
         delta[i] = (temps[i+1] - temps[i])/(num_intermediate_states+1)
@@ -126,8 +126,6 @@ def expectations_free_energy(array_folded_states, temperature_list, output_direc
         # Store results in a dictionary
         results[str(i)] = mbarT.computeMultipleExpectations(
             bool_i,U_n,compute_covariance=True)
-        
-    print(results)
 
     deltaF_values = {}
     deltaF_uncertainty = {}
