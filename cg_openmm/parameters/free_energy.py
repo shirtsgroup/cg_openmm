@@ -110,12 +110,11 @@ def expectations_free_energy(array_folded_states, temperature_list, output_direc
     for i in range(n_conf_states):
         i_vector = np.full_like(array_folded_states,i)
         # Convert True/False to integer 1/0 for each energy data point:
-        bool_i[i] = np.multiply((i_vector==array_folded_states),1)[:,0]
-        
+        bool_i[i] = np.multiply((i_vector==array_folded_states),1)
 
     # calculte the expectation of F at each unsampled states
     # we can either do all temperatures at once for one state probability,
-    # or all states at once for one temperature. We will choose the first option
+    # or all states at once for one temperature. We will choose the second option
     # to capture the correlation of the different conformational states.
 
     # Loop over each thermodynamic state:
@@ -126,7 +125,9 @@ def expectations_free_energy(array_folded_states, temperature_list, output_direc
         # compute expectations of being in conformational state n
         # Store results in a dictionary
         results[str(i)] = mbarT.computeMultipleExpectations(
-            bool_i,U_n,compute_covariance=True)  
+            bool_i,U_n,compute_covariance=True)
+        
+    print(results)
 
     deltaF_values = {}
     deltaF_uncertainty = {}
@@ -182,8 +183,6 @@ def plot_free_energy_results(full_T_list, deltaF_values, deltaF_uncertainty,plot
     xlabel = 'Temperature (K)'
     ylabel = 'Free energy change (joule/mol)'
     legend_str = []
-
-
 
     for key,value in deltaF_values.items():
         plt.errorbar(

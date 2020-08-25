@@ -27,18 +27,26 @@ def get_native_contacts(cgmodel, native_structure, native_contact_distance_cutof
 
         :returns:
           - native_contact_list - A list of the nonbonded interactions whose inter-particle distances are less than the 'native_contact_cutoff_distance'.
-
+          - native_contact_distances - A Quantity numpy array of the native pairwise distances corresponding to native_contact_list
         """
 
     nonbonded_interaction_list = cgmodel.nonbonded_interaction_list
     native_structure_distances = distances(nonbonded_interaction_list, native_structure)
     native_contact_list = []
-
+    native_contact_distances_list = []
+    
     for interaction in range(len(nonbonded_interaction_list)):
-        if native_structure_distances[interaction].__lt__(native_contact_distance_cutoff):
+        if native_structure_distances[interaction] < (native_contact_distance_cutoff):
             native_contact_list.append(nonbonded_interaction_list[interaction])
-
-    return native_contact_list
+            native_contact_distances_list.append(distances(native_contact_list, native_structure))
+    
+    # Units get messed up if converted using np.asarray
+    native_contact_distances = np.zeros((len(native_contact_distances_list)))
+    for i in range(len(native_contact_distances_list)):
+        native_contact_distances[i] = native_contact_distances_list[i][0].value_in_unit(unit.nanometer)
+    native_contact_distances *= unit.nanometer
+    
+    return native_contact_list, native_contact_distances
 
 
 def get_number_native_contacts(cgmodel, native_structure, native_contact_distance_cutoff):
@@ -169,65 +177,52 @@ def expectations_fraction_contacts(list_native_contacts, native_pdb, distance_cu
     
 def fraction_native_contacts(
     cgmodel,
-    positions,
-    native_structure,
-    native_structure_contact_distance_cutoff=None,
-    native_contact_cutoff_ratio=None,
+    traj,
+    native_contact_list,
+    native_contact_distances,
+    native_contact_cutoff_ratio=1.00,
 ):
     """
         Given a coarse grained model, positions for that model, and positions for the native structure, this function calculates the fraction of native contacts for the model.
 
         :param cgmodel: CGModel() class object
         :type cgmodel: class
+        
+        :param traj: a loaded mdtraj trajectory
+        :type traj: mdtraj trajectory object
 
-        :param positions: Positions for the particles in a coarse grained model.
-        :type positions: np.array( float * unit.angstrom ( num_particles x 3 ) )
+        :param native_contact_list: A list of the nonbonded interactions whose inter-particle distances are less than the 'native_contact_cutoff_distance'.
+        :type native_contact_list: List
+        
+        :param native_contact_distances: A numpy array of the native pairwise distances corresponding to native_contact_list
+        :type native_contact_distances: Quantity
 
-        :param native_structure: Positions for the native structure.
-        :type native_structure: np.array( float * unit.angstrom ( num_particles x 3 ) )
-
-        :param native_structure_contact_distance_cutoff: The distance below which two nonbonded, interacting particles that are defined as "native contact",default=None
-        :type native_structure_contact_distance_cutoff: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
-
-        :param native_contact_cutoff_ratio: The distance below which two nonbonded, interacting particles in a non-native pose are assigned as a "native contact", as a ratio of the distance for that contact in the native structure, default=None
+        :param native_contact_cutoff_ratio: The distance below which two nonbonded, interacting particles in a non-native pose are assigned as a "native contact", as a ratio of the distance for that contact in the native structure, default=1.00
         :type native_contact_cutoff_ratio: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
 
         :returns:
-          - Q ( float ) - The fraction of native contacts for the comparison pose.
+          - Q ( numpy array (float * nframes) ) - The fraction of native contacts for all frames in the trajectory.
 
         """
 
-    if native_structure_contact_distance_cutoff == None:
-        native_structure_contact_distance_cutoff = 1.1 * cgmodel.get_sigma(0)
-
-    if native_contact_cutoff_ratio == None:
-        native_contact_cutoff_ratio = 1.05
-
-    native_contact_list = get_native_contacts(
-        cgmodel, native_structure, native_structure_contact_distance_cutoff
-    )
-
-    total_native_interactions = get_number_native_contacts(
-        cgmodel, native_structure, native_structure_contact_distance_cutoff
-    )
-
-    if total_native_interactions == 0:
+    if len(native_contact_list)==0:
         print("ERROR: there are 0 'native' interactions with the current cutoff distance.")
         print("Try increasing the 'native_structure_contact_distance_cutoff'")
         exit()
 
-    native_contact_distances = distances(native_contact_list, native_structure)
+    nframes = traj.n_frames    
+        
+    traj_distances = mdtraj.compute_distances(
+        traj,native_contact_list,periodic=False,opt=True)
+    # This produces a [nframe x len(native_contacts)] array            
+    nc_unit = native_contact_distances.unit        
+            
+    # Compute Boolean matrix for whether or not a distance is native
+    native_contact_matrix = (traj_distances<(native_contact_cutoff_ratio*native_contact_distances.value_in_unit(nc_unit)))
 
-    current_structure_distances = distances(native_contact_list, positions)
+    number_native_interactions=np.sum(native_contact_matrix,axis=1)
 
-    current_structure_native_contact_list = []
-    for interaction in range(len(native_contact_list)):
-        if current_structure_distances[interaction].__lt__(
-            native_contact_cutoff_ratio * native_contact_distances[interaction]
-        ):
-            current_structure_native_contact_list.append(native_contact_list[interaction])
-    current_structure_number_native_interactions = len(current_structure_native_contact_list)
-    Q = current_structure_number_native_interactions / total_native_interactions
+    Q = number_native_interactions/len(native_contact_distances)
     return Q
 
 
