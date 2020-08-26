@@ -297,13 +297,30 @@ def test_run_replica_exchange(tmpdir):
     )
     
     # Process replica exchange output
-    replica_energies, replica_positions, replica_states = process_replica_exchange_data(
+    # 1) With detect equilibrium:
+    replica_energies, replica_positions, replica_states, production_start = process_replica_exchange_data(
         output_data=output_data,
         output_directory=output_directory,
+        detect_equilibration=True,
+        plot_production_only=True,
     )
+    
+    assert production_state is not None
+    
+    # 2) Without detect equilibrium:
+    replica_energies, replica_positions, replica_states, production_start = process_replica_exchange_data(
+        output_data=output_data,
+        output_directory=output_directory,
+        detect_equilibration=False,
+    )
+    
+    assert production_state is None
+    
     make_replica_pdb_files(cgmodel.topology, replica_positions, output_dir=output_directory)
+    make_state_pdb_files(cgmodel.topology, replica_positions, output_dir=output_directory)
     
     assert os.path.isfile(f"{output_directory}/output.nc")
     assert os.path.isfile(f"{output_directory}/replica_4.pdb")
+    assert os.path.isfile(f"{output_directory}/state_4.pdb")
     
     
