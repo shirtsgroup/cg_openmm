@@ -450,7 +450,7 @@ def verify_system(cgmodel):
     return
 
 
-def test_force(cgmodel, force, force_type=None):
+def check_force(cgmodel, force, force_type=None):
     """
 
     Given an OpenMM `Force() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1Force.html>`_, this function determines if there are any problems with its configuration.
@@ -474,7 +474,7 @@ def test_force(cgmodel, force, force_type=None):
     >>> cgmodel = CGModel()
     >>> force = NonbondedForce()
     >>> force_type = "Nonbonded"
-    >>> test_result = test_force(cgmodel,force,force_type="Nonbonded")
+    >>> test_result = check_force(cgmodel,force,force_type="Nonbonded")
 
     """
     success = True
@@ -708,7 +708,7 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
     return (cgmodel, force)
 
 
-def test_forces(cgmodel):
+def check_forces(cgmodel):
     """
     Given a cgmodel that contains positions and an
     an OpenMM System() object, this function tests
@@ -727,7 +727,7 @@ def test_forces(cgmodel):
 
     >>> from foldamers.cg_model.cgmodel import CGModel
     >>> cgmodel = CGModel()
-    >>> pass_forces_test = test_forces(cgmodel)
+    >>> pass_forces_test = check_forces(cgmodel)
 
     """
     if cgmodel.topology is None:
@@ -797,7 +797,7 @@ def build_system(cgmodel, rosetta_functional_form=False, verify=True):
             # Create bond (harmonic) potentials
             cgmodel, bond_force = add_force(cgmodel, force_type="Bond")
             if cgmodel.positions is not None:
-                if not test_force(cgmodel, bond_force, force_type="Bond"):
+                if not check_force(cgmodel, bond_force, force_type="Bond"):
                     print("ERROR: The bond force definition is giving 'nan'")
                     exit()
 
@@ -806,7 +806,7 @@ def build_system(cgmodel, rosetta_functional_form=False, verify=True):
             # Create bond angle potentials
             cgmodel, bond_angle_force = add_force(cgmodel, force_type="Angle")
             if cgmodel.positions is not None:
-                if not test_force(cgmodel, bond_angle_force, force_type="Angle"):
+                if not check_force(cgmodel, bond_angle_force, force_type="Angle"):
                     print("ERROR: There was a problem with the bond angle force definitions.")
                     exit()
 
@@ -815,13 +815,13 @@ def build_system(cgmodel, rosetta_functional_form=False, verify=True):
             # Create torsion potentials
             cgmodel, torsion_force = add_force(cgmodel, force_type="Torsion")
             if cgmodel.positions is not None:
-                if not test_force(cgmodel, torsion_force, force_type="Torsion"):
+                if not check_force(cgmodel, torsion_force, force_type="Torsion"):
                     print("ERROR: There was a problem with the torsion definitions.")
                     exit()
 
     if verify:
         if cgmodel.positions is not None:
-            if not test_forces(cgmodel):
+            if not check_forces(cgmodel):
                 print("ERROR: There was a problem with the forces.")
                 exit()
 
