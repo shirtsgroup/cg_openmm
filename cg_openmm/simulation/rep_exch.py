@@ -9,6 +9,7 @@ from cg_openmm.utilities.util import set_box_vectors, get_box_vectors
 from simtk.openmm.app.pdbfile import PDBFile
 from mdtraj.formats import PDBTrajectoryFile
 from mdtraj import Topology
+from pymbar import timeseries
 
 from openmmtools.multistate import MultiStateReporter, MultiStateSampler, ReplicaExchangeSampler
 from openmmtools.multistate import ReplicaExchangeAnalyzer
@@ -122,7 +123,7 @@ def make_state_pdb_files(topology, replica_positions, replica_state_indices, out
 
 
 def process_replica_exchange_data(
-    output_data="output.nc", output_directory="output", series_per_page=6
+    output_data="output.nc", output_directory="output", series_per_page=4, detect_equilibration=True, plot_production_only=False
 ):
     """
     Read replica exchange simulation data.
@@ -138,13 +139,18 @@ def process_replica_exchange_data(
 
     :param series_per_page: number of data series to plot per pdf page (default=6)
     :type series_per_page: int
+    
+    :param detect_equilibration: Option to determine the frame at which the production region begins (default=True)
+    :param detect_equilibration: Boolean
+    
+    :param plot_production_only: Option to plot only the production region, as determined from pymbar detectEquilibration (default=False)
+    :param plot_production_only: Boolean    
 
     :returns:
         - replica_energies ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.float( [number_replicas,number_simulation_steps] ), simtk.unit ) ) - The potential energies for all replicas at all (printed) time steps
         - replica_positions ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.float( [number_replicas,number_simulation_steps,cgmodel.num_beads,3] ), simtk.unit ) ) - The positions for all replicas at all (printed) time steps
-
         - replica_state_indices ( np.int64( [number_replicas,number_simulation_steps] ), simtk.unit ) - The thermodynamic state assignments for all replicas at all (printed) time steps
-
+        - production_start ( int - The frame at which the production region begins for all replicas, as determined from pymbar detectEquilibration
     :Example:
 
     >>> from foldamers.cg_model.cgmodel import CGModel
@@ -202,6 +208,15 @@ def process_replica_exchange_data(
         print(
             f"  {state:4d}    {np.mean(state_energies[state,:]):10.6f} {np.std(state_energies[state,:]):10.6f}"
         )
+        
+    # Use pymbar timeseries module to detect production period
+    # We can also add in the subsampleCorrelatedData routine
+    production_start = None
+    if detect_equilibration==True:
+        t0 = np.zeros((n_replicas))
+        for state in range(n_replicas):
+            t0[state], g, Neff_max = timeseries.detectEquilibration(state_energies[state])
+        production_start = int(np.max(t0))
 
     replica_positions = np.zeros([n_replicas, total_steps, n_particles, 3])
 
@@ -218,26 +233,49 @@ def process_replica_exchange_data(
     # doing the array operations gets rid of units, convert back to units
     replica_positions = replica_positions * sampler_states[0].positions[0].unit
 
-    plot_replica_exchange_energies(
-        state_energies,
-        temperature_list,
-        series_per_page,
-        time_interval=time_interval,
-    )
-    
-    plot_replica_exchange_energy_histograms(
-        state_energies,
-        temperature_list,
-    )
+    if plot_production_only==True:
+        plot_replica_exchange_energies(
+            state_energies[:,production_start:],
+            temperature_list,
+            series_per_page,
+            time_interval=time_interval,
+            time_shift=production_start*time_interval,
+        )
+        
+        plot_replica_exchange_energy_histograms(
+            state_energies[:,production_start:],
+            temperature_list,
+        )
 
-    plot_replica_exchange_summary(
-        replica_state_indices,
-        temperature_list,
-        series_per_page,
-        time_interval=time_interval,
-    )
+        plot_replica_exchange_summary(
+            replica_state_indices[:,production_start:],
+            temperature_list,
+            series_per_page,
+            time_interval=time_interval,
+            time_shift=production_start*time_interval,
+        )
+        
+    else:
+        plot_replica_exchange_energies(
+            state_energies,
+            temperature_list,
+            series_per_page,
+            time_interval=time_interval,
+        )
+        
+        plot_replica_exchange_energy_histograms(
+            state_energies,
+            temperature_list,
+        )
 
-    return (replica_energies, replica_positions, replica_state_indices)
+        plot_replica_exchange_summary(
+            replica_state_indices,
+            temperature_list,
+            series_per_page,
+            time_interval=time_interval,
+        )
+
+    return (replica_energies, replica_positions, replica_state_indices, production_start)
 
 
 def run_replica_exchange(
@@ -424,6 +462,7 @@ def plot_replica_exchange_energies(
     temperature_list,
     series_per_page,
     time_interval=1.0 * unit.picosecond,
+    time_shift=0.0 * unit.picosecond,    
     file_name="rep_ex_ener.pdf",
     legend=True,
 ):
@@ -439,6 +478,9 @@ def plot_replica_exchange_energies(
     :param time_interval: interval between energy exchanges.
     :type time_interval: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
 
+    :param time_shift: amount of time before production period to shift the time axis(default = 0)
+    :type time_shift: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
+    
     :param file_name: The pathname of the output file for plotting results, default = "replica_exchange_energies.png"
     :type file_name: str
 
@@ -453,6 +495,8 @@ def plot_replica_exchange_energies(
             for step in range(len(state_energies[0]))
         ]
     )
+    
+    simulation_times += time_shift.value_in_unit(unit.picosecond)
     
     # If more than series_per_page replicas, split into separate pages for better visibility
     nmax = series_per_page
@@ -554,6 +598,7 @@ def plot_replica_exchange_summary(
     temperature_list,
     series_per_page,
     time_interval=1.0 * unit.picosecond,
+    time_shift=0.0 * unit.picosecond,
     file_name="rep_ex_states.pdf",
     legend=True,
 ):
@@ -568,6 +613,9 @@ def plot_replica_exchange_summary(
 
     :param time_interval: interval between energy exchanges.
     :type time_interval: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
+
+    :param time_shift: amount of time before production period to shift the time axis(default = 0)
+    :type time_shift: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
 
     :param file_name: The pathname of the output file for plotting results, default = "replica_exchange_state_transitions.png"
     :type file_name: str
@@ -585,6 +633,8 @@ def plot_replica_exchange_summary(
             for step in range(len(replica_states[0]))
         ]
     )
+    
+    simulation_times += time_shift.value_in_unit(unit.picosecond)
     
     # If more than series_per_page replicas, split into separate pages for better visibility
     nmax = series_per_page
