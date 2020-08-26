@@ -12,7 +12,6 @@ from simtk.openmm.app.pdbfile import PDBFile
 from cg_openmm.parameters.secondary_structure import *
 from cg_openmm.parameters.free_energy import *
 from cg_openmm.parameters.reweight import get_temperature_list
-from analyze_foldamers.ensembles.cluster import *
 import pickle
 
 current_path = os.path.dirname(os.path.abspath(__file__))
