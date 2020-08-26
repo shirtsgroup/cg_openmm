@@ -305,7 +305,7 @@ def test_run_replica_exchange(tmpdir):
         plot_production_only=True,
     )
     
-    assert production_state is not None
+    assert production_start is not None
     
     # 2) Without detect equilibrium:
     replica_energies, replica_positions, replica_states, production_start = process_replica_exchange_data(
@@ -314,7 +314,7 @@ def test_run_replica_exchange(tmpdir):
         detect_equilibration=False,
     )
     
-    assert production_state is None
+    assert production_start is None
     
     make_replica_pdb_files(cgmodel.topology, replica_positions, output_dir=output_directory)
     make_state_pdb_files(cgmodel.topology, replica_positions, output_dir=output_directory)
