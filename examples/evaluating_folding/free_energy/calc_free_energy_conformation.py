@@ -78,6 +78,10 @@ nframes = rep_traj.n_frames
 
 array_folded_states = np.zeros((number_replicas*nframes))
 
+# Store statistics for plotting
+Q_avg = np.zeros(len(temperature_list))
+Q_uncertainty = np.zeros(len(temperature_list))
+
 for rep in range(number_replicas):
     if rep > 0:
         rep_traj = md.load(pdb_file_list[rep])
@@ -90,6 +94,10 @@ for rep in range(number_replicas):
         native_contact_cutoff_ratio=native_contact_cutoff_ratio
     )
     
+    Q_avg[rep] = np.mean(Q)
+    # Compute standard error:
+    Q_uncertainty[rep] = np.std(Q)/np.sqrt(len(Q))
+    
     # Classify into folded/unfolded states:
     for frame in range(len(Q)):
         if Q[frame] >= Q_folded:
@@ -98,6 +106,8 @@ for rep in range(number_replicas):
         else:
             # Not folded
             array_folded_states[frame+rep*nframes] = 0
+            
+plot_native_contact_fraction(temperature_list, Q_avg, Q_uncertainty)
 
 # Save folded state array for further analysis / comparing various cutoffs            
 with open('array_folded_states.pkl','wb') as array_file:
@@ -110,7 +120,7 @@ full_T_list, deltaF_values, deltaF_uncertainty = expectations_free_energy(
     temperature_list,
     output_directory,
     output_data,
-    num_intermediate_states
+    num_intermediate_states=num_intermediate_states,
 )
     
 print(f"T (K), deltaF (J/mol), deltaF_uncertainty (J/mol)")

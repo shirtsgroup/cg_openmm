@@ -44,10 +44,10 @@ def get_heat_capacity(temperature_list, frame_begin=0, output_data="output.nc", 
 
     Given a .nc output, a temperature list, and a number of intermediate states to insert for the temperature list, this function calculates and plots the heat capacity profile.
     
-    :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data, default = None          :type output_data: str                                                                                                    
+    :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data, default = None                                                                                                 
     :type output_data: str
                              
-    :param frame_begin: index of first frame defining the range of samples to use as a production period 
+    :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
     :type frame_begin: int
                              
     :param output_directory: directory in which the output data is in, default = "output"                                     
