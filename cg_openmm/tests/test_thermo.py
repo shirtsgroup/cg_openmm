@@ -21,9 +21,9 @@ def test_heat_capacity_calc(tmpdir):
     plot_directory = tmpdir.mkdir("plot_output")
     output_data = os.path.join(data_path, "output.nc")
     
-    number_replicas=36
-    min_temp = 50.0 * unit.kelvin
-    max_temp = 400.0 * unit.kelvin
+    number_replicas=12
+    min_temp = 200.0 * unit.kelvin
+    max_temp = 300.0 * unit.kelvin
     temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)  
     
     # 1) With default starting frame (0)
@@ -83,19 +83,19 @@ def test_physical_validation(tmpdir):
     # )
     
     # 4) Pair option: default
-    quantiles = physical_validation_ensemble(
-        output_data=output_data,
-        output_directory=data_path,
-        plotfile=f"{plot_directory}ensemble_check",
-    )
+    # quantiles = physical_validation_ensemble(
+        # output_data=output_data,
+        # output_directory=data_path,
+        # plotfile=f"{plot_directory}ensemble_check",
+    # )
     
     # 5) Pair option: default from bad pair style
-    quantiles = physical_validation_ensemble(
-        output_data=output_data,
-        output_directory=data_path,
-        plotfile=f"{plot_directory}ensemble_check",
-        pairs='invalid',
-    )
+    # quantiles = physical_validation_ensemble(
+        # output_data=output_data,
+        # output_directory=data_path,
+        # plotfile=f"{plot_directory}ensemble_check",
+        # pairs='invalid',
+    # )
     
     
     
