@@ -305,6 +305,15 @@ def test_run_replica_exchange(tmpdir):
         plot_production_only=True,
     )
     
+    assert production_start is not None
+    
+    # 2) Without detect equilibrium:
+    replica_energies, replica_positions, replica_states, production_start = process_replica_exchange_data(
+        output_data=output_data,
+        output_directory=output_directory,
+        detect_equilibration=False,
+    )
+    
     assert production_start is None
     
     make_replica_pdb_files(
