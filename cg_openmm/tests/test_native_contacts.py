@@ -63,7 +63,8 @@ def test_native_contacts(tmpdir):
     rep_traj = md.load(pdb_file_list[0])
     nframes = rep_traj.n_frames
     
-    array_folded_states = np.zeros((len(pdb_file_list)*nframes)) 
+    array_folded_states_row = np.zeros((len(pdb_file_list)*nframes)) 
+    array_folded_states = np.zeros((nframes,len(pdb_file_list)))
     
     # Store statistics for plotting
     Q_avg = np.zeros(len(temperature_list))
@@ -89,10 +90,10 @@ def test_native_contacts(tmpdir):
         for frame in range(len(Q)):
             if Q[frame] >= Q_folded:
                 # Folded
-                array_folded_states[frame+rep*nframes] = 1
+                array_folded_states[frame,rep] = 1
             else:
                 # Not folded
-                array_folded_states[frame+rep*nframes] = 0
+                array_folded_states_row[frame+rep*nframes] = 0      
                 
     plot_native_contact_fraction(
         temperature_list,

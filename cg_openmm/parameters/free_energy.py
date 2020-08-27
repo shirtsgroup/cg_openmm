@@ -54,8 +54,17 @@ def expectations_free_energy(array_folded_states, temperature_list, frame_begin=
     ) = analyzer.read_energies()
     
     # Select production frames to analyze
-    replica_energies = replica_energies_all[:,:,frame_begin:]    
+    replica_energies = replica_energies_all[:,:,frame_begin:]
 
+    # Check if array_folded_states needs slicing for production region:
+    # array_folded_states is array of [nframes,nreplicas]
+    if np.size(array_folded_states) != np.size(replica_energies[0]):
+        array_folded_states_production = array_folded_states[frame_begin:,:]
+        array_folded_states = array_folded_states_production
+        
+    # Reshape array_folded_states to row vector for pymbar
+    array_folded_states = np.reshape(array_folded_states,(np.size(array_folded_states)))
+        
     # determine the numerical values of beta at each state in units consisten with the temperature
     Tunit = temperature_list[0].unit
     temps = np.array([temp.value_in_unit(Tunit)  for temp in temperature_list])  # should this just be array to begin with
