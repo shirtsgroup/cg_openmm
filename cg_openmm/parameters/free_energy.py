@@ -9,7 +9,7 @@ import pymbar
 
 kB = unit.MOLAR_GAS_CONSTANT_R # Boltzmann constant
 
-def expectations_free_energy(array_folded_states, temperature_list, output_directory="output", output_data="output.nc", num_intermediate_states=0):
+def expectations_free_energy(array_folded_states, temperature_list, frame_begin=0, output_directory="output", output_data="output.nc", num_intermediate_states=0):
     """
     This function calculates the free energy difference (with uncertainty) between all conformational states as a function of temperature.
 
@@ -18,6 +18,9 @@ def expectations_free_energy(array_folded_states, temperature_list, output_direc
 
     :param temperature_list: List of temperatures for the simulation data.
     :type temperature_list: List( float * simtk.unit.temperature )
+    
+    :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
+    :type frame_begin: int    
     
     :param output_directory: Path to simulation output directory which contains a .nc file.
     :type output_directory: str
@@ -44,11 +47,14 @@ def expectations_free_energy(array_folded_states, temperature_list, output_direc
     reporter = MultiStateReporter(os.path.join(output_directory,output_data), open_mode="r")
     analyzer = ReplicaExchangeAnalyzer(reporter)
     (
-        replica_energies,
+        replica_energies_all,
         unsampled_state_energies,
         neighborhoods,
         replica_state_indices,
     ) = analyzer.read_energies()
+    
+    # Select production frames to analyze
+    replica_energies = replica_energies_all[:,:,frame_begin:]    
 
     # determine the numerical values of beta at each state in units consisten with the temperature
     Tunit = temperature_list[0].unit
@@ -144,12 +150,11 @@ def expectations_free_energy(array_folded_states, temperature_list, output_direc
     for i in range(len(full_T_list)):
         for s1 in range(n_conf_states):
             for s2 in range(s1+1,n_conf_states):
-                # Free energy change for s1 --> s2 at temp i
+                # Free energy change for s2 --> s1 at temp i
                 deltaF_values[f"state{s1}_state{s2}"][i] = (
                     -kB*full_T_list[i]*unit.kelvin*(
                     np.log(results[str(i)][0][s1])-
                     np.log(results[str(i)][0][s2]))).value_in_unit(F_unit)
-                    #***This is free energy change for going from s2-->s1
                     
                 # Get covariance matrix:
                 theta_i = results[str(i)][2]

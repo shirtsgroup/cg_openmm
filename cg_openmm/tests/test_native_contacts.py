@@ -109,6 +109,7 @@ def test_native_contacts(tmpdir):
     full_T_list, deltaF_values, deltaF_uncertainty = expectations_free_energy(
         array_folded_states,
         temperature_list,
+        frame_begin=100,
         output_directory=data_path,
         output_data=output_data,
         num_intermediate_states=1,
@@ -165,7 +166,7 @@ def test_expectations_fraction_contacts(tmpdir):
         native_contact_list,
         native_contact_cutoff,
         temperature_list,
-        frame_begin=95,
+        frame_begin=190,
         output_directory=data_path,
         output_data=output_data,
         num_intermediate_states=1,
