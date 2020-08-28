@@ -141,10 +141,10 @@ def process_replica_exchange_data(
     :type series_per_page: int
     
     :param detect_equilibration: Option to determine the frame at which the production region begins (default=True)
-    :param detect_equilibration: Boolean
+    :type detect_equilibration: Boolean
     
     :param plot_production_only: Option to plot only the production region, as determined from pymbar detectEquilibration (default=False)
-    :param plot_production_only: Boolean    
+    :type plot_production_only: Boolean    
 
     :returns:
         - replica_energies ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.float( [number_replicas,number_simulation_steps] ), simtk.unit ) ) - The potential energies for all replicas at all (printed) time steps
