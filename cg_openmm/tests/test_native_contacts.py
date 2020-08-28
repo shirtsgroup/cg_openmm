@@ -63,7 +63,6 @@ def test_native_contacts(tmpdir):
     rep_traj = md.load(pdb_file_list[0])
     nframes = rep_traj.n_frames
     
-    array_folded_states_row = np.zeros((len(pdb_file_list)*nframes)) 
     array_folded_states = np.zeros((nframes,len(pdb_file_list)))
     
     # Store statistics for plotting
@@ -75,7 +74,6 @@ def test_native_contacts(tmpdir):
             rep_traj = md.load(pdb_file_list[rep])
             
         Q = fraction_native_contacts(
-            cgmodel,
             rep_traj,
             native_contact_list,
             native_contact_distances,
@@ -92,8 +90,8 @@ def test_native_contacts(tmpdir):
                 # Folded
                 array_folded_states[frame,rep] = 1
             else:
-                # Not folded
-                array_folded_states_row[frame+rep*nframes] = 0      
+                # Unfolded
+                array_folded_states[frame,rep] = 0
                 
     plot_native_contact_fraction(
         temperature_list,
@@ -128,18 +126,18 @@ def test_native_contacts(tmpdir):
     
 def test_expectations_fraction_contacts(tmpdir):
     """See if we can determine native contacts expectations as a function of T"""
-    
+
     output_directory = tmpdir.mkdir("output")
-    
+
     # Replica exchange settings
     number_replicas = 12
     min_temp = 200.0 * unit.kelvin
     max_temp = 300.0 * unit.kelvin
     temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
-    
+
     # Load in cgmodel
     cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
-    
+
     # Create list of pdb trajectories to analyze
     pdb_file_list = []
     for i in range(len(temperature_list)):
@@ -147,27 +145,28 @@ def test_expectations_fraction_contacts(tmpdir):
         
     # Load in native structure file:    
     native_structure_file=f"{structures_path}/medoid_0.pdb"
-    
+
     native_positions = PDBFile(native_structure_file).getPositions()
-    
+
     # Set cutoff parameters:
     # Cutoff for native structure pairwise distances:
     native_contact_cutoff = 3.5* unit.angstrom
-    
+
     # Get native contacts:
     native_contact_list, native_contact_distances = get_native_contacts(
         cgmodel,
         native_positions,
         native_contact_cutoff
     )
-    
+
     output_data = os.path.join(data_path, "output.nc")
-    
+
     results = expectations_fraction_contacts(
         native_contact_list,
-        native_contact_cutoff,
+        native_contact_distances,
         temperature_list,
-        frame_begin=190,
+        pdb_file_list,
+        frame_begin=100,
         output_directory=data_path,
         output_data=output_data,
         num_intermediate_states=1,
