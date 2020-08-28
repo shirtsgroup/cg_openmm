@@ -49,47 +49,49 @@ def get_native_contacts(cgmodel, native_structure, native_contact_distance_cutof
     return native_contact_list, native_contact_distances
 
 
-def get_number_native_contacts(cgmodel, native_structure, native_contact_distance_cutoff):
+def expectations_fraction_contacts(list_native_contacts, distance_cutoff, temperature_list, frame_begin=0, output_directory="output", output_data="output.nc", num_intermediate_states=0):
     """
-        Given a coarse grained model, positions for that model, and positions for the native structure, this function calculates the fraction of native contacts for the model.
+    Given a .nc output, a temperature list, and a number of intermediate states to insert for the temperature list, this function calculates the native contacts expectation.
+    
+    :param list_native_contacts: A list of the nonbonded interactions whose inter-particle distances are less than the 'native_contact_cutoff_distance'.
+    :type list_native_contacts: List
+    
+    :param distance_cutoff: The maximum distance for two nonbonded particles that are defined as "native",default=None
+    :type distance_cutoff: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
 
-        :param cgmodel: CGModel() class object
-        :type cgmodel: class
+    :param temperature_list: List of temperatures corresponding to the states in the .nc output file
+    :type temperature: List( float * simtk.unit.temperature )
+    
+    :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
+    :type frame_begin: int
 
-        :param native_structure: Positions for the particles in a coarse grained model.
-        :type native_structure: np.array( float * unit.angstrom ( num_particles x 3 ) )
-
-        :param native_contact_cutoff_distance: The maximum distance for two nonbonded particles that are defined as "native",default=None
-        :type native_contact_cutoff_distance: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
-
-        :returns:
-          - contacts - The number of nonbonded interactions that are considered 'native'.
-
-        """
-
-    native_contact_list = get_native_contacts(
-        cgmodel, native_structure, native_contact_distance_cutoff
-    )
-
-    contacts = len(native_contact_list)
-
-    return contacts
-
-def expectations_fraction_contacts(list_native_contacts, native_pdb, distance_cutoff, temperature_list, output_directory="output", output_data="output.nc", num_intermediate_states=0):
-
+    :param output_directory: directory in which the output data is in, default = "output"                                     
+    :type output_data: str    
+    
+    :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data, default = None                                                                                                  
+    :type output_data: str
+    
+    :param num_intermediate_states: The number of states to insert between existing states in 'temperature_list'
+    :type num_intermediate_states: int    
+    
+    """
+    
     max_native_contacts = len(list_native_contacts)
 
     # extract reduced energies and the state indices from the .nc  
     reporter = MultiStateReporter(os.path.join(output_directory,output_data), open_mode="r")
     analyzer = ReplicaExchangeAnalyzer(reporter)
     (
-        replica_energies,
+        replica_energies_all,
         unsampled_state_energies,
         neighborhoods,
         replica_state_indices,
     ) = analyzer.read_energies()
+    
+    # Select production frames to analyze
+    replica_energies = replica_energies_all[:,:,frame_begin:]
 
-    # determine the numerical values of beta at each state in units consisten with the temperature
+    # determine the numerical values of beta at each state in units consistent with the temperature
     Tunit = temperature_list[0].unit
     temps = np.array([temp.value_in_unit(Tunit)  for temp in temperature_list])  # should this just be array to begin with
     beta_k = 1 / (kB.value_in_unit(unit.kilojoule_per_mole/Tunit) * temps)
@@ -262,3 +264,40 @@ def optimize_Q(cgmodel, native_structure, ensemble):
     native_structure_contact_distance_cutoff = cutoff_Q_list.index(max(cutoff_Q_list))
 
     return native_structure_contact_distance_cutoff
+    
+
+def plot_native_contact_fraction(temperature_list, Q, Q_uncertainty,plotfile="Q_vs_T.pdf"):
+    """
+    Given a list of temperatures and corresponding native contact fractions, plot Q vs T.
+
+    :param temperature_list: List of temperatures that will be used to define different replicas (thermodynamics states), default = None
+    :type temperature_list: List( `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_ * number_replicas )
+
+    :param Q: native contact fraction for a given temperature
+    :type Q: np.array(float * len(temperature_list))
+    
+    :param Q_uncertainty: uncertainty associated with Q
+    :type Q_uncertainty: np.array(float * len(temperature_list))
+    
+    """
+    temperature_array = np.zeros((len(temperature_list)))
+    for i in range(len(temperature_list)):
+        temperature_array[i] = temperature_list[i].value_in_unit(unit.kelvin)
+    
+    plt.errorbar(
+        temperature_array,
+        Q,
+        Q_uncertainty,
+        linewidth=0.5,
+        markersize=4,
+        fmt='o-',
+        fillstyle='none',
+        capsize=4,
+    )
+
+    plt.xlabel("T (K)")
+    plt.ylabel("Native contact fraction")
+    plt.savefig(plotfile)
+    
+    
+        
