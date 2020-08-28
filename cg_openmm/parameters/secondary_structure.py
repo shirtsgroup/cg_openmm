@@ -216,7 +216,7 @@ def fraction_native_contacts(
 
     if len(native_contact_list)==0:
         print("ERROR: there are 0 'native' interactions with the current cutoff distance.")
-        print("Try increasing the 'native_structure_contact_native_contact_cutoff_ratio'")
+        print("Try increasing the 'native_structure_contact_distance_cutoff'")
         exit()
 
     nframes = traj.n_frames    
@@ -249,7 +249,7 @@ def optimize_Q(cgmodel, native_structure, ensemble):
         :type ensemble: List(positions(np.array(float*simtk.unit (shape = num_beads x 3))))
 
         :returns:
-          - native_structure_contact_native_contact_cutoff_ratio ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The ideal distance below which two nonbonded, interacting particles should be defined as a "native contact"
+          - native_structure_contact_distance_cutoff ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The ideal distance below which two nonbonded, interacting particles should be defined as a "native contact"
         """
 
     cutoff_list = [(0.95 + i * 0.01) * cgmodel.get_sigma(0) for i in range(30)]
@@ -259,7 +259,7 @@ def optimize_Q(cgmodel, native_structure, ensemble):
         Q_list = []
         for pose in ensemble:
             Q = fraction_native_contacts(
-                cgmodel, pose, native_structure, native_structure_contact_native_contact_cutoff_ratio=cutoff
+                cgmodel, pose, native_structure, native_structure_contact_distance_cutoff=cutoff
             )
             Q_list.append(Q)
 
@@ -268,9 +268,9 @@ def optimize_Q(cgmodel, native_structure, ensemble):
 
     cutoff_Q_list.index(max(cutoff_Q_list))
 
-    native_structure_contact_native_contact_cutoff_ratio = cutoff_Q_list.index(max(cutoff_Q_list))
+    native_structure_contact_distance_cutoff = cutoff_Q_list.index(max(cutoff_Q_list))
 
-    return native_structure_contact_native_contact_cutoff_ratio
+    return native_structure_contact_distance_cutoff
     
 
 def plot_native_contact_fraction(temperature_list, Q, Q_uncertainty,plotfile="Q_vs_T.pdf"):
