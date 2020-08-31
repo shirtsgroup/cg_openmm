@@ -13,7 +13,7 @@ import mdtraj as md
 
 kB = unit.MOLAR_GAS_CONSTANT_R # Boltzmann constant
 
-def get_native_contacts(cgmodel, native_structure, native_contact_native_contact_cutoff_ratio):
+def get_native_contacts(cgmodel, native_structure, native_contact_distance_cutoff):
     """
         Given a coarse grained model, positions for that model, and positions for the native structure, this function calculates the fraction of native contacts for the model.
 
@@ -23,8 +23,8 @@ def get_native_contacts(cgmodel, native_structure, native_contact_native_contact
         :param native_structure: Positions for the particles in a coarse grained model.
         :type native_structure: np.array( float * unit.angstrom ( num_particles x 3 ) )
 
-        :param native_contact_native_contact_cutoff_ratio: The maximum distance for two nonbonded particles that are defined as "native",default=None
-        :type native_contact_native_contact_cutoff_ratio: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
+        :param native_contact_distance_cutoff: The maximum distance for two nonbonded particles that are defined as "native",default=None
+        :type native_contact_distance_cutoff: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
 
         :returns:
           - native_contact_list - A list of the nonbonded interactions whose inter-particle distances are less than the 'native_contact_cutoff_distance'.
@@ -37,7 +37,7 @@ def get_native_contacts(cgmodel, native_structure, native_contact_native_contact
     native_contact_distances_list = []
     
     for interaction in range(len(nonbonded_interaction_list)):
-        if native_structure_distances[interaction] < (native_contact_native_contact_cutoff_ratio):
+        if native_structure_distances[interaction] < (native_contact_distance_cutoff):
             native_contact_list.append(nonbonded_interaction_list[interaction])
             native_contact_distances_list.append(distances(native_contact_list, native_structure))
     
