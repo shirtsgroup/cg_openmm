@@ -65,28 +65,17 @@ def test_native_contacts(tmpdir):
     
     array_folded_states = np.zeros((nframes,len(pdb_file_list)))
     
-    # Store statistics for plotting
-    Q_avg = np.zeros(len(temperature_list))
-    Q_uncertainty = np.zeros(len(temperature_list))
-    
+    Q, Q_avg, Q_stderr = fraction_native_contacts(
+        pdb_file_list,
+        native_contact_list,
+        native_contact_distances,
+        native_contact_cutoff_ratio=native_contact_cutoff_ratio
+    )    
+
     for rep in range(len(pdb_file_list)):
-        if rep > 0:
-            rep_traj = md.load(pdb_file_list[rep])
-            
-        Q = fraction_native_contacts(
-            rep_traj,
-            native_contact_list,
-            native_contact_distances,
-            native_contact_cutoff_ratio=native_contact_cutoff_ratio
-        )
-        
-        Q_avg[rep] = np.mean(Q)
-        # Compute standard error:
-        Q_uncertainty[rep] = np.std(Q)/np.sqrt(len(Q))        
-        
         # Classify into folded/unfolded states:
-        for frame in range(len(Q)):
-            if Q[frame] >= Q_folded:
+        for frame in range(len(Q[:,rep])):
+            if Q[frame,rep] >= Q_folded:
                 # Folded
                 array_folded_states[frame,rep] = 1
             else:
@@ -96,7 +85,7 @@ def test_native_contacts(tmpdir):
     plot_native_contact_fraction(
         temperature_list,
         Q_avg,
-        Q_uncertainty,
+        Q_stderr,
         plotfile=f"{output_directory}/Q_vs_T.pdf",
     )
     
@@ -156,6 +145,9 @@ def test_expectations_fraction_contacts(tmpdir):
     # Set cutoff parameters:
     # Cutoff for native structure pairwise distances:
     native_contact_cutoff = 3.5* unit.angstrom
+    
+    # Cutoff for current trajectory distances, as a multiple of native_contact_cutoff
+    native_contact_cutoff_ratio = 1.25
 
     # Get native contacts:
     native_contact_list, native_contact_distances = get_native_contacts(
@@ -164,16 +156,30 @@ def test_expectations_fraction_contacts(tmpdir):
         native_contact_cutoff
     )
 
+    Q, Q_avg, Q_stderr = fraction_native_contacts(
+        pdb_file_list,
+        native_contact_list,
+        native_contact_distances,
+        frame_begin=100,
+        native_contact_cutoff_ratio=native_contact_cutoff_ratio
+    )        
+    
     output_data = os.path.join(data_path, "output.nc")
 
     results = expectations_fraction_contacts(
-        cgmodel,
-        native_contact_list,
-        native_contact_distances,
+        Q,
         temperature_list,
-        dcd_file_list,
         frame_begin=100,
         output_directory=data_path,
         output_data=output_data,
         num_intermediate_states=1,
     )
+    
+    plot_native_contact_fraction(
+        results["T"],
+        results["Q"],
+        results["dQ"],
+        plotfile=f"{output_directory}/Q_expect_vs_T.pdf",
+    )
+    
+    assert os.path.isfile(f"{output_directory}/Q_expect_vs_T.pdf")

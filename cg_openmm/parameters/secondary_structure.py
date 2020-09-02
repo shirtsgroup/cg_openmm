@@ -50,27 +50,15 @@ def get_native_contacts(cgmodel, native_structure, native_contact_distance_cutof
     return native_contact_list, native_contact_distances
 
 
-def expectations_fraction_contacts(cgmodel, native_contact_list, native_contact_distances, temperature_list, file_list, native_contact_cutoff_ratio=1.00, frame_begin=0, output_directory="output", output_data="output.nc", num_intermediate_states=0):
+def expectations_fraction_contacts(fraction_native_contacts, temperature_list, frame_begin=0, output_directory="output", output_data="output.nc", num_intermediate_states=0):
     """
-    Given a .nc output, a temperature list, and a number of intermediate states to insert for the temperature list, this function calculates the native contacts expectation.
+    Given a .nc output, a temperature list, and a number of intermediate states to insert for the temperature list, this function calculates the native contacts expectation.   
     
-    :param cgmodel: CGModel() class object
-    :type cgmodel: class    
-    
-    :param native_contact_list: A list of the nonbonded interactions whose inter-particle distances are less than the 'native_contact_cutoff_distance'.
-    :type native_contact_list: List
-    
-    :param native_contact_distances: A numpy array of the native pairwise distances corresponding to native_contact_list
-    :type native_contact_distances: Quantity
+    :param fraction_native_contacts: The fraction of native contacts for all selected frames in the trajectories.
+    :type fraction_native_contacts: numpy array (float * nframes x nreplicas)
     
     :param temperature_list: List of temperatures corresponding to the states in the .nc output file
     :type temperature: List( float * simtk.unit.temperature )
-    
-    :param file_list: A list of replica PDB or DCD files corresponding to the .nc file
-    :type file_list: List( str )
-    
-    :param native_contact_cutoff_ratio: The distance below which two nonbonded, interacting particles in a non-native pose are assigned as a "native contact", as a ratio of the distance for that contact in the native structure, default=1.00
-    :type native_contact_cutoff_ratio: float
     
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
     :type frame_begin: int
@@ -85,8 +73,6 @@ def expectations_fraction_contacts(cgmodel, native_contact_list, native_contact_
     :type num_intermediate_states: int    
     
     """
-    
-    max_native_contacts = len(native_contact_list)
 
     # extract reduced energies and the state indices from the .nc  
     reporter = MultiStateReporter(os.path.join(output_directory,output_data), open_mode="r")
@@ -154,34 +140,10 @@ def expectations_fraction_contacts(cgmodel, native_contact_list, native_contact_
     mbarT = pymbar.MBAR(unsampled_state_energies,N_k,verbose=False, relative_tolerance=1e-12);
     
     # Now we have the weights at all temperatures, so we can
-    # calculate the expectations.  We now need a number of native contacts for each
-    # structure.
-    n_samples_per_replica = n_samples//n_sampled_T
-    Q = np.zeros((n_samples_per_replica,n_sampled_T))
-
-    # calculate Q (fraction of native contacts) for each structure.
-    # because we need to iterate per state, we have to do some bookkeeping.
-    # The sampled state energies are stored in order of the replicas, so the
-    # samples need to correspond to the same order.
-
-    # Use MDTraj to compute all of the native contact fractions
-    for replica_index in range(n_sampled_T):
-        # This should work for pdb or dcd
-        # However for dcd we need to insert a topology, and convert it from openmm->mdtraj topology 
-        if file_list[0][-3:] == 'dcd':
-            rep_traj = md.load(file_list[replica_index],top=md.Topology.from_openmm(cgmodel.topology))
-        else:
-            rep_traj = md.load(file_list[replica_index])
-        
-        Q[:,replica_index] = fraction_native_contacts(
-            rep_traj[frame_begin:],
-            native_contact_list,
-            native_contact_distances,
-            native_contact_cutoff_ratio,
-        )
-        
-    # Reshape column by column for pymbar
-    Q = np.reshape(Q,np.size(Q), order='F')
+    # calculate the expectations.
+    
+    # Reshape fraction native contacts [nframes x nreplicas] column by column for pymbar
+    Q = np.reshape(fraction_native_contacts,np.size(fraction_native_contacts), order='F')
             
     # calculate the expectation of Q at each unsampled states         
     results = mbarT.computeExpectations(Q)  # compute expectations of Q at all points
@@ -190,7 +152,7 @@ def expectations_fraction_contacts(cgmodel, native_contact_list, native_contact_
 
     # return the results in a dictionary (better than in a list)
     return_results = dict()
-    return_results["T"] = full_T_list
+    return_results["T"] = full_T_list*unit.kelvin
     return_results["Q"] = Q_expect
     return_results["dQ"] = dQ_expect
 
@@ -198,16 +160,17 @@ def expectations_fraction_contacts(cgmodel, native_contact_list, native_contact_
 
     
 def fraction_native_contacts(
-    traj,
+    file_list,
     native_contact_list,
     native_contact_distances,
+    frame_begin=0,
     native_contact_cutoff_ratio=1.00,
 ):
     """
     Given an mdtraj trajectory object, and positions for the native structure, this function calculates the fraction of native contacts for the model.
     
-    :param traj: a loaded mdtraj trajectory
-    :type traj: mdtraj trajectory object
+    :param file_list: A list of replica PDB or DCD trajectory files corresponding to the energies in the .nc file, or a single file name
+    :type file_list: List( str ) or str
 
     :param native_contact_list: A list of the nonbonded interactions whose inter-particle distances are less than the 'native_contact_cutoff_distance'.
     :type native_contact_list: List
@@ -215,11 +178,16 @@ def fraction_native_contacts(
     :param native_contact_distances: A numpy array of the native pairwise distances corresponding to native_contact_list
     :type native_contact_distances: Quantity
 
+    :param frame_begin: Frame at which to start native contacts analysis (default=0)
+    :type frame_begin: int        
+    
     :param native_contact_cutoff_ratio: The distance below which two nonbonded, interacting particles in a non-native pose are assigned as a "native contact", as a ratio of the distance for that contact in the native structure, default=1.00
     :type native_contact_cutoff_ratio: float
 
     :returns:
-      - Q ( numpy array (float * nframes) ) - The fraction of native contacts for all frames in the trajectory.
+      - Q ( numpy array (float * nframes x nreplicas) ) - The fraction of native contacts for all selected frames in the trajectories.
+      - Q_avg ( numpy array (float * nreplicas) ) - Mean values of Q for each replica.
+      - Q_stderr ( numpy array (float * nreplicas) ) - Standard error of the mean of Q for each replica.
 
     """
 
@@ -227,21 +195,48 @@ def fraction_native_contacts(
         print("ERROR: there are 0 'native' interactions with the current cutoff distance.")
         print("Try increasing the 'native_structure_contact_distance_cutoff'")
         exit()
-
-    nframes = traj.n_frames    
         
-    traj_distances = mdtraj.compute_distances(
-        traj,native_contact_list,periodic=False,opt=True)
-    # This produces a [nframe x len(native_contacts)] array            
-    nc_unit = native_contact_distances.unit        
-            
-    # Compute Boolean matrix for whether or not a distance is native
-    native_contact_matrix = (traj_distances<(native_contact_cutoff_ratio*native_contact_distances.value_in_unit(nc_unit)))
+        
+    if type(file_list) == list:
+        n_replicas = len(file_list)
+    elif type(file_list) == str:
+        n_replicas = 1
+        # Convert to a 1 element list if not one
+        file_list = file_list.split()
+      
+    nc_unit = native_contact_distances.unit
+    Q_avg = np.zeros((n_replicas))
+    Q_stderr = np.zeros((n_replicas))
+      
+    for rep in range(n_replicas):            
+        # This should work for pdb or dcd
+        # However for dcd we need to insert a topology, and convert it from openmm->mdtraj topology 
+        if file_list[0][-3:] == 'dcd':
+            rep_traj = md.load(file_list[rep],top=md.Topology.from_openmm(cgmodel.topology))
+        else:
+            rep_traj = md.load(file_list[rep])
+        # Select frames for analysis:
+        rep_traj = rep_traj[frame_begin:]
+        
+        if rep == 0:
+            nframes = rep_traj.n_frames
+            Q = np.zeros((nframes,n_replicas))
+        
+        traj_distances = mdtraj.compute_distances(
+            rep_traj,native_contact_list,periodic=False,opt=True)
+        # This produces a [nframe x len(native_contacts)] array
+  
+        # Compute Boolean matrix for whether or not a distance is native
+        native_contact_matrix = (traj_distances<(native_contact_cutoff_ratio*native_contact_distances.value_in_unit(nc_unit)))
 
-    number_native_interactions=np.sum(native_contact_matrix,axis=1)
+        number_native_interactions=np.sum(native_contact_matrix,axis=1)
 
-    Q = number_native_interactions/len(native_contact_distances)
-    return Q
+        Q[:,rep] = number_native_interactions/len(native_contact_distances)
+        Q_avg[rep] = np.mean(Q[:,rep])
+        # Compute standard error:
+        Q_stderr[rep] = np.std(Q[:,rep])/np.sqrt(len(Q[:,rep])) 
+        
+    return Q, Q_avg, Q_stderr
 
 
 def optimize_Q(cgmodel, native_structure, ensemble):
