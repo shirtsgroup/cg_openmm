@@ -143,6 +143,11 @@ def test_expectations_fraction_contacts(tmpdir):
     for i in range(len(temperature_list)):
         pdb_file_list.append(f"{data_path}/replica_{i+1}.pdb")
         
+    # Create list of dcd trajectories to analyze
+    dcd_file_list = []
+    for i in range(len(temperature_list)):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+        
     # Load in native structure file:    
     native_structure_file=f"{structures_path}/medoid_0.pdb"
 
@@ -162,10 +167,11 @@ def test_expectations_fraction_contacts(tmpdir):
     output_data = os.path.join(data_path, "output.nc")
 
     results = expectations_fraction_contacts(
+        cgmodel,
         native_contact_list,
         native_contact_distances,
         temperature_list,
-        pdb_file_list,
+        dcd_file_list,
         frame_begin=100,
         output_directory=data_path,
         output_data=output_data,

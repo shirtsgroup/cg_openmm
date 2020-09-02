@@ -50,9 +50,12 @@ def get_native_contacts(cgmodel, native_structure, native_contact_distance_cutof
     return native_contact_list, native_contact_distances
 
 
-def expectations_fraction_contacts(native_contact_list, native_contact_distances, temperature_list, pdb_file_list, native_contact_cutoff_ratio=1.00, frame_begin=0, output_directory="output", output_data="output.nc", num_intermediate_states=0):
+def expectations_fraction_contacts(cgmodel, native_contact_list, native_contact_distances, temperature_list, file_list, native_contact_cutoff_ratio=1.00, frame_begin=0, output_directory="output", output_data="output.nc", num_intermediate_states=0):
     """
     Given a .nc output, a temperature list, and a number of intermediate states to insert for the temperature list, this function calculates the native contacts expectation.
+    
+    :param cgmodel: CGModel() class object
+    :type cgmodel: class    
     
     :param native_contact_list: A list of the nonbonded interactions whose inter-particle distances are less than the 'native_contact_cutoff_distance'.
     :type native_contact_list: List
@@ -63,8 +66,8 @@ def expectations_fraction_contacts(native_contact_list, native_contact_distances
     :param temperature_list: List of temperatures corresponding to the states in the .nc output file
     :type temperature: List( float * simtk.unit.temperature )
     
-    :param pdb_file_list: A list of replica PDB files corresponding to the .nc file
-    :type pdb_file_list: List( str )    
+    :param file_list: A list of replica PDB or DCD files corresponding to the .nc file
+    :type file_list: List( str )
     
     :param native_contact_cutoff_ratio: The distance below which two nonbonded, interacting particles in a non-native pose are assigned as a "native contact", as a ratio of the distance for that contact in the native structure, default=1.00
     :type native_contact_cutoff_ratio: float
@@ -163,7 +166,13 @@ def expectations_fraction_contacts(native_contact_list, native_contact_distances
 
     # Use MDTraj to compute all of the native contact fractions
     for replica_index in range(n_sampled_T):
-        rep_traj = md.load(pdb_file_list[replica_index])
+        # This should work for pdb or dcd
+        # However for dcd we need to insert a topology, and convert it from openmm->mdtraj topology 
+        if file_list[0][-3:] == 'dcd':
+            rep_traj = md.load(file_list[replica_index],top=md.Topology.from_openmm(cgmodel.topology))
+        else:
+            rep_traj = md.load(file_list[replica_index])
+        
         Q[:,replica_index] = fraction_native_contacts(
             rep_traj[frame_begin:],
             native_contact_list,
