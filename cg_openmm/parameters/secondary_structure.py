@@ -309,6 +309,7 @@ def plot_native_contact_fraction(temperature_list, Q, Q_uncertainty,plotfile="Q_
     plt.xlabel("T (K)")
     plt.ylabel("Native contact fraction")
     plt.savefig(plotfile)
+    plt.close()
     
     
         
