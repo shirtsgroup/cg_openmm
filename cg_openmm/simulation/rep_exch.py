@@ -496,7 +496,7 @@ def run_replica_exchange(
         reassign_velocities=False,
     )
 
-    simulation = ReplicaExchangeSampler(mcmc_moves=move, number_of_iterations=exchange_attempts)
+    simulation = ReplicaExchangeSampler(mcmc_moves=move, number_of_iterations=exchange_attempts,replica_mixing_scheme='swap-neighbors')
 
     if os.path.exists(output_data):
         os.remove(output_data)
