@@ -83,10 +83,6 @@ for c in [2.5, 3.0, 3.5, 4.0, 4.5]:
     )
 
     # Determine native contact fraction of current trajectories:
-    rep_traj = md.load(pdb_file_list_state[0])
-    nframes = rep_traj.n_frames
-
-    array_folded_states = np.zeros((nframes,len(pdb_file_list_state)))
 
     Q, Q_avg, Q_stderr = fraction_native_contacts(
         pdb_file_list_state,
