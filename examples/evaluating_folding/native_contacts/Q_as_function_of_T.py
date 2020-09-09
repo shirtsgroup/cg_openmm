@@ -7,36 +7,98 @@
 
 import os
 import numpy as np
-from statistics import mean
-import matplotlib.pyplot as pyplot
+import matplotlib.pyplot as plt
+import mdtraj as md
 from simtk import unit
-from simtk.openmm.app.pdbfile import PDBFile
-from cg_openmm.cg_model.cgmodel import CGModel
-from cg_openmm.parameters.reweight import *
-from cg_openmm.ensembles.ens_build import *
 from cg_openmm.parameters.secondary_structure import *
-from cg_openmm.simulation.rep_exch import *
+from cg_openmm.parameters.free_energy import *
+from cg_openmm.parameters.reweight import *
+from analyze_foldamers.ensembles.cluster import *
+import pickle
+import time
 
+# Replica exchange settings
 output_data = "output.nc"
-number_replicas = 12
+output_directory = "output"
+number_replicas = 36
 min_temp = 50.0 * unit.kelvin
-max_temp = 600.0 * unit.kelvin
+max_temp = 400.0 * unit.kelvin
 temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
-list_native_contacts = [[1,7],[3,9],[5,11],[7,13],[9,15],[11,17],[13,19],[15,21],[17,23]] # list of native contacts.  This one is arbitrary, it's every 3rd sidechain pair.
 
-# This distance cutoff determines which nonbonded interactions are considered 'native' contacts
-native_structure_contact_distance_cutoff = 0.6 * unit.nanometers 
-# this could also be done in terms of a fraction of the original native contact, that would need to be coded
-# in a different way.
+# Load in cgmodel
+cgmodel = pickle.load(open( "stored_cgmodel.pkl", "rb" ))
 
-results = fraction_contacts_expectation(list_native_contacts, native_structure_contact_distance_cutoff,
-                                         temperature_list, output_directory="output", output_data="output.nc",
-                                         num_intermediate_states=1)
+# Here we will estimate the native structure as a medoid from KMeans clustering
+# with the lowest intra-cluster RMSD.
 
-Tunit = temperature_list[0].unit
-pyplot.xlabel(f"Temperature ({Tunit})")
-pyplot.ylabel("<Q> (Fraction native contacts)")
-pyplot.errorbar(results['T'], results['Q'], yerr=results['dQ'])
-pyplot.savefig("Q_vs_T.png")
-pyplot.show()
+# Create list of trajectory files for clustering analysis
+number_replicas = 36
+pdb_file_list_state = []
 
+# For standard native contact fraction calculation, we use state trajectories,
+# which can be generated from a .nc file using rep_exch.make_state_pdb_files()
+for i in range(number_replicas):
+    pdb_file_list_state.append(f"{output_directory}/state_{i+1}.pdb")
+
+# Set clustering parameters
+n_clusters=2
+frame_start=0
+frame_stride=100
+frame_end=-1
+
+# Run KMeans clustering
+medoid_positions, cluster_size, cluster_rmsd = get_cluster_medoid_positions(
+    file_list=pdb_file_list_state,
+    cgmodel=cgmodel,
+    n_clusters=n_clusters,
+    frame_start=frame_start,
+    frame_stride=frame_stride,
+    frame_end=-1)
+    
+print(cluster_rmsd)
+
+# The smaller intra-cluster rmsd will be the folded state if it is very stable
+if cluster_rmsd[0] < cluster_rmsd[1]:
+    native_structure_file="cluster_output/medoid_0.pdb"
+else:
+    native_structure_file="cluster_output/medoid_1.pdb"
+
+native_positions = PDBFile(native_structure_file).getPositions()
+
+
+# Scan cutoff for native structure pairwise distances:
+for c in [2.5, 3.0, 3.5, 4.0, 4.5]:
+
+    native_contact_cutoff = c* unit.angstrom
+    nccut_str = f"{str(native_contact_cutoff)[0]}_{str(native_contact_cutoff)[2]}"
+
+    # Cutoff for current trajectory distances, as a multiple of native_contact_cutoff
+    native_contact_cutoff_ratio = 1.00
+
+    # Determine native contacts:
+    native_contact_list, native_contact_distances = get_native_contacts(
+        cgmodel,
+        native_positions,
+        native_contact_cutoff
+    )
+
+    # Determine native contact fraction of current trajectories:
+    rep_traj = md.load(pdb_file_list_state[0])
+    nframes = rep_traj.n_frames
+
+    array_folded_states = np.zeros((nframes,len(pdb_file_list_state)))
+
+    Q, Q_avg, Q_stderr = fraction_native_contacts(
+        pdb_file_list_state,
+        native_contact_list,
+        native_contact_distances,
+        frame_begin=0,
+        native_contact_cutoff_ratio=native_contact_cutoff_ratio
+    )
+    
+    plot_native_contact_fraction(
+        temperature_list,
+        Q_avg,
+        Q_stderr,
+        plotfile=f"{output_directory}/nccut_{nccut_str}_Q_vs_T.pdf",
+    )
