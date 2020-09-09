@@ -76,7 +76,7 @@ for c in [2.5, 3.0, 3.5, 4.0, 4.5]:
     native_contact_cutoff_ratio = 1.00
 
     # Determine native contacts:
-    native_contact_list, native_contact_distances = get_native_contacts(
+    native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
         cgmodel,
         native_positions,
         native_contact_cutoff

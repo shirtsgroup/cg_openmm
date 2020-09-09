@@ -66,7 +66,7 @@ native_contact_cutoff_ratio = 1.0
 Q_folded = 0.7
 
 # Determine native contacts:
-native_contact_list, native_contact_distances = get_native_contacts(
+native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
     cgmodel,
     native_positions,
     native_contact_cutoff

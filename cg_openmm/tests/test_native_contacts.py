@@ -52,7 +52,7 @@ def test_native_contacts(tmpdir):
     native_contact_cutoff_ratio = 1.25
     
     # Determine native contacts:
-    native_contact_list, native_contact_distances = get_native_contacts(
+    native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
         cgmodel,
         native_positions,
         native_contact_cutoff
@@ -114,7 +114,7 @@ def test_expectations_fraction_contacts(tmpdir):
     native_contact_cutoff_ratio = 1.25
 
     # Get native contacts:
-    native_contact_list, native_contact_distances = get_native_contacts(
+    native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
         cgmodel,
         native_positions,
         native_contact_cutoff
@@ -126,7 +126,20 @@ def test_expectations_fraction_contacts(tmpdir):
         native_contact_distances,
         frame_begin=100,
         native_contact_cutoff_ratio=native_contact_cutoff_ratio
-    )        
+    )
+    
+    # Determine how many folding transitions each replica underwent:
+    # plot Q_avg vs. frame
+    plot_native_contact_timeseries(
+        Q,
+        frame_begin=100,
+        time_interval=1*unit.picosecond,
+        plot_per_page=3,
+        plotfile=f"{output_directory}/Q_vs_time.pdf",
+        figure_title="Native contact fraction",
+    )
+    
+    assert os.path.isfile(f"{output_directory}/Q_vs_time.pdf")
     
     output_data = os.path.join(data_path, "output.nc")
     num_intermediate_states=1
