@@ -37,7 +37,7 @@ frame_end=-1
     
 # Run KMeans clustering
 medoid_positions, cluster_size, cluster_rmsd = get_cluster_medoid_positions(
-    pdb_file_list=pdb_file_list,
+    file_list=pdb_file_list,
     cgmodel=cgmodel,
     n_clusters=n_clusters,
     frame_start=frame_start,
@@ -60,10 +60,10 @@ native_positions = PDBFile(native_structure_file).getPositions()
 native_contact_cutoff = 3.5* unit.angstrom
 
 # Cutoff for current trajectory distances, as a multiple of native_contact_cutoff
-native_contact_cutoff_ratio = 1.25
+native_contact_cutoff_ratio = 1.0
 
 # Cutoff for native contact fraction folded vs. unfolded states:
-Q_folded = 0.9
+Q_folded = 0.7
 
 # Determine native contacts:
 native_contact_list, native_contact_distances = get_native_contacts(
@@ -73,53 +73,41 @@ native_contact_list, native_contact_distances = get_native_contacts(
 )
 
 # Determine native contact fraction of current trajectories:
-rep_traj = md.load(pdb_file_list[0])
-nframes = rep_traj.n_frames
 
-array_folded_states = np.zeros((number_replicas,nframes))
+Q, Q_avg, Q_stderr = fraction_native_contacts(
+    pdb_file_list,
+    native_contact_list,
+    native_contact_distances,
+    frame_begin=4500,
+    native_contact_cutoff_ratio=native_contact_cutoff_ratio
+)
 
-# Store statistics for plotting
-Q_avg = np.zeros(len(temperature_list))
-Q_uncertainty = np.zeros(len(temperature_list))
+plot_native_contact_fraction(
+    temperature_list,
+    Q_avg,
+    Q_stderr,
+    plotfile="Q_vs_T.pdf",
+)
 
-for rep in range(number_replicas):
-    if rep > 0:
-        rep_traj = md.load(pdb_file_list[rep])
-        
-    Q = fraction_native_contacts(
-        cgmodel,
-        rep_traj,
-        native_contact_list,
-        native_contact_distances,
-        native_contact_cutoff_ratio=native_contact_cutoff_ratio
-    )
-    
-    Q_avg[rep] = np.mean(Q)
-    # Compute standard error:
-    Q_uncertainty[rep] = np.std(Q)/np.sqrt(len(Q))
-    
+array_folded_states = np.zeros((len(Q[:,0]),len(pdb_file_list)))
+
+for rep in range(len(pdb_file_list)):
     # Classify into folded/unfolded states:
-    for frame in range(len(Q)):
-        if Q[frame] >= Q_folded:
+    for frame in range(len(Q[:,rep])):
+        if Q[frame,rep] >= Q_folded:
             # Folded
             array_folded_states[frame,rep] = 1
         else:
-            # Not folded
+            # Unfolded
             array_folded_states[frame,rep] = 0
-            
-plot_native_contact_fraction(temperature_list, Q_avg, Q_uncertainty)
-
-# Save folded state array for further analysis / comparing various cutoffs            
-with open('array_folded_states.pkl','wb') as array_file:
-    pickle.dump(array_folded_states,array_file)
 
 num_intermediate_states = 1
 
 full_T_list, deltaF_values, deltaF_uncertainty = expectations_free_energy(
     array_folded_states,
     temperature_list,
-    output_directory,
-    output_data,
+    output_directory=output_directory,
+    output_data=output_data,
     num_intermediate_states=num_intermediate_states,
 )
     
@@ -127,4 +115,9 @@ print(f"T (K), deltaF (J/mol), deltaF_uncertainty (J/mol)")
 for i in range(len(full_T_list)):
     print(f"{full_T_list[i]:>6.4f}, {deltaF_values['state0_state1'][i]:>6.8f}, {deltaF_uncertainty['state0_state1'][i]:>6.8f}")
       
-plot_free_energy_results(full_T_list, deltaF_values, deltaF_uncertainty,plotfile="free_energy")
+plot_free_energy_results(
+    full_T_list,
+    deltaF_values,
+    deltaF_uncertainty,
+    plotfile="free_energy"
+)
