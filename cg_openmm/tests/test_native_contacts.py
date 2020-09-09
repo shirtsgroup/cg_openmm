@@ -33,6 +33,8 @@ def test_native_contacts(tmpdir):
     cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
     
     # Create list of pdb trajectories to analyze
+    # For fraction_native_contacts vs. T, we use state trajectories.
+    # However, we can test with the replica pdbs:
     pdb_file_list = []
     for i in range(len(temperature_list)):
         pdb_file_list.append(f"{data_path}/replica_{i+1}.pdb")
@@ -48,9 +50,6 @@ def test_native_contacts(tmpdir):
 
     # Cutoff for current trajectory distances, as a multiple of native_contact_cutoff
     native_contact_cutoff_ratio = 1.25
-
-    # Cutoff for native contact fraction folded vs. unfolded states:
-    Q_folded = 0.9
     
     # Determine native contacts:
     native_contact_list, native_contact_distances = get_native_contacts(
@@ -60,28 +59,13 @@ def test_native_contacts(tmpdir):
     )
     
     # Determine native contact fraction of current trajectories:
-    rep_traj = md.load(pdb_file_list[0])
-    nframes = rep_traj.n_frames
-    
-    array_folded_states = np.zeros((nframes,len(pdb_file_list)))
-    
     Q, Q_avg, Q_stderr = fraction_native_contacts(
         pdb_file_list,
         native_contact_list,
         native_contact_distances,
         native_contact_cutoff_ratio=native_contact_cutoff_ratio
-    )    
+    )   
 
-    for rep in range(len(pdb_file_list)):
-        # Classify into folded/unfolded states:
-        for frame in range(len(Q[:,rep])):
-            if Q[frame,rep] >= Q_folded:
-                # Folded
-                array_folded_states[frame,rep] = 1
-            else:
-                # Unfolded
-                array_folded_states[frame,rep] = 0
-                
     plot_native_contact_fraction(
         temperature_list,
         Q_avg,
@@ -90,27 +74,6 @@ def test_native_contacts(tmpdir):
     )
     
     assert os.path.isfile(f"{output_directory}/Q_vs_T.pdf")
-    
-    # Test free energy of folding:
-    output_data = os.path.join(data_path, "output.nc")
-    
-    full_T_list, deltaF_values, deltaF_uncertainty = expectations_free_energy(
-        array_folded_states,
-        temperature_list,
-        frame_begin=100,
-        output_directory=data_path,
-        output_data=output_data,
-        num_intermediate_states=1,
-    )
-    
-    plot_free_energy_results(
-        full_T_list,
-        deltaF_values,
-        deltaF_uncertainty,
-        plotfile=f"{output_directory}/free_energy"
-    )
-
-    assert os.path.isfile(f"{output_directory}/free_energy.pdf")
     
     
 def test_expectations_fraction_contacts(tmpdir):
@@ -128,6 +91,7 @@ def test_expectations_fraction_contacts(tmpdir):
     cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
 
     # Create list of pdb trajectories to analyze
+    # For expectation fraction native contacts, we use replica trajectories: 
     pdb_file_list = []
     for i in range(len(temperature_list)):
         pdb_file_list.append(f"{data_path}/replica_{i+1}.pdb")
@@ -165,6 +129,7 @@ def test_expectations_fraction_contacts(tmpdir):
     )        
     
     output_data = os.path.join(data_path, "output.nc")
+    num_intermediate_states=1
 
     results = expectations_fraction_contacts(
         Q,
@@ -172,7 +137,7 @@ def test_expectations_fraction_contacts(tmpdir):
         frame_begin=100,
         output_directory=data_path,
         output_data=output_data,
-        num_intermediate_states=1,
+        num_intermediate_states=num_intermediate_states,
     )
     
     plot_native_contact_fraction(
@@ -183,3 +148,41 @@ def test_expectations_fraction_contacts(tmpdir):
     )
     
     assert os.path.isfile(f"{output_directory}/Q_expect_vs_T.pdf")
+    
+    
+    # Test free energy of folding:
+    
+    # Cutoff for native contact fraction folded vs. unfolded states:
+    Q_folded = 0.9
+    
+    # Array folded states can be all frames, or only selected frames.
+    # It is trimmed to the correct size in expectations_free_energy.
+    array_folded_states = np.zeros((len(Q[:,0]),len(pdb_file_list)))
+    
+    for rep in range(len(pdb_file_list)):
+        # Classify into folded/unfolded states:
+        for frame in range(len(Q[:,rep])):
+            if Q[frame,rep] >= Q_folded:
+                # Folded
+                array_folded_states[frame,rep] = 1
+            else:
+                # Unfolded
+                array_folded_states[frame,rep] = 0
+
+    full_T_list, deltaF_values, deltaF_uncertainty = expectations_free_energy(
+        array_folded_states,
+        temperature_list,
+        frame_begin=100,
+        output_directory=data_path,
+        output_data=output_data,
+        num_intermediate_states=num_intermediate_states,
+    )
+    
+    plot_free_energy_results(
+        full_T_list,
+        deltaF_values,
+        deltaF_uncertainty,
+        plotfile=f"{output_directory}/free_energy"
+    )
+
+    assert os.path.isfile(f"{output_directory}/free_energy.pdf")
