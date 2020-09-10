@@ -296,6 +296,8 @@ def test_run_replica_exchange(tmpdir):
         output_directory=output_directory,
     )
     
+    assert os.path.isfile(f"{output_directory}/output.nc")
+    
     # Process replica exchange output
     # 1) With detect equilibrium:
     replica_energies, replica_positions, replica_states, production_start = process_replica_exchange_data(
@@ -316,6 +318,7 @@ def test_run_replica_exchange(tmpdir):
     
     assert production_start is None
     
+    # Test pdb writer:
     make_replica_pdb_files(
         cgmodel.topology,
         replica_positions,
@@ -329,14 +332,14 @@ def test_run_replica_exchange(tmpdir):
         output_dir=output_directory
     )
     
-    assert os.path.isfile(f"{output_directory}/output.nc")
     assert os.path.isfile(f"{output_directory}/replica_4.pdb")
     assert os.path.isfile(f"{output_directory}/state_4.pdb")
     
-    # With non-default stride, no centering:
+    # With non-default frame_begin, stride, no centering:
     make_replica_pdb_files(
         cgmodel.topology,
         replica_positions,
+        frame_begin=10,
         stride=2,
         output_dir=output_directory
     )
@@ -345,9 +348,54 @@ def test_run_replica_exchange(tmpdir):
         cgmodel.topology,
         replica_positions,
         replica_states,
+        frame_begin=10,
         stride=2,
         output_dir=output_directory,
         center=False
     )
     
+    
+    # Test dcd writer:
+    make_replica_dcd_files(
+        cgmodel.topology,
+        replica_positions,
+        simulation_time_step,
+        exchange_frequency,
+        output_dir=output_directory
+    )
+        
+    make_state_dcd_files(
+        cgmodel.topology,
+        replica_positions,
+        replica_states,
+        simulation_time_step,
+        exchange_frequency,
+        output_dir=output_directory
+    )
+    
+    assert os.path.isfile(f"{output_directory}/replica_4.dcd")
+    assert os.path.isfile(f"{output_directory}/state_4.dcd")
+    
+    # With non-default frame_begin, stride, no centering:
+    make_replica_dcd_files(
+        cgmodel.topology,
+        replica_positions,
+        simulation_time_step,
+        exchange_frequency,
+        frame_begin=10,
+        stride=2,
+        output_dir=output_directory
+    )
+    
+    make_state_dcd_files(
+        cgmodel.topology,
+        replica_positions,
+        replica_states,
+        simulation_time_step,
+        exchange_frequency,
+        frame_begin=10,
+        stride=2,
+        output_dir=output_directory,
+        center=False
+    )
     

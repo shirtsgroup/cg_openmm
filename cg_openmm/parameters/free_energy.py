@@ -63,7 +63,8 @@ def expectations_free_energy(array_folded_states, temperature_list, frame_begin=
         array_folded_states = array_folded_states_production
         
     # Reshape array_folded_states to row vector for pymbar
-    array_folded_states = np.reshape(array_folded_states,(np.size(array_folded_states)))
+    # We need to order the data by replica, rather than by frame
+    array_folded_states = np.reshape(array_folded_states,(np.size(array_folded_states)),order='F')
         
     # determine the numerical values of beta at each state in units consisten with the temperature
     Tunit = temperature_list[0].unit

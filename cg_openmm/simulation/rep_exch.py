@@ -7,6 +7,7 @@ from simtk import unit
 import openmmtools
 from cg_openmm.utilities.util import set_box_vectors, get_box_vectors
 from simtk.openmm.app.pdbfile import PDBFile
+from simtk.openmm.app.dcdfile import DCDFile
 from mdtraj.formats import PDBTrajectoryFile
 from mdtraj import Topology
 from pymbar import timeseries
@@ -19,8 +20,47 @@ MultiStateSampler._global_citation_silence = True
 
 kB = (unit.MOLAR_GAS_CONSTANT_R).in_units_of(unit.kilojoule / (unit.kelvin * unit.mole))
 
+def make_replica_dcd_files(topology, replica_positions, timestep, time_interval, output_dir="output", frame_begin=0, stride=1):
+    """
+    Make dcd files from replica exchange simulation trajectory data
+    
+    :param topology: OpenMM Topology
+    :type topology: `Topology() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1topology_1_1Topology.html>`_
 
-def make_replica_pdb_files(topology, replica_positions, output_dir="", stride=1):
+    :param replica_positions: Positions array for the replica exchange data for which we will write dcd files
+    :type replica_positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [n_replicas,cgmodel.num_beads,3] ), simtk.unit )
+
+    :param timestep: Time step used in the simulation
+    :type timestep: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>` float * simtk.unit
+    
+    :param time_interval: frequency, in number of time steps, at which positions were recorded
+    :type time_interval: int
+    
+    :param output_directory: Path to which we will write the output (default="output")
+    :type output_directory: str
+    
+    :param frame_begin: Frame at which to start writing the dcd trajectory (default=0)
+    :type frame_begin: int
+    
+    :param stride: advance by this many time intervals when writing dcd trajectories (default=1)
+    :type stride: int 
+    
+    """
+    
+    file_list = []
+    for replica_index in range(len(replica_positions)):
+        replica_trajectory = replica_positions[replica_index][frame_begin::stride]
+        file_name = os.path.join(output_dir, "replica_" + str(replica_index + 1) + ".dcd")
+        file = open(file_name, "wb")
+        dcd_file = DCDFile(file, topology, timestep, firstStep=frame_begin,interval=time_interval)
+        for positions in replica_trajectory:
+            DCDFile.writeModel(dcd_file, positions)
+        file.close()
+        file_list.append(file_name)
+    return file_list
+    
+
+def make_replica_pdb_files(topology, replica_positions, output_dir="output", frame_begin=0, stride=1):
     """
     Make PDB files from replica exchange simulation trajectory data
     
@@ -30,7 +70,13 @@ def make_replica_pdb_files(topology, replica_positions, output_dir="", stride=1)
     :param replica_positions: Positions array for the replica exchange data for which we will write PDB files
     :type replica_positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [n_replicas,cgmodel.num_beads,3] ), simtk.unit )
 
-    :param stride: advance by this many frames when writing pdb trajectories
+    :param output_directory: Path to which we will write the output (default="output")
+    :type output_directory: str    
+    
+    :param frame_begin: Frame at which to start writing the pdb trajectory (default=0)
+    :type frame_begin: int    
+    
+    :param stride: advance by this many frames when writing pdb trajectories (default=1)
     :type stride: int
     
     :returns:
@@ -47,20 +93,88 @@ def make_replica_pdb_files(topology, replica_positions, output_dir="", stride=1)
     """
     file_list = []
     for replica_index in range(len(replica_positions)):
-        replica_trajectory = replica_positions[replica_index]
+        replica_trajectory = replica_positions[replica_index][frame_begin::stride]
         file_name = os.path.join(output_dir, "replica_" + str(replica_index + 1) + ".pdb")
         file = open(file_name, "w")
         PDBFile.writeHeader(topology, file=file)
         modelIndex = 1
-        for positions in replica_trajectory[::stride]:
+        for positions in replica_trajectory:
             PDBFile.writeModel(topology, positions, file=file, modelIndex=modelIndex)
         PDBFile.writeFooter(topology, file=file)
         file.close()
         file_list.append(file_name)
     return file_list
-
     
-def make_state_pdb_files(topology, replica_positions, replica_state_indices, output_dir="", stride=1, center=True):
+
+def make_state_dcd_files(topology, replica_positions, replica_state_indices, timestep, time_interval, output_dir="output", frame_begin=0, stride=1, center=True):
+    """
+    Make dcd files from replica exchange simulation trajectory data
+    
+    :param topology: OpenMM Topology
+    :type topology: `Topology() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1topology_1_1Topology.html>`_
+
+    :param replica_positions: Positions array for the replica exchange data for which we will write dcd files
+    :type replica_positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [n_replicas,cgmodel.num_beads,3] ), simtk.unit )
+
+    :param replica_state_indices: The thermodynamic state assignments for all replicas at all (printed) time steps
+    :type replica_state_indices: ( np.int64( [number_replicas,number_simulation_steps] ), simtk.unit )     
+    
+    :param timestep: Time step used in the simulation
+    :type timestep: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>` float * simtk.unit
+    
+    :param time_interval: frequency, in number of time steps, at which positions were recorded
+    :type time_interval: int
+    
+    :param output_directory: Path to which we will write the output (default="output")
+    :type output_directory: str
+    
+    :param frame_begin: Frame at which to start writing the dcd trajectory (default=0)
+    :type frame_begin: int
+    
+    :param stride: advance by this many time intervals when writing dcd trajectories (default=1)
+    :type stride: int 
+    
+    :param center: align the center of mass of each structure in the discontinuous state trajectory (default=True)
+    :type center: Boolean
+    
+    """
+    
+    file_list = []
+    state_positions = np.zeros_like(replica_positions)
+    
+    for replica_index in range(len(replica_positions)):
+        for frame in range(len(replica_state_indices[0,:])):
+            # For each frame, assign replica_positions to state positions
+            state_positions[replica_state_indices[replica_index,frame],frame,:,:]=replica_positions[replica_index][frame]
+        
+    for state_index in range(len(replica_positions)):
+        state_trajectory = state_positions[state_index][frame_begin::stride]
+    
+        file_name = os.path.join(output_dir, "state_" + str(state_index + 1) + ".dcd")
+        file = open(file_name, "wb")
+        dcd_file = DCDFile(file, topology, timestep, firstStep=frame_begin,interval=time_interval)
+        
+        #***Note: if we have different masses for particle types, need to update this
+        if center==True:
+            center_x = np.mean(state_trajectory[0,:,0])
+            center_y = np.mean(state_trajectory[0,:,1])
+            center_z = np.mean(state_trajectory[0,:,2])
+        
+        for positions in state_trajectory[::stride]:
+            if center==True:
+                positions[:,0] += (center_x - np.mean(positions[:,0]))
+                positions[:,1] += (center_y - np.mean(positions[:,1]))
+                positions[:,2] += (center_z - np.mean(positions[:,2]))
+                
+            # Add the units consistent with replica_energies
+            positions *= replica_positions.unit
+            DCDFile.writeModel(dcd_file, positions)
+        file.close()
+        file_list.append(file_name)
+    return file_list
+    
+    
+def make_state_pdb_files(topology, replica_positions, replica_state_indices, output_dir="output", frame_begin=0, stride=1, center=True):
     """
     Make PDB files by state from replica exchange simulation trajectory data.
     Note: these are discontinuous trajectories with constant temperature state.
@@ -71,14 +185,19 @@ def make_state_pdb_files(topology, replica_positions, replica_state_indices, out
     :param replica_positions: Positions array for the replica exchange data for which we will write PDB files
     :type replica_positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [n_replicas,cgmodel.num_beads,3] ), simtk.unit )
 
-    
     :param replica_state_indices: The thermodynamic state assignments for all replicas at all (printed) time steps
     :type replica_state_indices: ( np.int64( [number_replicas,number_simulation_steps] ), simtk.unit ) 
     
-    :param stride: advance by this many frames when writing pdb trajectories
+    :param output_directory: Path to which we will write the output (default="output")
+    :type output_directory: str    
+    
+    :param frame_begin: Frame at which to start writing the pdb trajectory (default=0)
+    :type frame_begin: int    
+    
+    :param stride: advance by this many frames when writing pdb trajectories (default=1)
     :type stride: int   
 
-    :param center: align the center of mass of each structure in the discontuous state trajectory (default=True)
+    :param center: align the center of mass of each structure in the discontinuous state trajectory (default=True)
     :type center: Boolean
     
     :returns:
@@ -377,7 +496,7 @@ def run_replica_exchange(
         reassign_velocities=False,
     )
 
-    simulation = ReplicaExchangeSampler(mcmc_moves=move, number_of_iterations=exchange_attempts)
+    simulation = ReplicaExchangeSampler(mcmc_moves=move, number_of_iterations=exchange_attempts,replica_mixing_scheme='swap-neighbors')
 
     if os.path.exists(output_data):
         os.remove(output_data)
