@@ -2,12 +2,15 @@ import os
 import subprocess
 import numpy as np
 import matplotlib.pyplot as pyplot
+from matplotlib.backends.backend_pdf import PdfPages
 from simtk import unit
 import openmmtools
 from cg_openmm.utilities.util import set_box_vectors, get_box_vectors
 from simtk.openmm.app.pdbfile import PDBFile
+from simtk.openmm.app.dcdfile import DCDFile
 from mdtraj.formats import PDBTrajectoryFile
 from mdtraj import Topology
+from pymbar import timeseries
 
 from openmmtools.multistate import MultiStateReporter, MultiStateSampler, ReplicaExchangeSampler
 from openmmtools.multistate import ReplicaExchangeAnalyzer
@@ -17,8 +20,47 @@ MultiStateSampler._global_citation_silence = True
 
 kB = (unit.MOLAR_GAS_CONSTANT_R).in_units_of(unit.kilojoule / (unit.kelvin * unit.mole))
 
+def make_replica_dcd_files(topology, replica_positions, timestep, time_interval, output_dir="output", frame_begin=0, stride=1):
+    """
+    Make dcd files from replica exchange simulation trajectory data
+    
+    :param topology: OpenMM Topology
+    :type topology: `Topology() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1topology_1_1Topology.html>`_
 
-def make_replica_pdb_files(topology, replica_positions, output_dir=""):
+    :param replica_positions: Positions array for the replica exchange data for which we will write dcd files
+    :type replica_positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [n_replicas,cgmodel.num_beads,3] ), simtk.unit )
+
+    :param timestep: Time step used in the simulation
+    :type timestep: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>` float * simtk.unit
+    
+    :param time_interval: frequency, in number of time steps, at which positions were recorded
+    :type time_interval: int
+    
+    :param output_directory: Path to which we will write the output (default="output")
+    :type output_directory: str
+    
+    :param frame_begin: Frame at which to start writing the dcd trajectory (default=0)
+    :type frame_begin: int
+    
+    :param stride: advance by this many time intervals when writing dcd trajectories (default=1)
+    :type stride: int 
+    
+    """
+    
+    file_list = []
+    for replica_index in range(len(replica_positions)):
+        replica_trajectory = replica_positions[replica_index][frame_begin::stride]
+        file_name = os.path.join(output_dir, "replica_" + str(replica_index + 1) + ".dcd")
+        file = open(file_name, "wb")
+        dcd_file = DCDFile(file, topology, timestep, firstStep=frame_begin,interval=time_interval)
+        for positions in replica_trajectory:
+            DCDFile.writeModel(dcd_file, positions)
+        file.close()
+        file_list.append(file_name)
+    return file_list
+    
+
+def make_replica_pdb_files(topology, replica_positions, output_dir="output", frame_begin=0, stride=1):
     """
     Make PDB files from replica exchange simulation trajectory data
     
@@ -28,6 +70,15 @@ def make_replica_pdb_files(topology, replica_positions, output_dir=""):
     :param replica_positions: Positions array for the replica exchange data for which we will write PDB files
     :type replica_positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [n_replicas,cgmodel.num_beads,3] ), simtk.unit )
 
+    :param output_directory: Path to which we will write the output (default="output")
+    :type output_directory: str    
+    
+    :param frame_begin: Frame at which to start writing the pdb trajectory (default=0)
+    :type frame_begin: int    
+    
+    :param stride: advance by this many frames when writing pdb trajectories (default=1)
+    :type stride: int
+    
     :returns:
         - file_list ( List( str ) ) - A list of names for the files that were written
 
@@ -40,10 +91,9 @@ def make_replica_pdb_files(topology, replica_positions, output_dir=""):
     >>> pdb_file_list = make_replica_pdb_files(cgmodel.topology,replica_positions)
 
     """
-    replica_index = 1
     file_list = []
     for replica_index in range(len(replica_positions)):
-        replica_trajectory = replica_positions[replica_index]
+        replica_trajectory = replica_positions[replica_index][frame_begin::stride]
         file_name = os.path.join(output_dir, "replica_" + str(replica_index + 1) + ".pdb")
         file = open(file_name, "w")
         PDBFile.writeHeader(topology, file=file)
@@ -54,10 +104,145 @@ def make_replica_pdb_files(topology, replica_positions, output_dir=""):
         file.close()
         file_list.append(file_name)
     return file_list
+    
+
+def make_state_dcd_files(topology, replica_positions, replica_state_indices, timestep, time_interval, output_dir="output", frame_begin=0, stride=1, center=True):
+    """
+    Make dcd files from replica exchange simulation trajectory data
+    
+    :param topology: OpenMM Topology
+    :type topology: `Topology() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1topology_1_1Topology.html>`_
+
+    :param replica_positions: Positions array for the replica exchange data for which we will write dcd files
+    :type replica_positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [n_replicas,cgmodel.num_beads,3] ), simtk.unit )
+
+    :param replica_state_indices: The thermodynamic state assignments for all replicas at all (printed) time steps
+    :type replica_state_indices: ( np.int64( [number_replicas,number_simulation_steps] ), simtk.unit )     
+    
+    :param timestep: Time step used in the simulation
+    :type timestep: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>` float * simtk.unit
+    
+    :param time_interval: frequency, in number of time steps, at which positions were recorded
+    :type time_interval: int
+    
+    :param output_directory: Path to which we will write the output (default="output")
+    :type output_directory: str
+    
+    :param frame_begin: Frame at which to start writing the dcd trajectory (default=0)
+    :type frame_begin: int
+    
+    :param stride: advance by this many time intervals when writing dcd trajectories (default=1)
+    :type stride: int 
+    
+    :param center: align the center of mass of each structure in the discontinuous state trajectory (default=True)
+    :type center: Boolean
+    
+    """
+    
+    file_list = []
+    state_positions = np.zeros_like(replica_positions)
+    
+    for replica_index in range(len(replica_positions)):
+        for frame in range(len(replica_state_indices[0,:])):
+            # For each frame, assign replica_positions to state positions
+            state_positions[replica_state_indices[replica_index,frame],frame,:,:]=replica_positions[replica_index][frame]
+        
+    for state_index in range(len(replica_positions)):
+        state_trajectory = state_positions[state_index][frame_begin::stride]
+    
+        file_name = os.path.join(output_dir, "state_" + str(state_index + 1) + ".dcd")
+        file = open(file_name, "wb")
+        dcd_file = DCDFile(file, topology, timestep, firstStep=frame_begin,interval=time_interval)
+        
+        #***Note: if we have different masses for particle types, need to update this
+        if center==True:
+            center_x = np.mean(state_trajectory[0,:,0])
+            center_y = np.mean(state_trajectory[0,:,1])
+            center_z = np.mean(state_trajectory[0,:,2])
+        
+        for positions in state_trajectory[::stride]:
+            if center==True:
+                positions[:,0] += (center_x - np.mean(positions[:,0]))
+                positions[:,1] += (center_y - np.mean(positions[:,1]))
+                positions[:,2] += (center_z - np.mean(positions[:,2]))
+                
+            # Add the units consistent with replica_energies
+            positions *= replica_positions.unit
+            DCDFile.writeModel(dcd_file, positions)
+        file.close()
+        file_list.append(file_name)
+    return file_list
+    
+    
+def make_state_pdb_files(topology, replica_positions, replica_state_indices, output_dir="output", frame_begin=0, stride=1, center=True):
+    """
+    Make PDB files by state from replica exchange simulation trajectory data.
+    Note: these are discontinuous trajectories with constant temperature state.
+    
+    :param topology: OpenMM Topology
+    :type topology: `Topology() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1topology_1_1Topology.html>`_
+    
+    :param replica_positions: Positions array for the replica exchange data for which we will write PDB files
+    :type replica_positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [n_replicas,cgmodel.num_beads,3] ), simtk.unit )
+
+    :param replica_state_indices: The thermodynamic state assignments for all replicas at all (printed) time steps
+    :type replica_state_indices: ( np.int64( [number_replicas,number_simulation_steps] ), simtk.unit ) 
+    
+    :param output_directory: Path to which we will write the output (default="output")
+    :type output_directory: str    
+    
+    :param frame_begin: Frame at which to start writing the pdb trajectory (default=0)
+    :type frame_begin: int    
+    
+    :param stride: advance by this many frames when writing pdb trajectories (default=1)
+    :type stride: int   
+
+    :param center: align the center of mass of each structure in the discontinuous state trajectory (default=True)
+    :type center: Boolean
+    
+    :returns:
+        - file_list ( List( str ) ) - A list of names for the files that were written
+    """
+    file_list = []
+    state_positions = np.zeros_like(replica_positions)
+    
+    for replica_index in range(len(replica_positions)):
+        for frame in range(len(replica_state_indices[0,:])):
+            # For each frame, assign replica_positions to state positions
+            state_positions[replica_state_indices[replica_index,frame],frame,:,:]=replica_positions[replica_index][frame]
+        
+    for state_index in range(len(replica_positions)):
+        state_trajectory = state_positions[state_index]
+    
+        file_name = os.path.join(output_dir, "state_" + str(state_index + 1) + ".pdb")
+        file = open(file_name, "w")
+
+        PDBFile.writeHeader(topology, file=file)
+        modelIndex = 1
+        
+        #***Note: if we have different masses for particle types, need to update this
+        if center==True:
+            center_x = np.mean(state_trajectory[0,:,0])
+            center_y = np.mean(state_trajectory[0,:,1])
+            center_z = np.mean(state_trajectory[0,:,2])
+        
+        for positions in state_trajectory[::stride]:
+            if center==True:
+                positions[:,0] += (center_x - np.mean(positions[:,0]))
+                positions[:,1] += (center_y - np.mean(positions[:,1]))
+                positions[:,2] += (center_z - np.mean(positions[:,2]))
+                
+            # Add the units consistent with replica_energies, such that PDBFile will write in angstroms.
+            positions *= replica_positions.unit
+            PDBFile.writeModel(topology, positions, file=file, modelIndex=modelIndex)
+        PDBFile.writeFooter(topology, file=file)
+        file.close()
+        file_list.append(file_name)
+    return file_list
 
 
 def process_replica_exchange_data(
-    output_data="output.nc", output_directory="output"
+    output_data="output.nc", output_directory="output", series_per_page=4, detect_equilibration=True, plot_production_only=False
 ):
     """
     Read replica exchange simulation data.
@@ -71,16 +256,20 @@ def process_replica_exchange_data(
     :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data, default = None
     :type output_data: str
 
-    :param time_interval: Time between samples, default = None
-    :type time_interval: int
-
+    :param series_per_page: number of data series to plot per pdf page (default=6)
+    :type series_per_page: int
+    
+    :param detect_equilibration: Option to determine the frame at which the production region begins (default=True)
+    :type detect_equilibration: Boolean
+    
+    :param plot_production_only: Option to plot only the production region, as determined from pymbar detectEquilibration (default=False)
+    :type plot_production_only: Boolean    
 
     :returns:
         - replica_energies ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.float( [number_replicas,number_simulation_steps] ), simtk.unit ) ) - The potential energies for all replicas at all (printed) time steps
         - replica_positions ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.float( [number_replicas,number_simulation_steps,cgmodel.num_beads,3] ), simtk.unit ) ) - The positions for all replicas at all (printed) time steps
-
         - replica_state_indices ( np.int64( [number_replicas,number_simulation_steps] ), simtk.unit ) - The thermodynamic state assignments for all replicas at all (printed) time steps
-
+        - production_start ( int - The frame at which the production region begins for all replicas, as determined from pymbar detectEquilibration
     :Example:
 
     >>> from foldamers.cg_model.cgmodel import CGModel
@@ -138,6 +327,15 @@ def process_replica_exchange_data(
         print(
             f"  {state:4d}    {np.mean(state_energies[state,:]):10.6f} {np.std(state_energies[state,:]):10.6f}"
         )
+        
+    # Use pymbar timeseries module to detect production period
+    # We can also add in the subsampleCorrelatedData routine
+    production_start = None
+    if detect_equilibration==True:
+        t0 = np.zeros((n_replicas))
+        for state in range(n_replicas):
+            t0[state], g, Neff_max = timeseries.detectEquilibration(state_energies[state])
+        production_start = int(np.max(t0))
 
     replica_positions = np.zeros([n_replicas, total_steps, n_particles, 3])
 
@@ -154,21 +352,49 @@ def process_replica_exchange_data(
     # doing the array operations gets rid of units, convert back to units
     replica_positions = replica_positions * sampler_states[0].positions[0].unit
 
-    plot_replica_exchange_energies(
-        replica_energies,
-        temperature_list,
-        time_interval=time_interval,
-        output_directory=output_directory,
-    )
+    if plot_production_only==True:
+        plot_replica_exchange_energies(
+            state_energies[:,production_start:],
+            temperature_list,
+            series_per_page,
+            time_interval=time_interval,
+            time_shift=production_start*time_interval,
+        )
+        
+        plot_replica_exchange_energy_histograms(
+            state_energies[:,production_start:],
+            temperature_list,
+        )
 
-    plot_replica_exchange_summary(
-        replica_state_indices,
-        temperature_list,
-        time_interval=time_interval,
-        output_directory=output_directory,
-    )
+        plot_replica_exchange_summary(
+            replica_state_indices[:,production_start:],
+            temperature_list,
+            series_per_page,
+            time_interval=time_interval,
+            time_shift=production_start*time_interval,
+        )
+        
+    else:
+        plot_replica_exchange_energies(
+            state_energies,
+            temperature_list,
+            series_per_page,
+            time_interval=time_interval,
+        )
+        
+        plot_replica_exchange_energy_histograms(
+            state_energies,
+            temperature_list,
+        )
 
-    return (replica_energies, replica_positions, replica_state_indices)
+        plot_replica_exchange_summary(
+            replica_state_indices,
+            temperature_list,
+            series_per_page,
+            time_interval=time_interval,
+        )
+
+    return (replica_energies, replica_positions, replica_state_indices, production_start)
 
 
 def run_replica_exchange(
@@ -270,7 +496,7 @@ def run_replica_exchange(
         reassign_velocities=False,
     )
 
-    simulation = ReplicaExchangeSampler(mcmc_moves=move, number_of_iterations=exchange_attempts)
+    simulation = ReplicaExchangeSampler(mcmc_moves=move, number_of_iterations=exchange_attempts,replica_mixing_scheme='swap-neighbors')
 
     if os.path.exists(output_data):
         os.remove(output_data)
@@ -351,18 +577,19 @@ def get_minimum_energy_ensemble(
 
 
 def plot_replica_exchange_energies(
-    replica_energies,
+    state_energies,
     temperature_list,
+    series_per_page,
     time_interval=1.0 * unit.picosecond,
-    file_name="rep_ex_ener.png",
+    time_shift=0.0 * unit.picosecond,    
+    file_name="rep_ex_ener.pdf",
     legend=True,
-    output_directory=None,
 ):
     """
     Plot the potential energies for a batch of replica exchange trajectories
 
-    :param replica_energies: List of dimension num_replicas X simulation_steps, which gives the energies for all replicas at all simulation steps
-    :type replica_energies: List( List( float * simtk.unit.energy for simulation_steps ) for num_replicas )
+    :param state_energies: List of dimension num_replicas X simulation_steps, which gives the energies for all replicas at all simulation steps
+    :type state_energies: List( List( float * simtk.unit.energy for simulation_steps ) for num_replicas )
 
     :param temperature_list: List of temperatures for which to perform replica exchange simulations, default = [(300.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(-20,100,10)]
     :type temperature: List( float * simtk.unit.temperature )
@@ -370,66 +597,129 @@ def plot_replica_exchange_energies(
     :param time_interval: interval between energy exchanges.
     :type time_interval: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
 
+    :param time_shift: amount of time before production period to shift the time axis(default = 0)
+    :type time_shift: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
+    
     :param file_name: The pathname of the output file for plotting results, default = "replica_exchange_energies.png"
     :type file_name: str
-
-    :param output_directory: Path to which we will write the output from simulation runs, Default = None
-    :type output_directory: str
 
     :param legend: Controls whether a legend is added to the plot
     :type legend: Logical
 
-    ..warning:: If more than 10 replica exchange trajectories are provided as input data, by default, this function will only plot the first 10 thermodynamic states.  These thermodynamic states are chosen based upon their indices, not their instantaneous temperature (ensemble) assignment.
+    """
+
+    simulation_times = np.array(
+        [
+            step * time_interval.value_in_unit(unit.picosecond)
+            for step in range(len(state_energies[0]))
+        ]
+    )
+    
+    simulation_times += time_shift.value_in_unit(unit.picosecond)
+    
+    # If more than series_per_page replicas, split into separate pages for better visibility
+    nmax = series_per_page
+    npage = int(np.ceil(len(temperature_list)/nmax))
+    
+    with PdfPages(file_name) as pdf:
+        page_num=1
+        plotted_per_page=0
+        pyplot.figure()
+        for state in range(len(temperature_list)):
+            if plotted_per_page <= (nmax):
+                pyplot.plot(
+                    simulation_times,
+                    state_energies[state,:],
+                    alpha=0.5,
+                    linewidth=1
+                )
+                plotted_per_page += 1
+                
+            if (plotted_per_page >= nmax) or (state==(len(temperature_list)-1)):
+                # Save and close previous page
+                pyplot.xlabel("Simulation Time ( Picoseconds )")
+                pyplot.ylabel("Potential Energy ( kJ / mol )")
+                pyplot.title("Replica Exchange Simulation")
+                
+                if legend:
+                    pyplot.legend(
+                        [round(temperature.value_in_unit(unit.kelvin), 1) for temperature in temperature_list[(0+(page_num-1)*nmax):(page_num*nmax)]],
+                        loc="center left",
+                        bbox_to_anchor=(1, 0.5),
+                        title="T (K)",
+                    )  
+                
+                pdf.savefig(bbox_inches="tight") # Save current fig to pdf page
+                pyplot.close()
+                plotted_per_page = 0
+                page_num += 1
+                
+    return
+    
+
+def plot_replica_exchange_energy_histograms(
+    state_energies,
+    temperature_list,
+    file_name="rep_ex_ener_hist.pdf",
+    legend=True,
+):
+    """
+    Plot the potential energies for a batch of replica exchange trajectories
+
+    :param state_energies: List of dimension num_replicas X simulation_steps, which gives the energies for all replicas at all simulation steps
+    :type state_energies: List( List( float * simtk.unit.energy for simulation_steps ) for num_replicas )
+
+    :param temperature_list: List of temperatures for which to perform replica exchange simulations, default = [(300.0 * unit.kelvin).__add__(i * unit.kelvin) for i in range(-20,100,10)]
+    :type temperature: List( float * simtk.unit.temperature )
+
+    :param file_name: The pathname of the output file for plotting results, default = "replica_exchange_energies.png"
+    :type file_name: str
+
+    :param legend: Controls whether a legend is added to the plot
+    :type legend: Logical
 
     """
 
-    figure = pyplot.figure(0)
+    figure = pyplot.figure(figsize=(8.5,11))
 
-    for replica in range(len(replica_energies)):
-        simulation_times = np.array(
-            [
-                step * time_interval.in_units_of(unit.picosecond)._value
-                for step in range(len(replica_energies[replica][replica]))
-            ]
+    for state in range(len(temperature_list)):
+        n_out, bin_edges_out = np.histogram(
+            state_energies[state,:],bins=20,density=True,
         )
-        energies = np.array([float(energy) for energy in replica_energies[replica][replica]])
-        pyplot.plot(simulation_times, energies, figure=figure)
+        
+        bin_centers = np.zeros((len(bin_edges_out)-1,1))
+        for i in range(len(bin_edges_out)-1):
+            bin_centers[i] = (bin_edges_out[i]+bin_edges_out[i+1])/2
+        
+        pyplot.plot(bin_centers,n_out,'o-',alpha=0.5,linewidth=1,markersize=6)
+            
 
-    pyplot.xlabel("Simulation Time ( Picoseconds )")
-    pyplot.ylabel("Potential Energy ( kJ / mol )")
-    pyplot.title("Replica Exchange Simulation")
+    pyplot.xlabel("Potential Energy ( kJ / mol )")
+    pyplot.ylabel("Probability")
+    pyplot.title("Replica Exchange Energy Histogram")
+    
     if legend:
-        if len(temperature_list) > 10:
-            pyplot.legend(
-                [round(temperature._value, 1) for temperature in temperature_list[0:9]],
-                loc="center left",
-                bbox_to_anchor=(1, 0.5),
-                title="T (K)",
-            )
-        else:
-            pyplot.legend(
-                [round(temperature._value, 1) for temperature in temperature_list],
-                loc="center left",
-                bbox_to_anchor=(1, 0.5),
-                title="T (K)",
-            )
-    if output_directory is not None:
-        output_file = os.path.join(output_directory, file_name)
-        pyplot.savefig(output_file, bbox_inches="tight")
-    else:
-        pyplot.savefig(file_name, bbox_inches="tight")
+        pyplot.legend(
+            [round(temperature._value, 1) for temperature in temperature_list],
+            loc="center left",
+            bbox_to_anchor=(1, 0.5),
+            title="T (K)",
+        )
+
+    pyplot.savefig(file_name, bbox_inches="tight")
     pyplot.close()
 
     return
-
+    
 
 def plot_replica_exchange_summary(
     replica_states,
     temperature_list,
+    series_per_page,
     time_interval=1.0 * unit.picosecond,
-    file_name="rep_ex_states.png",
+    time_shift=0.0 * unit.picosecond,
+    file_name="rep_ex_states.pdf",
     legend=True,
-    output_directory=None,
 ):
     """
     Plot the thermodynamic state assignments for individual temperature replicas as a function of the simulation time, in order to obtain a visual summary of the replica exchanges from a OpenMM simulation.
@@ -443,50 +733,65 @@ def plot_replica_exchange_summary(
     :param time_interval: interval between energy exchanges.
     :type time_interval: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
 
+    :param time_shift: amount of time before production period to shift the time axis(default = 0)
+    :type time_shift: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
+
     :param file_name: The pathname of the output file for plotting results, default = "replica_exchange_state_transitions.png"
     :type file_name: str
 
     :param legend: Controls whether a legend is added to the plot
     :type legend: Logical
 
-    :param output_directory: Path to which we will write the output from simulation runs, default = None
-    :type output_directory: str
-
     ..warning:: If more than 10 replica exchange trajectories are provided as input data, by default, this function will only plot the first 10 thermodynamic states.  These thermodynamic states are chosen based upon their indices, not their instantaneous temperature (ensemble) assignment.
 
     """
-
-    figure = pyplot.figure(1)
-    for replica in range(len(replica_states)):
-        simulation_times = np.array(
-            [
-                step * time_interval.in_units_of(unit.picosecond)._value
-                for step in range(len(replica_states[replica]))
-            ]
-        )
-        state_indices = np.array([int(round(state)) for state in replica_states[replica]])
-        pyplot.plot(simulation_times, state_indices, figure=figure)
-
-    pyplot.xlabel("Simulation Time ( Picoseconds )")
-    pyplot.ylabel("Thermodynamic State Index")
-    pyplot.title("State Exchange Summary")
-    if legend:
-        if len(replica_states) > 10:
-            pyplot.legend(
-                [i for i in range(len(replica_states[0:9]))],
-                loc="center left",
-                bbox_to_anchor=(1, 0.5),
-                title="Replica Index",
-            )
-        else:
-            pyplot.legend(
-                [i for i in range(len(replica_states))],
-                loc="center left",
-                bbox_to_anchor=(1, 0.5),
-                title="Replica Index",
-            )
-    output_file = os.path.join(output_directory, file_name)
-    pyplot.savefig(output_file, bbox_inches="tight")
-    pyplot.close()
+    
+    simulation_times = np.array(
+        [
+            step * time_interval.value_in_unit(unit.picosecond)
+            for step in range(len(replica_states[0]))
+        ]
+    )
+    
+    simulation_times += time_shift.value_in_unit(unit.picosecond)
+    
+    # If more than series_per_page replicas, split into separate pages for better visibility
+    nmax = series_per_page
+    npage = int(np.ceil(len(temperature_list)/nmax))
+        
+    with PdfPages(file_name) as pdf:
+        page_num=1
+        plotted_per_page=0
+        pyplot.figure()
+        for replica in range(len(replica_states)):
+            state_indices = np.array([int(round(state)) for state in replica_states[replica]])
+            
+            if plotted_per_page <= (nmax):
+                pyplot.plot(
+                    simulation_times,
+                    state_indices,
+                    alpha=0.5,
+                    linewidth=1
+                )
+                plotted_per_page += 1
+                
+            if (plotted_per_page >= nmax) or (replica==(len(replica_states)-1)):
+                # Save and close previous page
+                pyplot.xlabel("Simulation Time ( Picoseconds )")
+                pyplot.ylabel("Thermodynamic State Index")
+                pyplot.title("State Exchange Summary")
+                
+                if legend:
+                    pyplot.legend(
+                        [i for i in range((page_num-1)*nmax,page_num*nmax)],
+                        loc="center left",
+                        bbox_to_anchor=(1, 0.5),
+                        title="Replica Index",
+                    )
+                
+                pdf.savefig(bbox_inches="tight") # Save current fig to pdf page
+                pyplot.close()
+                plotted_per_page = 0
+                page_num += 1
 
     return

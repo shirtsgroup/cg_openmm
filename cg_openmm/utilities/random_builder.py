@@ -837,9 +837,12 @@ def distance(positions_1, positions_2):
            - distance ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The distance between the provided particles.
 
         """
-
-    u = positions_1.unit
-    return u * np.sqrt(np.sum((positions_1 - positions_2) ** 2))
+    # Not sure why this is needed, but first strip units to prevent them being lost in the distance calculation    
+    units = positions_1.unit
+    positions_1_val = positions_1.value_in_unit(units)
+    positions_2_val = positions_2.value_in_unit(units)
+        
+    return np.sqrt(np.sum(np.power((positions_1_val - positions_2_val),2))) * units
 
 
 def distance_matrix(positions):
