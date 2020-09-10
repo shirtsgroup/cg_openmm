@@ -350,8 +350,20 @@ def plot_native_contact_timeseries(
     :param Q: native contact fraction for a given temperature
     :type Q: np.array(float * nframes x len(temperature_list))
     
-    :param Q_uncertainty: uncertainty associated with Q
-    :type Q_uncertainty: np.array(float * len(temperature_list))
+    :param time_interval: interval between energy exchanges.
+    :type time_interval: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
+
+    :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
+    :type frame_begin: int
+    
+    :param plot_per_page: number of subplots per pdf page (default=3)
+    :type plot_per_page: int
+
+    :param plotfile: The pathname of the output file for plotting results, default = "replica_exchange_state_transitions.png"
+    :type plotfile: str
+    
+    :param figure_title: title of overall plot
+    :type figure_title: str
     
     """
         
