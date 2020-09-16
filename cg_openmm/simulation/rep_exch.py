@@ -642,8 +642,6 @@ def plot_replica_exchange_energies(
     nmax = series_per_page
     npage = int(np.ceil(len(temperature_list)/nmax))
     
-    pyplot.figure()
-    
     with PdfPages(file_name) as pdf:
         page_num=1
         plotted_per_page=0
