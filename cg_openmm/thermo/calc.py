@@ -39,7 +39,7 @@ def plot_heat_capacity(Cv, dCv, temperature_list, file_name="heat_capacity.pdf")
     return
 
 
-def get_heat_capacity(temperature_list, frame_begin=0, output_data="output.nc", output_directory="output", num_intermediate_states=0,frac_dT=0.05, plot_file=None):
+def get_heat_capacity(temperature_list, frame_begin=0, sample_spacing=1, output_data="output.nc", output_directory="output", num_intermediate_states=0,frac_dT=0.05, plot_file=None):
     """
 
     Given a .nc output, a temperature list, and a number of intermediate states to insert for the temperature list, this function calculates and plots the heat capacity profile.
@@ -49,6 +49,9 @@ def get_heat_capacity(temperature_list, frame_begin=0, output_data="output.nc", 
                              
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
     :type frame_begin: int
+    
+    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData
+    :type sample_spacing: int                         
                              
     :param output_directory: directory in which the output data is in, default = "output"                                     
     :type output_data: str
@@ -80,10 +83,7 @@ def get_heat_capacity(temperature_list, frame_begin=0, output_data="output.nc", 
     ) = analyzer.read_energies()
     
     # Select production frames to analyze
-    replica_energies = replica_energies_all[:,:,frame_begin:]
-    
-    # Subsampled correlated timeseries data:
-    # subsample_indices = timeseries.subsampleCorrelatedData[replica_energies]
+    replica_energies = replica_energies_all[:,:,frame_begin::sample_spacing]
     
     # determine the numerical values of beta at each state in units consistent with the temperature
     Tunit = temperature_list[0].unit
