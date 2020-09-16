@@ -11,6 +11,7 @@ from simtk.openmm.app.dcdfile import DCDFile
 from mdtraj.formats import PDBTrajectoryFile
 from mdtraj import Topology
 from pymbar import timeseries
+import time
 
 from openmmtools.multistate import MultiStateReporter, MultiStateSampler, ReplicaExchangeSampler
 from openmmtools.multistate import ReplicaExchangeAnalyzer
@@ -270,6 +271,7 @@ def process_replica_exchange_data(
         - replica_positions ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.float( [number_replicas,number_simulation_steps,cgmodel.num_beads,3] ), simtk.unit ) ) - The positions for all replicas at all (printed) time steps
         - replica_state_indices ( np.int64( [number_replicas,number_simulation_steps] ), simtk.unit ) - The thermodynamic state assignments for all replicas at all (printed) time steps
         - production_start ( int - The frame at which the production region begins for all replicas, as determined from pymbar detectEquilibration
+        - max_sample_spacing ( int - The number of frames between uncorrelated state energies )
     :Example:
 
     >>> from foldamers.cg_model.cgmodel import CGModel
@@ -321,24 +323,40 @@ def process_replica_exchange_data(
             ]
 
     # can run physical-valication on these state_energies
-
-    print("state    mean energies  variance")
-    for state in range(n_replicas):
-        print(
-            f"  {state:4d}    {np.mean(state_energies[state,:]):10.6f} {np.std(state_energies[state,:]):10.6f}"
-        )
         
     # Use pymbar timeseries module to detect production period
     # We can also add in the subsampleCorrelatedData routine
     production_start = None
     if detect_equilibration==True:
         t0 = np.zeros((n_replicas))
+        subsample_indices = {}
         for state in range(n_replicas):
             t0[state], g, Neff_max = timeseries.detectEquilibration(state_energies[state])
         production_start = int(np.max(t0))
+        
+        # Choose the most conservative sample spacing
+        max_sample_spacing = 1
+        for state in range(n_replicas):
+            subsample_indices[state] = timeseries.subsampleCorrelatedData(
+                state_energies[state][production_start:],
+                conservative=True,
+            )
+            if (subsample_indices[state][1]-subsample_indices[state][0]) > max_sample_spacing:
+                max_sample_spacing = (subsample_indices[state][1]-subsample_indices[state][0])
+                
+                
+    print("state    mean energies  variance")
+    for state in range(n_replicas):
+        state_mean = np.mean(state_energies[state,production_start::max_sample_spacing])
+        state_std = np.std(state_energies[state,production_start::max_sample_spacing])
+        print(
+            f"  {state:4d}    {state_mean:10.6f} {state_std:10.6f}"
+        )
+
 
     replica_positions = np.zeros([n_replicas, total_steps, n_particles, 3])
 
+    tic = time.perf_counter()
     f = open(os.path.join(output_directory, "replica_energies.dat"), "w")
     for step in range(total_steps):
         f.write(f"{step:10d}")
@@ -348,29 +366,31 @@ def process_replica_exchange_data(
             f.write(f"{replica_energies[replica_index,replica_index,step]:12.6f}")
         f.write("\n")
     f.close()
+    toc = time.perf_counter()
+    print(f".dat file writing: {toc-tic} s")
 
     # doing the array operations gets rid of units, convert back to units
     replica_positions = replica_positions * sampler_states[0].positions[0].unit
 
     if plot_production_only==True:
         plot_replica_exchange_energies(
-            state_energies[:,production_start:],
+            state_energies[:,production_start::max_sample_spacing],
             temperature_list,
             series_per_page,
-            time_interval=time_interval,
+            time_interval=time_interval*max_sample_spacing,
             time_shift=production_start*time_interval,
         )
         
         plot_replica_exchange_energy_histograms(
-            state_energies[:,production_start:],
+            state_energies[:,production_start::max_sample_spacing],
             temperature_list,
         )
 
         plot_replica_exchange_summary(
-            replica_state_indices[:,production_start:],
+            replica_state_indices[:,production_start::max_sample_spacing],
             temperature_list,
             series_per_page,
-            time_interval=time_interval,
+            time_interval=time_interval*max_sample_spacing,
             time_shift=production_start*time_interval,
         )
         
@@ -394,7 +414,7 @@ def process_replica_exchange_data(
             time_interval=time_interval,
         )
 
-    return (replica_energies, replica_positions, replica_state_indices, production_start)
+    return (replica_energies, replica_positions, replica_state_indices, production_start, max_sample_spacing)
 
 
 def run_replica_exchange(
@@ -621,6 +641,8 @@ def plot_replica_exchange_energies(
     nmax = series_per_page
     npage = int(np.ceil(len(temperature_list)/nmax))
     
+    pyplot.figure()
+    
     with PdfPages(file_name) as pdf:
         page_num=1
         plotted_per_page=0
@@ -631,7 +653,7 @@ def plot_replica_exchange_energies(
                     simulation_times,
                     state_energies[state,:],
                     alpha=0.5,
-                    linewidth=1
+                    linewidth=1,
                 )
                 plotted_per_page += 1
                 
