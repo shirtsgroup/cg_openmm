@@ -99,7 +99,7 @@ def expectations_fraction_contacts(fraction_native_contacts, temperature_list, f
     """
 
     # extract reduced energies and the state indices from the .nc  
-    reporter = MultiStateReporter(os.path.join(output_directory,output_data), open_mode="r")
+    reporter = MultiStateReporter(output_data, open_mode="r")
     analyzer = ReplicaExchangeAnalyzer(reporter)
     (
         replica_energies_all,
@@ -184,6 +184,7 @@ def expectations_fraction_contacts(fraction_native_contacts, temperature_list, f
 
     
 def fraction_native_contacts(
+    cgmodel,
     file_list,
     native_contact_list,
     native_contact_distances,
@@ -191,8 +192,11 @@ def fraction_native_contacts(
     native_contact_cutoff_ratio=1.00,
 ):
     """
-    Given an mdtraj trajectory object, and positions for the native structure, this function calculates the fraction of native contacts for the model.
+    Given a cgmodel, mdtraj trajectory object, and positions for the native structure, this function calculates the fraction of native contacts for the model.
     
+    :param cgmodel: CGModel() class object
+    :type cgmodel: class
+        
     :param file_list: A list of replica PDB or DCD trajectory files corresponding to the energies in the .nc file, or a single file name
     :type file_list: List( str ) or str
 

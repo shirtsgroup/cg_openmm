@@ -70,7 +70,7 @@ def get_heat_capacity(temperature_list, frame_begin=0, output_data="output.nc", 
         """
 
     # extract reduced energies and the state indices from the .nc  
-    reporter = MultiStateReporter(os.path.join(output_directory,output_data), open_mode="r")
+    reporter = MultiStateReporter(output_data, open_mode="r")
     analyzer = ReplicaExchangeAnalyzer(reporter)
     (
         replica_energies_all,
@@ -82,7 +82,10 @@ def get_heat_capacity(temperature_list, frame_begin=0, output_data="output.nc", 
     # Select production frames to analyze
     replica_energies = replica_energies_all[:,:,frame_begin:]
     
-    # determine the numerical values of beta at each state in units consisten with the temperature
+    # Subsampled correlated timeseries data:
+    # subsample_indices = timeseries.subsampleCorrelatedData[replica_energies]
+    
+    # determine the numerical values of beta at each state in units consistent with the temperature
     Tunit = temperature_list[0].unit
     temps = np.array([temp.value_in_unit(Tunit)  for temp in temperature_list])  # should this just be array to begin with
     beta_k = 1 / (kB.value_in_unit(unit.kilojoule_per_mole/Tunit) * temps)

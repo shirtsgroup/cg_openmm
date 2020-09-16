@@ -44,7 +44,7 @@ def expectations_free_energy(array_folded_states, temperature_list, frame_begin=
     n_conf_states = len(np.unique(array_folded_states))
 
     # extract reduced energies and the state indices from the .nc
-    reporter = MultiStateReporter(os.path.join(output_directory,output_data), open_mode="r")
+    reporter = MultiStateReporter(output_data, open_mode="r")
     analyzer = ReplicaExchangeAnalyzer(reporter)
     (
         replica_energies_all,
