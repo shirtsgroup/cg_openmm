@@ -60,6 +60,7 @@ def test_native_contacts(tmpdir):
     
     # Determine native contact fraction of current trajectories:
     Q, Q_avg, Q_stderr = fraction_native_contacts(
+        cgmodel,
         pdb_file_list,
         native_contact_list,
         native_contact_distances,
@@ -121,6 +122,7 @@ def test_expectations_fraction_contacts(tmpdir):
     )
 
     Q, Q_avg, Q_stderr = fraction_native_contacts(
+        cgmodel,
         pdb_file_list,
         native_contact_list,
         native_contact_distances,
