@@ -9,7 +9,7 @@ import pymbar
 
 kB = unit.MOLAR_GAS_CONSTANT_R # Boltzmann constant
 
-def expectations_free_energy(array_folded_states, temperature_list, frame_begin=0, output_directory="output", output_data="output.nc", num_intermediate_states=0):
+def expectations_free_energy(array_folded_states, temperature_list, frame_begin=0, sample_spacing=1, output_directory="output", output_data="output.nc", num_intermediate_states=0):
     """
     This function calculates the free energy difference (with uncertainty) between all conformational states as a function of temperature.
 
@@ -21,6 +21,9 @@ def expectations_free_energy(array_folded_states, temperature_list, frame_begin=
     
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
     :type frame_begin: int    
+    
+    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData
+    :type sample_spacing: int     
     
     :param output_directory: Path to simulation output directory which contains a .nc file.
     :type output_directory: str
@@ -54,13 +57,19 @@ def expectations_free_energy(array_folded_states, temperature_list, frame_begin=
     ) = analyzer.read_energies()
     
     # Select production frames to analyze
-    replica_energies = replica_energies_all[:,:,frame_begin:]
+    replica_energies = replica_energies_all[:,:,frame_begin::sample_spacing]
 
     # Check if array_folded_states needs slicing for production region:
     # array_folded_states is array of [nframes,nreplicas]
-    if np.size(array_folded_states) != np.size(replica_energies[0]):
-        array_folded_states_production = array_folded_states[frame_begin:,:]
-        array_folded_states = array_folded_states_production
+    if np.shape(replica_energies)[2] != np.shape(array_folded_states)[0]:
+        # Mismatch in the number of frames.
+        if np.shape(replica_energies_all[:,:,frame_begin::])[2] == np.shape(array_folded_states)[0]:
+            # Correct starting frame, need to apply sampling stride:
+            array_folded_states = array_folded_states[frame_begin:,:] 
+        elif np.shape(replica_energies_all)[3] == np.shape(array_folded_states)[0]:
+            # This is the full array_folded_states, slice production frames:
+            array_folded_states = array_folded_states[frame_begin::sample_spacing,:]
+        
         
     # Reshape array_folded_states to row vector for pymbar
     # We need to order the data by replica, rather than by frame

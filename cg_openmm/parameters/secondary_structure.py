@@ -74,7 +74,7 @@ def get_native_contacts(cgmodel, native_structure, native_contact_distance_cutof
     return native_contact_list, native_contact_distances, contact_type_dict
 
 
-def expectations_fraction_contacts(fraction_native_contacts, temperature_list, frame_begin=0, output_directory="output", output_data="output.nc", num_intermediate_states=0):
+def expectations_fraction_contacts(fraction_native_contacts, temperature_list, frame_begin=0, sample_spacing=1, output_directory="output", output_data="output.nc", num_intermediate_states=0):
     """
     Given a .nc output, a temperature list, and a number of intermediate states to insert for the temperature list, this function calculates the native contacts expectation.   
     
@@ -87,6 +87,9 @@ def expectations_fraction_contacts(fraction_native_contacts, temperature_list, f
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
     :type frame_begin: int
 
+    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData
+    :type sample_spacing: int     
+    
     :param output_directory: directory in which the output data is in, default = "output"                                     
     :type output_data: str    
     
@@ -109,7 +112,17 @@ def expectations_fraction_contacts(fraction_native_contacts, temperature_list, f
     ) = analyzer.read_energies()
     
     # Select production frames to analyze
-    replica_energies = replica_energies_all[:,:,frame_begin:]
+    replica_energies = replica_energies_all[:,:,frame_begin::sample_spacing]
+    
+    # Check the size of the fraction_native_contacts array:
+    if np.shape(replica_energies)[2] != np.shape(fraction_native_contacts)[0]:
+        # Mismatch in number of frames.
+        if np.shape(replica_energies_all[:,:,frame_begin::])[2] == np.shape(fraction_native_contacts)[0]:
+            # Correct starting frame, need to apply sampling stride:
+            fraction_native_contacts = fraction_native_contacts[::sample_spacing,:]
+        elif np.shape(replica_energies_all)[3] == np.shape(fraction_native_contacts)[0]:
+            # This is the full fraction_native_contacts, slice production frames:
+            fraction_native_contacts = fraction_native_contacts[production_start::sample_spacing,:]
 
     # determine the numerical values of beta at each state in units consistent with the temperature
     Tunit = temperature_list[0].unit

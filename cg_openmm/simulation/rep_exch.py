@@ -327,6 +327,8 @@ def process_replica_exchange_data(
     # Use pymbar timeseries module to detect production period
     # We can also add in the subsampleCorrelatedData routine
     production_start = None
+    max_sample_spacing = 1
+    
     if detect_equilibration==True:
         t0 = np.zeros((n_replicas))
         subsample_indices = {}
@@ -335,7 +337,6 @@ def process_replica_exchange_data(
         production_start = int(np.max(t0))
         
         # Choose the most conservative sample spacing
-        max_sample_spacing = 1
         for state in range(n_replicas):
             subsample_indices[state] = timeseries.subsampleCorrelatedData(
                 state_energies[state][production_start:],
@@ -374,23 +375,23 @@ def process_replica_exchange_data(
 
     if plot_production_only==True:
         plot_replica_exchange_energies(
-            state_energies[:,production_start::max_sample_spacing],
+            state_energies[:,production_start:],
             temperature_list,
             series_per_page,
-            time_interval=time_interval*max_sample_spacing,
+            time_interval=time_interval,
             time_shift=production_start*time_interval,
         )
         
         plot_replica_exchange_energy_histograms(
-            state_energies[:,production_start::max_sample_spacing],
+            state_energies[:,production_start:],
             temperature_list,
         )
 
         plot_replica_exchange_summary(
-            replica_state_indices[:,production_start::max_sample_spacing],
+            replica_state_indices[:,production_start:],
             temperature_list,
             series_per_page,
-            time_interval=time_interval*max_sample_spacing,
+            time_interval=time_interval,
             time_shift=production_start*time_interval,
         )
         
