@@ -10,19 +10,20 @@ from cg_openmm.utilities.random_builder import *
 from cg_openmm.utilities.iotools import write_pdbfile_without_topology
 from openmmtools.multistate import MultiStateReporter, ReplicaExchangeAnalyzer
 import pymbar
+from pymbar import timeseries
 import mdtraj as md
 
 kB = unit.MOLAR_GAS_CONSTANT_R # Boltzmann constant
 
-def get_native_contacts(cgmodel, native_structure, native_contact_distance_cutoff):
+def get_native_contacts(cgmodel, native_structure_file, native_contact_distance_cutoff):
     """
         Given a coarse grained model, positions for that model, and positions for the native structure, this function calculates the fraction of native contacts for the model.
 
         :param cgmodel: CGModel() class object
         :type cgmodel: class
 
-        :param native_structure: Positions for the particles in a coarse grained model.
-        :type native_structure: np.array( float * unit.angstrom ( num_particles x 3 ) )
+        :param native_structure_file: Path to file ('pdb' or 'dcd') containing particle positions for the native structure.
+        :type native_structure_file: str
 
         :param native_contact_distance_cutoff: The maximum distance for two nonbonded particles that are defined as "native",default=None
         :type native_contact_distance_cutoff: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
@@ -33,6 +34,15 @@ def get_native_contacts(cgmodel, native_structure, native_contact_distance_cutof
           - contact_type_dict - A dictionary of {native contact particle type pair: counts}
         """
 
+    # Parse native structure file
+    if native_structure_file[-3:] == 'dcd':
+        native_traj = md.load(native_structure_file,top=md.Topology.from_openmm(cgmodel.topology))
+        # ***Note: The clustering dcds are written with unit nanometers,
+        # but this may not always be the case.
+        native_positions = native_traj[0].xyz[0]*unit.nanometer
+    else:
+        native_positions = PDBFile(native_structure_file).getPositions()
+        
     nonbonded_interaction_list = cgmodel.nonbonded_interaction_list
     native_structure_distances = distances(nonbonded_interaction_list, native_structure)
     native_contact_list = []
@@ -229,7 +239,8 @@ def fraction_native_contacts(
       - Q ( numpy array (float * nframes x nreplicas) ) - The fraction of native contacts for all selected frames in the trajectories.
       - Q_avg ( numpy array (float * nreplicas) ) - Mean values of Q for each replica.
       - Q_stderr ( numpy array (float * nreplicas) ) - Standard error of the mean of Q for each replica.
-
+      - decorrelation_spacing ( int ) - Number of frames between uncorrelated native contact fractions
+      
     """
 
     if len(native_contact_list)==0:
@@ -275,10 +286,24 @@ def fraction_native_contacts(
         Q[:,rep] = number_native_interactions/len(native_contact_distances)
         Q_avg[rep] = np.mean(Q[:,rep])
         # Compute standard error:
-        Q_stderr[rep] = np.std(Q[:,rep])/np.sqrt(len(Q[:,rep])) 
+        Q_stderr[rep] = np.std(Q[:,rep])/np.sqrt(len(Q[:,rep]))
+    
+    # Determine the decorrelation time of native contact fraction timeseries data:
+    # Note: if these are replica trajectories, we will get a folding rate
+    # If these are state trajectories, we will get decorrelation time for constant state
+    max_sample_spacing = 1
+    subsample_indices = {}
+    for rep in range(n_replicas):
+        subsample_indices[rep] = timeseries.subsampleCorrelatedData(
+            Q[:,rep],
+            conservative=True,
+        )
+        if (subsample_indices[rep][1]-subsample_indices[rep][0]) > max_sample_spacing:
+            max_sample_spacing = (subsample_indices[rep][1]-subsample_indices[rep][0])
+    
+    decorrelation_spacing = max_sample_spacing
         
-    return Q, Q_avg, Q_stderr
-
+    return Q, Q_avg, Q_stderr, decorrelation_spacing
 
 def optimize_Q(cgmodel, native_structure, ensemble):
     """
