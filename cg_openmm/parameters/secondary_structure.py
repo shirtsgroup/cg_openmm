@@ -39,9 +39,9 @@ def get_native_contacts(cgmodel, native_structure_file, native_contact_distance_
         native_traj = md.load(native_structure_file,top=md.Topology.from_openmm(cgmodel.topology))
         # ***Note: The clustering dcds are written with unit nanometers,
         # but this may not always be the case.
-        native_positions = native_traj[0].xyz[0]*unit.nanometer
+        native_structure = native_traj[0].xyz[0]*unit.nanometer
     else:
-        native_positions = PDBFile(native_structure_file).getPositions()
+        native_structure = PDBFile(native_structure_file).getPositions()
         
     nonbonded_interaction_list = cgmodel.nonbonded_interaction_list
     native_structure_distances = distances(nonbonded_interaction_list, native_structure)
