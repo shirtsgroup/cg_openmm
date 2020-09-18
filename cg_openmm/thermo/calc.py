@@ -39,12 +39,12 @@ def plot_heat_capacity(Cv, dCv, temperature_list, file_name="heat_capacity.pdf")
     return
 
 
-def get_heat_capacity(temperature_list, frame_begin=0, sample_spacing=1, output_data="output.nc", output_directory="output", num_intermediate_states=0,frac_dT=0.05, plot_file=None):
+def get_heat_capacity(temperature_list, frame_begin=0, sample_spacing=1, output_data="output/output.nc", num_intermediate_states=0,frac_dT=0.05, plot_file=None):
     """
 
     Given a .nc output, a temperature list, and a number of intermediate states to insert for the temperature list, this function calculates and plots the heat capacity profile.
     
-    :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data, default = None                                                                                                 
+    :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data, default = "output/output.nc"                                                                                            
     :type output_data: str
                              
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
@@ -52,9 +52,6 @@ def get_heat_capacity(temperature_list, frame_begin=0, sample_spacing=1, output_
     
     :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData
     :type sample_spacing: int                         
-                             
-    :param output_directory: directory in which the output data is in, default = "output"                                     
-    :type output_data: str
 
     :param temperature_list: List of temperatures for which to perform replica exchange simulations, default = None
     :type temperature: List( float * simtk.unit.temperature )
