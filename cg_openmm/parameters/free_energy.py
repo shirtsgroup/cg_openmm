@@ -9,7 +9,7 @@ import pymbar
 
 kB = unit.MOLAR_GAS_CONSTANT_R # Boltzmann constant
 
-def expectations_free_energy(array_folded_states, temperature_list, frame_begin=0, sample_spacing=1, output_directory="output", output_data="output.nc", num_intermediate_states=0):
+def expectations_free_energy(array_folded_states, temperature_list, frame_begin=0, sample_spacing=1, output_data="output/output.nc", num_intermediate_states=0):
     """
     This function calculates the free energy difference (with uncertainty) between all conformational states as a function of temperature.
 
@@ -25,10 +25,7 @@ def expectations_free_energy(array_folded_states, temperature_list, frame_begin=
     :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData
     :type sample_spacing: int     
     
-    :param output_directory: Path to simulation output directory which contains a .nc file.
-    :type output_directory: str
-    
-    :param output_data: Name of the simulation .nc file.
+    :param output_data: Path to the simulation .nc file.
     :type output_data: str
     
     :param num_intermediate_states: Number of unsampled thermodynamic states between sampled states to include in the calculation
@@ -184,7 +181,7 @@ def expectations_free_energy(array_folded_states, temperature_list, frame_begin=
     return full_T_list, deltaF_values, deltaF_uncertainty
     
 
-def plot_free_energy_results(full_T_list, deltaF_values, deltaF_uncertainty,plotfile="free_energy_plot"):   
+def plot_free_energy_results(full_T_list, deltaF_values, deltaF_uncertainty,plotfile="free_energy_plot.pdf"):   
     """
     Plot free energy difference data for each conformational state transition as a function of temperature.
 
@@ -197,7 +194,7 @@ def plot_free_energy_results(full_T_list, deltaF_values, deltaF_uncertainty,plot
     :param deltaF_uncertainty: A dictionary containing uncertainties corresponding to deltaF_values
     :type deltaF_uncertainty: dict{"statei_statej":1D numpy array}
     
-    :param plotfile: name of file, excluding pdf extension
+    :param plotfile: name of file, including pdf extension
     :type plotfile: str
     
     """
@@ -222,6 +219,6 @@ def plot_free_energy_results(full_T_list, deltaF_values, deltaF_uncertainty,plot
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     pyplot.legend(legend_str)
-    plt.savefig(f"{plotfile}.pdf")
+    plt.savefig(f"{plotfile}")
 
     return

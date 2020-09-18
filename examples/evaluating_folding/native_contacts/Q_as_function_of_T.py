@@ -18,8 +18,8 @@ import pickle
 import time
 
 # Replica exchange settings
-output_data = "output.nc"
 output_directory = "output"
+output_data = os.path.join(output_directory, "output.nc")
 number_replicas = 36
 min_temp = 50.0 * unit.kelvin
 max_temp = 400.0 * unit.kelvin

@@ -235,7 +235,6 @@ def test_expectations_fraction_contacts_pdb(tmpdir):
         array_folded_states,
         temperature_list,
         frame_begin=100,
-        output_directory=data_path,
         output_data=output_data,
         num_intermediate_states=num_intermediate_states,
     )
@@ -244,7 +243,7 @@ def test_expectations_fraction_contacts_pdb(tmpdir):
         full_T_list,
         deltaF_values,
         deltaF_uncertainty,
-        plotfile=f"{output_directory}/free_energy"
+        plotfile=f"{output_directory}/free_energy.pdf"
     )
 
     assert os.path.isfile(f"{output_directory}/free_energy.pdf")

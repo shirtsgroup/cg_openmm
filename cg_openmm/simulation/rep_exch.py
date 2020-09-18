@@ -425,7 +425,7 @@ def run_replica_exchange(
     friction=1.0 / unit.picosecond,
     minimize=True,
     exchange_frequency=1000,
-    output_data="output.nc",
+    output_data="output/output.nc",
 ):
 
     """
