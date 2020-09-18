@@ -370,6 +370,12 @@ def process_replica_exchange_data(
                 f.write(f"{replica_energies[replica_index,replica_index,step]:12.6f}")
             f.write("\n")
         f.close()
+        
+    else:
+        for step in range(total_steps):
+            sampler_states = reporter.read_sampler_states(iteration=step)
+            for replica_index in range(n_replicas):
+                replica_positions[replica_index, step, :, :] = sampler_states[replica_index].positions
 
     # doing the array operations gets rid of units, convert back to units
     replica_positions = replica_positions * sampler_states[0].positions[0].unit
