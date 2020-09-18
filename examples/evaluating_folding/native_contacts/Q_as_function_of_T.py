@@ -32,7 +32,6 @@ cgmodel = pickle.load(open( "stored_cgmodel.pkl", "rb" ))
 # with the lowest intra-cluster RMSD.
 
 # Create list of trajectory files for clustering analysis
-number_replicas = 36
 pdb_file_list_state = []
 
 # For standard native contact fraction calculation, we use state trajectories,
@@ -76,7 +75,7 @@ for c in [2.5, 3.0, 3.5, 4.0, 4.5]:
     native_contact_cutoff_ratio = 1.00
 
     # Determine native contacts:
-    native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
+    native_contact_list, native_contact_distances, contact_type_dict, decorrelation_spacing = get_native_contacts(
         cgmodel,
         native_positions,
         native_contact_cutoff

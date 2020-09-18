@@ -84,7 +84,7 @@ def get_native_contacts(cgmodel, native_structure_file, native_contact_distance_
     return native_contact_list, native_contact_distances, contact_type_dict
 
 
-def expectations_fraction_contacts(fraction_native_contacts, temperature_list, frame_begin=0, sample_spacing=1, output_directory="output", output_data="output.nc", num_intermediate_states=0):
+def expectations_fraction_contacts(fraction_native_contacts, temperature_list, frame_begin=0, sample_spacing=1, output_data="output.nc", num_intermediate_states=0):
     """
     Given a .nc output, a temperature list, and a number of intermediate states to insert for the temperature list, this function calculates the native contacts expectation.   
     
@@ -98,10 +98,7 @@ def expectations_fraction_contacts(fraction_native_contacts, temperature_list, f
     :type frame_begin: int
 
     :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData
-    :type sample_spacing: int     
-    
-    :param output_directory: directory in which the output data is in, default = "output"                                     
-    :type output_data: str    
+    :type sample_spacing: int       
     
     :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data, default = None                                                                                                  
     :type output_data: str

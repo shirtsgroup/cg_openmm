@@ -198,7 +198,6 @@ def test_expectations_fraction_contacts_pdb(tmpdir):
         Q,
         temperature_list,
         frame_begin=100,
-        output_directory=data_path,
         output_data=output_data,
         num_intermediate_states=num_intermediate_states,
     )
@@ -317,7 +316,6 @@ def test_expectations_fraction_contacts_dcd(tmpdir):
         Q,
         temperature_list,
         frame_begin=100,
-        output_directory=data_path,
         output_data=output_data,
         num_intermediate_states=num_intermediate_states,
     )
