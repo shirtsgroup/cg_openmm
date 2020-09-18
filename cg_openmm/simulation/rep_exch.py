@@ -243,7 +243,7 @@ def make_state_pdb_files(topology, replica_positions, replica_state_indices, out
 
 
 def process_replica_exchange_data(
-    output_data="output.nc", output_directory="output", series_per_page=4, detect_equilibration=True, plot_production_only=False
+    output_data="output.nc", output_directory="output", series_per_page=4, write_data_file=True, detect_equilibration=True, plot_production_only=False
 ):
     """
     Read replica exchange simulation data.
@@ -259,6 +259,9 @@ def process_replica_exchange_data(
 
     :param series_per_page: number of data series to plot per pdf page (default=6)
     :type series_per_page: int
+    
+    :param write_data_file: Option to write a text data file containing the state_energies array (default=True)
+    :type write_data_file: Boolean
     
     :param detect_equilibration: Option to determine the frame at which the production region begins (default=True)
     :type detect_equilibration: Boolean
@@ -357,15 +360,16 @@ def process_replica_exchange_data(
 
     replica_positions = np.zeros([n_replicas, total_steps, n_particles, 3])
 
-    f = open(os.path.join(output_directory, "replica_energies.dat"), "w")
-    for step in range(total_steps):
-        f.write(f"{step:10d}")
-        sampler_states = reporter.read_sampler_states(iteration=step)
-        for replica_index in range(n_replicas):
-            replica_positions[replica_index, step, :, :] = sampler_states[replica_index].positions
-            f.write(f"{replica_energies[replica_index,replica_index,step]:12.6f}")
-        f.write("\n")
-    f.close()
+    if write_data_file == True:
+        f = open(os.path.join(output_directory, "replica_energies.dat"), "w")
+        for step in range(total_steps):
+            f.write(f"{step:10d}")
+            sampler_states = reporter.read_sampler_states(iteration=step)
+            for replica_index in range(n_replicas):
+                replica_positions[replica_index, step, :, :] = sampler_states[replica_index].positions
+                f.write(f"{replica_energies[replica_index,replica_index,step]:12.6f}")
+            f.write("\n")
+        f.close()
 
     # doing the array operations gets rid of units, convert back to units
     replica_positions = replica_positions * sampler_states[0].positions[0].unit
