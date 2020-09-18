@@ -11,7 +11,7 @@ import pickle
 
 from openmmtools.cache import global_context_cache
 
-global_context_cache.platform = openmm.Platform.getPlatformByName("CPU")
+global_context_cache.platform = openmm.Platform.getPlatformByName("CUDA")
 
 ###
 #
@@ -27,13 +27,13 @@ if not os.path.exists(output_directory):
 overwrite_files = True  # overwrite files.
 
 # Replica exchange simulation settings
-total_simulation_time = 5.0 * unit.nanosecond
+total_simulation_time = 0.5 * unit.nanosecond
 simulation_time_step = 10.0 * unit.femtosecond
 total_steps = int(np.floor(total_simulation_time / simulation_time_step))
 output_data = os.path.join(output_directory, "output.nc")
-number_replicas = 12
+number_replicas = 36
 min_temp = 50.0 * unit.kelvin
-max_temp = 600.0 * unit.kelvin
+max_temp = 400.0 * unit.kelvin
 temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
 exchange_frequency = 100  # Number of steps between exchange attempts
 
@@ -93,7 +93,7 @@ equil_torsion_angles = {
 torsion_periodicities = {"bb_bb_bb_bb_torsion_periodicity": 3, "bb_bb_bb_sc_torsion_periodicity": 3}
 
 # Get initial positions from local file
-positions = PDBFile("helix2.pdb").getPositions()
+positions = PDBFile("helix.pdb").getPositions()
 
 # Build a coarse grained model
 cgmodel = CGModel(
@@ -128,7 +128,6 @@ if not os.path.exists(output_data) or overwrite_files == True:
         total_simulation_time=total_simulation_time,
         exchange_frequency=exchange_frequency,
         output_data=output_data,
-        output_directory=output_directory,
     )
 else:
     print("Replica output files exist")

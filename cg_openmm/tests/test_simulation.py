@@ -293,7 +293,6 @@ def test_run_replica_exchange(tmpdir):
         total_simulation_time=total_simulation_time,
         exchange_frequency=exchange_frequency,
         output_data=output_data,
-        output_directory=output_directory,
     )
     
     assert os.path.isfile(f"{output_directory}/output.nc")
