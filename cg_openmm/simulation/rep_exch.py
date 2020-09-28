@@ -387,11 +387,13 @@ def process_replica_exchange_data(
             series_per_page,
             time_interval=time_interval,
             time_shift=production_start*time_interval,
+            file_name=f"{output_directory}/rep_ex_ener.pdf",
         )
         
         plot_replica_exchange_energy_histograms(
             state_energies[:,production_start:],
             temperature_list,
+            file_name=f"{output_directory}/rep_ex_ener_hist.pdf",
         )
 
         plot_replica_exchange_summary(
@@ -400,6 +402,7 @@ def process_replica_exchange_data(
             series_per_page,
             time_interval=time_interval,
             time_shift=production_start*time_interval,
+            file_name=f"{output_directory}/rep_ex_states.pdf",
         )
         
     else:
@@ -408,11 +411,13 @@ def process_replica_exchange_data(
             temperature_list,
             series_per_page,
             time_interval=time_interval,
+            file_name=f"{output_directory}/rep_ex_ener.pdf",
         )
         
         plot_replica_exchange_energy_histograms(
             state_energies,
             temperature_list,
+            file_name=f"{output_directory}/rep_ex_ener_hist.pdf",
         )
 
         plot_replica_exchange_summary(
@@ -420,6 +425,7 @@ def process_replica_exchange_data(
             temperature_list,
             series_per_page,
             time_interval=time_interval,
+            file_name=f"{output_directory}/rep_ex_states.pdf",
         )
 
     return (replica_energies, replica_positions, replica_state_indices, production_start, max_sample_spacing)
