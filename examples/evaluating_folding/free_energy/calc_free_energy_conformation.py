@@ -13,8 +13,8 @@ from cg_openmm.parameters.reweight import *
 from analyze_foldamers.ensembles.cluster import *
 import pickle
 
-output_data = "output.nc"
 output_directory = "output"
+output_data = os.path.join(output_directory, "output.nc")
 number_replicas = 36
 min_temp = 50.0 * unit.kelvin
 max_temp = 400.0 * unit.kelvin
@@ -74,7 +74,7 @@ native_contact_list, native_contact_distances, contact_type_dict = get_native_co
 
 # Determine native contact fraction of current trajectories:
 
-Q, Q_avg, Q_stderr = fraction_native_contacts(
+Q, Q_avg, Q_stderr, decorrelation_spacing = fraction_native_contacts(
     pdb_file_list,
     native_contact_list,
     native_contact_distances,
@@ -106,7 +106,6 @@ num_intermediate_states = 1
 full_T_list, deltaF_values, deltaF_uncertainty = expectations_free_energy(
     array_folded_states,
     temperature_list,
-    output_directory=output_directory,
     output_data=output_data,
     num_intermediate_states=num_intermediate_states,
 )
@@ -119,5 +118,5 @@ plot_free_energy_results(
     full_T_list,
     deltaF_values,
     deltaF_uncertainty,
-    plotfile="free_energy"
+    plotfile="free_energy.pdf"
 )

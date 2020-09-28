@@ -9,7 +9,7 @@ import pymbar
 
 kB = unit.MOLAR_GAS_CONSTANT_R # Boltzmann constant
 
-def expectations_free_energy(array_folded_states, temperature_list, frame_begin=0, output_directory="output", output_data="output.nc", num_intermediate_states=0):
+def expectations_free_energy(array_folded_states, temperature_list, frame_begin=0, sample_spacing=1, output_data="output/output.nc", num_intermediate_states=0):
     """
     This function calculates the free energy difference (with uncertainty) between all conformational states as a function of temperature.
 
@@ -22,10 +22,10 @@ def expectations_free_energy(array_folded_states, temperature_list, frame_begin=
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
     :type frame_begin: int    
     
-    :param output_directory: Path to simulation output directory which contains a .nc file.
-    :type output_directory: str
+    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData
+    :type sample_spacing: int     
     
-    :param output_data: Name of the simulation .nc file.
+    :param output_data: Path to the simulation .nc file.
     :type output_data: str
     
     :param num_intermediate_states: Number of unsampled thermodynamic states between sampled states to include in the calculation
@@ -44,7 +44,7 @@ def expectations_free_energy(array_folded_states, temperature_list, frame_begin=
     n_conf_states = len(np.unique(array_folded_states))
 
     # extract reduced energies and the state indices from the .nc
-    reporter = MultiStateReporter(os.path.join(output_directory,output_data), open_mode="r")
+    reporter = MultiStateReporter(output_data, open_mode="r")
     analyzer = ReplicaExchangeAnalyzer(reporter)
     (
         replica_energies_all,
@@ -54,13 +54,19 @@ def expectations_free_energy(array_folded_states, temperature_list, frame_begin=
     ) = analyzer.read_energies()
     
     # Select production frames to analyze
-    replica_energies = replica_energies_all[:,:,frame_begin:]
+    replica_energies = replica_energies_all[:,:,frame_begin::sample_spacing]
 
     # Check if array_folded_states needs slicing for production region:
     # array_folded_states is array of [nframes,nreplicas]
-    if np.size(array_folded_states) != np.size(replica_energies[0]):
-        array_folded_states_production = array_folded_states[frame_begin:,:]
-        array_folded_states = array_folded_states_production
+    if np.shape(replica_energies)[2] != np.shape(array_folded_states)[0]:
+        # Mismatch in the number of frames.
+        if np.shape(replica_energies_all[:,:,frame_begin::])[2] == np.shape(array_folded_states)[0]:
+            # Correct starting frame, need to apply sampling stride:
+            array_folded_states = array_folded_states[frame_begin:,:] 
+        elif np.shape(replica_energies_all)[3] == np.shape(array_folded_states)[0]:
+            # This is the full array_folded_states, slice production frames:
+            array_folded_states = array_folded_states[frame_begin::sample_spacing,:]
+        
         
     # Reshape array_folded_states to row vector for pymbar
     # We need to order the data by replica, rather than by frame
@@ -175,7 +181,7 @@ def expectations_free_energy(array_folded_states, temperature_list, frame_begin=
     return full_T_list, deltaF_values, deltaF_uncertainty
     
 
-def plot_free_energy_results(full_T_list, deltaF_values, deltaF_uncertainty,plotfile="free_energy_plot"):   
+def plot_free_energy_results(full_T_list, deltaF_values, deltaF_uncertainty,plotfile="free_energy_plot.pdf"):   
     """
     Plot free energy difference data for each conformational state transition as a function of temperature.
 
@@ -188,7 +194,7 @@ def plot_free_energy_results(full_T_list, deltaF_values, deltaF_uncertainty,plot
     :param deltaF_uncertainty: A dictionary containing uncertainties corresponding to deltaF_values
     :type deltaF_uncertainty: dict{"statei_statej":1D numpy array}
     
-    :param plotfile: name of file, excluding pdf extension
+    :param plotfile: name of file, including pdf extension
     :type plotfile: str
     
     """
@@ -213,6 +219,6 @@ def plot_free_energy_results(full_T_list, deltaF_values, deltaF_uncertainty,plot
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     pyplot.legend(legend_str)
-    plt.savefig(f"{plotfile}.pdf")
+    plt.savefig(f"{plotfile}")
 
     return

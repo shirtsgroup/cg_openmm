@@ -39,19 +39,19 @@ def plot_heat_capacity(Cv, dCv, temperature_list, file_name="heat_capacity.pdf")
     return
 
 
-def get_heat_capacity(temperature_list, frame_begin=0, output_data="output.nc", output_directory="output", num_intermediate_states=0,frac_dT=0.05, plot_file=None):
+def get_heat_capacity(temperature_list, frame_begin=0, sample_spacing=1, output_data="output/output.nc", num_intermediate_states=0,frac_dT=0.05, plot_file=None):
     """
 
     Given a .nc output, a temperature list, and a number of intermediate states to insert for the temperature list, this function calculates and plots the heat capacity profile.
     
-    :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data, default = None                                                                                                 
+    :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data, default = "output/output.nc"                                                                                            
     :type output_data: str
                              
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
     :type frame_begin: int
-                             
-    :param output_directory: directory in which the output data is in, default = "output"                                     
-    :type output_data: str
+    
+    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData
+    :type sample_spacing: int                         
 
     :param temperature_list: List of temperatures for which to perform replica exchange simulations, default = None
     :type temperature: List( float * simtk.unit.temperature )
@@ -70,7 +70,7 @@ def get_heat_capacity(temperature_list, frame_begin=0, output_data="output.nc", 
         """
 
     # extract reduced energies and the state indices from the .nc  
-    reporter = MultiStateReporter(os.path.join(output_directory,output_data), open_mode="r")
+    reporter = MultiStateReporter(output_data, open_mode="r")
     analyzer = ReplicaExchangeAnalyzer(reporter)
     (
         replica_energies_all,
@@ -80,9 +80,9 @@ def get_heat_capacity(temperature_list, frame_begin=0, output_data="output.nc", 
     ) = analyzer.read_energies()
     
     # Select production frames to analyze
-    replica_energies = replica_energies_all[:,:,frame_begin:]
+    replica_energies = replica_energies_all[:,:,frame_begin::sample_spacing]
     
-    # determine the numerical values of beta at each state in units consisten with the temperature
+    # determine the numerical values of beta at each state in units consistent with the temperature
     Tunit = temperature_list[0].unit
     temps = np.array([temp.value_in_unit(Tunit)  for temp in temperature_list])  # should this just be array to begin with
     beta_k = 1 / (kB.value_in_unit(unit.kilojoule_per_mole/Tunit) * temps)

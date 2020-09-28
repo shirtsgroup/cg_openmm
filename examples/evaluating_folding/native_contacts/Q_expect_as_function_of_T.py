@@ -18,8 +18,8 @@ import pickle
 import time
 
 # Replica exchange settings
-output_data = "output.nc"
 output_directory = "output"
+output_data = os.path.join(output_directory, "output.nc")
 number_replicas = 36
 min_temp = 50.0 * unit.kelvin
 max_temp = 400.0 * unit.kelvin
@@ -83,7 +83,7 @@ for c in [2.5, 3.0, 3.5, 4.0, 4.5]:
     )
 
     # Determine native contact fraction of current trajectories:
-    Q, Q_avg, Q_stderr = fraction_native_contacts(
+    Q, Q_avg, Q_stderr, decorrelation_spacing = fraction_native_contacts(
         pdb_file_list_rep,
         native_contact_list,
         native_contact_distances,
@@ -95,7 +95,6 @@ for c in [2.5, 3.0, 3.5, 4.0, 4.5]:
         Q,
         temperature_list,
         frame_begin=0,
-        output_directory=output_directory,
         output_data=output_data,
         num_intermediate_states=1,
     )

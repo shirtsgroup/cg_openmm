@@ -30,7 +30,6 @@ def test_heat_capacity_calc(tmpdir):
     C_v, dC_v, new_temperature_list = get_heat_capacity(
         temperature_list, 
         output_data=output_data,
-        output_directory=data_path,
         num_intermediate_states=2,
         plot_file=f"{plot_directory}/heat_capacity.pdf"
     )
@@ -42,7 +41,6 @@ def test_heat_capacity_calc(tmpdir):
         temperature_list,
         frame_begin=2,
         output_data=output_data,
-        output_directory=data_path,
         num_intermediate_states=2,
         plot_file=f"{plot_directory}/heat_capacity2.pdf"
     )
