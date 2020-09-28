@@ -121,7 +121,7 @@ def signac_run_replica_exchange(job):
 
     # Get initial positions from local file
     pdb_path = os.path.join(proj_directory, "24mer_1b1s_initial_structure.pdb")
-    positions = PDBFile(pdb_path.getPositions()
+    positions = PDBFile(pdb_path).getPositions()
 
     # Build a coarse grained model
     cgmodel = CGModel(
