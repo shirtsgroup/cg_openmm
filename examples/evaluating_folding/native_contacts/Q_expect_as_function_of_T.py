@@ -13,6 +13,7 @@ from simtk import unit
 from cg_openmm.parameters.secondary_structure import *
 from cg_openmm.parameters.free_energy import *
 from cg_openmm.parameters.reweight import *
+from cg_openmm.utilities.util import fit_sigmoid
 from analyze_foldamers.ensembles.cluster import *
 import pickle
 import time

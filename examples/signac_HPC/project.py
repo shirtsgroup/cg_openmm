@@ -35,9 +35,7 @@ def heat_capacity_done(job):
 @FlowProject.post(run_replica_exchange_done)
 def signac_run_replica_exchange(job):
     # Run replica exchange simulation for current job parameters
-    # equil_bond_angle = job.sp.theta
-    # equil_torsion_angle = job.sp.alpha    
-    
+
     # Job settings
     output_directory = os.path.join(job.workspace(),"output")
     if not os.path.exists(output_directory):
@@ -64,18 +62,22 @@ def signac_run_replica_exchange(job):
     include_torsion_forces = True
     constrain_bonds = False
 
-    bond_length = 0.2 * unit.nanometer  # reference length unit
-
-    # Particle definitions
-    r_min = 1.5 * bond_length  # Lennard-Jones potential r_min
-    # Factor of /(2.0**(1/6)) is applied to convert r_min to sigma
-    sigma = r_min / (2.0 ** (1.0 / 6.0))
-    epsilon = 1.0 * unit.kilojoules_per_mole
     mass = 100.0 * unit.amu
 
     # mass and charge are defaults.
-    bb = {"particle_type_name": "bb", "sigma": sigma, "epsilon": epsilon, "mass": mass}
-    sc = {"particle_type_name": "sc", "sigma": sigma, "epsilon": epsilon, "mass": mass}
+    bb = {
+        "particle_type_name": "bb",
+        "sigma": job.sp.sigma_bb * unit.nanometer,
+        "epsilon": job.sp.epsilon_bb * unit.kilojoules_per_mole,
+        "mass": mass
+    }
+        
+    sc = {
+        "particle_type_name": "sc",
+        "sigma": job.sp.sigma_sc * unit.nanometer,
+        "epsilon": job.sp.epsilon_sc * unit.kilojoules_per_mole,
+        "mass": mass
+    }
 
     # Monomer definition
     A = {
@@ -89,34 +91,34 @@ def signac_run_replica_exchange(job):
     sequence = 24 * [A]
 
     # Bond definitions
-    bond_lengths = {"default_bond_length": bond_length}
+    bond_lengths = {"default_bond_length": job.sp.equil_bond_length * unit.nanometer}
 
     bond_force_constants = {
-        "default_bond_force_constant": 1000 * unit.kilojoule_per_mole / unit.nanometer / unit.nanometer
+        "default_bond_force_constant": job.sp.k_bond * unit.kilojoule_per_mole / unit.nanometer / unit.nanometer
     }
 
     # Bond angle definitions
     bond_angle_force_constants = {
-        "default_bond_angle_force_constant": 25.0 * unit.kilojoule_per_mole / unit.radian / unit.radian
+        "default_bond_angle_force_constant": job.sp.k_angle * unit.kilojoule_per_mole / unit.radian / unit.radian
     }
 
-    equil_bond_angles = {"default_equil_bond_angle": job.sp.theta * unit.degrees}
+    equil_bond_angles = {"default_equil_bond_angle": job.sp.equil_bond_angle * unit.degrees}
 
     # torsion angle definitions
     torsion_force_constants = {
         "default_torsion_force_constant": 0.0 * unit.kilojoule_per_mole,
-        "bb_bb_bb_bb_torsion_force_constant": 3 * unit.kilojoule_per_mole}
+        "bb_bb_bb_bb_torsion_force_constant": job.sp.k_torsion * unit.kilojoule_per_mole}
 
     equil_torsion_angles = {
-        "sc_bb_bb_sc_equil_torsion_angle": 75 * unit.degrees,
-        "bb_bb_bb_bb_equil_torsion_angle": job.sp.alpha * unit.degrees,
-        "bb_bb_bb_sc_equil_torsion_angle": 75 * unit.degrees,
+        "sc_bb_bb_sc_equil_torsion_angle": 0 * unit.degrees,
+        "bb_bb_bb_bb_equil_torsion_angle": job.sp.equil_torsion_angle * unit.degrees,
+        "bb_bb_bb_sc_equil_torsion_angle": 0 * unit.degrees,
     }
 
     torsion_periodicities = {
-        "sc_bb_bb_sc_torsion_periodicity": 1,
-        "bb_bb_bb_bb_torsion_periodicity": 1,
-        "bb_bb_bb_sc_torsion_periodicity": 1,
+        "sc_bb_bb_sc_torsion_periodicity": job.sp.torsion_periodicity,
+        "bb_bb_bb_bb_torsion_periodicity": job.sp.torsion_periodicity,
+        "bb_bb_bb_sc_torsion_periodicity": job.sp.torsion_periodicity,
     }
 
     # Get initial positions from local file
@@ -180,6 +182,7 @@ def signac_process_replica_exchange(job):
         write_data_file=False,
     )
 
+    # Store trajectory analysis stats:
     analysis_stats["production_start"] = production_start
     analysis_stats["energy_decorrelation"] = sample_spacing
 
