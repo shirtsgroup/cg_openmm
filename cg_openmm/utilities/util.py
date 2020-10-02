@@ -152,7 +152,7 @@ def fit_sigmoid(xdata, ydata, plotfile='Q_vs_T_fit.pdf', xlabel='T (K)', ylabel=
     def tanh_switch(x,x0,y0,y1,d):
         return (y0+y1)/2-((y0-y1)/2)*np.tanh(np.radians(x-x0)/d)
         
-    param_guess = [np.mean(xdata),0.15,0.85,100]
+    param_guess = [np.mean(xdata),0.15,0.85,(np.max(ydata)-np.min(ydata))/2]
     
     param_opt, param_cov = curve_fit(tanh_switch, xdata, ydata, param_guess)
     

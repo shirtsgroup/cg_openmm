@@ -12,6 +12,7 @@ from simtk.openmm.app.pdbfile import PDBFile
 from cg_openmm.parameters.secondary_structure import *
 from cg_openmm.parameters.free_energy import *
 from cg_openmm.parameters.reweight import get_temperature_list
+from cg_openmm.utilities.util import fit_sigmoid
 import pickle
 
 current_path = os.path.dirname(os.path.abspath(__file__))
@@ -327,4 +328,13 @@ def test_expectations_fraction_contacts_dcd(tmpdir):
     )
     
     assert os.path.isfile(f"{output_directory}/Q_expect_vs_T.pdf")    
+    
+    # Test sigmoid fitting function on Q_expect_vs_T data:
+    param_opt, param_cov = fit_sigmoid(
+        results["T"],
+        results["Q"],
+        plotfile=f"{output_directory}/Q_vs_T_fit.pdf",
+    )
+    
+    assert os.path.isfile(f"{output_directory}/Q_vs_T_fit.pdf")  
     

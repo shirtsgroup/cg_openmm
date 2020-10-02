@@ -105,3 +105,11 @@ for c in [2.5, 3.0, 3.5, 4.0, 4.5]:
         results["dQ"],
         plotfile=f"{output_directory}/nccut_{nccut_str}_Q_expect_vs_T.pdf",
     )
+    
+    # fit to hyperbolic switching function
+    param_opt, param_cov = fit_sigmoid(
+        results["T"],
+        results["Q"],
+        plotfile=f"{output_directory}/nccut_{nccut_str}_Q_expect_vs_T_fit.pdf",
+    )
+    
