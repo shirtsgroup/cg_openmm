@@ -146,8 +146,6 @@ def expectations_free_energy(array_folded_states, temperature_list, frame_begin=
         results[str(i)] = mbarT.computeMultipleExpectations(
             bool_i,U_n,compute_covariance=True)
 
-    print(results)        
-            
     deltaF_values = {}
     deltaF_uncertainty = {}
     n_trans = 0 # store the number of unique transitions
