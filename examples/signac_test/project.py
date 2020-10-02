@@ -238,7 +238,11 @@ def signac_calc_heat_capacity(job):
         plot_file=f"{output_directory}/heat_capacity.pdf",
     )
 
-    # This should be written to a file for each job
+    # Save C_v data to data file:
+    job.data['C_v'] = C_v
+    job.data['dC_v'] = dC_v
+    job.data['T_list_C_v'] = new_temperature_list
+    
     print(f"T({new_temperature_list[0].unit})  Cv({C_v[0].unit})  dCv({dC_v[0].unit})")
     for i, C in enumerate(C_v):
         print(f"{new_temperature_list[i]._value:>8.2f}{C_v[i]._value:>10.4f} {dC_v[i]._value:>10.4f}")
