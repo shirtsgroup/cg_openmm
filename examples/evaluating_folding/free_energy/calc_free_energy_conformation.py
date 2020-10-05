@@ -120,3 +120,10 @@ plot_free_energy_results(
     deltaF_uncertainty,
     plotfile="free_energy.pdf"
 )
+
+# Fit free energy curve to spline / evaluate 1st, 2nd derivatives:
+ddeltaF_out, d2deltaF_out, spline_tck = get_free_energy_derivative(
+    deltaF_values,
+    full_T_list,
+    plotfile="ddeltaF_dT.pdf",
+)
