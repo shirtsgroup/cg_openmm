@@ -248,6 +248,15 @@ def test_expectations_fraction_contacts_pdb(tmpdir):
     )
 
     assert os.path.isfile(f"{output_directory}/free_energy.pdf")
+    
+    # Test free energy fitting / derivative calculation:
+    ddeltaF_out, d2deltaF_out, spline_tck = get_free_energy_derivative(
+        deltaF_values,
+        temperature_list,
+        plotfile=f"{output_directory}/ddeltaF_dT.pdf",
+    )
+    
+    assert os.path.isfile(f"{output_directory}/ddeltaF_dT.pdf")
 
 
 def test_expectations_fraction_contacts_dcd(tmpdir):

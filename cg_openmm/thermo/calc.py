@@ -1,11 +1,12 @@
 import os
 import numpy as np
 from cg_openmm.parameters.reweight import *
-import matplotlib.pyplot as pyplot
+import matplotlib.pyplot as plt
 from openmmtools.multistate import MultiStateReporter
 from openmmtools.multistate import ReplicaExchangeAnalyzer
 import pymbar
 from pymbar import timeseries
+from scipy import interpolate
 
 kB = unit.MOLAR_GAS_CONSTANT_R
 
@@ -24,20 +25,124 @@ def plot_heat_capacity(Cv, dCv, temperature_list, file_name="heat_capacity.pdf")
         :type file_name: str
     
         """
-    figure = pyplot.figure(1)
+    figure = plt.figure(1)
     Tunit = temperature_list.unit
     Cvunit = Cv.unit
     temperature_list = np.array(temperature_list)
     Cv = np.array(Cv)
     dCv = np.array(dCv)
-    pyplot.errorbar(temperature_list, Cv, yerr=dCv, figure=figure)
-    pyplot.xlabel(f"Temperature ({Tunit})")
-    pyplot.ylabel(f"C$_v$ ({Cvunit})")
-    pyplot.title("Heat capacity as a function of T")
-    pyplot.savefig(file_name)
-    pyplot.close()
+    plt.errorbar(temperature_list, Cv, yerr=dCv, figure=figure)
+    plt.xlabel(f"Temperature ({Tunit})")
+    plt.ylabel(f"C$_v$ ({Cvunit})")
+    plt.title("Heat capacity as a function of T")
+    plt.savefig(file_name)
+    plt.close()
     return
+    
 
+def get_heat_capacity_derivative(Cv, temperature_list, plotfile='dCv_dT.pdf'):
+    """
+    Fit a heat capacity vs T dataset to cubic spline, and compute derivatives
+    
+    :param Cv: heat capacity data series
+    :type Cv: Quantity or numpy 1D array
+    
+    :param temperature_list: List of temperatures used in replica exchange simulations
+    :type temperature: Quantity or numpy 1D array
+    
+    :param plotfile: path to filename to output plot
+    :type plotfile: str
+    
+    :returns:
+          - dC_v_out ( 1D numpy array (float) ) - 1st derivative of heat capacity, from a cubic spline evaluated at each point in Cv)
+          - d2C_v_out ( 1D numpy array (float) ) - 2nd derivative of heat capacity, from a cubic spline evaluated at each point in Cv)
+          - spline_tck ( scipy spline object (tuple) ) - knot points (t), coefficients (c), and order of the spline (k) fit to Cv data
+
+    """
+    
+    xdata = temperature_list
+    ydata = Cv
+    
+    # Strip units off quantities:
+    if type(xdata[0]) == unit.quantity.Quantity:
+        xdata_val = np.zeros((len(xdata)))
+        xunit = xdata[0].unit
+        for i in range(len(xdata)):
+            xdata_val[i] = xdata[i].value_in_unit(xunit)
+        xdata = xdata_val
+    
+    if type(ydata[0]) == unit.quantity.Quantity:
+        ydata_val = np.zeros((len(ydata)))
+        yunit = ydata[0].unit
+        for i in range(len(ydata)):
+            ydata_val[i] = ydata[i].value_in_unit(yunit)
+        ydata = ydata_val
+            
+    # Fit cubic spline to data, no smoothing
+    spline_tck = interpolate.splrep(xdata, ydata, s=0)
+    
+    xfine = np.linspace(xdata[0],xdata[-1],1000)
+    yfine = interpolate.splev(xfine, spline_tck, der=0)
+    dCv = interpolate.splev(xfine, spline_tck, der=1)
+    d2Cv = interpolate.splev(xfine, spline_tck, der=2)
+    
+    dCv_out = interpolate.splev(xdata, spline_tck, der=1)
+    d2Cv_out = interpolate.splev(xdata, spline_tck, der=2)
+    
+    
+    figure, axs = plt.subplots(
+        nrows=3,
+        ncols=1,
+        sharex=True,
+    )
+    
+    axs[0].plot(
+        xdata,
+        ydata,
+        'ok',
+        markersize=4,
+        fillstyle='none',
+        label='simulation data',
+    )
+    
+    axs[0].plot(
+        xfine,
+        yfine,
+        '-b',
+        label='cubic spline',
+    )
+    
+    axs[0].set_ylabel(r'$C_{V} (kJ/mol/K)$')
+    axs[0].legend()
+    
+    axs[1].plot(
+        xfine,
+        dCv,
+        '-r',
+        label=r'$\frac{dC_{V}}{dT}$',
+    )
+    
+    axs[1].legend()
+    axs[1].set_ylabel(r'$\frac{dC_{V}}{dT}$')
+    
+    axs[2].plot(
+        xfine,
+        d2Cv,
+        '-g',
+        label=r'$\frac{d^{2}C_{V}}{dT^{2}}$',
+    )
+    
+    axs[2].legend()
+    axs[2].set_ylabel(r'$\frac{d^{2}C_{V}}{dT^{2}}$')
+    axs[2].set_xlabel(r'$T (K)$')
+    
+    plt.tight_layout()
+    
+    plt.savefig(plotfile)
+    plt.close()
+    
+    return dCv_out, d2Cv_out, spline_tck
+        
 
 def get_heat_capacity(temperature_list, frame_begin=0, sample_spacing=1, output_data="output/output.nc", num_intermediate_states=0,frac_dT=0.05, plot_file=None):
     """
@@ -168,7 +273,7 @@ def get_heat_capacity(temperature_list, frame_begin=0, sample_spacing=1, output_
         Cv[k] = (DeltaE_expect[im, ip]) / (full_T_list[ip] - full_T_list[im])
         dCv[k] = (dDeltaE_expect[im, ip]) / (full_T_list[ip] - full_T_list[im])
 
-    # add units so the plot has the rght units.  
+    # add units so the plot has the right units.  
     Cv *= unit.kilojoule_per_mole / Tunit # always kJ/mol, since the OpenMM output is in kJ/mol.
     dCv *= unit.kilojoule_per_mole / Tunit
     full_T_list *= Tunit

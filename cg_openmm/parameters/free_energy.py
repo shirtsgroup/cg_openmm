@@ -6,6 +6,7 @@ from cg_openmm.utilities.random_builder import *
 from cg_openmm.utilities.iotools import write_pdbfile_without_topology
 from openmmtools.multistate import MultiStateReporter, ReplicaExchangeAnalyzer
 import pymbar
+from scipy import interpolate
 
 kB = unit.MOLAR_GAS_CONSTANT_R # Boltzmann constant
 
@@ -176,6 +177,109 @@ def expectations_free_energy(array_folded_states, temperature_list, frame_begin=
                     theta_i[s1,s1] + theta_i[s2,s2] - (theta_i[s2,s1]+theta_i[s1,s2]))).value_in_unit(F_unit)
 
     return full_T_list, deltaF_values, deltaF_uncertainty
+    
+    
+def get_free_energy_derivative(deltaF, temperature_list, plotfile='ddeltaF_dT.pdf'):
+    """
+    Fit a heat capacity vs T dataset to cubic spline, and compute derivatives
+    
+    :param deltaF: free energy of folding data series
+    :type deltaF: Quantity or numpy 1D array
+    
+    :param temperature_list: List of temperatures used in replica exchange simulations
+    :type temperature: Quantity or numpy 1D array
+    
+    :param plotfile: path to filename to output plot
+    :type plotfile: str
+    
+    :returns:
+          - dC_v_out ( 1D numpy array (float) ) - 1st derivative of heat capacity, from a cubic spline evaluated at each point in deltaF)
+          - d2C_v_out ( 1D numpy array (float) ) - 2nd derivative of heat capacity, from a cubic spline evaluated at each point in deltaF)
+          - spline_tck ( scipy spline object (tuple) ) - knot points (t), coefficients (c), and order of the spline (k) fit to deltaF data
+    
+    """
+    xdata = temperature_list
+    ydata = deltaF
+    
+    # Strip units off quantities:
+    if type(xdata[0]) == unit.quantity.Quantity:
+        xdata_val = np.zeros((len(xdata)))
+        xunit = xdata[0].unit
+        for i in range(len(xdata)):
+            xdata_val[i] = xdata[i].value_in_unit(xunit)
+        xdata = xdata_val
+    
+    if type(ydata[0]) == unit.quantity.Quantity:
+        ydata_val = np.zeros((len(ydata)))
+        yunit = ydata[0].unit
+        for i in range(len(ydata)):
+            ydata_val[i] = ydata[i].value_in_unit(yunit)
+        ydata = ydata_val
+            
+    # Fit cubic spline to data, no smoothing
+    spline_tck = interpolate.splrep(xdata, ydata, s=0)
+    
+    xfine = np.linspace(xdata[0],xdata[-1],1000)
+    yfine = interpolate.splev(xfine, spline_tck, der=0)
+    dF = interpolate.splev(xfine, spline_tck, der=1)
+    d2F = interpolate.splev(xfine, spline_tck, der=2)
+    
+    dF_out = interpolate.splev(xdata, spline_tck, der=1)
+    d2F_out = interpolate.splev(xdata, spline_tck, der=2)
+    
+    
+    figure, axs = plt.subplots(
+        nrows=3,
+        ncols=1,
+        sharex=True,
+    )
+    
+    axs[0].plot(
+        xdata,
+        ydata,
+        'ok',
+        markersize=4,
+        fillstyle='none',
+        label='simulation data',
+    )
+    
+    axs[0].plot(
+        xfine,
+        yfine,
+        '-b',
+        label='cubic spline',
+    )
+    
+    axs[0].set_ylabel(r'$\Delta F (J/mol)$')
+    axs[0].legend()
+    
+    axs[1].plot(
+        xfine,
+        dF,
+        '-r',
+        label=r'$\frac{d\Delta F}{dT}$',
+    )
+    
+    axs[1].legend()
+    axs[1].set_ylabel(r'$\frac{d\Delta F}{dT}$')
+    
+    axs[2].plot(
+        xfine,
+        d2F,
+        '-g',
+        label=r'$\frac{d^{2}\Delta F}{dT^{2}}$',
+    )
+    
+    axs[2].legend()
+    axs[2].set_ylabel(r'$\frac{d^{2}\Delta F}{dT^{2}}$')
+    axs[2].set_xlabel(r'$T (K)$')
+    
+    plt.tight_layout()
+    
+    plt.savefig(plotfile)
+    plt.close()
+    
+    return dF_out, d2F_out, spline_tck    
     
 
 def plot_free_energy_results(full_T_list, deltaF_values, deltaF_uncertainty,plotfile="free_energy_plot.pdf"):   
