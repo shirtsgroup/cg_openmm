@@ -251,7 +251,7 @@ def test_expectations_fraction_contacts_pdb(tmpdir):
     
     # Test free energy fitting / derivative calculation:
     ddeltaF_out, d2deltaF_out, spline_tck = get_free_energy_derivative(
-        deltaF_values,
+        deltaF_values['state0_state1'],
         full_T_list,
         plotfile=f"{output_directory}/ddeltaF_dT.pdf",
     )
