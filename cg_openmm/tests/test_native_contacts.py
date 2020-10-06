@@ -216,7 +216,7 @@ def test_expectations_fraction_contacts_pdb(tmpdir):
     # Test free energy of folding:
     
     # Cutoff for native contact fraction folded vs. unfolded states:
-    Q_folded = 0.9
+    Q_folded = 0.75
     
     # Array folded states can be all frames, or only selected frames.
     # It is trimmed to the correct size in expectations_free_energy.
