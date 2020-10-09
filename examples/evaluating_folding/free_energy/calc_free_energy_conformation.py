@@ -121,9 +121,8 @@ plot_free_energy_results(
     plotfile="free_energy.pdf"
 )
 
-# Fit free energy curve to spline / evaluate 1st, 2nd derivatives:
-ddeltaF_out, d2deltaF_out, spline_tck = get_free_energy_derivative(
+# Compute entropy and enthalpy of folding:
+S_folding, H_folding = get_entropy_enthalpy(
     deltaF_values['state0_state1'],
     full_T_list,
-    plotfile="ddeltaF_dT.pdf",
 )

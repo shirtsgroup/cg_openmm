@@ -257,7 +257,17 @@ def test_expectations_fraction_contacts_pdb(tmpdir):
     )
     
     assert os.path.isfile(f"{output_directory}/ddeltaF_dT.pdf")
-
+    
+    # Test entropy/enthalpy of folding calculation:
+    S_folding, H_folding = get_entropy_enthalpy(
+        deltaF_values['state0_state1'],
+        full_T_list,
+        plotfile_entropy=f"{output_directory}/entropy_folding.pdf",
+        plotfile_enthalpy=f"{output_directory}/enthalpy_folding.pdf",
+    )
+    
+    assert os.path.isfile(f"{output_directory}/entropy_folding.pdf")
+    assert os.path.isfile(f"{output_directory}/enthalpy_folding.pdf")
 
 def test_expectations_fraction_contacts_dcd(tmpdir):
     """See if we can determine native contacts expectations as a function of T"""
