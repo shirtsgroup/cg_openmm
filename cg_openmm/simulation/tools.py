@@ -4,65 +4,56 @@ from simtk.openmm import *
 from simtk.openmm.vec3 import Vec3
 from simtk import unit
 from simtk.openmm.app.pdbfile import PDBFile
-import mdtraj
+import mdtraj as md
 import simtk.openmm.app.element as elem
 from simtk.openmm.app import *
 import matplotlib.pyplot as pyplot
 import csv
 from cg_openmm.utilities.iotools import write_bonds
+from cg_openmm.utilities.iotools import write_pdbfile_without_topology
 import sys
 
 
 def minimize_structure(
-    topology, system, positions, output_pdb=None, print_frequency=1, expand=None
+    cgmodel, positions, tol=0.1, max_iter=1000, timestep=5*unit.femtosecond, output_file='minimized_structure.pdb',
 ):
     """
     Minimize the potential energy
 
-    :param topology: OpenMM topology
-    :type topology: Topology()
+    :param cgmodel: CGModel() object containing openmm system and topology objects 
+    :type cgmodel: class
 
-    :param system: OpenMM system
-    :type system: System()
-
-    :param positions: Positions array for the model we would like to test
+    :param positions: Positions array for the structure to be minimized
     :type positions: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit )
 
-    :param output_pdb: Output destinaton for PDB-formatted coordinates during the simulation
-    :type output_pdb: str
+    :param output_file: Output destination for minimized structure file (including extension - 'dcd' and 'pdb' supported)
+    :type output_file: str
 
     :returns:
          - positions ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit ) ) - Minimized positions
-         - potential_energy ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ - Potential energy for the minimized structure.
-
-    :Example:
-
-    >>> from simtk import unit
-    >>> from foldamers.cg_model.cgmodel import CGModel
-    >>> cgmodel = CGModel()
-    >>> topology = cgmodel.topology
-    >>> system = cgmodel.system
-    >>> positions = cgmodel.positions
-    >>> output_pdb = "output.pdb"
-    >>> minimum_energy_structure,potential_energy,openmm_simulation_object = minimize_structure(topology,system,positions,output_pdb=output_pdb,output_data=output_data,print_frequency=print_frequency)
+         - initial_potential_energy ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ - Potential energy for the initial structure.
+         - final_potential_energy ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ - Potential energy for the minimized structure.
+         - simulation (Openmm simulation object for minimization run)
 
     """
-    # parameters for expanding the structure. This should not be hard-coded.
-    integrator = LangevinIntegrator(500, 1, 0.0005)
+    # Integrator parameters shouldn't matter?
+    integrator = LangevinIntegrator(300, 1, timestep)
 
-    simulation = Simulation(topology, system, integrator)
+    simulation = Simulation(cgmodel.topology, cgmodel.system, integrator)
     simulation.context.setPositions(positions.in_units_of(unit.nanometer))
-    if output_pdb is not None:
-        simulation.reporters.append(PDBReporter(output_pdb, print_frequency))
+    
+    initial_potential_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
+    
+    # ***Reporters do not do anything during minimization
+
     try:
         simulation.minimizeEnergy(
-            tolerance=10, maxIterations=500  # think about making this not hard-coded.
-        )  # Set the simulation type to energy minimization
+            tolerance=tol, maxIterations=max_iter,
+        )
+        
     except Exception:
         print(f"Minimization attempt failed.")
-        return (positions, simulation, np.nan)
-    if expand:
-        simulation.step(expand)
+
     positions_vec = simulation.context.getState(getPositions=True).getPositions()
 
     # turn it into a numpy array of quantity
@@ -72,10 +63,21 @@ def minimize_structure(
         ),
         positions_vec.unit,
     )
+    
+    # Write positions to file:
+    if output_file[-3:].lower() == 'dcd':
+        dcdtraj = md.Trajectory(
+            xyz=positions.value_in_unit(unit.nanometer),
+            topology=md.Topology.from_openmm(cgmodel.topology),
+        )
+        md.Trajectory.save_dcd(dcdtraj,output_file)
+    elif output_file[-3:].lower() == 'pdb':
+        cgmodel.positions = positions
+        write_pdbfile_without_topology(cgmodel, output_file)
 
-    potential_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
+    final_potential_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
 
-    return (positions, potential_energy, simulation)
+    return (positions, initial_potential_energy, final_potential_energy, simulation)
 
 
 def get_mm_energy(topology, system, positions):
