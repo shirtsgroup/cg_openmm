@@ -47,6 +47,14 @@ def test_heat_capacity_calc(tmpdir):
     
     assert os.path.isfile(f"{plot_directory}/heat_capacity2.pdf")
     
+    # Test heat capacity spline fitting / derivative calculation
+    derC_v, der2C_v, spline_tck = get_heat_capacity_derivative(
+        C_v,
+        new_temperature_list,
+        plotfile=f"{plot_directory}/dCv_dT.pdf")
+        
+    assert os.path.isfile(f"{plot_directory}/dCv_dT.pdf")
+    
 
 def test_physical_validation(tmpdir):
     """Test physical validation ensemble check"""

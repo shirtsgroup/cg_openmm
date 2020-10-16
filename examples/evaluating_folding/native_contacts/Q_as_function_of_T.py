@@ -13,6 +13,7 @@ from simtk import unit
 from cg_openmm.parameters.secondary_structure import *
 from cg_openmm.parameters.free_energy import *
 from cg_openmm.parameters.reweight import *
+from cg_openmm.utilities.util import fit_sigmoid
 from analyze_foldamers.ensembles.cluster import *
 import pickle
 import time
@@ -96,4 +97,11 @@ for c in [2.5, 3.0, 3.5, 4.0, 4.5]:
         Q_avg,
         Q_stderr,
         plotfile=f"{output_directory}/nccut_{nccut_str}_Q_vs_T.pdf",
+    )
+    
+    # fit to hyperbolic switching function
+    param_opt, param_cov = fit_sigmoid(
+        temperature_list,
+        Q,
+        plotfile=f"{output_directory}/nccut_{nccut_str}_Q_vs_T_fit.pdf",
     )

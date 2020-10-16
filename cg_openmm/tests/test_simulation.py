@@ -11,7 +11,7 @@ import os
 import simtk.openmm as openmm
 from simtk.openmm.app.pdbfile import PDBFile
 from cg_openmm.cg_model.cgmodel import CGModel
-from cg_openmm.simulation.tools import run_simulation
+from cg_openmm.simulation.tools import *
 from cg_openmm.parameters.reweight import get_temperature_list
 from cg_openmm.utilities.iotools import write_pdbfile_without_topology
 from cg_openmm.simulation.rep_exch import *
@@ -19,6 +19,7 @@ from cg_openmm.utilities import random_builder
 from cg_openmm.build.cg_build import build_topology
 import numpy as np
 from openmmtools.cache import global_context_cache
+import pickle
 
 def test_cg_openmm_imported():
     """Sample test, will always pass so long as import statement worked"""
@@ -26,8 +27,54 @@ def test_cg_openmm_imported():
     
     
 current_path = os.path.dirname(os.path.abspath(__file__))
-data_path = os.path.join(current_path, 'test_structures')
+data_path = os.path.join(current_path, 'test_data')
+structures_path = os.path.join(current_path, 'test_structures')
    
+def test_minimize_structure_pdb(tmpdir):
+    """Test energy minimization structure, with reading/writing pdb files"""
+    
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))    
+
+    native_structure_file=f"{structures_path}/medoid_0.pdb"
+
+    native_traj = md.load(native_structure_file)    
+    
+    positions = native_traj.xyz[0] * unit.nanometer
+    
+    # Minimize energy of native structure
+    positions, PE_start, PE_end, simulation = minimize_structure(
+        cgmodel,
+        positions,
+        output_file=f"{structures_path}/medoid_min.pdb",
+    )
+    
+    assert PE_end < PE_start
+    assert os.path.isfile(f"{structures_path}/medoid_min.pdb")
+
+    
+def test_minimize_structure_dcd():
+    """Test energy minimization structure, with reading/writing dcd files"""
+
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))    
+
+    native_structure_file=f"{structures_path}/medoid_0.dcd"
+
+    native_traj = md.load(native_structure_file,top=md.Topology.from_openmm(cgmodel.topology))    
+    
+    positions = native_traj.xyz[0] * unit.nanometer
+    
+    # Minimize energy of native structure
+    positions, PE_start, PE_end, simulation = minimize_structure(
+        cgmodel,
+        positions,
+        output_file=f"{structures_path}/medoid_min.dcd",
+    )
+    
+    assert PE_end < PE_start
+    assert os.path.isfile(f"{structures_path}/medoid_min.dcd")    
+    
     
 def test_run_simulation(tmpdir):
     """Run a short MD simulation of a 24mer 1b1s model"""
@@ -121,7 +168,7 @@ def test_run_simulation(tmpdir):
     
     sequence = 24 * [A]
     
-    pdb_path = os.path.join(data_path, "24mer_1b1s_initial_structure.pdb")
+    pdb_path = os.path.join(structures_path, "24mer_1b1s_initial_structure.pdb")
     positions = PDBFile(pdb_path).getPositions()
     
     # Build a coarse grained model
@@ -261,7 +308,7 @@ def test_run_replica_exchange(tmpdir):
     
     sequence = 24 * [A]
     
-    pdb_path = os.path.join(data_path, "24mer_1b1s_initial_structure.pdb")
+    pdb_path = os.path.join(structures_path, "24mer_1b1s_initial_structure.pdb")
     positions = PDBFile(pdb_path).getPositions()
     
     # Build a coarse grained model

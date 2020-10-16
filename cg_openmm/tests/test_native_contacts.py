@@ -12,6 +12,7 @@ from simtk.openmm.app.pdbfile import PDBFile
 from cg_openmm.parameters.secondary_structure import *
 from cg_openmm.parameters.free_energy import *
 from cg_openmm.parameters.reweight import get_temperature_list
+from cg_openmm.utilities.util import fit_sigmoid
 import pickle
 
 current_path = os.path.dirname(os.path.abspath(__file__))
@@ -215,7 +216,7 @@ def test_expectations_fraction_contacts_pdb(tmpdir):
     # Test free energy of folding:
     
     # Cutoff for native contact fraction folded vs. unfolded states:
-    Q_folded = 0.9
+    Q_folded = 0.75
     
     # Array folded states can be all frames, or only selected frames.
     # It is trimmed to the correct size in expectations_free_energy.
@@ -247,7 +248,26 @@ def test_expectations_fraction_contacts_pdb(tmpdir):
     )
 
     assert os.path.isfile(f"{output_directory}/free_energy.pdf")
-
+    
+    # Test free energy fitting / derivative calculation:
+    ddeltaF_out, d2deltaF_out, spline_tck = get_free_energy_derivative(
+        deltaF_values['state0_state1'],
+        full_T_list,
+        plotfile=f"{output_directory}/ddeltaF_dT.pdf",
+    )
+    
+    assert os.path.isfile(f"{output_directory}/ddeltaF_dT.pdf")
+    
+    # Test entropy/enthalpy of folding calculation:
+    S_folding, H_folding = get_entropy_enthalpy(
+        deltaF_values['state0_state1'],
+        full_T_list,
+        plotfile_entropy=f"{output_directory}/entropy_folding.pdf",
+        plotfile_enthalpy=f"{output_directory}/enthalpy_folding.pdf",
+    )
+    
+    assert os.path.isfile(f"{output_directory}/entropy_folding.pdf")
+    assert os.path.isfile(f"{output_directory}/enthalpy_folding.pdf")
 
 def test_expectations_fraction_contacts_dcd(tmpdir):
     """See if we can determine native contacts expectations as a function of T"""
@@ -327,4 +347,13 @@ def test_expectations_fraction_contacts_dcd(tmpdir):
     )
     
     assert os.path.isfile(f"{output_directory}/Q_expect_vs_T.pdf")    
+    
+    # Test sigmoid fitting function on Q_expect_vs_T data:
+    param_opt, param_cov = fit_sigmoid(
+        results["T"],
+        results["Q"],
+        plotfile=f"{output_directory}/Q_vs_T_fit.pdf",
+    )
+    
+    assert os.path.isfile(f"{output_directory}/Q_vs_T_fit.pdf")  
     

@@ -6,8 +6,10 @@ from cg_openmm.utilities.random_builder import *
 from cg_openmm.utilities.iotools import write_pdbfile_without_topology
 from openmmtools.multistate import MultiStateReporter, ReplicaExchangeAnalyzer
 import pymbar
+from scipy import interpolate
 
 kB = unit.MOLAR_GAS_CONSTANT_R # Boltzmann constant
+kB = kB.in_units_of(unit.kilojoule/unit.kelvin/unit.mole)
 
 def expectations_free_energy(array_folded_states, temperature_list, frame_begin=0, sample_spacing=1, output_data="output/output.nc", num_intermediate_states=0):
     """
@@ -134,10 +136,7 @@ def expectations_free_energy(array_folded_states, temperature_list, frame_begin=
         # Convert True/False to integer 1/0 for each energy data point:
         bool_i[i] = np.multiply((i_vector==array_folded_states),1)
 
-    # calculte the expectation of F at each unsampled states
-    # we can either do all temperatures at once for one state probability,
-    # or all states at once for one temperature. We will choose the second option
-    # to capture the correlation of the different conformational states.
+    # Calculate the expectation of F at each unsampled states
 
     # Loop over each thermodynamic state:
     results = {}
@@ -152,7 +151,6 @@ def expectations_free_energy(array_folded_states, temperature_list, frame_begin=
     deltaF_values = {}
     deltaF_uncertainty = {}
     n_trans = 0 # store the number of unique transitions
-    # Should change this to kJ/mol
     F_unit = (-kB*full_T_list[0]*Tunit).unit # units of free energy
 
     # Initialize the results dictionaries
@@ -168,7 +166,7 @@ def expectations_free_energy(array_folded_states, temperature_list, frame_begin=
             for s2 in range(s1+1,n_conf_states):
                 # Free energy change for s2 --> s1 at temp i
                 deltaF_values[f"state{s1}_state{s2}"][i] = (
-                    -kB*full_T_list[i]*unit.kelvin*(
+                    -kB*full_T_list[i]*Tunit*(
                     np.log(results[str(i)][0][s1])-
                     np.log(results[str(i)][0][s2]))).value_in_unit(F_unit)
                     
@@ -178,7 +176,177 @@ def expectations_free_energy(array_folded_states, temperature_list, frame_begin=
                     kB*full_T_list[i]*unit.kelvin*np.sqrt(
                     theta_i[s1,s1] + theta_i[s2,s2] - (theta_i[s2,s1]+theta_i[s1,s2]))).value_in_unit(F_unit)
 
+    # Add the units back on:
+    for s1 in range(n_conf_states):
+        for s2 in range(s1+1,n_conf_states):    
+            deltaF_values[f"state{s1}_state{s2}"] *= F_unit
+            deltaF_uncertainty[f"state{s1}_state{s2}"] *= F_unit
+    full_T_list *= Tunit
+                    
     return full_T_list, deltaF_values, deltaF_uncertainty
+    
+    
+def get_entropy_enthalpy(deltaF, temperature_list, plotfile_entropy='entropy.pdf', plotfile_enthalpy='enthalpy.pdf'):
+    """
+    Compute enthalpy change and entropy change upon folding, given free energy of folding for a series of temperatures.
+    
+    :param deltaF: Free energy of folding for a set of temperatures
+    :type deltaF: 1D numpy array
+    
+    :param deltaF: Uncertainty associated with deltaF
+    :type deltaF: 1D numpy array
+    
+    :param temperature_list: List of temperatures for the simulation data.
+    :type temperature_list: List( float * simtk.unit.temperature )
+    
+    :param plotfile_entropy: path to filename for entropy plot (no plot created if None)
+    :type plotfile_entropy: str
+    
+    :param plotfile_enthalpy: path to filename for enthalpy plot (no plot created if None)
+    :type plotfile_enthalpy: str
+    
+    :returns:
+      - deltaS - A 1D numpy array of entropy of folding values for each temperature in temperature_list
+      - deltaU - A 1D numpy array of enthalpy of folding values for each temperature in temperature_list
+      
+    """
+    ddeltaF, d2deltaF, spline_tck = get_free_energy_derivative(deltaF, temperature_list)
+    
+    F_unit = deltaF[0].unit
+    T_unit = temperature_list[0].unit
+    S_unit = F_unit/T_unit
+    U_unit = F_unit
+    
+    # Spline fitting function strips off units - add back:
+    deltaS = -ddeltaF * F_unit / T_unit
+    
+    deltaU = deltaF + temperature_list*deltaS
+    
+    if plotfile_entropy is not None:
+        figure = plt.figure()
+        plt.plot(
+            temperature_list.value_in_unit(T_unit),
+            deltaS.value_in_unit(S_unit),
+            'o-',
+            linewidth=1,
+            markersize=6,
+            fillstyle='none',
+        )
+        
+        xlabel = f'Temperature {T_unit.get_symbol()}'
+        ylabel = f'Entropy of folding {S_unit.get_symbol()}' 
+        
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        plt.savefig(f"{plotfile_entropy}")
+
+    if plotfile_enthalpy is not None:
+        figure = plt.figure()
+        plt.plot(
+            temperature_list.value_in_unit(T_unit),
+            deltaU.value_in_unit(U_unit),
+            'o-',
+            linewidth=1,
+            markersize=6,
+            fillstyle='none',
+        )
+        
+        xlabel = f'Temperature {T_unit.get_symbol()}'
+        ylabel = f'Enthalpy of folding {U_unit.get_symbol()}' 
+        
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        plt.savefig(f"{plotfile_enthalpy}")    
+        
+    return deltaS, deltaU
+  
+        
+    
+def get_free_energy_derivative(deltaF, temperature_list, plotfile=None):
+    """
+    Fit a heat capacity vs T dataset to cubic spline, and compute derivatives
+    
+    :param deltaF: free energy of folding data series
+    :type deltaF: Quantity or numpy 1D array
+    
+    :param temperature_list: List of temperatures used in replica exchange simulations
+    :type temperature: Quantity or numpy 1D array
+    
+    :param plotfile: path to filename to output plot (default=None)
+    :type plotfile: str
+    
+    :returns:
+          - dF_out ( 1D numpy array (float) ) - 1st derivative of free energy, from a cubic spline evaluated at each point in deltaF)
+          - d2F_out ( 1D numpy array (float) ) - 2nd derivative of free energy, from a cubic spline evaluated at each point in deltaF)
+          - spline_tck ( scipy spline object (tuple) ) - knot points (t), coefficients (c), and order of the spline (k) fit to deltaF data
+    
+    """
+    xdata = temperature_list
+    ydata = deltaF
+    
+    # Strip units off quantities:
+    if type(xdata[0]) == unit.quantity.Quantity:
+        xdata_val = np.zeros((len(xdata)))
+        xunit = xdata[0].unit
+        for i in range(len(xdata)):
+            xdata_val[i] = xdata[i].value_in_unit(xunit)
+        xdata = xdata_val
+    
+    if type(ydata[0]) == unit.quantity.Quantity:
+        ydata_val = np.zeros((len(ydata)))
+        yunit = ydata[0].unit
+        for i in range(len(ydata)):
+            ydata_val[i] = ydata[i].value_in_unit(yunit)
+        ydata = ydata_val
+            
+    # Fit cubic spline to data, no smoothing
+    spline_tck = interpolate.splrep(xdata, ydata, s=0)
+    
+    xfine = np.linspace(xdata[0],xdata[-1],1000)
+    yfine = interpolate.splev(xfine, spline_tck, der=0)
+    dF = interpolate.splev(xfine, spline_tck, der=1)
+    d2F = interpolate.splev(xfine, spline_tck, der=2)
+    
+    dF_out = interpolate.splev(xdata, spline_tck, der=1)
+    d2F_out = interpolate.splev(xdata, spline_tck, der=2)
+    
+    if plotfile != None:
+        figure, axs = plt.subplots(nrows=3,ncols=1,sharex=True)
+        
+        axs[0].plot(xdata,ydata,'ok',
+            markersize=4,
+            fillstyle='none',
+            label='simulation data',
+        )
+        
+        axs[0].plot(xfine,yfine,'-b',
+            label='cubic spline',
+        )
+        
+        axs[0].legend()
+        axs[0].set_ylabel(r'$\Delta F (J/mol)$')
+        
+        axs[1].plot(xfine,dF,'-r',
+            label=r'$\frac{d\Delta F}{dT}$',
+        )
+        
+        axs[1].legend()
+        axs[1].set_ylabel(r'$\frac{d\Delta F}{dT}$')
+        
+        axs[2].plot(xfine,d2F,'-g',
+            label=r'$\frac{d^{2}\Delta F}{dT^{2}}$',
+        )
+        
+        axs[2].legend()
+        axs[2].set_ylabel(r'$\frac{d^{2}\Delta F}{dT^{2}}$')
+        axs[2].set_xlabel(r'$T (K)$')
+        
+        plt.tight_layout()
+        
+        plt.savefig(plotfile)
+        plt.close()
+    
+    return dF_out, d2F_out, spline_tck    
     
 
 def plot_free_energy_results(full_T_list, deltaF_values, deltaF_uncertainty,plotfile="free_energy_plot.pdf"):   
@@ -199,15 +367,18 @@ def plot_free_energy_results(full_T_list, deltaF_values, deltaF_uncertainty,plot
     
     """
 
-    xlabel = 'Temperature (K)'
-    ylabel = 'Free energy change (joule/mol)'
+    T_unit = full_T_list[0].unit
+    F_unit = list(deltaF_values.items())[0][1].unit
+    
+    xlabel = f'Temperature {T_unit.get_symbol()}'
+    ylabel = f'Free energy change {F_unit.get_symbol()}'
     legend_str = []
 
     for key,value in deltaF_values.items():
         plt.errorbar(
-            full_T_list,
-            deltaF_values[f"{key}"],
-            deltaF_uncertainty[f"{key}"],
+            full_T_list.value_in_unit(T_unit),
+            deltaF_values[f"{key}"].value_in_unit(F_unit),
+            deltaF_uncertainty[f"{key}"].value_in_unit(F_unit),
             linewidth=1,
             markersize=6,
             fmt='o-',

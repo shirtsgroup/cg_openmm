@@ -589,8 +589,8 @@ def get_structure_from_library(cgmodel, high_energy=False, low_energy=False):
         cgmodel.simulation = simulation
     except:
         cgmodel.system = build_system(cgmodel)
-        positions, energy, simulation = minimize_structure(
-            cgmodel.topology, cgmodel.system, cgmodel.positions,
+        positions, energy_init, energy_final, simulation = minimize_structure(
+            cgmodel, cgmodel.positions,
         )
 
     return positions
@@ -782,12 +782,12 @@ def get_random_positions(
             else:
                 # if nothing is too close, build the system up to now and minimize the energy
                 cgmodel.system = build_system(cgmodel)
-                stored_positions, energy, simulation = minimize_structure(
-                    cgmodel.topology, cgmodel.system, stored_positions,
+                stored_positions, energy_init, energy_final, simulation = minimize_structure(
+                    cgmodel, stored_positions,
                 )
                 monomer_index += 1
                 # success!  check the currrent energy
-                print(f"current energy is {energy}")
+                print(f"current energy is {energy_final}")
 
     positions = stored_positions
     # check for collisions again
@@ -802,8 +802,8 @@ def get_random_positions(
         cgmodel.positions = positions
         cgmodel.topology = build_topology(cgmodel, use_pdbfile=True)
         cgmodel.system = build_system(cgmodel)
-        positions, energy, simulation = minimize_structure(
-            cgmodel.topology, cgmodel.system, positions,
+        positions, energy_init, energy_final, simulation = minimize_structure(
+            cgmodel, positions,
         )
 
         # good to go!

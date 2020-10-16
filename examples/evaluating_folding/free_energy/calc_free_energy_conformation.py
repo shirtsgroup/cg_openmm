@@ -120,3 +120,9 @@ plot_free_energy_results(
     deltaF_uncertainty,
     plotfile="free_energy.pdf"
 )
+
+# Compute entropy and enthalpy of folding:
+S_folding, H_folding = get_entropy_enthalpy(
+    deltaF_values['state0_state1'],
+    full_T_list,
+)

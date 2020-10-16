@@ -271,7 +271,7 @@ def fraction_native_contacts(
             nframes = rep_traj.n_frames
             Q = np.zeros((nframes,n_replicas))
         
-        traj_distances = mdtraj.compute_distances(
+        traj_distances = md.compute_distances(
             rep_traj,native_contact_list,periodic=False,opt=True)
         # This produces a [nframe x len(native_contacts)] array
   
