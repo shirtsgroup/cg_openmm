@@ -22,7 +22,13 @@ proj_directory = os.getcwd()
 
 @FlowProject.label
 def run_replica_exchange_done(job):
-    return job.isfile("output/output.nc")
+    output_directory = os.path.join(job.workspace(),"output")
+    output_data = os.path.join(output_directory, "output.nc")
+    rep_exch_completed = 0
+    if os.path.isfile(output_data):
+        rep_exch_status = ReplicaExchangeSampler.read_status(output_data)
+        rep_exch_completed = rep_exch_status.is_completed
+    return rep_exch_completed
     
 @FlowProject.label
 def process_replica_exchange_done(job):
@@ -239,9 +245,9 @@ def signac_calc_heat_capacity(job):
     )
 
     # Save C_v data to data file:
-    job.data['C_v'] = C_v
-    job.data['dC_v'] = dC_v
-    job.data['T_list_C_v'] = new_temperature_list
+    job.data['C_v'] = C_v._value
+    job.data['dC_v'] = dC_v._value
+    job.data['T_list_C_v'] = new_temperature_list._value
     
     print(f"T({new_temperature_list[0].unit})  Cv({C_v[0].unit})  dCv({dC_v[0].unit})")
     for i, C in enumerate(C_v):

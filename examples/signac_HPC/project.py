@@ -20,7 +20,13 @@ proj_directory = os.getcwd()
 
 @FlowProject.label
 def run_replica_exchange_done(job):
-    return job.isfile("output/output.nc")
+    output_directory = os.path.join(job.workspace(),"output")
+    output_data = os.path.join(output_directory, "output.nc")
+    rep_exch_completed = 0
+    if os.path.isfile(output_data):
+        rep_exch_status = ReplicaExchangeSampler.read_status(output_data)
+        rep_exch_completed = rep_exch_status.is_completed
+    return rep_exch_completed
     
 @FlowProject.label
 def process_replica_exchange_done(job):
