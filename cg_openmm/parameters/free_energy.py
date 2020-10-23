@@ -7,11 +7,13 @@ from cg_openmm.utilities.iotools import write_pdbfile_without_topology
 from openmmtools.multistate import MultiStateReporter, ReplicaExchangeAnalyzer
 import pymbar
 from scipy import interpolate
+from sklearn.utils import resample
 
 kB = unit.MOLAR_GAS_CONSTANT_R # Boltzmann constant
 kB = kB.in_units_of(unit.kilojoule/unit.kelvin/unit.mole)
 
-def expectations_free_energy(array_folded_states, temperature_list, frame_begin=0, sample_spacing=1, output_data="output/output.nc", num_intermediate_states=0):
+def expectations_free_energy(array_folded_states, temperature_list, frame_begin=0, sample_spacing=1, output_data="output/output.nc",
+    bootstrap_energies=None, num_intermediate_states=0):
     """
     This function calculates the free energy difference (with uncertainty) between all conformational states as a function of temperature.
 
@@ -33,6 +35,9 @@ def expectations_free_energy(array_folded_states, temperature_list, frame_begin=
     :param num_intermediate_states: Number of unsampled thermodynamic states between sampled states to include in the calculation
     :type num_intermediate_states: int
     
+    :param bootstrap_energies: a custom replica_energies array to be used for bootstrapping calculations. Used instead of the energies in the .nc file.
+    :type bootstrap_energies: 2d numpy array (float)
+    
     :returns:
       - full_T_list - A 1D numpy array listing of all temperatures, including sampled and intermediate unsampled
       - deltaF_values - A dictionary of the form {"statei_statej": 1D numpy array}, containing free energy change for each T in
@@ -45,30 +50,40 @@ def expectations_free_energy(array_folded_states, temperature_list, frame_begin=
     # Number of configurational states:
     n_conf_states = len(np.unique(array_folded_states))
 
-    # extract reduced energies and the state indices from the .nc
-    reporter = MultiStateReporter(output_data, open_mode="r")
-    analyzer = ReplicaExchangeAnalyzer(reporter)
-    (
-        replica_energies_all,
-        unsampled_state_energies,
-        neighborhoods,
-        replica_state_indices,
-    ) = analyzer.read_energies()
     
-    # Select production frames to analyze
-    replica_energies = replica_energies_all[:,:,frame_begin::sample_spacing]
-
-    # Check if array_folded_states needs slicing for production region:
-    # array_folded_states is array of [nframes,nreplicas]
-    if np.shape(replica_energies)[2] != np.shape(array_folded_states)[0]:
-        # Mismatch in the number of frames.
-        if np.shape(replica_energies_all[:,:,frame_begin::])[2] == np.shape(array_folded_states)[0]:
-            # Correct starting frame, need to apply sampling stride:
-            array_folded_states = array_folded_states[frame_begin:,:] 
-        elif np.shape(replica_energies_all)[3] == np.shape(array_folded_states)[0]:
-            # This is the full array_folded_states, slice production frames:
-            array_folded_states = array_folded_states[frame_begin::sample_spacing,:]
+    if bootstrap_energies is not None:
+        # Use a subsampled replica_energy matrix instead of reading from file
+        replica_energies = bootstrap_energies
         
+    else:    
+        # extract reduced energies and the state indices from the .nc
+        reporter = MultiStateReporter(output_data, open_mode="r")
+        analyzer = ReplicaExchangeAnalyzer(reporter)
+        (
+            replica_energies_all,
+            unsampled_state_energies,
+            neighborhoods,
+            replica_state_indices,
+        ) = analyzer.read_energies()
+        
+        # Select production frames to analyze
+        replica_energies = replica_energies_all[:,:,frame_begin::sample_spacing]
+        
+        # Check if array_folded_states needs slicing for production region:
+        # array_folded_states is array of [nframes,nreplicas]
+        if np.shape(replica_energies)[2] != np.shape(array_folded_states)[0]:
+            # Mismatch in the number of frames.
+            if np.shape(replica_energies_all[:,:,frame_begin::sample_spacing])[2] == np.shape(array_folded_states[::sample_spacing,:])[0]:
+                # Correct starting frame, need to apply sampling stride:
+                array_folded_states = array_folded_states[::sample_spacing,:] 
+            elif np.shape(replica_energies_all)[2] == np.shape(array_folded_states)[0]:
+                # This is the full array_folded_states, slice production frames:
+                array_folded_states = array_folded_states[frame_begin::sample_spacing,:]      
+                
+
+    # convert the energies from replica/evaluated state/sample form to evaluated state/sample form
+    replica_energies = pymbar.utils.kln_to_kn(replica_energies)  
+    n_samples = len(replica_energies[0,:])
         
     # Reshape array_folded_states to row vector for pymbar
     # We need to order the data by replica, rather than by frame
@@ -78,10 +93,6 @@ def expectations_free_energy(array_folded_states, temperature_list, frame_begin=
     Tunit = temperature_list[0].unit
     temps = np.array([temp.value_in_unit(Tunit)  for temp in temperature_list])  # should this just be array to begin with
     beta_k = 1 / (kB.value_in_unit(unit.kilojoule_per_mole/Tunit) * temps)
-
-    # convert the energies from replica/evaluated state/sample form to evaluated state/sample form
-    replica_energies = pymbar.utils.kln_to_kn(replica_energies)
-    n_samples = len(replica_energies[0,:])
 
     # calculate the number of states we need expectations at.  We want it at all of the original
     # temperatures, each intermediate temperature, and then temperatures +/- from the original
@@ -183,6 +194,94 @@ def expectations_free_energy(array_folded_states, temperature_list, frame_begin=
             deltaF_uncertainty[f"state{s1}_state{s2}"] *= F_unit
     full_T_list *= Tunit
                     
+    return full_T_list, deltaF_values, deltaF_uncertainty
+    
+
+def bootstrap_free_energy_folding(array_folded_states, temperature_list, output_data="output/output.nc", frame_begin=0, sample_spacing=1,
+    n_sample_boot=500, n_trial_boot=100, num_intermediate_states=0):
+    """
+    Function for computing uncertainty of free energy, entropy, and enthalpy using standard bootstrapping
+    """
+    
+    # extract reduced energies and the state indices from the .nc
+    reporter = MultiStateReporter(output_data, open_mode="r")
+    analyzer = ReplicaExchangeAnalyzer(reporter)
+    (
+        replica_energies_all,
+        unsampled_state_energies,
+        neighborhoods,
+        replica_state_indices,
+    ) = analyzer.read_energies()    
+    
+    # Select production frames to analyze
+    replica_energies = replica_energies_all[:,:,frame_begin::sample_spacing]
+
+    # Check if array_folded_states needs slicing for production region:
+    # array_folded_states is array of [nframes,nreplicas]
+    if np.shape(replica_energies)[2] != np.shape(array_folded_states)[0]:
+        # Mismatch in the number of frames.
+        if np.shape(replica_energies_all[:,:,frame_begin::sample_spacing])[2] == np.shape(array_folded_states[::sample_spacing,:])[0]:
+            # Correct starting frame, need to apply sampling stride:
+            array_folded_states = array_folded_states[::sample_spacing,:] 
+        elif np.shape(replica_energies_all)[2] == np.shape(array_folded_states)[0]:
+            # This is the full array_folded_states, slice production frames:
+            array_folded_states = array_folded_states[frame_begin::sample_spacing,:]   
+    
+    # Overall results:
+    deltaF_values = {}
+    deltaF_uncertainty = {}
+    
+    # Uncertainty for each sampling trial:
+    deltaF_values_boot = {}
+    deltaF_uncertainty_boot = {}
+    
+    # Units of free energy:
+    F_unit = (-kB*unit.kelvin).unit # units of free energy
+    
+    # Get all possible sample indices
+    sample_indices_all = np.arange(0,len(replica_energies[0,0,:]))
+    
+    for i_boot in range(n_trial_boot):
+        sample_indices = resample(sample_indices_all, replace=True, n_samples=n_sample_boot)
+        
+        n_state = len(array_folded_states[0,:])
+        
+        # array_folded_states is [n_frame x n_state]
+        array_folded_states_resample = np.zeros((n_sample_boot,n_state))
+        replica_energies_resample = np.zeros((n_state,n_state,n_sample_boot))
+        # replica_energies is [n_states x n_states x n_frame]
+        
+        # Select the sampled frames from array_folded_states and replica_energies:
+        j = 0
+        for i in sample_indices:
+            array_folded_states_resample[j,:] = array_folded_states[i,:]
+            replica_energies_resample[:,:,j] = replica_energies[:,:,i]
+            j += 1
+            
+        # Run free energy expectation calculation:
+        full_T_list, deltaF_values_boot[i_boot], deltaF_uncertainty_boot[i_boot] = expectations_free_energy(
+            array_folded_states_resample,
+            temperature_list,
+            bootstrap_energies=replica_energies_resample,
+            frame_begin=frame_begin,
+            sample_spacing=sample_spacing,
+            num_intermediate_states=num_intermediate_states,
+        )
+        
+    arr_deltaF_values_boot = {}    
+        
+    for key, value in deltaF_values_boot[0].items():
+        arr_deltaF_values_boot[key] = np.zeros((n_trial_boot, len(full_T_list)))
+        
+    # Compute uncertainty over the n_trial_boot trials performed:
+    for i_boot in range(n_trial_boot):
+        for key, value in deltaF_values_boot[i_boot].items():
+            arr_deltaF_values_boot[key][0,:] = value.value_in_unit(F_unit)
+            
+    for key, value in deltaF_values_boot[0].items():        
+        deltaF_uncertainty[key] = np.std(arr_deltaF_values_boot[key],axis=0)*F_unit
+        deltaF_values[key] = np.mean(arr_deltaF_values_boot[key],axis=0)*F_unit
+        
     return full_T_list, deltaF_values, deltaF_uncertainty
     
     

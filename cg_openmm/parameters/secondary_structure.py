@@ -124,10 +124,10 @@ def expectations_fraction_contacts(fraction_native_contacts, temperature_list, f
     # Check the size of the fraction_native_contacts array:
     if np.shape(replica_energies)[2] != np.shape(fraction_native_contacts)[0]:
         # Mismatch in number of frames.
-        if np.shape(replica_energies_all[:,:,frame_begin::])[2] == np.shape(fraction_native_contacts)[0]:
+        if np.shape(replica_energies_all[:,:,frame_begin::sample_spacing])[2] == np.shape(fraction_native_contacts[::sample_spacing,:])[0]:
             # Correct starting frame, need to apply sampling stride:
             fraction_native_contacts = fraction_native_contacts[::sample_spacing,:]
-        elif np.shape(replica_energies_all)[3] == np.shape(fraction_native_contacts)[0]:
+        elif np.shape(replica_energies_all)[2] == np.shape(fraction_native_contacts)[0]:
             # This is the full fraction_native_contacts, slice production frames:
             fraction_native_contacts = fraction_native_contacts[production_start::sample_spacing,:]
 
