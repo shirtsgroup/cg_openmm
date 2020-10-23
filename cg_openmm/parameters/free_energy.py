@@ -230,13 +230,26 @@ def bootstrap_free_energy_folding(array_folded_states, temperature_list, output_
     # Overall results:
     deltaF_values = {}
     deltaF_uncertainty = {}
+    deltaS_values = {}
+    deltaS_uncertainty = {}
+    deltaU_values = {}
+    deltaU_uncertainty = {}
     
     # Uncertainty for each sampling trial:
     deltaF_values_boot = {}
     deltaF_uncertainty_boot = {}
     
-    # Units of free energy:
-    F_unit = (-kB*unit.kelvin).unit # units of free energy
+    deltaS_values_boot = {}
+    deltaS_uncertainty_boot = {}
+    
+    deltaU_values_boot = {}
+    deltaU_uncertainty_boot = {}
+    
+    # Get units:
+    F_unit = (kB*unit.kelvin).unit # units of free energy
+    T_unit = temperature_list[0].unit
+    S_unit = F_unit/T_unit
+    U_unit = F_unit
     
     # Get all possible sample indices
     sample_indices_all = np.arange(0,len(replica_energies[0,0,:]))
@@ -268,21 +281,40 @@ def bootstrap_free_energy_folding(array_folded_states, temperature_list, output_
             num_intermediate_states=num_intermediate_states,
         )
         
-    arr_deltaF_values_boot = {}    
+        # Get entropy/enthalpy for fitting current free energy data:
+        deltaS_values_boot[i_boot], deltaU_values_boot[i_boot] = get_entropy_enthalpy(
+            deltaF_values_boot[i_boot]['state0_state1'], full_T_list, plotfile_entropy=None, plotfile_enthalpy=None)
         
-    for key, value in deltaF_values_boot[0].items():
-        arr_deltaF_values_boot[key] = np.zeros((n_trial_boot, len(full_T_list)))
+
+    # TODO: generalize this to allow for multiple different conformational transitions (>2 states)
+    arr_deltaF_values_boot = np.zeros((n_trial_boot, len(full_T_list)))
+    arr_deltaS_values_boot = np.zeros((n_trial_boot, len(full_T_list)))
+    arr_deltaU_values_boot = np.zeros((n_trial_boot, len(full_T_list)))
         
     # Compute uncertainty over the n_trial_boot trials performed:
+    # Free energy:
     for i_boot in range(n_trial_boot):
         for key, value in deltaF_values_boot[i_boot].items():
-            arr_deltaF_values_boot[key][0,:] = value.value_in_unit(F_unit)
+            arr_deltaF_values_boot[i_boot,:] = value.value_in_unit(F_unit)
             
-    for key, value in deltaF_values_boot[0].items():        
-        deltaF_uncertainty[key] = np.std(arr_deltaF_values_boot[key],axis=0)*F_unit
-        deltaF_values[key] = np.mean(arr_deltaF_values_boot[key],axis=0)*F_unit
-        
-    return full_T_list, deltaF_values, deltaF_uncertainty
+    deltaF_uncertainty = np.std(arr_deltaF_values_boot,axis=0)*F_unit
+    deltaF_values = np.mean(arr_deltaF_values_boot,axis=0)*F_unit
+            
+    # Entropy:        
+    for i_boot in range(n_trial_boot):         
+        arr_deltaS_values_boot[i_boot,:] = deltaS_values_boot[i_boot].value_in_unit(S_unit)
+            
+    deltaS_uncertainty = np.std(arr_deltaS_values_boot,axis=0)*S_unit
+    deltaS_values = np.mean(arr_deltaS_values_boot,axis=0)*S_unit            
+            
+    # Enthalpy:        
+    for i_boot in range(n_trial_boot):
+        arr_deltaU_values_boot[i_boot,:] = deltaU_values_boot[i_boot].value_in_unit(U_unit)
+            
+    deltaU_uncertainty = np.std(arr_deltaU_values_boot,axis=0)*U_unit
+    deltaU_values = np.mean(arr_deltaU_values_boot,axis=0)*U_unit
+                    
+    return full_T_list, deltaF_values, deltaF_uncertainty, deltaS_values, deltaS_uncertainty, deltaU_values, deltaU_uncertainty
     
     
 def get_entropy_enthalpy(deltaF, temperature_list, plotfile_entropy='entropy.pdf', plotfile_enthalpy='enthalpy.pdf'):
