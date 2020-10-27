@@ -14,7 +14,7 @@ from pymbar import timeseries
 import time
 
 from openmmtools.multistate import MultiStateReporter, MultiStateSampler, ReplicaExchangeSampler
-from openmmtools.multistate import ReplicaExchangeAnalyzer
+from openmmtools.multistate import ReplicaExchangeAnalyzer, ParallelTemperingSampler
 
 # quiet down some citation spam
 MultiStateSampler._global_citation_silence = True
@@ -526,17 +526,24 @@ def run_replica_exchange(
         reassign_velocities=False,
     )
 
-    simulation = ReplicaExchangeSampler(
+    simulation = ParallelTemperingSampler(
         mcmc_moves=move,
         number_of_iterations=exchange_attempts,
-        replica_mixing_scheme='swap-neighbors',
-    )
+        replica_mixing_scheme='swap-all'
+        )
+        
 
     if os.path.exists(output_data):
         os.remove(output_data)
 
     reporter = MultiStateReporter(output_data, checkpoint_interval=1)
-    simulation.create(thermodynamic_states, sampler_states, reporter)
+    simulation.create(
+        thermodynamic_states[0],
+        openmmtools.states.SamplerState(positions),
+        reporter,
+        temperatures=temperature_list,
+        n_temperatures=len(temperature_list),
+        )
 
     if minimize:
         simulation.minimize()
