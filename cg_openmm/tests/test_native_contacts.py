@@ -260,14 +260,35 @@ def test_expectations_fraction_contacts_pdb(tmpdir):
     
     # Test entropy/enthalpy of folding calculation:
     S_folding, H_folding = get_entropy_enthalpy(
-        deltaF_values['state0_state1'],
-        full_T_list,
-        plotfile_entropy=f"{output_directory}/entropy_folding.pdf",
-        plotfile_enthalpy=f"{output_directory}/enthalpy_folding.pdf",
+        deltaF_values, full_T_list,
+        )
+    
+    # Test free energy / entropy / enthalpy bootstrapping calculation:
+    # From bootstrapping:
+    (full_T_list_boot, deltaF_values_boot, deltaF_uncertainty_boot, \
+        deltaS_values_boot, deltaS_uncertainty_boot, \
+        deltaH_values_boot, deltaH_uncertainty_boot) = bootstrap_free_energy_folding(
+        array_folded_states,
+        temperature_list,
+        frame_begin=100,
+        sample_spacing=1,
+        output_data=output_data,
+        num_intermediate_states=num_intermediate_states,
+        n_sample_boot=200,
+        n_trial_boot=10,
     )
     
+    # Plot entropy/enthalpy results:
+    
+    plot_entropy_enthalpy(
+        full_T_list, S_folding, H_folding, deltaS_uncertainty_boot, deltaH_uncertainty_boot,
+        plotfile_entropy=f"{output_directory}/entropy_folding.pdf",
+        plotfile_enthalpy=f"{output_directory}/enthalpy_folding.pdf",
+        )
+        
     assert os.path.isfile(f"{output_directory}/entropy_folding.pdf")
     assert os.path.isfile(f"{output_directory}/enthalpy_folding.pdf")
+    
 
 def test_expectations_fraction_contacts_dcd(tmpdir):
     """See if we can determine native contacts expectations as a function of T"""
