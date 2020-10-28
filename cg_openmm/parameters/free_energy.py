@@ -322,9 +322,9 @@ def bootstrap_free_energy_folding(array_folded_states, temperature_list, output_
         # The inner dictionary keys will be transition names
         deltaS_values_boot[i_boot] = {}
         deltaU_values_boot[i_boot] = {}
-        for key, value in deltaF_values_boot[i_boot].items(): 
-            deltaS_values_boot[i_boot][key], deltaU_values_boot[i_boot][key] = get_entropy_enthalpy(
-                value, full_T_list, plotfile_entropy=None, plotfile_enthalpy=None)
+        
+        deltaS_values_boot[i_boot], deltaU_values_boot[i_boot] = get_entropy_enthalpy(
+            deltaF_values_boot[i_boot], full_T_list)
     
     arr_deltaF_values_boot = {}
     arr_deltaS_values_boot = {}
@@ -374,15 +374,12 @@ def bootstrap_free_energy_folding(array_folded_states, temperature_list, output_
     return full_T_list, deltaF_values, deltaF_uncertainty, deltaS_values, deltaS_uncertainty, deltaU_values, deltaU_uncertainty
     
     
-def get_entropy_enthalpy(deltaF, temperature_list, plotfile_entropy='entropy.pdf', plotfile_enthalpy='enthalpy.pdf'):
+def get_entropy_enthalpy(deltaF, temperature_list):
     """
     Compute enthalpy change and entropy change upon folding, given free energy of folding for a series of temperatures.
     
-    :param deltaF: Free energy of folding for a set of temperatures
-    :type deltaF: 1D numpy array
-    
-    :param deltaF: Uncertainty associated with deltaF
-    :type deltaF: 1D numpy array
+    :param deltaF: A dictionary containing free energy change for each T in full_T_list, for each conformational state transition.
+    :type deltaF: dict{"statei_statej":1D numpy array}
     
     :param temperature_list: List of temperatures for the simulation data.
     :type temperature_list: List( float * simtk.unit.temperature )
@@ -394,61 +391,141 @@ def get_entropy_enthalpy(deltaF, temperature_list, plotfile_entropy='entropy.pdf
     :type plotfile_enthalpy: str
     
     :returns:
-      - deltaS - A 1D numpy array of entropy of folding values for each temperature in temperature_list
-      - deltaU - A 1D numpy array of enthalpy of folding values for each temperature in temperature_list
+      - deltaS - dict{"statei_statej":1D numpy array} of entropy of folding values for each temperature in temperature_list
+      - deltaU - dict{"statei_statej":1D numpy array} of enthalpy of folding values for each temperature in temperature_list
       
     """
-    ddeltaF, d2deltaF, spline_tck = get_free_energy_derivative(deltaF, temperature_list)
     
-    F_unit = deltaF[0].unit
-    T_unit = temperature_list[0].unit
-    S_unit = F_unit/T_unit
-    U_unit = F_unit
-    
-    # Spline fitting function strips off units - add back:
-    deltaS = -ddeltaF * F_unit / T_unit
-    
-    deltaU = deltaF + temperature_list*deltaS
-    
-    if plotfile_entropy is not None:
-        figure = plt.figure()
-        plt.plot(
-            temperature_list.value_in_unit(T_unit),
-            deltaS.value_in_unit(S_unit),
-            'o-',
-            linewidth=1,
-            markersize=6,
-            fillstyle='none',
-        )
-        
-        xlabel = f'Temperature {T_unit.get_symbol()}'
-        ylabel = f'Entropy of folding {S_unit.get_symbol()}' 
-        
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
-        plt.savefig(f"{plotfile_entropy}")
+    ddeltaF = {}
+    d2deltaF = {}
+    spline_tck = {}
+    deltaS = {}
+    deltaU = {}
 
-    if plotfile_enthalpy is not None:
-        figure = plt.figure()
-        plt.plot(
-            temperature_list.value_in_unit(T_unit),
-            deltaU.value_in_unit(U_unit),
-            'o-',
-            linewidth=1,
-            markersize=6,
-            fillstyle='none',
-        )
+    T_unit = temperature_list[0].unit    
+    
+    # Loop over all conformational transitions:
+    for key,value in deltaF.items():
+        ddeltaF[key], d2deltaF[key], spline_tck[key] = \
+            get_free_energy_derivative(value, temperature_list)
+                
+        F_unit = value[0].unit
+        S_unit = F_unit/T_unit
+        U_unit = F_unit
         
-        xlabel = f'Temperature {T_unit.get_symbol()}'
-        ylabel = f'Enthalpy of folding {U_unit.get_symbol()}' 
+        # Spline fitting function strips off units - add back:
+        deltaS[key] = -ddeltaF[key] * F_unit / T_unit
         
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
-        plt.savefig(f"{plotfile_enthalpy}")    
+        deltaU[key] = value + temperature_list*deltaS[key]    
         
     return deltaS, deltaU
   
+  
+def plot_entropy_enthalpy(
+    full_T_list, deltaS_values, deltaH_values, deltaS_uncertainty=None, deltaH_uncertainty=None,
+    plotfile_entropy='entropy.pdf', plotfile_enthalpy='enthalpy.pdf'):
+    """
+    Plot entropy and enthalpy difference data for each conformational state transition as a function of temperature.
+
+    :param full_T_list: Array listing of all temperatures, including sampled and intermediate unsampled
+    :type full_T_list: 1D numpy array
+    
+    :param deltaS_values: A dictionary containing entropy change for each T in full_T_list, for each conformational state transition.
+    :type deltaS_values: dict{"statei_statej":1D numpy array}
+    
+    :param deltaH_values: A dictionary containing enthalpy change for each T in full_T_list, for each conformational state transition.
+    :type deltaH_values: dict{"statei_statej":1D numpy array}
+    
+    :param deltaS_uncertainty: A dictionary containing uncertainties corresponding to deltaS_values (optional)
+    :type deltaS_uncertainty: dict{"statei_statej":1D numpy array}
+    
+    :param deltaH_uncertainty: A dictionary containing uncertainties corresponding to deltaH_values (optional)
+    :type deltaH_uncertainty: dict{"statei_statej":1D numpy array}
+    
+    :param plotfile_entropy: name of entropy plot file, including pdf extension
+    :type plotfile_entropy: str
+    
+    :param plotfile_enthalpy: name of enthalpy plot file, including pdf extension
+    :type plotfile_enthalpy: str
+    """
+
+    T_unit = full_T_list[0].unit
+    S_unit = list(deltaS_values.items())[0][1].unit
+    H_unit = list(deltaH_values.items())[0][1].unit
+    
+    xlabel = f'Temperature {T_unit.get_symbol()}'
+    
+    # Plot entropy change as a function of T:
+    ylabel = f'Entropy change {S_unit.get_symbol()}'
+    legend_str = []
+
+    if deltaS_uncertainty is not None:
+        for key,value in deltaS_values.items():
+            plt.errorbar(
+                full_T_list.value_in_unit(T_unit),
+                deltaS_values[f"{key}"].value_in_unit(S_unit),
+                deltaS_uncertainty[f"{key}"].value_in_unit(S_unit),
+                linewidth=1,
+                markersize=6,
+                fmt='o-',
+                fillstyle='none',
+                capsize=4,
+            )
+            legend_str.append(key)
+    else:
+        for key,value in deltaS_values.items():
+            plt.plot(
+                full_T_list.value_in_unit(T_unit),
+                deltaS_values[f"{key}"].value_in_unit(S_unit),
+                'o-',
+                linewidth=1,
+                markersize=6,
+                fillstyle='none',
+            )
+            legend_str.append(key)
         
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    pyplot.legend(legend_str)
+    plt.savefig(f"{plotfile_entropy}") 
+    plt.close()
+    
+    # Plot enthalpy change as a function of T:
+    ylabel = f'Enthalpy change {H_unit.get_symbol()}'
+    legend_str = []
+
+    if deltaH_uncertainty is not None:
+        for key,value in deltaH_values.items():
+            plt.errorbar(
+                full_T_list.value_in_unit(T_unit),
+                deltaH_values[f"{key}"].value_in_unit(H_unit),
+                deltaH_uncertainty[f"{key}"].value_in_unit(H_unit),
+                linewidth=1,
+                markersize=6,
+                fmt='o-',
+                fillstyle='none',
+                capsize=4,
+            )
+            legend_str.append(key)
+    else:
+        for key,value in deltaH_values.items():
+            plt.plot(
+                full_T_list.value_in_unit(T_unit),
+                deltaH_values[f"{key}"].value_in_unit(H_unit),
+                'o-',
+                linewidth=1,
+                markersize=6,
+                fillstyle='none',
+            )
+            legend_str.append(key)
+        
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    pyplot.legend(legend_str)
+    plt.savefig(f"{plotfile_enthalpy}") 
+    plt.close()
+    
+    return
     
 def get_free_energy_derivative(deltaF, temperature_list, plotfile=None):
     """
