@@ -1,0 +1,856 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cg_openmm.parameters.free_energy &mdash; cg_openmm  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> cg_openmm
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting Started</a></li>
+</ul>
+<p class="caption"><span class="caption-text">CGModel class:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../cgmodel_class.html">CGModel class</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API Documentation</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">cg_openmm</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>cg_openmm.parameters.free_energy</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cg_openmm.parameters.free_energy</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">simtk.unit</span> <span class="k">as</span> <span class="nn">unit</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">cg_openmm.utilities.random_builder</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">cg_openmm.utilities.iotools</span> <span class="kn">import</span> <span class="n">write_pdbfile_without_topology</span>
+<span class="kn">from</span> <span class="nn">openmmtools.multistate</span> <span class="kn">import</span> <span class="n">MultiStateReporter</span><span class="p">,</span> <span class="n">ReplicaExchangeAnalyzer</span>
+<span class="kn">import</span> <span class="nn">pymbar</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">interpolate</span>
+<span class="kn">from</span> <span class="nn">sklearn.utils</span> <span class="kn">import</span> <span class="n">resample</span>
+
+<span class="n">kB</span> <span class="o">=</span> <span class="n">unit</span><span class="o">.</span><span class="n">MOLAR_GAS_CONSTANT_R</span> <span class="c1"># Boltzmann constant</span>
+<span class="n">kB</span> <span class="o">=</span> <span class="n">kB</span><span class="o">.</span><span class="n">in_units_of</span><span class="p">(</span><span class="n">unit</span><span class="o">.</span><span class="n">kilojoule</span><span class="o">/</span><span class="n">unit</span><span class="o">.</span><span class="n">kelvin</span><span class="o">/</span><span class="n">unit</span><span class="o">.</span><span class="n">mole</span><span class="p">)</span>
+
+<div class="viewcode-block" id="expectations_free_energy"><a class="viewcode-back" href="../../../index.html#cg_openmm.parameters.free_energy.expectations_free_energy">[docs]</a><span class="k">def</span> <span class="nf">expectations_free_energy</span><span class="p">(</span><span class="n">array_folded_states</span><span class="p">,</span> <span class="n">temperature_list</span><span class="p">,</span> <span class="n">frame_begin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">sample_spacing</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">output_data</span><span class="o">=</span><span class="s2">&quot;output/output.nc&quot;</span><span class="p">,</span>
+    <span class="n">bootstrap_energies</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">num_intermediate_states</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function calculates the free energy difference (with uncertainty) between all conformational states as a function of temperature.</span>
+
+<span class="sd">    :param array_folded_states: An array specifying the configurational state of each structure (ranging from 1 to n)</span>
+<span class="sd">    :type array_folded_states: np.array( int * n_frames*len(temperature_list) ) </span>
+
+<span class="sd">    :param temperature_list: List of temperatures for the simulation data.</span>
+<span class="sd">    :type temperature_list: List( float * simtk.unit.temperature )</span>
+<span class="sd">    </span>
+<span class="sd">    :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)</span>
+<span class="sd">    :type frame_begin: int    </span>
+<span class="sd">    </span>
+<span class="sd">    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData</span>
+<span class="sd">    :type sample_spacing: int     </span>
+<span class="sd">    </span>
+<span class="sd">    :param output_data: Path to the simulation .nc file.</span>
+<span class="sd">    :type output_data: str</span>
+<span class="sd">    </span>
+<span class="sd">    :param num_intermediate_states: Number of unsampled thermodynamic states between sampled states to include in the calculation</span>
+<span class="sd">    :type num_intermediate_states: int</span>
+<span class="sd">    </span>
+<span class="sd">    :param bootstrap_energies: a custom replica_energies array to be used for bootstrapping calculations. Used instead of the energies in the .nc file.</span>
+<span class="sd">    :type bootstrap_energies: 2d numpy array (float)</span>
+<span class="sd">    </span>
+<span class="sd">    :returns:</span>
+<span class="sd">      - full_T_list - A 1D numpy array listing of all temperatures, including sampled and intermediate unsampled</span>
+<span class="sd">      - deltaF_values - A dictionary of the form {&quot;statei_statej&quot;: 1D numpy array}, containing free energy change for each T in</span>
+<span class="sd">                        full_T_list, for each conformational state transition.</span>
+<span class="sd">      - deltaF uncertainty - A dictionary containing 1D numpy arrays of uncertainties corresponding to deltaF_values</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+
+    <span class="c1"># Number of configurational states:</span>
+    <span class="n">n_conf_states</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">array_folded_states</span><span class="p">))</span>
+
+    
+    <span class="k">if</span> <span class="n">bootstrap_energies</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Use a subsampled replica_energy matrix instead of reading from file</span>
+        <span class="n">replica_energies</span> <span class="o">=</span> <span class="n">bootstrap_energies</span>
+        
+    <span class="k">else</span><span class="p">:</span>    
+        <span class="c1"># extract reduced energies and the state indices from the .nc</span>
+        <span class="n">reporter</span> <span class="o">=</span> <span class="n">MultiStateReporter</span><span class="p">(</span><span class="n">output_data</span><span class="p">,</span> <span class="n">open_mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+        <span class="n">analyzer</span> <span class="o">=</span> <span class="n">ReplicaExchangeAnalyzer</span><span class="p">(</span><span class="n">reporter</span><span class="p">)</span>
+        <span class="p">(</span>
+            <span class="n">replica_energies_all</span><span class="p">,</span>
+            <span class="n">unsampled_state_energies</span><span class="p">,</span>
+            <span class="n">neighborhoods</span><span class="p">,</span>
+            <span class="n">replica_state_indices</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="n">analyzer</span><span class="o">.</span><span class="n">read_energies</span><span class="p">()</span>
+        
+        <span class="c1"># Select production frames to analyze</span>
+        <span class="n">replica_energies</span> <span class="o">=</span> <span class="n">replica_energies_all</span><span class="p">[:,:,</span><span class="n">frame_begin</span><span class="p">::</span><span class="n">sample_spacing</span><span class="p">]</span>
+        
+        <span class="c1"># Check if array_folded_states needs slicing for production region:</span>
+        <span class="c1"># array_folded_states is array of [nframes,nreplicas]</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">replica_energies</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">array_folded_states</span><span class="p">)[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="c1"># Mismatch in the number of frames.</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">replica_energies_all</span><span class="p">[:,:,</span><span class="n">frame_begin</span><span class="p">::</span><span class="n">sample_spacing</span><span class="p">])[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">array_folded_states</span><span class="p">[::</span><span class="n">sample_spacing</span><span class="p">,:])[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="c1"># Correct starting frame, need to apply sampling stride:</span>
+                <span class="n">array_folded_states</span> <span class="o">=</span> <span class="n">array_folded_states</span><span class="p">[::</span><span class="n">sample_spacing</span><span class="p">,:]</span> 
+            <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">replica_energies_all</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">array_folded_states</span><span class="p">)[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="c1"># This is the full array_folded_states, slice production frames:</span>
+                <span class="n">array_folded_states</span> <span class="o">=</span> <span class="n">array_folded_states</span><span class="p">[</span><span class="n">frame_begin</span><span class="p">::</span><span class="n">sample_spacing</span><span class="p">,:]</span>      
+                
+
+    <span class="c1"># convert the energies from replica/evaluated state/sample form to evaluated state/sample form</span>
+    <span class="n">replica_energies</span> <span class="o">=</span> <span class="n">pymbar</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">kln_to_kn</span><span class="p">(</span><span class="n">replica_energies</span><span class="p">)</span>  
+    <span class="n">n_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">replica_energies</span><span class="p">[</span><span class="mi">0</span><span class="p">,:])</span>
+        
+    <span class="c1"># Reshape array_folded_states to row vector for pymbar</span>
+    <span class="c1"># We need to order the data by replica, rather than by frame</span>
+    <span class="n">array_folded_states</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">array_folded_states</span><span class="p">,(</span><span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">array_folded_states</span><span class="p">)),</span><span class="n">order</span><span class="o">=</span><span class="s1">&#39;F&#39;</span><span class="p">)</span>
+        
+    <span class="c1"># determine the numerical values of beta at each state in units consisten with the temperature</span>
+    <span class="n">Tunit</span> <span class="o">=</span> <span class="n">temperature_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span>
+    <span class="n">temps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">temp</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">Tunit</span><span class="p">)</span>  <span class="k">for</span> <span class="n">temp</span> <span class="ow">in</span> <span class="n">temperature_list</span><span class="p">])</span>  <span class="c1"># should this just be array to begin with</span>
+    <span class="n">beta_k</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">kB</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">unit</span><span class="o">.</span><span class="n">kilojoule_per_mole</span><span class="o">/</span><span class="n">Tunit</span><span class="p">)</span> <span class="o">*</span> <span class="n">temps</span><span class="p">)</span>
+
+    <span class="c1"># calculate the number of states we need expectations at.  We want it at all of the original</span>
+    <span class="c1"># temperatures, each intermediate temperature, and then temperatures +/- from the original</span>
+    <span class="c1"># to take finite derivatives.</span>
+
+    <span class="c1"># create  an array for the temperature and energy for each state, including the</span>
+    <span class="c1"># finite different state.</span>
+    <span class="n">n_sampled_T</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">temps</span><span class="p">)</span>
+    <span class="n">n_unsampled_states</span> <span class="o">=</span> <span class="p">(</span><span class="n">n_sampled_T</span> <span class="o">+</span> <span class="p">(</span><span class="n">n_sampled_T</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">num_intermediate_states</span><span class="p">)</span>
+    <span class="n">unsampled_state_energies</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">n_unsampled_states</span><span class="p">,</span><span class="n">n_samples</span><span class="p">])</span>
+    <span class="n">full_T_list</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_unsampled_states</span><span class="p">)</span>
+
+    <span class="c1"># delta is the spacing between temperatures.</span>
+    <span class="n">delta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_sampled_T</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># fill in a list of temperatures at all original temperatures and all intermediate states.</span>
+    <span class="n">full_T_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">temps</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_sampled_T</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">delta</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">temps</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">temps</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">/</span><span class="p">(</span><span class="n">num_intermediate_states</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_intermediate_states</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">full_T_list</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">temps</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">delta</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">j</span>
+            <span class="n">t</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">full_T_list</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">temps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">n_T_vals</span> <span class="o">=</span> <span class="n">t</span><span class="o">+</span><span class="mi">1</span>
+
+    <span class="c1"># calculate betas of all of these temperatures</span>
+    <span class="n">beta_full_k</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">kB</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">unit</span><span class="o">.</span><span class="n">kilojoule_per_mole</span><span class="o">/</span><span class="n">Tunit</span><span class="p">)</span> <span class="o">*</span> <span class="n">full_T_list</span><span class="p">)</span>
+
+    <span class="n">ti</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">N_k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_unsampled_states</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_unsampled_states</span><span class="p">):</span>
+        <span class="c1"># Calculate the reduced energies at all temperatures, sampled and unsample.</span>
+        <span class="n">unsampled_state_energies</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">replica_energies</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span><span class="o">*</span><span class="p">(</span><span class="n">beta_full_k</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">/</span><span class="n">beta_k</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">ti</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">temps</span><span class="p">):</span>
+            <span class="c1"># store in N_k which states do and don&#39;t have samples.</span>
+            <span class="k">if</span> <span class="n">full_T_list</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">==</span> <span class="n">temps</span><span class="p">[</span><span class="n">ti</span><span class="p">]:</span>
+                <span class="n">ti</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">N_k</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">n_samples</span><span class="o">//</span><span class="nb">len</span><span class="p">(</span><span class="n">temps</span><span class="p">)</span>  <span class="c1"># these are the states that have samples</span>
+
+    <span class="c1"># call MBAR to find weights at all states, sampled and unsampled</span>
+    <span class="n">mbarT</span> <span class="o">=</span> <span class="n">pymbar</span><span class="o">.</span><span class="n">MBAR</span><span class="p">(</span><span class="n">unsampled_state_energies</span><span class="p">,</span><span class="n">N_k</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">relative_tolerance</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">);</span>
+
+    <span class="c1"># Calculate N expectations that a structure is in configurational state n</span>
+    <span class="c1"># We need the probabilities of being in each state - first construct vectors of 0</span>
+    <span class="c1"># (not in current state) and 1 (in current state)</span>
+
+    <span class="n">bool_i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_conf_states</span><span class="p">,</span><span class="n">array_folded_states</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_conf_states</span><span class="p">):</span>
+        <span class="n">i_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full_like</span><span class="p">(</span><span class="n">array_folded_states</span><span class="p">,</span><span class="n">i</span><span class="p">)</span>
+        <span class="c1"># Convert True/False to integer 1/0 for each energy data point:</span>
+        <span class="n">bool_i</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">((</span><span class="n">i_vector</span><span class="o">==</span><span class="n">array_folded_states</span><span class="p">),</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Calculate the expectation of F at each unsampled states</span>
+
+    <span class="c1"># Loop over each thermodynamic state:</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">full_T_list</span><span class="p">)):</span>
+        <span class="n">U_n</span> <span class="o">=</span> <span class="n">unsampled_state_energies</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span>
+
+        <span class="c1"># compute expectations of being in conformational state n</span>
+        <span class="c1"># Store results in a dictionary</span>
+        <span class="n">results</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)]</span> <span class="o">=</span> <span class="n">mbarT</span><span class="o">.</span><span class="n">computeMultipleExpectations</span><span class="p">(</span>
+            <span class="n">bool_i</span><span class="p">,</span><span class="n">U_n</span><span class="p">,</span><span class="n">compute_covariance</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">deltaF_values</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">deltaF_uncertainty</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">n_trans</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1"># store the number of unique transitions</span>
+    <span class="n">F_unit</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="n">kB</span><span class="o">*</span><span class="n">full_T_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">Tunit</span><span class="p">)</span><span class="o">.</span><span class="n">unit</span> <span class="c1"># units of free energy</span>
+
+    <span class="c1"># Initialize the results dictionaries</span>
+    <span class="k">for</span> <span class="n">s1</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_conf_states</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">s2</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">s1</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">n_conf_states</span><span class="p">):</span>
+            <span class="n">n_trans</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">deltaF_values</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;state</span><span class="si">{</span><span class="n">s1</span><span class="si">}</span><span class="s2">_state</span><span class="si">{</span><span class="n">s2</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">full_T_list</span><span class="p">))</span>
+            <span class="n">deltaF_uncertainty</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;state</span><span class="si">{</span><span class="n">s1</span><span class="si">}</span><span class="s2">_state</span><span class="si">{</span><span class="n">s2</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">full_T_list</span><span class="p">))</span>
+                
+    <span class="c1"># Compute free energies from probability ratios:</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">full_T_list</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">s1</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_conf_states</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">s2</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">s1</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">n_conf_states</span><span class="p">):</span>
+                <span class="c1"># Free energy change for s2 --&gt; s1 at temp i</span>
+                <span class="n">deltaF_values</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;state</span><span class="si">{</span><span class="n">s1</span><span class="si">}</span><span class="s2">_state</span><span class="si">{</span><span class="n">s2</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="o">-</span><span class="n">kB</span><span class="o">*</span><span class="n">full_T_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">Tunit</span><span class="o">*</span><span class="p">(</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)][</span><span class="mi">0</span><span class="p">][</span><span class="n">s1</span><span class="p">])</span><span class="o">-</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)][</span><span class="mi">0</span><span class="p">][</span><span class="n">s2</span><span class="p">])))</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">F_unit</span><span class="p">)</span>
+                    
+                <span class="c1"># Get covariance matrix:</span>
+                <span class="n">theta_i</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)][</span><span class="mi">2</span><span class="p">]</span>
+                <span class="n">deltaF_uncertainty</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;state</span><span class="si">{</span><span class="n">s1</span><span class="si">}</span><span class="s2">_state</span><span class="si">{</span><span class="n">s2</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">kB</span><span class="o">*</span><span class="n">full_T_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">unit</span><span class="o">.</span><span class="n">kelvin</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span>
+                    <span class="n">theta_i</span><span class="p">[</span><span class="n">s1</span><span class="p">,</span><span class="n">s1</span><span class="p">]</span> <span class="o">+</span> <span class="n">theta_i</span><span class="p">[</span><span class="n">s2</span><span class="p">,</span><span class="n">s2</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">theta_i</span><span class="p">[</span><span class="n">s2</span><span class="p">,</span><span class="n">s1</span><span class="p">]</span><span class="o">+</span><span class="n">theta_i</span><span class="p">[</span><span class="n">s1</span><span class="p">,</span><span class="n">s2</span><span class="p">])))</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">F_unit</span><span class="p">)</span>
+
+    <span class="c1"># Add the units back on:</span>
+    <span class="k">for</span> <span class="n">s1</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_conf_states</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">s2</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">s1</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">n_conf_states</span><span class="p">):</span>    
+            <span class="n">deltaF_values</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;state</span><span class="si">{</span><span class="n">s1</span><span class="si">}</span><span class="s2">_state</span><span class="si">{</span><span class="n">s2</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">*=</span> <span class="n">F_unit</span>
+            <span class="n">deltaF_uncertainty</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;state</span><span class="si">{</span><span class="n">s1</span><span class="si">}</span><span class="s2">_state</span><span class="si">{</span><span class="n">s2</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">*=</span> <span class="n">F_unit</span>
+    <span class="n">full_T_list</span> <span class="o">*=</span> <span class="n">Tunit</span>
+                    
+    <span class="k">return</span> <span class="n">full_T_list</span><span class="p">,</span> <span class="n">deltaF_values</span><span class="p">,</span> <span class="n">deltaF_uncertainty</span></div>
+    
+
+<div class="viewcode-block" id="bootstrap_free_energy_folding"><a class="viewcode-back" href="../../../index.html#cg_openmm.parameters.free_energy.bootstrap_free_energy_folding">[docs]</a><span class="k">def</span> <span class="nf">bootstrap_free_energy_folding</span><span class="p">(</span><span class="n">array_folded_states</span><span class="p">,</span> <span class="n">temperature_list</span><span class="p">,</span> <span class="n">output_data</span><span class="o">=</span><span class="s2">&quot;output/output.nc&quot;</span><span class="p">,</span> <span class="n">frame_begin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">sample_spacing</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">n_sample_boot</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">n_trial_boot</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">num_intermediate_states</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function for computing uncertainty of free energy, entropy, and enthalpy using standard bootstrapping</span>
+
+<span class="sd">    :param array_folded_states: An array specifying the configurational state of each structure (ranging from 1 to n)</span>
+<span class="sd">    :type array_folded_states: np.array( int * n_frames*len(temperature_list) ) </span>
+
+<span class="sd">    :param temperature_list: List of temperatures for the simulation data.</span>
+<span class="sd">    :type temperature_list: List( float * simtk.unit.temperature )</span>
+<span class="sd">    </span>
+<span class="sd">    :param output_data: Path to the simulation .nc file.</span>
+<span class="sd">    :type output_data: str    </span>
+<span class="sd">    </span>
+<span class="sd">    :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)</span>
+<span class="sd">    :type frame_begin: int    </span>
+<span class="sd">    </span>
+<span class="sd">    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData</span>
+<span class="sd">    :type sample_spacing: int     </span>
+
+<span class="sd">    :param n_sample_boot: number of samples (frames) to draw during bootstrapping</span>
+<span class="sd">    :type n_sample_boot: int</span>
+<span class="sd">    </span>
+<span class="sd">    :param n_trial_boot: number of trials to run for generating bootstrapping uncertainties</span>
+<span class="sd">    :type n_trial_boot: int</span>
+<span class="sd">    </span>
+<span class="sd">    :param num_intermediate_states: Number of unsampled thermodynamic states between sampled states to include in the calculation</span>
+<span class="sd">    :type num_intermediate_states: int</span>
+<span class="sd">    </span>
+<span class="sd">    :returns:</span>
+<span class="sd">      - full_T_list - A 1D numpy array listing of all temperatures, including sampled and intermediate unsampled</span>
+<span class="sd">      - deltaF_values - A dictionary of the form {&quot;statei_statej&quot;: 1D numpy array}, containing free energy change for each T in</span>
+<span class="sd">                        full_T_list, for each conformational state transition.</span>
+<span class="sd">      - deltaF uncertainty - A dictionary containing 1D numpy arrays of uncertainties corresponding to deltaF_values  </span>
+<span class="sd">      - deltaS_values - A dictionary of the form {&quot;statei_statej&quot;: 1D numpy array}, containing entropy change for each T in</span>
+<span class="sd">                        full_T_list, for each conformational state transition.</span>
+<span class="sd">      - deltaS uncertainty - A dictionary containing 1D numpy arrays of uncertainties corresponding to deltaS_values </span>
+<span class="sd">      - deltaU_values - A dictionary of the form {&quot;statei_statej&quot;: 1D numpy array}, containing enthalpy change for each T in</span>
+<span class="sd">                        full_T_list, for each conformational state transition.</span>
+<span class="sd">      - deltaU uncertainty - A dictionary containing 1D numpy arrays of uncertainties corresponding to deltaU_values        </span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="c1"># extract reduced energies and the state indices from the .nc</span>
+    <span class="n">reporter</span> <span class="o">=</span> <span class="n">MultiStateReporter</span><span class="p">(</span><span class="n">output_data</span><span class="p">,</span> <span class="n">open_mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+    <span class="n">analyzer</span> <span class="o">=</span> <span class="n">ReplicaExchangeAnalyzer</span><span class="p">(</span><span class="n">reporter</span><span class="p">)</span>
+    <span class="p">(</span>
+        <span class="n">replica_energies_all</span><span class="p">,</span>
+        <span class="n">unsampled_state_energies</span><span class="p">,</span>
+        <span class="n">neighborhoods</span><span class="p">,</span>
+        <span class="n">replica_state_indices</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">=</span> <span class="n">analyzer</span><span class="o">.</span><span class="n">read_energies</span><span class="p">()</span>    
+    
+    <span class="c1"># Select production frames to analyze</span>
+    <span class="n">replica_energies</span> <span class="o">=</span> <span class="n">replica_energies_all</span><span class="p">[:,:,</span><span class="n">frame_begin</span><span class="p">::</span><span class="n">sample_spacing</span><span class="p">]</span>
+
+    <span class="c1"># Check if array_folded_states needs slicing for production region:</span>
+    <span class="c1"># array_folded_states is array of [nframes,nreplicas]</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">replica_energies</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">array_folded_states</span><span class="p">)[</span><span class="mi">0</span><span class="p">]:</span>
+        <span class="c1"># Mismatch in the number of frames.</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">replica_energies_all</span><span class="p">[:,:,</span><span class="n">frame_begin</span><span class="p">::</span><span class="n">sample_spacing</span><span class="p">])[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">array_folded_states</span><span class="p">[::</span><span class="n">sample_spacing</span><span class="p">,:])[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="c1"># Correct starting frame, need to apply sampling stride:</span>
+            <span class="n">array_folded_states</span> <span class="o">=</span> <span class="n">array_folded_states</span><span class="p">[::</span><span class="n">sample_spacing</span><span class="p">,:]</span> 
+        <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">replica_energies_all</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">array_folded_states</span><span class="p">)[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="c1"># This is the full array_folded_states, slice production frames:</span>
+            <span class="n">array_folded_states</span> <span class="o">=</span> <span class="n">array_folded_states</span><span class="p">[</span><span class="n">frame_begin</span><span class="p">::</span><span class="n">sample_spacing</span><span class="p">,:]</span>   
+    
+    <span class="c1"># Overall results:</span>
+    <span class="n">deltaF_values</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">deltaF_uncertainty</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">deltaS_values</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">deltaS_uncertainty</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">deltaU_values</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">deltaU_uncertainty</span> <span class="o">=</span> <span class="p">{}</span>
+    
+    <span class="c1"># Uncertainty for each sampling trial:</span>
+    <span class="n">deltaF_values_boot</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">deltaF_uncertainty_boot</span> <span class="o">=</span> <span class="p">{}</span>
+    
+    <span class="n">deltaS_values_boot</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">deltaS_uncertainty_boot</span> <span class="o">=</span> <span class="p">{}</span>
+    
+    <span class="n">deltaU_values_boot</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">deltaU_uncertainty_boot</span> <span class="o">=</span> <span class="p">{}</span>
+    
+    <span class="c1"># Get units:</span>
+    <span class="n">F_unit</span> <span class="o">=</span> <span class="p">(</span><span class="n">kB</span><span class="o">*</span><span class="n">unit</span><span class="o">.</span><span class="n">kelvin</span><span class="p">)</span><span class="o">.</span><span class="n">unit</span> <span class="c1"># units of free energy</span>
+    <span class="n">T_unit</span> <span class="o">=</span> <span class="n">temperature_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span>
+    <span class="n">S_unit</span> <span class="o">=</span> <span class="n">F_unit</span><span class="o">/</span><span class="n">T_unit</span>
+    <span class="n">U_unit</span> <span class="o">=</span> <span class="n">F_unit</span>
+    
+    <span class="c1"># Get all possible sample indices</span>
+    <span class="n">sample_indices_all</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">replica_energies</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,:]))</span>
+    
+    <span class="k">for</span> <span class="n">i_boot</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_trial_boot</span><span class="p">):</span>
+        <span class="n">sample_indices</span> <span class="o">=</span> <span class="n">resample</span><span class="p">(</span><span class="n">sample_indices_all</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">n_samples</span><span class="o">=</span><span class="n">n_sample_boot</span><span class="p">)</span>
+        
+        <span class="n">n_state</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">array_folded_states</span><span class="p">[</span><span class="mi">0</span><span class="p">,:])</span>
+        
+        <span class="c1"># array_folded_states is [n_frame x n_state]</span>
+        <span class="n">array_folded_states_resample</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_sample_boot</span><span class="p">,</span><span class="n">n_state</span><span class="p">))</span>
+        <span class="n">replica_energies_resample</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_state</span><span class="p">,</span><span class="n">n_state</span><span class="p">,</span><span class="n">n_sample_boot</span><span class="p">))</span>
+        <span class="c1"># replica_energies is [n_states x n_states x n_frame]</span>
+        
+        <span class="c1"># Select the sampled frames from array_folded_states and replica_energies:</span>
+        <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">sample_indices</span><span class="p">:</span>
+            <span class="n">array_folded_states_resample</span><span class="p">[</span><span class="n">j</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">array_folded_states</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span>
+            <span class="n">replica_energies_resample</span><span class="p">[:,:,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">replica_energies</span><span class="p">[:,:,</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">j</span> <span class="o">+=</span> <span class="mi">1</span>
+            
+        <span class="c1"># Run free energy expectation calculation:</span>
+        <span class="n">full_T_list</span><span class="p">,</span> <span class="n">deltaF_values_boot</span><span class="p">[</span><span class="n">i_boot</span><span class="p">],</span> <span class="n">deltaF_uncertainty_boot</span><span class="p">[</span><span class="n">i_boot</span><span class="p">]</span> <span class="o">=</span> <span class="n">expectations_free_energy</span><span class="p">(</span>
+            <span class="n">array_folded_states_resample</span><span class="p">,</span>
+            <span class="n">temperature_list</span><span class="p">,</span>
+            <span class="n">bootstrap_energies</span><span class="o">=</span><span class="n">replica_energies_resample</span><span class="p">,</span>
+            <span class="n">frame_begin</span><span class="o">=</span><span class="n">frame_begin</span><span class="p">,</span>
+            <span class="n">sample_spacing</span><span class="o">=</span><span class="n">sample_spacing</span><span class="p">,</span>
+            <span class="n">num_intermediate_states</span><span class="o">=</span><span class="n">num_intermediate_states</span><span class="p">,</span>
+        <span class="p">)</span>
+        
+        <span class="c1"># Get entropy/enthalpy for fitting current free energy data:</span>
+        <span class="c1"># The inner dictionary keys will be transition names</span>
+        <span class="n">deltaS_values_boot</span><span class="p">[</span><span class="n">i_boot</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">deltaU_values_boot</span><span class="p">[</span><span class="n">i_boot</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        
+        <span class="n">deltaS_values_boot</span><span class="p">[</span><span class="n">i_boot</span><span class="p">],</span> <span class="n">deltaU_values_boot</span><span class="p">[</span><span class="n">i_boot</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_entropy_enthalpy</span><span class="p">(</span>
+            <span class="n">deltaF_values_boot</span><span class="p">[</span><span class="n">i_boot</span><span class="p">],</span> <span class="n">full_T_list</span><span class="p">)</span>
+    
+    <span class="n">arr_deltaF_values_boot</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">arr_deltaS_values_boot</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">arr_deltaU_values_boot</span> <span class="o">=</span> <span class="p">{}</span>
+    
+    <span class="c1"># Loop over all conformational transitions:</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">deltaF_values_boot</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">arr_deltaF_values_boot</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_trial_boot</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">full_T_list</span><span class="p">)))</span>
+        <span class="n">arr_deltaS_values_boot</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_trial_boot</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">full_T_list</span><span class="p">)))</span>
+        <span class="n">arr_deltaU_values_boot</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_trial_boot</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">full_T_list</span><span class="p">)))</span>
+        
+    <span class="c1"># Compute uncertainty over the n_trial_boot trials performed:</span>
+    <span class="c1"># Free energy:</span>
+    <span class="k">for</span> <span class="n">i_boot</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_trial_boot</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">deltaF_values_boot</span><span class="p">[</span><span class="n">i_boot</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">arr_deltaF_values_boot</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">i_boot</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">F_unit</span><span class="p">)</span>
+            
+    <span class="n">deltaF_uncertainty</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">deltaF_values</span> <span class="o">=</span> <span class="p">{}</span>
+    
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">arr_deltaF_values_boot</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">deltaF_uncertainty</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">*</span><span class="n">F_unit</span>
+        <span class="n">deltaF_values</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">*</span><span class="n">F_unit</span>
+            
+    <span class="c1"># Entropy:        </span>
+    <span class="k">for</span> <span class="n">i_boot</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_trial_boot</span><span class="p">):</span>         
+        <span class="n">arr_deltaS_values_boot</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">i_boot</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">deltaS_values_boot</span><span class="p">[</span><span class="n">i_boot</span><span class="p">][</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">S_unit</span><span class="p">)</span>
+            
+    <span class="n">deltaS_uncertainty</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">deltaS_values</span> <span class="o">=</span> <span class="p">{}</span>
+    
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">arr_deltaS_values_boot</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">deltaS_uncertainty</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">*</span><span class="n">S_unit</span>
+        <span class="n">deltaS_values</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">*</span><span class="n">S_unit</span>         
+            
+    <span class="c1"># Enthalpy:        </span>
+    <span class="k">for</span> <span class="n">i_boot</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_trial_boot</span><span class="p">):</span>
+        <span class="n">arr_deltaU_values_boot</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">i_boot</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">deltaU_values_boot</span><span class="p">[</span><span class="n">i_boot</span><span class="p">][</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">U_unit</span><span class="p">)</span>
+            
+    <span class="n">deltaU_uncertainty</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">deltaU_values</span> <span class="o">=</span> <span class="p">{}</span>
+    
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">arr_deltaU_values_boot</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">deltaU_uncertainty</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">*</span><span class="n">U_unit</span>
+        <span class="n">deltaU_values</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">*</span><span class="n">U_unit</span>
+                    
+    <span class="k">return</span> <span class="n">full_T_list</span><span class="p">,</span> <span class="n">deltaF_values</span><span class="p">,</span> <span class="n">deltaF_uncertainty</span><span class="p">,</span> <span class="n">deltaS_values</span><span class="p">,</span> <span class="n">deltaS_uncertainty</span><span class="p">,</span> <span class="n">deltaU_values</span><span class="p">,</span> <span class="n">deltaU_uncertainty</span></div>
+    
+    
+<div class="viewcode-block" id="get_entropy_enthalpy"><a class="viewcode-back" href="../../../index.html#cg_openmm.parameters.free_energy.get_entropy_enthalpy">[docs]</a><span class="k">def</span> <span class="nf">get_entropy_enthalpy</span><span class="p">(</span><span class="n">deltaF</span><span class="p">,</span> <span class="n">temperature_list</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute enthalpy change and entropy change upon folding, given free energy of folding for a series of temperatures.</span>
+<span class="sd">    </span>
+<span class="sd">    :param deltaF: A dictionary containing free energy change for each T in full_T_list, for each conformational state transition.</span>
+<span class="sd">    :type deltaF: dict{&quot;statei_statej&quot;:1D numpy array}</span>
+<span class="sd">    </span>
+<span class="sd">    :param temperature_list: List of temperatures for the simulation data.</span>
+<span class="sd">    :type temperature_list: List( float * simtk.unit.temperature )</span>
+<span class="sd">    </span>
+<span class="sd">    :param plotfile_entropy: path to filename for entropy plot (no plot created if None)</span>
+<span class="sd">    :type plotfile_entropy: str</span>
+<span class="sd">    </span>
+<span class="sd">    :param plotfile_enthalpy: path to filename for enthalpy plot (no plot created if None)</span>
+<span class="sd">    :type plotfile_enthalpy: str</span>
+<span class="sd">    </span>
+<span class="sd">    :returns:</span>
+<span class="sd">      - deltaS - dict{&quot;statei_statej&quot;:1D numpy array} of entropy of folding values for each temperature in temperature_list</span>
+<span class="sd">      - deltaU - dict{&quot;statei_statej&quot;:1D numpy array} of enthalpy of folding values for each temperature in temperature_list</span>
+<span class="sd">      </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">ddeltaF</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">d2deltaF</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">spline_tck</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">deltaS</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">deltaU</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="n">T_unit</span> <span class="o">=</span> <span class="n">temperature_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span>    
+    
+    <span class="c1"># Loop over all conformational transitions:</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">value</span> <span class="ow">in</span> <span class="n">deltaF</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">ddeltaF</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">d2deltaF</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">spline_tck</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> \
+            <span class="n">get_free_energy_derivative</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">temperature_list</span><span class="p">)</span>
+                
+        <span class="n">F_unit</span> <span class="o">=</span> <span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span>
+        <span class="n">S_unit</span> <span class="o">=</span> <span class="n">F_unit</span><span class="o">/</span><span class="n">T_unit</span>
+        <span class="n">U_unit</span> <span class="o">=</span> <span class="n">F_unit</span>
+        
+        <span class="c1"># Spline fitting function strips off units - add back:</span>
+        <span class="n">deltaS</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">ddeltaF</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">*</span> <span class="n">F_unit</span> <span class="o">/</span> <span class="n">T_unit</span>
+        
+        <span class="n">deltaU</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span> <span class="o">+</span> <span class="n">temperature_list</span><span class="o">*</span><span class="n">deltaS</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>    
+        
+    <span class="k">return</span> <span class="n">deltaS</span><span class="p">,</span> <span class="n">deltaU</span></div>
+  
+  
+<div class="viewcode-block" id="plot_entropy_enthalpy"><a class="viewcode-back" href="../../../index.html#cg_openmm.parameters.free_energy.plot_entropy_enthalpy">[docs]</a><span class="k">def</span> <span class="nf">plot_entropy_enthalpy</span><span class="p">(</span>
+    <span class="n">full_T_list</span><span class="p">,</span> <span class="n">deltaS_values</span><span class="p">,</span> <span class="n">deltaH_values</span><span class="p">,</span> <span class="n">deltaS_uncertainty</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">deltaH_uncertainty</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">plotfile_entropy</span><span class="o">=</span><span class="s1">&#39;entropy.pdf&#39;</span><span class="p">,</span> <span class="n">plotfile_enthalpy</span><span class="o">=</span><span class="s1">&#39;enthalpy.pdf&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot entropy and enthalpy difference data for each conformational state transition as a function of temperature.</span>
+
+<span class="sd">    :param full_T_list: Array listing of all temperatures, including sampled and intermediate unsampled</span>
+<span class="sd">    :type full_T_list: 1D numpy array</span>
+<span class="sd">    </span>
+<span class="sd">    :param deltaS_values: A dictionary containing entropy change for each T in full_T_list, for each conformational state transition.</span>
+<span class="sd">    :type deltaS_values: dict{&quot;statei_statej&quot;:1D numpy array}</span>
+<span class="sd">    </span>
+<span class="sd">    :param deltaH_values: A dictionary containing enthalpy change for each T in full_T_list, for each conformational state transition.</span>
+<span class="sd">    :type deltaH_values: dict{&quot;statei_statej&quot;:1D numpy array}</span>
+<span class="sd">    </span>
+<span class="sd">    :param deltaS_uncertainty: A dictionary containing uncertainties corresponding to deltaS_values (optional)</span>
+<span class="sd">    :type deltaS_uncertainty: dict{&quot;statei_statej&quot;:1D numpy array}</span>
+<span class="sd">    </span>
+<span class="sd">    :param deltaH_uncertainty: A dictionary containing uncertainties corresponding to deltaH_values (optional)</span>
+<span class="sd">    :type deltaH_uncertainty: dict{&quot;statei_statej&quot;:1D numpy array}</span>
+<span class="sd">    </span>
+<span class="sd">    :param plotfile_entropy: name of entropy plot file, including pdf extension</span>
+<span class="sd">    :type plotfile_entropy: str</span>
+<span class="sd">    </span>
+<span class="sd">    :param plotfile_enthalpy: name of enthalpy plot file, including pdf extension</span>
+<span class="sd">    :type plotfile_enthalpy: str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">T_unit</span> <span class="o">=</span> <span class="n">full_T_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span>
+    <span class="n">S_unit</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">deltaS_values</span><span class="o">.</span><span class="n">items</span><span class="p">())[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span>
+    <span class="n">H_unit</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">deltaH_values</span><span class="o">.</span><span class="n">items</span><span class="p">())[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span>
+    
+    <span class="n">xlabel</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Temperature </span><span class="si">{</span><span class="n">T_unit</span><span class="o">.</span><span class="n">get_symbol</span><span class="p">()</span><span class="si">}</span><span class="s1">&#39;</span>
+    
+    <span class="c1"># Plot entropy change as a function of T:</span>
+    <span class="n">ylabel</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Entropy change </span><span class="si">{</span><span class="n">S_unit</span><span class="o">.</span><span class="n">get_symbol</span><span class="p">()</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="n">legend_str</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">if</span> <span class="n">deltaS_uncertainty</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">value</span> <span class="ow">in</span> <span class="n">deltaS_values</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">errorbar</span><span class="p">(</span>
+                <span class="n">full_T_list</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">T_unit</span><span class="p">),</span>
+                <span class="n">deltaS_values</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">S_unit</span><span class="p">),</span>
+                <span class="n">deltaS_uncertainty</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">S_unit</span><span class="p">),</span>
+                <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">markersize</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
+                <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;o-&#39;</span><span class="p">,</span>
+                <span class="n">fillstyle</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span>
+                <span class="n">capsize</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">legend_str</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">value</span> <span class="ow">in</span> <span class="n">deltaS_values</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                <span class="n">full_T_list</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">T_unit</span><span class="p">),</span>
+                <span class="n">deltaS_values</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">S_unit</span><span class="p">),</span>
+                <span class="s1">&#39;o-&#39;</span><span class="p">,</span>
+                <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">markersize</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
+                <span class="n">fillstyle</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">legend_str</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="n">xlabel</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="n">ylabel</span><span class="p">)</span>
+    <span class="n">pyplot</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">legend_str</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">plotfile_entropy</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> 
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    
+    <span class="c1"># Plot enthalpy change as a function of T:</span>
+    <span class="n">ylabel</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Enthalpy change </span><span class="si">{</span><span class="n">H_unit</span><span class="o">.</span><span class="n">get_symbol</span><span class="p">()</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="n">legend_str</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">if</span> <span class="n">deltaH_uncertainty</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">value</span> <span class="ow">in</span> <span class="n">deltaH_values</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">errorbar</span><span class="p">(</span>
+                <span class="n">full_T_list</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">T_unit</span><span class="p">),</span>
+                <span class="n">deltaH_values</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">H_unit</span><span class="p">),</span>
+                <span class="n">deltaH_uncertainty</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">H_unit</span><span class="p">),</span>
+                <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">markersize</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
+                <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;o-&#39;</span><span class="p">,</span>
+                <span class="n">fillstyle</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span>
+                <span class="n">capsize</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">legend_str</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">value</span> <span class="ow">in</span> <span class="n">deltaH_values</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                <span class="n">full_T_list</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">T_unit</span><span class="p">),</span>
+                <span class="n">deltaH_values</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">H_unit</span><span class="p">),</span>
+                <span class="s1">&#39;o-&#39;</span><span class="p">,</span>
+                <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">markersize</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
+                <span class="n">fillstyle</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">legend_str</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="n">xlabel</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="n">ylabel</span><span class="p">)</span>
+    <span class="n">pyplot</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">legend_str</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">plotfile_enthalpy</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> 
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    
+    <span class="k">return</span></div>
+    
+<div class="viewcode-block" id="get_free_energy_derivative"><a class="viewcode-back" href="../../../index.html#cg_openmm.parameters.free_energy.get_free_energy_derivative">[docs]</a><span class="k">def</span> <span class="nf">get_free_energy_derivative</span><span class="p">(</span><span class="n">deltaF</span><span class="p">,</span> <span class="n">temperature_list</span><span class="p">,</span> <span class="n">plotfile</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Fit a heat capacity vs T dataset to cubic spline, and compute derivatives</span>
+<span class="sd">    </span>
+<span class="sd">    :param deltaF: free energy of folding data series</span>
+<span class="sd">    :type deltaF: Quantity or numpy 1D array</span>
+<span class="sd">    </span>
+<span class="sd">    :param temperature_list: List of temperatures used in replica exchange simulations</span>
+<span class="sd">    :type temperature: Quantity or numpy 1D array</span>
+<span class="sd">    </span>
+<span class="sd">    :param plotfile: path to filename to output plot (default=None)</span>
+<span class="sd">    :type plotfile: str</span>
+<span class="sd">    </span>
+<span class="sd">    :returns:</span>
+<span class="sd">          - dF_out ( 1D numpy array (float) ) - 1st derivative of free energy, from a cubic spline evaluated at each point in deltaF)</span>
+<span class="sd">          - d2F_out ( 1D numpy array (float) ) - 2nd derivative of free energy, from a cubic spline evaluated at each point in deltaF)</span>
+<span class="sd">          - spline_tck ( scipy spline object (tuple) ) - knot points (t), coefficients (c), and order of the spline (k) fit to deltaF data</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">xdata</span> <span class="o">=</span> <span class="n">temperature_list</span>
+    <span class="n">ydata</span> <span class="o">=</span> <span class="n">deltaF</span>
+    
+    <span class="c1"># Strip units off quantities:</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">xdata</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="n">unit</span><span class="o">.</span><span class="n">quantity</span><span class="o">.</span><span class="n">Quantity</span><span class="p">:</span>
+        <span class="n">xdata_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">xdata</span><span class="p">)))</span>
+        <span class="n">xunit</span> <span class="o">=</span> <span class="n">xdata</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">xdata</span><span class="p">)):</span>
+            <span class="n">xdata_val</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">xdata</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">xunit</span><span class="p">)</span>
+        <span class="n">xdata</span> <span class="o">=</span> <span class="n">xdata_val</span>
+    
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">ydata</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="n">unit</span><span class="o">.</span><span class="n">quantity</span><span class="o">.</span><span class="n">Quantity</span><span class="p">:</span>
+        <span class="n">ydata_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">ydata</span><span class="p">)))</span>
+        <span class="n">yunit</span> <span class="o">=</span> <span class="n">ydata</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ydata</span><span class="p">)):</span>
+            <span class="n">ydata_val</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">ydata</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">yunit</span><span class="p">)</span>
+        <span class="n">ydata</span> <span class="o">=</span> <span class="n">ydata_val</span>
+            
+    <span class="c1"># Fit cubic spline to data, no smoothing</span>
+    <span class="n">spline_tck</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">splrep</span><span class="p">(</span><span class="n">xdata</span><span class="p">,</span> <span class="n">ydata</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    
+    <span class="n">xfine</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">xdata</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">xdata</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="mi">1000</span><span class="p">)</span>
+    <span class="n">yfine</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">splev</span><span class="p">(</span><span class="n">xfine</span><span class="p">,</span> <span class="n">spline_tck</span><span class="p">,</span> <span class="n">der</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">dF</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">splev</span><span class="p">(</span><span class="n">xfine</span><span class="p">,</span> <span class="n">spline_tck</span><span class="p">,</span> <span class="n">der</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">d2F</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">splev</span><span class="p">(</span><span class="n">xfine</span><span class="p">,</span> <span class="n">spline_tck</span><span class="p">,</span> <span class="n">der</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    
+    <span class="n">dF_out</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">splev</span><span class="p">(</span><span class="n">xdata</span><span class="p">,</span> <span class="n">spline_tck</span><span class="p">,</span> <span class="n">der</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">d2F_out</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">splev</span><span class="p">(</span><span class="n">xdata</span><span class="p">,</span> <span class="n">spline_tck</span><span class="p">,</span> <span class="n">der</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">plotfile</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">figure</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span><span class="n">ncols</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        
+        <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xdata</span><span class="p">,</span><span class="n">ydata</span><span class="p">,</span><span class="s1">&#39;ok&#39;</span><span class="p">,</span>
+            <span class="n">markersize</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+            <span class="n">fillstyle</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span>
+            <span class="n">label</span><span class="o">=</span><span class="s1">&#39;simulation data&#39;</span><span class="p">,</span>
+        <span class="p">)</span>
+        
+        <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xfine</span><span class="p">,</span><span class="n">yfine</span><span class="p">,</span><span class="s1">&#39;-b&#39;</span><span class="p">,</span>
+            <span class="n">label</span><span class="o">=</span><span class="s1">&#39;cubic spline&#39;</span><span class="p">,</span>
+        <span class="p">)</span>
+        
+        <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+        <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$\Delta F (J/mol)$&#39;</span><span class="p">)</span>
+        
+        <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xfine</span><span class="p">,</span><span class="n">dF</span><span class="p">,</span><span class="s1">&#39;-r&#39;</span><span class="p">,</span>
+            <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;$\frac{d\Delta F}</span><span class="si">{dT}</span><span class="s1">$&#39;</span><span class="p">,</span>
+        <span class="p">)</span>
+        
+        <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+        <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$\frac{d\Delta F}</span><span class="si">{dT}</span><span class="s1">$&#39;</span><span class="p">)</span>
+        
+        <span class="n">axs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xfine</span><span class="p">,</span><span class="n">d2F</span><span class="p">,</span><span class="s1">&#39;-g&#39;</span><span class="p">,</span>
+            <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;$\frac{d^</span><span class="si">{2}</span><span class="s1">\Delta F}{dT^</span><span class="si">{2}</span><span class="s1">}$&#39;</span><span class="p">,</span>
+        <span class="p">)</span>
+        
+        <span class="n">axs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+        <span class="n">axs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$\frac{d^</span><span class="si">{2}</span><span class="s1">\Delta F}{dT^</span><span class="si">{2}</span><span class="s1">}$&#39;</span><span class="p">)</span>
+        <span class="n">axs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$T (K)$&#39;</span><span class="p">)</span>
+        
+        <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+        
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">plotfile</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    
+    <span class="k">return</span> <span class="n">dF_out</span><span class="p">,</span> <span class="n">d2F_out</span><span class="p">,</span> <span class="n">spline_tck</span>    </div>
+    
+
+<div class="viewcode-block" id="plot_free_energy_results"><a class="viewcode-back" href="../../../index.html#cg_openmm.parameters.free_energy.plot_free_energy_results">[docs]</a><span class="k">def</span> <span class="nf">plot_free_energy_results</span><span class="p">(</span><span class="n">full_T_list</span><span class="p">,</span> <span class="n">deltaF_values</span><span class="p">,</span> <span class="n">deltaF_uncertainty</span><span class="p">,</span><span class="n">plotfile</span><span class="o">=</span><span class="s2">&quot;free_energy_plot.pdf&quot;</span><span class="p">):</span>   
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot free energy difference data for each conformational state transition as a function of temperature.</span>
+
+<span class="sd">    :param full_T_list: Array listing of all temperatures, including sampled and intermediate unsampled</span>
+<span class="sd">    :type full_T_list: 1D numpy array</span>
+<span class="sd">    </span>
+<span class="sd">    :param deltaF_values: A dictionary containing free energy change for each T in full_T_list, for each conformational state transition.</span>
+<span class="sd">    :type deltaF_values: dict{&quot;statei_statej&quot;:1D numpy array}</span>
+<span class="sd">    </span>
+<span class="sd">    :param deltaF_uncertainty: A dictionary containing uncertainties corresponding to deltaF_values</span>
+<span class="sd">    :type deltaF_uncertainty: dict{&quot;statei_statej&quot;:1D numpy array}</span>
+<span class="sd">    </span>
+<span class="sd">    :param plotfile: name of file, including pdf extension</span>
+<span class="sd">    :type plotfile: str</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">T_unit</span> <span class="o">=</span> <span class="n">full_T_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span>
+    <span class="n">F_unit</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">deltaF_values</span><span class="o">.</span><span class="n">items</span><span class="p">())[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span>
+    
+    <span class="n">xlabel</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Temperature </span><span class="si">{</span><span class="n">T_unit</span><span class="o">.</span><span class="n">get_symbol</span><span class="p">()</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="n">ylabel</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Free energy change </span><span class="si">{</span><span class="n">F_unit</span><span class="o">.</span><span class="n">get_symbol</span><span class="p">()</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="n">legend_str</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">value</span> <span class="ow">in</span> <span class="n">deltaF_values</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">errorbar</span><span class="p">(</span>
+            <span class="n">full_T_list</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">T_unit</span><span class="p">),</span>
+            <span class="n">deltaF_values</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">F_unit</span><span class="p">),</span>
+            <span class="n">deltaF_uncertainty</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">F_unit</span><span class="p">),</span>
+            <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">markersize</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
+            <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;o-&#39;</span><span class="p">,</span>
+            <span class="n">fillstyle</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span>
+            <span class="n">capsize</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">legend_str</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="n">xlabel</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="n">ylabel</span><span class="p">)</span>
+    <span class="n">pyplot</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">legend_str</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">plotfile</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Shirts Group. Project structure based on the Computational Molecular Science Python Cookiecutter version 1.3
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

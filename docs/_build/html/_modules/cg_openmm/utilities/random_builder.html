@@ -1,0 +1,1065 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cg_openmm.utilities.random_builder &mdash; cg_openmm  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> cg_openmm
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting Started</a></li>
+</ul>
+<p class="caption"><span class="caption-text">CGModel class:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../cgmodel_class.html">CGModel class</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API Documentation</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">cg_openmm</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>cg_openmm.utilities.random_builder</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cg_openmm.utilities.random_builder</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">math</span><span class="o">,</span> <span class="nn">random</span><span class="o">,</span> <span class="nn">statistics</span>
+<span class="kn">import</span> <span class="nn">simtk.unit</span> <span class="k">as</span> <span class="nn">unit</span>
+<span class="kn">from</span> <span class="nn">cg_openmm.build.cg_build</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">cg_openmm.simulation.tools</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">cg_openmm.utilities.iotools</span> <span class="kn">import</span> <span class="n">write_pdbfile_without_topology</span>
+
+
+<div class="viewcode-block" id="first_bead"><a class="viewcode-back" href="../../../index.html#cg_openmm.utilities.random_builder.first_bead">[docs]</a><span class="k">def</span> <span class="nf">first_bead</span><span class="p">(</span><span class="n">positions</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determine if the provided &#39;positions&#39; contain any particles (are the coordinates non-zero).</span>
+
+<span class="sd">        :param positions: Positions for all beads in the coarse-grained model.</span>
+<span class="sd">        :type positions: np.array( float * unit ( shape = num_beads x 3 ) )</span>
+<span class="sd">        </span>
+<span class="sd">        :returns:</span>
+<span class="sd">         - first_bead (Logical) - Variable stating if the positions are all non-zero.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="n">first_bead</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">positions</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;(2,)&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">first_bead</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">positions</span><span class="o">.</span><span class="n">_value</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">i</span> <span class="o">!=</span> <span class="mf">0.0</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">value</span><span class="p">):</span>
+                <span class="n">first_bead</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">return</span> <span class="n">first_bead</span></div>
+
+
+<div class="viewcode-block" id="get_move"><a class="viewcode-back" href="../../../index.html#cg_openmm.utilities.random_builder.get_move">[docs]</a><span class="k">def</span> <span class="nf">get_move</span><span class="p">(</span><span class="n">trial_coordinates</span><span class="p">,</span> <span class="n">move_direction</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="n">bond_length</span><span class="p">,</span> <span class="n">finish_bond</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Used to build random structures.  Given a set of input coordinates, this function attempts to add a new particle.</span>
+
+<span class="sd">        :param trial_coordinates: Positions for a particle</span>
+<span class="sd">        :type trial_coordinates: np.array( float * unit.angstrom ( length = 3 ) )</span>
+
+<span class="sd">        :param move_direction: Cartesian direction in which we will attempt a particle placement, where: x=0, y=1, z=2. </span>
+<span class="sd">        :type move_direction: int</span>
+
+<span class="sd">        :param distance: Current distance between the trial coordinates for the particle this function is positioning and the particle that it is branched from (bonded to).</span>
+<span class="sd">        :type distance: `Quantity() &lt;https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html&gt;`_</span>
+
+<span class="sd">        :param bond_length: The distance to step before placing a new particle.</span>
+<span class="sd">        :type bond_length: `Quantity() &lt;https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html&gt;`_</span>
+
+<span class="sd">        :param finish_bond: Logical variable determining how we will update the coordinates for this particle, default = False.  If set to &quot;True&quot;, the &quot;move&quot; length will be the difference between &quot;distance&quot; and &quot;bond_length&quot;.</span>
+<span class="sd">        :type finish_bond: </span>
+
+<span class="sd">        :returns:</span>
+<span class="sd">         - trial_coordinates (np.array( float * unit.angstrom (length=3) )) - Updated positions for the particle.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">distance</span><span class="o">.</span><span class="fm">__gt__</span><span class="p">(</span><span class="n">bond_length</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ERROR: The particle distance is larger than the bond length.&quot;</span><span class="p">)</span>
+        <span class="n">exit</span><span class="p">()</span>
+
+    <span class="n">max_step_size</span> <span class="o">=</span> <span class="n">bond_length</span><span class="o">.</span><span class="fm">__pow__</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)</span><span class="o">.</span><span class="fm">__sub__</span><span class="p">(</span><span class="n">distance</span><span class="o">.</span><span class="fm">__pow__</span><span class="p">(</span><span class="mf">2.0</span><span class="p">))</span><span class="o">.</span><span class="n">sqrt</span><span class="p">()</span>
+
+    <span class="c1"># Add a random sign to &#39;max_step_size&#39;, to randomize our particle placement.</span>
+    <span class="n">sign_index</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">sign_index</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">max_step_size</span> <span class="o">=</span> <span class="n">max_step_size</span><span class="o">.</span><span class="fm">__neg__</span><span class="p">()</span>
+
+    <span class="c1"># If we are &quot;finishing the bond&quot;, then the &quot;step&quot; size is</span>
+    <span class="c1"># the length (in the direction &#39;move_direction&#39;) required</span>
+    <span class="c1"># so that &#39;distance&#39; == &#39;bond_length&#39;</span>
+    <span class="k">if</span> <span class="n">finish_bond</span><span class="p">:</span>
+
+        <span class="c1"># Calculate the step size as &#39;step&#39; = sqrt(&#39;difference&#39;)</span>
+        <span class="n">step</span> <span class="o">=</span> <span class="n">max_step_size</span><span class="o">.</span><span class="n">_value</span>
+
+    <span class="c1"># If we aren&#39;t &quot;finishing the bond&quot;, then the &quot;step&quot; size</span>
+    <span class="c1"># is a random float in the range 0.0</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">finish_bond</span><span class="p">:</span>
+
+        <span class="n">step</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">max_step_size</span><span class="o">.</span><span class="n">_value</span><span class="p">)</span>
+
+    <span class="n">trial_coordinates</span><span class="p">[</span><span class="n">move_direction</span><span class="p">]</span> <span class="o">=</span> <span class="n">trial_coordinates</span><span class="p">[</span><span class="n">move_direction</span><span class="p">]</span><span class="o">.</span><span class="fm">__add__</span><span class="p">(</span>
+        <span class="n">unit</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">trial_coordinates</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">trial_coordinates</span></div>
+
+
+<div class="viewcode-block" id="attempt_lattice_move"><a class="viewcode-back" href="../../../index.html#cg_openmm.utilities.random_builder.attempt_lattice_move">[docs]</a><span class="k">def</span> <span class="nf">attempt_lattice_move</span><span class="p">(</span><span class="n">parent_coordinates</span><span class="p">,</span> <span class="n">bond_length</span><span class="p">,</span> <span class="n">move_direction_list</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Given a set of cartesian coordinates this function positions a new particle a distance of &#39;bond_length&#39; away in a random direction.</span>
+
+<span class="sd">        :param parent_coordinates: Positions for a single particle, away from which we will place a new particle a distance of &#39;bond_length&#39; away.</span>
+<span class="sd">        :type parent_coordinates: np.array( float * unit.angstrom ( length = 3 ) )</span>
+
+<span class="sd">        :param bond_length: Bond length for all beads that are bonded.</span>
+<span class="sd">        :type bond_length: `Quantity() &lt;https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html&gt;`_</span>
+
+<span class="sd">        :param move_direction_list: A list of cartesian directions (denoted by integers) that tracks the directions in which a particle placement has been attempted.</span>
+<span class="sd">        :type move_direction_list: List( int )</span>
+
+<span class="sd">        :returns:</span>
+<span class="sd">          - trial_coordinates ( np.array( float * unit.angstrom ( length = 3 ) ) ) - The coordinates for a new, trial particle.</span>
+<span class="sd">          - move_direction_list ( List(int) ) - A list of cartesian directions (denoted by integers) that tracks the directions in which a particle placement has been attempted.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="c1"># Assign the parent coordinates as the initial coordinates for a trial particle</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">move_direction</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">move_direction</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">move_direction_list</span><span class="p">:</span>
+            <span class="k">break</span>
+
+    <span class="c1"># need to a bit random because of angles - but still doeson&#39;t work</span>
+    <span class="n">trial_coordinates</span> <span class="o">=</span> <span class="n">parent_coordinates</span><span class="o">.</span><span class="n">__deepcopy__</span><span class="p">(</span><span class="n">memo</span><span class="o">=</span><span class="p">{})</span>
+    <span class="n">incrementor</span> <span class="o">=</span> <span class="n">bond_length</span> <span class="o">*</span> <span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="n">move_direction</span> <span class="o">%</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.3</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">))</span>
+    <span class="n">trial_coordinates</span><span class="p">[</span><span class="n">move_direction</span> <span class="o">//</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">parent_coordinates</span><span class="p">[</span><span class="n">move_direction</span> <span class="o">//</span> <span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">incrementor</span>
+    <span class="n">move_direction_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">move_direction</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">trial_coordinates</span><span class="p">,</span> <span class="n">move_direction_list</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="attempt_move"><a class="viewcode-back" href="../../../index.html#cg_openmm.utilities.random_builder.attempt_move">[docs]</a><span class="k">def</span> <span class="nf">attempt_move</span><span class="p">(</span><span class="n">parent_coordinates</span><span class="p">,</span> <span class="n">bond_length</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Given a set of cartesian coordinates, assign a new particle</span>
+<span class="sd">        a distance of &#39;bond_length&#39; away in a random direction.</span>
+
+<span class="sd">        :param parent_coordinates: Positions for a single particle, away from which we will place a new particle a distance of &#39;bond_length&#39; away.</span>
+<span class="sd">        :type parent_coordinates: np.array( float * unit.angstrom ( length = 3 ) )</span>
+
+<span class="sd">        :param bond_length: Bond length for all beads that are bonded.</span>
+<span class="sd">        :type bond_length: `Quantity() &lt;https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html&gt;`_</span>
+
+<span class="sd">        :returns:</span>
+<span class="sd">          - trial_coordinates ( np.array( float * unit.angstrom ( length = 3 ) ) ) - The coordinates for a new, trial</span>
+<span class="sd">particle.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="n">units</span> <span class="o">=</span> <span class="n">bond_length</span><span class="o">.</span><span class="n">unit</span>
+    <span class="n">dist</span> <span class="o">=</span> <span class="n">unit</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">units</span><span class="p">)</span>
+
+    <span class="n">move_direction_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># Assign the parent coordinates as the initial coordinates for a trial particle</span>
+
+    <span class="n">trial_coordinates</span> <span class="o">=</span> <span class="n">parent_coordinates</span><span class="o">.</span><span class="n">__deepcopy__</span><span class="p">(</span><span class="n">memo</span><span class="o">=</span><span class="p">{})</span>
+    <span class="n">ref</span> <span class="o">=</span> <span class="n">parent_coordinates</span><span class="o">.</span><span class="n">__deepcopy__</span><span class="p">(</span><span class="n">memo</span><span class="o">=</span><span class="p">{})</span>
+
+    <span class="k">for</span> <span class="n">direction</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+        <span class="n">move_direction</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="k">while</span> <span class="n">move_direction</span> <span class="ow">in</span> <span class="n">move_direction_list</span><span class="p">:</span>
+            <span class="n">move_direction</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">float</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">bond_length</span><span class="o">.</span><span class="n">_value</span> <span class="o">**</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="o">-</span> <span class="nb">round</span><span class="p">(</span><span class="n">dist</span><span class="o">.</span><span class="n">_value</span> <span class="o">**</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The bond length is: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">bond_length</span><span class="o">.</span><span class="n">_value</span> <span class="o">**</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mi">4</span><span class="p">)))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The distance is: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">dist</span><span class="o">.</span><span class="n">_value</span> <span class="o">**</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mi">4</span><span class="p">)))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The parent coordinates are: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">ref</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The trial coordinates are: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">trial_coordinates</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: new particles are not being assigned correctly.&quot;</span><span class="p">)</span>
+            <span class="n">exit</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">trial_coordinates</span> <span class="o">=</span> <span class="n">get_move</span><span class="p">(</span>
+                <span class="n">trial_coordinates</span><span class="p">,</span> <span class="n">move_direction</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">bond_length</span><span class="p">,</span> <span class="n">finish_bond</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">trial_coordinates</span> <span class="o">=</span> <span class="n">get_move</span><span class="p">(</span><span class="n">trial_coordinates</span><span class="p">,</span> <span class="n">move_direction</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">bond_length</span><span class="p">)</span>
+
+        <span class="n">move_direction_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">move_direction</span><span class="p">)</span>
+        <span class="n">dist</span> <span class="o">=</span> <span class="n">distance</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">trial_coordinates</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">round</span><span class="p">(</span><span class="n">dist</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">round</span><span class="p">(</span><span class="n">bond_length</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span> <span class="mi">4</span><span class="p">):</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: particles are being placed at a distance different from the bond length&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Bond length is: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">bond_length</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The particle distance is: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">dist</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">trial_coordinates</span><span class="p">)</span>
+        <span class="n">exit</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">trial_coordinates</span></div>
+
+
+<div class="viewcode-block" id="distances"><a class="viewcode-back" href="../../../index.html#cg_openmm.utilities.random_builder.distances">[docs]</a><span class="k">def</span> <span class="nf">distances</span><span class="p">(</span><span class="n">interaction_list</span><span class="p">,</span> <span class="n">positions</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate the distances between all non-bonded particles in a model, given a list of particle interactions and particle positions.</span>
+
+<span class="sd">        :param interaction_list: A list of non-bonded particle interactions</span>
+<span class="sd">        :type interaction_list: List( [ int, int ] )</span>
+
+<span class="sd">        :param positions: Positions for the particles in a coarse grained model.</span>
+<span class="sd">        :type positions: np.array( float * unit.angstrom ( num_particles x 3 ) )</span>
+
+<span class="sd">        :returns:</span>
+<span class="sd">           - distance_list ( List( `Quantity() &lt;https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html&gt;`_ ) ) - A list of distances for the non-bonded interactions in the coarse grained model.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="n">distance_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">interaction</span> <span class="ow">in</span> <span class="n">interaction_list</span><span class="p">:</span>
+        <span class="n">distance_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">distance</span><span class="p">(</span><span class="n">positions</span><span class="p">[</span><span class="n">interaction</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">positions</span><span class="p">[</span><span class="n">interaction</span><span class="p">[</span><span class="mi">1</span><span class="p">]]))</span>
+
+    <span class="k">return</span> <span class="n">distance_list</span></div>
+
+
+<div class="viewcode-block" id="collisions"><a class="viewcode-back" href="../../../index.html#cg_openmm.utilities.random_builder.collisions">[docs]</a><span class="k">def</span> <span class="nf">collisions</span><span class="p">(</span><span class="n">distance_list</span><span class="p">,</span> <span class="n">distance_cutoff</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determine if there are any collisions between non-bonded</span>
+<span class="sd">        particles, where a &quot;collision&quot; is defined as a distance shorter than &#39;distance_cutoff&#39;.</span>
+
+<span class="sd">        :param distance_list: A list of distances.</span>
+<span class="sd">        :type distance_list: List( `Quantity() &lt;https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html&gt;`_ )</span>
+
+<span class="sd">        :param distance_cutoff: The distance below which particles will be considered to have &quot;collisions&quot;.</span>
+<span class="sd">        :type distance_cutoff: `Quantity() &lt;https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html&gt;`_</span>
+
+<span class="sd">        :returns:</span>
+<span class="sd">          - collision (Logical) - A variable indicating whether or not the model contains particle collisions.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="n">collision</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">distance_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">distance</span> <span class="ow">in</span> <span class="n">distance_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">distance</span> <span class="o">&lt;</span> <span class="n">distance_cutoff</span><span class="p">:</span>
+                <span class="n">collision</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">return</span> <span class="n">collision</span></div>
+
+
+<div class="viewcode-block" id="assign_position_lattice_style"><a class="viewcode-back" href="../../../index.html#cg_openmm.utilities.random_builder.assign_position_lattice_style">[docs]</a><span class="k">def</span> <span class="nf">assign_position_lattice_style</span><span class="p">(</span>
+    <span class="n">cgmodel</span><span class="p">,</span> <span class="n">positions</span><span class="p">,</span> <span class="n">distance_cutoff</span><span class="p">,</span> <span class="n">parent_bead_index</span><span class="p">,</span> <span class="n">bead_index</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Assign random position for a particle</span>
+
+<span class="sd">        :param cgmodel: CGModel() class object.</span>
+<span class="sd">        :type cgmodel: class</span>
+
+<span class="sd">        :param positions: Positions for the particles in a coarse grained model.</span>
+<span class="sd">        :type positions: np.array( float * unit.angstrom ( num_particles x 3 ) )</span>
+
+<span class="sd">        :param distance_cutoff: The distance below which particles will be considered to have &quot;collisions&quot;.</span>
+<span class="sd">        :type distance_cutoff: `Quantity() &lt;https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html&gt;`_</span>
+
+<span class="sd">        :param parent_bead_index: The index of the particle from which we will bond a new particle, when assigning positions.</span>
+<span class="sd">        :type parent_bead_index: int</span>
+
+<span class="sd">        :param bead_index: The index of the particle for which the function will assign positions.</span>
+<span class="sd">        :type bead_index: int</span>
+
+<span class="sd">        :returns:</span>
+<span class="sd">          - test_positions ( np.array( float * unit.angstrom ( num_particles x 3 ) ) ) - A set of positions for the updated model, including the particle that was just added.</span>
+<span class="sd">          - success ( Logical ) - Indicates whether or not a particle was placed successfully.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="n">saved_positions</span> <span class="o">=</span> <span class="n">positions</span><span class="o">.</span><span class="n">__deepcopy__</span><span class="p">(</span><span class="n">memo</span><span class="o">=</span><span class="p">{})</span>  <span class="c1"># save our positions</span>
+
+    <span class="c1"># build the bonded and nonbonded lists we have positions for</span>
+    <span class="n">bond_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">bond</span> <span class="ow">in</span> <span class="n">cgmodel</span><span class="o">.</span><span class="n">bond_list</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">bond</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="p">)</span> <span class="ow">and</span> <span class="n">bond</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="p">):</span>
+            <span class="n">bond_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bond</span><span class="p">)</span>
+
+    <span class="n">nonbonded_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">interaction</span> <span class="ow">in</span> <span class="n">cgmodel</span><span class="o">.</span><span class="n">nonbonded_interaction_list</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">interaction</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="p">)</span> <span class="ow">and</span> <span class="n">interaction</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="p">):</span>
+            <span class="n">nonbonded_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">interaction</span><span class="p">)</span>
+
+    <span class="n">success</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">move_direction_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">bond_length</span> <span class="o">=</span> <span class="n">cgmodel</span><span class="o">.</span><span class="n">get_bond_length</span><span class="p">([</span><span class="n">parent_bead_index</span><span class="p">,</span> <span class="n">bead_index</span><span class="p">])</span>
+
+    <span class="k">while</span> <span class="ow">not</span> <span class="n">success</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">move_direction_list</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">6</span><span class="p">:</span>
+        <span class="n">success</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">new_coordinates</span><span class="p">,</span> <span class="n">move_direction_list</span> <span class="o">=</span> <span class="n">attempt_lattice_move</span><span class="p">(</span>
+            <span class="n">positions</span><span class="p">[</span><span class="n">parent_bead_index</span><span class="p">],</span> <span class="n">bond_length</span><span class="p">,</span> <span class="n">move_direction_list</span>
+        <span class="p">)</span>
+
+        <span class="n">positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">positions</span><span class="p">,</span> <span class="n">bead_index</span><span class="p">,</span> <span class="n">new_coordinates</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">*</span> <span class="n">positions</span><span class="o">.</span><span class="n">unit</span>
+
+        <span class="n">nonbonded_distance_list</span> <span class="o">=</span> <span class="n">distances</span><span class="p">(</span><span class="n">nonbonded_list</span><span class="p">,</span> <span class="n">positions</span><span class="p">)</span>
+        <span class="n">bonded_distance_list</span> <span class="o">=</span> <span class="n">distances</span><span class="p">(</span><span class="n">bond_list</span><span class="p">,</span> <span class="n">positions</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">collisions</span><span class="p">(</span><span class="n">bonded_distance_list</span><span class="p">,</span> <span class="n">distance_cutoff</span><span class="p">):</span>  <span class="c1"># does this ever fail currently?</span>
+            <span class="n">success</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">nonbonded_distance_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">collisions</span><span class="p">(</span><span class="n">nonbonded_distance_list</span><span class="p">,</span> <span class="n">distance_cutoff</span><span class="p">):</span>
+                <span class="n">success</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">success</span><span class="p">:</span>
+            <span class="n">positions</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">saved_positions</span>  <span class="c1"># we could not place the monomer, give up, return positions</span>
+            <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">positions</span><span class="p">,</span> <span class="n">success</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="assign_position"><a class="viewcode-back" href="../../../index.html#cg_openmm.utilities.random_builder.assign_position">[docs]</a><span class="k">def</span> <span class="nf">assign_position</span><span class="p">(</span><span class="n">positions</span><span class="p">,</span> <span class="n">bond_length</span><span class="p">,</span> <span class="n">distance_cutoff</span><span class="p">,</span> <span class="n">parent_index</span><span class="p">,</span> <span class="n">bead_index</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Assign random position for a bead</span>
+
+<span class="sd">        :param positions: Positions for the particles in a coarse grained model.</span>
+<span class="sd">        :type positions: np.array( float * unit.angstrom ( num_particles x 3 ) )</span>
+
+<span class="sd">        :param bond_length: The distance to step when placing new particles.</span>
+<span class="sd">        :type bond_length: `Quantity() &lt;https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html&gt;`_</span>
+
+<span class="sd">        :param distance_cutoff: The distance below which particles will be considered to have &quot;collisions&quot;.</span>
+<span class="sd">        :type distance_cutoff: `Quantity() &lt;https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html&gt;`_</span>
+
+<span class="sd">        :param parent_bead_index: The index of the particle from which we will bond a new particle, when assigning pos</span>
+<span class="sd">itions.</span>
+<span class="sd">        :type parent_bead_index: int</span>
+
+<span class="sd">        :param bead_index: The index of the particle for which the function will assign positions.</span>
+<span class="sd">        :type bead_index: int</span>
+
+<span class="sd">        :returns:</span>
+<span class="sd">          - positions ( np.array( float * unit.angstrom ( num_particles x 3 ) ) ) - A set of positions for the updated model, including the particle that was just added.</span>
+<span class="sd">          - success ( Logical ) - Indicates whether or not a particle was placed successfully.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">bead_index</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">success</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">positions</span><span class="p">,</span> <span class="n">success</span><span class="p">)</span>
+
+    <span class="n">units</span> <span class="o">=</span> <span class="n">bond_length</span><span class="o">.</span><span class="n">unit</span>
+    <span class="k">if</span> <span class="n">parent_index</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">parent_index</span> <span class="o">=</span> <span class="n">bead_index</span> <span class="o">-</span> <span class="mi">1</span>
+
+    <span class="n">parent_coordinates</span> <span class="o">=</span> <span class="n">positions</span><span class="p">[</span><span class="n">parent_index</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">new_coordinates</span> <span class="o">=</span> <span class="n">unit</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="n">units</span><span class="p">)</span>
+    <span class="n">success</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">attempts</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">while</span> <span class="ow">not</span> <span class="n">success</span><span class="p">:</span>
+
+        <span class="n">new_coordinates</span> <span class="o">=</span> <span class="n">attempt_move</span><span class="p">(</span><span class="n">parent_coordinates</span><span class="p">,</span> <span class="n">bond_length</span><span class="p">)</span>
+
+        <span class="n">distance_list</span> <span class="o">=</span> <span class="n">distances</span><span class="p">(</span><span class="n">new_coordinates</span><span class="p">,</span> <span class="n">positions</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">collisions</span><span class="p">(</span><span class="n">distance_list</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+            <span class="n">success</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">if</span> <span class="n">attempts</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">:</span>
+            <span class="c1">#            print([distance._value for distance in distance_list])</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">positions</span><span class="p">,</span> <span class="n">success</span><span class="p">)</span>
+
+        <span class="n">attempts</span> <span class="o">=</span> <span class="n">attempts</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="n">positions</span><span class="p">[</span><span class="n">bead_index</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_coordinates</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">positions</span><span class="p">,</span> <span class="n">success</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_structure_from_library"><a class="viewcode-back" href="../../../index.html#cg_openmm.utilities.random_builder.get_structure_from_library">[docs]</a><span class="k">def</span> <span class="nf">get_structure_from_library</span><span class="p">(</span><span class="n">cgmodel</span><span class="p">,</span> <span class="n">high_energy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">low_energy</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Given a coarse grained model class object, this function retrieves</span>
+<span class="sd">        a set of positions for the model from the &#39;foldamers&#39; ensemble library, in:</span>
+<span class="sd">        &#39;foldamers/ensembles/${backbone_length}_${sidechain_length}_${sidechain_positions}&#39;</span>
+<span class="sd">        If this coarse grained model does not have an ensemble library, an </span>
+<span class="sd">        error message will be returned and positions at random with &#39;random_positions()&#39;.</span>
+
+<span class="sd">        cgmodel: CGModel() class object.</span>
+
+<span class="sd">        :param high_energy: If set to &#39;True&#39;, this function will generate an ensemble of high-energy structures, default = False</span>
+<span class="sd">        :type high_energy: Logical</span>
+
+<span class="sd">        :param low_energy: If set to &#39;True&#39;, this function will generate an ensemble of low-energy structures, default = False</span>
+<span class="sd">        :type low_energy: Logical</span>
+
+<span class="sd">        :returns:</span>
+<span class="sd">           - positions ( np.array( float * unit.angstrom ( num_particles x 3 ) ) ) - A set of coarse grained model positions.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="n">ensemble_size</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="c1"># In its current form this subroutine does not save the positions for random configurations we generate from heteropolymers.  It only saves the positions for homopolymers.</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cgmodel</span><span class="o">.</span><span class="n">monomer_types</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="s2">&quot;The foldamers ensemble library does not currently store conformations for polymers composed of more than one unique monomer.</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="s2">&quot;The &#39;random_positions()&#39; subroutine will be called instead, with &#39;use_library&#39;=False.&quot;</span>
+        <span class="p">)</span>
+        <span class="n">positions</span> <span class="o">=</span> <span class="n">random_positions</span><span class="p">(</span><span class="n">cgmodel</span><span class="p">,</span> <span class="n">use_library</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">positions</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">monomer_type</span> <span class="o">=</span> <span class="n">cgmodel</span><span class="o">.</span><span class="n">monomer_types</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">ensembles_directory</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span>
+            <span class="nb">str</span><span class="p">(</span><span class="vm">__file__</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;foldamers/utilities/util.py&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="s2">&quot;ensembles&quot;</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">ensembles_directory</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">ensembles_directory</span><span class="p">)</span>
+        <span class="n">model_directory</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">ensembles_directory</span><span class="p">)</span>
+            <span class="o">+</span> <span class="s2">&quot;/&quot;</span>
+            <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">cgmodel</span><span class="o">.</span><span class="n">polymer_length</span><span class="p">)</span>
+            <span class="o">+</span> <span class="s2">&quot;_&quot;</span>
+            <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">monomer_type</span><span class="p">[</span><span class="s2">&quot;backbone_length&quot;</span><span class="p">])</span>
+            <span class="o">+</span> <span class="s2">&quot;_&quot;</span>
+            <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">monomer_type</span><span class="p">[</span><span class="s2">&quot;sidechain_length&quot;</span><span class="p">])</span>
+            <span class="o">+</span> <span class="s2">&quot;_&quot;</span>
+            <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">monomer_type</span><span class="p">[</span><span class="s2">&quot;sidechain_positions&quot;</span><span class="p">])</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">model_directory</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">model_directory</span><span class="p">)</span>
+
+        <span class="c1"># We determine a suitable name for the ensemble directory by combining the &#39;bb_bb_bond_length&#39;, &#39;bb_sc_bond_length&#39;, and &#39;sc_sc_bond_length&#39; into a single string:</span>
+        <span class="n">ens_str</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">monomer_type</span><span class="p">[</span><span class="s2">&quot;bond_lengths&quot;</span><span class="p">][</span><span class="s2">&quot;bb_bb_bond_length&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span>
+            <span class="n">monomer_type</span><span class="p">[</span><span class="s2">&quot;bond_lengths&quot;</span><span class="p">][</span><span class="s2">&quot;bb_sc_bond_length&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span>
+            <span class="n">monomer_type</span><span class="p">[</span><span class="s2">&quot;bond_lengths&quot;</span><span class="p">][</span><span class="s2">&quot;sc_sc_bond_length&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">high_energy</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">low_energy</span><span class="p">:</span>
+            <span class="n">ensemble_directory</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span>
+                <span class="nb">str</span><span class="p">(</span><span class="n">model_directory</span><span class="p">)</span>
+                <span class="o">+</span> <span class="s2">&quot;/bonds_&quot;</span>
+                <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">ens_str</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="o">+</span> <span class="s2">&quot;_&quot;</span>
+                <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">ens_str</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="o">+</span> <span class="s2">&quot;_&quot;</span>
+                <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">ens_str</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">high_energy</span><span class="p">:</span>
+            <span class="n">ensemble_directory</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span>
+                <span class="nb">str</span><span class="p">(</span><span class="n">model_directory</span><span class="p">)</span>
+                <span class="o">+</span> <span class="s2">&quot;/bonds_&quot;</span>
+                <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">ens_str</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="o">+</span> <span class="s2">&quot;_&quot;</span>
+                <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">ens_str</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="o">+</span> <span class="s2">&quot;_&quot;</span>
+                <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">ens_str</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+                <span class="o">+</span> <span class="s2">&quot;_high_energy&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">low_energy</span><span class="p">:</span>
+            <span class="n">ensemble_directory</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span>
+                <span class="nb">str</span><span class="p">(</span><span class="n">model_directory</span><span class="p">)</span>
+                <span class="o">+</span> <span class="s2">&quot;/bonds_&quot;</span>
+                <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">ens_str</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="o">+</span> <span class="s2">&quot;_&quot;</span>
+                <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">ens_str</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="o">+</span> <span class="s2">&quot;_&quot;</span>
+                <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">ens_str</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+                <span class="o">+</span> <span class="s2">&quot;_low_energy&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">generate_ensemble</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">ensemble_directory</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">ensemble_directory</span><span class="p">)</span>
+            <span class="n">generate_ensemble</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="c1">#            positions = random_positions(cgmodel,use_library=False)</span>
+        <span class="n">pdb_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">energy_list</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;energy&quot;</span><span class="p">:</span> <span class="p">[],</span> <span class="s2">&quot;file_index&quot;</span><span class="p">:</span> <span class="p">[]}</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">ensemble_directory</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.pdb&quot;</span><span class="p">):</span>
+                <span class="n">pdb_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ensemble_directory</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">file</span><span class="p">)))</span>
+                <span class="n">file_obj</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ensemble_directory</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="n">file</span><span class="p">),</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
+                <span class="c1"># print(file_obj.readlines())</span>
+                <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="s2">&quot;The OpenMM potential energy for this structure is:&quot;</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span>
+                    <span class="n">file_obj</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+                <span class="p">):</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">energy</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">file_obj</span><span class="o">.</span><span class="n">readlines</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;: &quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="k">except</span><span class="p">:</span>
+                        <span class="n">energy</span> <span class="o">=</span> <span class="mf">9.9e9</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">energy</span> <span class="o">=</span> <span class="mf">9.9e9</span>
+                <span class="n">energy_list</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">energy</span><span class="p">))</span>
+                <span class="n">file_index</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;cg&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.pdb&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">energy_list</span><span class="p">[</span><span class="s2">&quot;file_index&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">file_index</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pdb_list</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">ensemble_size</span><span class="p">:</span>
+            <span class="n">generate_ensemble</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">if</span> <span class="n">generate_ensemble</span><span class="p">:</span>
+            <span class="c1">#            print(&quot;The foldamers ensemble library only contains &quot;+str(len(pdb_list))+&quot; structures with these settings.\n&quot;)</span>
+            <span class="c1">#            print(&quot;The &#39;random_positions()&#39; subroutine will be called instead, with &#39;use_library&#39;=False,&quot;)</span>
+            <span class="c1">#            print(&quot;in order to generate a total of &quot;+str(100)+&quot; configurations for the database,&quot;)</span>
+            <span class="c1">#            print(&quot;before a specific configuration is chosen to assign random positions for this model.&quot;)</span>
+            <span class="k">if</span> <span class="n">low_energy</span><span class="p">:</span>
+                <span class="n">total_iterations</span> <span class="o">=</span> <span class="mi">1000</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">total_iterations</span> <span class="o">=</span> <span class="n">ensemble_size</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">current_size</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">while</span> <span class="n">index</span> <span class="o">&lt;=</span> <span class="n">total_iterations</span> <span class="ow">and</span> <span class="n">current_size</span> <span class="o">&lt;</span> <span class="n">ensemble_size</span><span class="p">:</span>
+                <span class="n">file_name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">ensemble_directory</span> <span class="o">+</span> <span class="s2">&quot;/cg&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">current_size</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;.pdb&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">file_name</span><span class="p">):</span>
+                    <span class="n">cgmodel</span><span class="o">.</span><span class="n">positions</span><span class="p">,</span> <span class="n">cgmodel</span><span class="o">.</span><span class="n">simulation</span> <span class="o">=</span> <span class="n">random_positions</span><span class="p">(</span>
+                        <span class="n">cgmodel</span><span class="p">,</span> <span class="n">use_library</span><span class="o">=</span><span class="kc">False</span>
+                    <span class="p">)</span>
+                    <span class="n">write_pdbfile_without_topology</span><span class="p">(</span><span class="n">cgmodel</span><span class="p">,</span> <span class="n">file_name</span><span class="p">)</span>
+                    <span class="n">cgmodel</span><span class="o">.</span><span class="n">topology</span> <span class="o">=</span> <span class="n">get_topology_from_pdbfile</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+                    <span class="n">cgmodel</span><span class="o">.</span><span class="n">system</span> <span class="o">=</span> <span class="n">build_system</span><span class="p">(</span><span class="n">cgmodel</span><span class="p">)</span>
+                    <span class="c1"># do a little MD after</span>
+                    <span class="n">positions_after</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">simulation</span> <span class="o">=</span> <span class="n">minimize_structure</span><span class="p">(</span>
+                        <span class="n">cgmodel</span><span class="o">.</span><span class="n">topology</span><span class="p">,</span>
+                        <span class="n">cgmodel</span><span class="o">.</span><span class="n">system</span><span class="p">,</span>
+                        <span class="n">cgmodel</span><span class="o">.</span><span class="n">positions</span><span class="p">,</span>
+                        <span class="n">expand</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>  <span class="c1"># expand for 1000 steps after</span>
+                    <span class="p">)</span>
+                    <span class="n">cgmodel</span><span class="o">.</span><span class="n">positions</span> <span class="o">=</span> <span class="n">positions_after</span>
+                    <span class="n">write_pdbfile_without_topology</span><span class="p">(</span><span class="n">cgmodel</span><span class="p">,</span> <span class="n">file_name</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="p">(</span>
+                        <span class="n">low_energy</span>
+                        <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span>
+                            <span class="n">energy</span><span class="o">.</span><span class="n">_value</span> <span class="o">&lt;</span> <span class="n">energy_list</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+                            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">energy_list</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]))</span>
+                        <span class="p">)</span>
+                        <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">energy_list</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="n">ensemble_size</span>
+                    <span class="p">):</span>
+                        <span class="n">highest_energy_index</span> <span class="o">=</span> <span class="n">energy_list</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span>
+                            <span class="nb">max</span><span class="p">(</span><span class="n">energy_list</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">])</span>
+                        <span class="p">)</span>
+                        <span class="nb">print</span><span class="p">(</span>
+                            <span class="s2">&quot;Replacing the structure in &quot;</span>
+                            <span class="o">+</span> <span class="nb">str</span><span class="p">(</span>
+                                <span class="nb">str</span><span class="p">(</span>
+                                    <span class="n">ensemble_directory</span>
+                                    <span class="o">+</span> <span class="s2">&quot;/cg&quot;</span>
+                                    <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">energy_list</span><span class="p">[</span><span class="s2">&quot;file_index&quot;</span><span class="p">][</span><span class="n">highest_energy_index</span><span class="p">])</span>
+                                    <span class="o">+</span> <span class="s2">&quot;.pdb&quot;</span>
+                                <span class="p">)</span>
+                            <span class="p">)</span>
+                        <span class="p">)</span>
+                        <span class="nb">print</span><span class="p">(</span>
+                            <span class="s2">&quot;Which had an energy of: &quot;</span>
+                            <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">energy_list</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">][</span><span class="n">highest_energy_index</span><span class="p">])</span>
+                        <span class="p">)</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;with a new structure that has an energy of: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">energy</span><span class="o">.</span><span class="n">_value</span><span class="p">))</span>
+                        <span class="n">energy_list</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">][</span><span class="n">highest_energy_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">energy</span><span class="o">.</span><span class="n">_value</span>
+                        <span class="n">write_pdbfile_without_topology</span><span class="p">(</span>
+                            <span class="n">cgmodel</span><span class="p">,</span>
+                            <span class="nb">str</span><span class="p">(</span>
+                                <span class="n">ensemble_directory</span>
+                                <span class="o">+</span> <span class="s2">&quot;/cg&quot;</span>
+                                <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">energy_list</span><span class="p">[</span><span class="s2">&quot;file_index&quot;</span><span class="p">][</span><span class="n">highest_energy_index</span><span class="p">])</span>
+                                <span class="o">+</span> <span class="s2">&quot;.pdb&quot;</span>
+                            <span class="p">),</span>
+                            <span class="n">energy</span><span class="o">=</span><span class="n">energy</span><span class="p">,</span>
+                        <span class="p">)</span>
+
+                    <span class="k">else</span><span class="p">:</span>
+
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">energy_list</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="n">ensemble_size</span><span class="p">:</span>
+                            <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">energy_list</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">])):</span>
+                                <span class="n">file_name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span>
+                                    <span class="n">ensemble_directory</span> <span class="o">+</span> <span class="s2">&quot;/cg&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">step</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;.pdb&quot;</span>
+                                <span class="p">)</span>
+                                <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">file_name</span><span class="p">):</span>
+                                    <span class="n">energy_list</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">energy</span><span class="o">.</span><span class="n">_value</span><span class="p">))</span>
+                                    <span class="n">energy_list</span><span class="p">[</span><span class="s2">&quot;file_index&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">step</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                            <span class="n">write_pdbfile_without_topology</span><span class="p">(</span><span class="n">cgmodel</span><span class="p">,</span> <span class="n">file_name</span><span class="p">,</span> <span class="n">energy</span><span class="o">=</span><span class="n">energy</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">energy_list</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span>
+                            <span class="s2">&quot;The average energy for the new ensemble is: &quot;</span>
+                            <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">statistics</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">energy_list</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]))</span>
+                        <span class="p">)</span>
+
+                    <span class="n">index</span> <span class="o">=</span> <span class="n">index</span> <span class="o">+</span> <span class="mi">1</span>
+                    <span class="n">current_size</span> <span class="o">=</span> <span class="n">current_size</span> <span class="o">+</span> <span class="mi">1</span>
+
+                <span class="k">else</span><span class="p">:</span>
+
+                    <span class="n">index</span> <span class="o">=</span> <span class="n">index</span> <span class="o">+</span> <span class="mi">1</span>
+                    <span class="n">current_size</span> <span class="o">=</span> <span class="n">current_size</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="n">pdb_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">ensemble_directory</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.pdb&quot;</span><span class="p">):</span>
+            <span class="n">pdb_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">ensemble_directory</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">file</span><span class="p">)))</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pdb_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">random_file</span> <span class="o">=</span> <span class="n">pdb_list</span><span class="p">[</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">pdb_list</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)]</span>
+    <span class="n">cgmodel</span><span class="o">.</span><span class="n">positions</span> <span class="o">=</span> <span class="n">get_positions_from_pdbfile</span><span class="p">(</span><span class="n">random_file</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">cgmodel</span><span class="o">.</span><span class="n">simulation</span> <span class="o">=</span> <span class="n">simulation</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">cgmodel</span><span class="o">.</span><span class="n">system</span> <span class="o">=</span> <span class="n">build_system</span><span class="p">(</span><span class="n">cgmodel</span><span class="p">)</span>
+        <span class="n">positions</span><span class="p">,</span> <span class="n">energy_init</span><span class="p">,</span> <span class="n">energy_final</span><span class="p">,</span> <span class="n">simulation</span> <span class="o">=</span> <span class="n">minimize_structure</span><span class="p">(</span>
+            <span class="n">cgmodel</span><span class="p">,</span> <span class="n">cgmodel</span><span class="o">.</span><span class="n">positions</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">positions</span></div>
+
+
+<div class="viewcode-block" id="get_random_positions"><a class="viewcode-back" href="../../../index.html#cg_openmm.utilities.random_builder.get_random_positions">[docs]</a><span class="k">def</span> <span class="nf">get_random_positions</span><span class="p">(</span>
+    <span class="n">cgmodel</span><span class="p">,</span>
+    <span class="n">max_attempts</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">use_library</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">high_energy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">low_energy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">generate_library</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Assign random positions for all beads in a coarse-grained polymer.</span>
+
+<span class="sd">        cgmodel: CGModel() class object.</span>
+
+<span class="sd">        :param max_attempts: The maximum number of attempts to generate random positions a coarse grained model with the current parameters, default = 1000</span>
+<span class="sd">        :type max_attempts: int</span>
+<span class="sd">       </span>
+<span class="sd">        :param use_library: A logical variable determining if a new random structure will be generated, or if an ensemble will be read from the &#39;foldamers&#39; database, default = False</span>
+<span class="sd">        :param use_library: Logical</span>
+
+<span class="sd">        :param high_energy: If set to &#39;True&#39;, this function will generate an ensemble of high-energy structures, default = False</span>
+<span class="sd">        :type high_energy: Logical</span>
+
+<span class="sd">        :param low_energy: If set to &#39;True&#39;, this function will generate an ensemble of low-energy structures, default = False</span>
+<span class="sd">        :type low_energy: Logical</span>
+
+<span class="sd">        :param generate_library: If set to &#39;True&#39;, this function will save the poses that are generated to the &#39;foldamers&#39; ensemble database.</span>
+<span class="sd">        :type generate_libary: False</span>
+
+<span class="sd">        :returns:</span>
+<span class="sd">           - positions ( np.array( float * unit.angstrom ( num_particles x 3 ) ) ) - A set of coarse grained model positions.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">high_energy</span> <span class="ow">and</span> <span class="n">low_energy</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="s2">&quot;ERROR: Both &#39;high_energy&#39; and &#39;low_energy&#39; ensembles were requested in &#39;get_ensemble()&#39;.  Please set only one of these variables to &#39;True&#39;, and call the function again.&quot;</span>
+        <span class="p">)</span>
+        <span class="n">exit</span><span class="p">()</span>
+
+    <span class="n">total_attempts</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">use_library</span><span class="p">:</span>
+        <span class="c1">#            print(&quot;Attempting to find a suitable random starting configuration in the foldamers structural database.\n&quot;)</span>
+        <span class="n">positions</span><span class="p">,</span> <span class="n">simulation</span> <span class="o">=</span> <span class="n">get_structure_from_library</span><span class="p">(</span>
+            <span class="n">cgmodel</span><span class="p">,</span> <span class="n">high_energy</span><span class="o">=</span><span class="n">high_energy</span><span class="p">,</span> <span class="n">low_energy</span><span class="o">=</span><span class="n">low_energy</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">positions</span>
+
+    <span class="n">max_attempts_per_monomer</span> <span class="o">=</span> <span class="mi">20</span>
+    <span class="n">bond_lengths</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">bond</span> <span class="ow">in</span> <span class="n">cgmodel</span><span class="o">.</span><span class="n">bond_list</span><span class="p">:</span>
+        <span class="n">bond_lengths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cgmodel</span><span class="o">.</span><span class="n">get_bond_length</span><span class="p">(</span><span class="n">bond</span><span class="p">))</span>
+    <span class="n">base_bond_length</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">bond_lengths</span><span class="p">)</span>  <span class="c1"># not sure if min or max works better</span>
+    <span class="n">units</span> <span class="o">=</span> <span class="n">base_bond_length</span><span class="o">.</span><span class="n">unit</span>
+    <span class="n">positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]</span> <span class="k">for</span> <span class="n">bead</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">cgmodel</span><span class="o">.</span><span class="n">num_beads</span><span class="p">)])</span> <span class="o">*</span> <span class="n">units</span>
+    <span class="n">bond_list</span> <span class="o">=</span> <span class="n">cgmodel</span><span class="o">.</span><span class="n">get_bond_list</span><span class="p">()</span>
+    <span class="n">sequence</span> <span class="o">=</span> <span class="n">cgmodel</span><span class="o">.</span><span class="n">sequence</span>
+    <span class="n">final_polymer_length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span>
+    <span class="n">total_attempts</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">distance_cutoff</span> <span class="o">=</span> <span class="mf">0.80</span> <span class="o">*</span> <span class="n">base_bond_length</span>  <span class="c1"># haven&#39;t examined this setting much yet</span>
+    <span class="n">lattice_style</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># the only one implemented now</span>
+    <span class="n">stored_positions</span> <span class="o">=</span> <span class="n">positions</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">__deepcopy__</span><span class="p">(</span><span class="n">memo</span><span class="o">=</span><span class="p">{})</span>  <span class="c1"># just the first point</span>
+    <span class="k">while</span> <span class="n">total_attempts</span> <span class="o">&lt;</span> <span class="n">max_attempts</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">stored_positions</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="p">):</span>
+        <span class="n">stored_positions</span> <span class="o">=</span> <span class="n">positions</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">__deepcopy__</span><span class="p">(</span><span class="n">memo</span><span class="o">=</span><span class="p">{})</span>  <span class="c1"># just the first point</span>
+        <span class="n">bead_index</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">previous_monomer_bead_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">monomer_index</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">monomer_trapped</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">monomer_attempts</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">monomer_index</span> <span class="o">&lt;</span> <span class="n">final_polymer_length</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">monomer_trapped</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Assigning particle positions for monomer #</span><span class="si">{</span><span class="n">monomer_index</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">monomer_type</span> <span class="o">=</span> <span class="n">sequence</span><span class="p">[</span><span class="n">monomer_index</span><span class="p">]</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to identify a monomer type for monomer #</span><span class="si">{</span><span class="n">monomer_index</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">exit</span><span class="p">()</span>
+            <span class="n">num_beads_in_monomer</span> <span class="o">=</span> <span class="n">monomer_type</span><span class="p">[</span><span class="s2">&quot;num_beads&quot;</span><span class="p">]</span>
+            <span class="c1"># which beads are in the monomer.</span>
+            <span class="n">monomer_bead_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">bead_index</span><span class="p">,</span> <span class="n">bead_index</span> <span class="o">+</span> <span class="n">num_beads_in_monomer</span><span class="p">)]</span>
+
+            <span class="c1"># Build the connectivity (not the positions) of a model one bead longer.</span>
+            <span class="n">polymer_length</span> <span class="o">=</span> <span class="n">monomer_index</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">cgmodel</span><span class="o">.</span><span class="n">build_polymer</span><span class="p">(</span><span class="n">sequence</span><span class="p">[:</span><span class="n">polymer_length</span><span class="p">])</span>
+
+            <span class="c1"># store some information for restart</span>
+            <span class="n">stored_positions_last_monomer</span> <span class="o">=</span> <span class="n">stored_positions</span><span class="o">.</span><span class="n">__deepcopy__</span><span class="p">(</span><span class="n">memo</span><span class="o">=</span><span class="p">{})</span>
+            <span class="n">bead_index_last_monomer</span> <span class="o">=</span> <span class="n">bead_index</span>
+
+            <span class="c1"># find the bonds in this new monomer. Can we leave this out at some point.</span>
+
+            <span class="n">monomer_bond_list</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">bond_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">bond_list</span><span class="p">)):</span>
+                <span class="n">bond</span> <span class="o">=</span> <span class="n">bond_list</span><span class="p">[</span><span class="n">bond_index</span><span class="p">]</span>
+
+                <span class="k">if</span> <span class="n">bond</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">monomer_bead_list</span> <span class="ow">and</span> <span class="n">bond</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">monomer_bead_list</span><span class="p">:</span>
+                    <span class="n">monomer_bond_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bond</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">monomer_index</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">bond</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">monomer_bead_list</span> <span class="ow">and</span> <span class="n">bond</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">monomer_bead_list</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">bond</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">previous_monomer_bead_list</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">bond</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">bond</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                                <span class="n">monomer_bond_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bond</span><span class="p">)</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="n">monomer_bond_list</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">bond</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">bond</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+                    <span class="k">if</span> <span class="n">bond</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">monomer_bead_list</span> <span class="ow">and</span> <span class="n">bond</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">monomer_bead_list</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">bond</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">previous_monomer_bead_list</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">bond</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">bond</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                                <span class="n">monomer_bond_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bond</span><span class="p">)</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="n">monomer_bond_list</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">bond</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">bond</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+
+            <span class="c1"># this information is need to know which bonds to back to the last monomer.</span>
+            <span class="n">previous_monomer_bead_list_last_monomer</span> <span class="o">=</span> <span class="n">previous_monomer_bead_list</span>
+            <span class="n">previous_monomer_bead_list</span> <span class="o">=</span> <span class="n">monomer_bead_list</span>
+
+            <span class="n">completed_list</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># list of beads whose positions are assigned.</span>
+            <span class="k">while</span> <span class="n">completed_list</span> <span class="o">!=</span> <span class="n">monomer_bead_list</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">monomer_trapped</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">bead_index</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">completed_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bead_index</span><span class="p">)</span>
+                    <span class="n">bead_index</span> <span class="o">=</span> <span class="n">bead_index</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># place the monomers involved in this bond</span>
+                    <span class="k">for</span> <span class="n">bond_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">monomer_bond_list</span><span class="p">)):</span>
+                        <span class="n">bond</span> <span class="o">=</span> <span class="n">monomer_bond_list</span><span class="p">[</span><span class="n">bond_index</span><span class="p">]</span>
+                        <span class="k">if</span> <span class="n">bond</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">completed_list</span> <span class="ow">and</span> <span class="n">bond</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">completed_list</span><span class="p">:</span>
+                            <span class="k">continue</span>  <span class="c1"># if bond atoms in completed list, go in to the next bond</span>
+                        <span class="c1"># place the atoms on a pseudogrid</span>
+                        <span class="k">if</span> <span class="n">lattice_style</span><span class="p">:</span>
+                            <span class="n">trial_positions</span><span class="p">,</span> <span class="n">placement</span> <span class="o">=</span> <span class="n">assign_position_lattice_style</span><span class="p">(</span>
+                                <span class="n">cgmodel</span><span class="p">,</span> <span class="n">stored_positions</span><span class="p">,</span> <span class="n">distance_cutoff</span><span class="p">,</span> <span class="n">bond</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">bond</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                            <span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="c1"># this choice not working now</span>
+                            <span class="n">trial_positions</span><span class="p">,</span> <span class="n">placement</span> <span class="o">=</span> <span class="n">assign_position</span><span class="p">(</span>
+                                <span class="n">stored_positions</span><span class="p">,</span>
+                                <span class="n">get_bond_length</span><span class="p">(</span><span class="n">bond</span><span class="p">),</span>
+                                <span class="n">distance_cutoff</span><span class="p">,</span>
+                                <span class="n">bond</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                                <span class="n">bond</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                            <span class="p">)</span>
+
+                        <span class="k">if</span> <span class="n">placement</span><span class="p">:</span>  <span class="c1"># if we successfuly placed this atom, move to the next one.</span>
+                            <span class="n">stored_positions</span> <span class="o">=</span> <span class="n">trial_positions</span>
+                            <span class="n">completed_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bead_index</span><span class="p">)</span>
+                            <span class="n">bead_index</span> <span class="o">=</span> <span class="n">bead_index</span> <span class="o">+</span> <span class="mi">1</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="c1"># we tried 6 directions, and we couldn&#39;t place it. Trapped!</span>
+                            <span class="n">monomer_trapped</span> <span class="o">=</span> <span class="kc">True</span>
+                            <span class="k">break</span>
+
+            <span class="k">if</span> <span class="n">monomer_trapped</span><span class="p">:</span>
+                <span class="c1"># there is no way to go - start over with the first monomer.</span>
+                <span class="c1"># Eventually, put in place to back up recursively, rather than starting over.</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;monomer </span><span class="si">{</span><span class="n">monomer_index</span><span class="si">}</span><span class="s2"> trapped; starting over&quot;</span><span class="p">)</span>
+                <span class="n">total_attempts</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># We&#39;ve added a new monomer.</span>
+            <span class="c1"># Now check for collisions for the entire polymer</span>
+
+            <span class="n">cgmodel</span><span class="o">.</span><span class="n">positions</span> <span class="o">=</span> <span class="n">trial_positions</span>
+            <span class="n">cgmodel</span><span class="o">.</span><span class="n">topology</span> <span class="o">=</span> <span class="n">build_topology</span><span class="p">(</span><span class="n">cgmodel</span><span class="p">)</span>
+
+            <span class="c1"># are the new monomers too close to any of the previous monomers?</span>
+            <span class="n">collision</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">nonbonded_distance_list</span> <span class="o">=</span> <span class="n">distances</span><span class="p">(</span>
+                <span class="n">cgmodel</span><span class="o">.</span><span class="n">get_nonbonded_interaction_list</span><span class="p">(),</span> <span class="n">trial_positions</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">collisions</span><span class="p">(</span><span class="n">nonbonded_distance_list</span><span class="p">,</span> <span class="n">distance_cutoff</span><span class="p">):</span>
+                <span class="n">collision</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="k">if</span> <span class="n">collision</span><span class="p">:</span>
+                <span class="c1"># check if anything is too close</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error, a particle was placed, but collisions were detected.&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The trial positions are: </span><span class="si">{</span><span class="n">trial_positions</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Backing up&quot;</span><span class="p">)</span>  <span class="c1"># backing up to the last monomer, build this one again.</span>
+                <span class="n">total_attempts</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">stored_positions</span> <span class="o">=</span> <span class="n">stored_positions_last_monomer</span>
+                <span class="n">bead_index</span> <span class="o">=</span> <span class="n">bead_index_last_monomer</span>
+                <span class="n">previous_monomer_bead_list</span> <span class="o">=</span> <span class="n">previous_monomer_bead_list_last_monomer</span>
+                <span class="n">monomer_attempts</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">monomer_attempts</span> <span class="o">&gt;</span> <span class="n">max_attempts_per_monomer</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Monomer </span><span class="si">{</span><span class="n">monomer_index</span><span class="si">}</span><span class="s2"> is too hard to place, starting over.&quot;</span><span class="p">)</span>
+                    <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># if nothing is too close, build the system up to now and minimize the energy</span>
+                <span class="n">cgmodel</span><span class="o">.</span><span class="n">system</span> <span class="o">=</span> <span class="n">build_system</span><span class="p">(</span><span class="n">cgmodel</span><span class="p">)</span>
+                <span class="n">stored_positions</span><span class="p">,</span> <span class="n">energy_init</span><span class="p">,</span> <span class="n">energy_final</span><span class="p">,</span> <span class="n">simulation</span> <span class="o">=</span> <span class="n">minimize_structure</span><span class="p">(</span>
+                    <span class="n">cgmodel</span><span class="p">,</span> <span class="n">stored_positions</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">monomer_index</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="c1"># success!  check the currrent energy</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;current energy is </span><span class="si">{</span><span class="n">energy_final</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">positions</span> <span class="o">=</span> <span class="n">stored_positions</span>
+    <span class="c1"># check for collisions again</span>
+    <span class="n">nonbonded_list</span> <span class="o">=</span> <span class="n">cgmodel</span><span class="o">.</span><span class="n">nonbonded_interaction_list</span>
+    <span class="n">nonbonded_distance_list</span> <span class="o">=</span> <span class="n">distances</span><span class="p">(</span><span class="n">nonbonded_list</span><span class="p">,</span> <span class="n">positions</span><span class="p">)</span>
+    <span class="n">bonded_list</span> <span class="o">=</span> <span class="n">cgmodel</span><span class="o">.</span><span class="n">bond_list</span>
+    <span class="n">bonded_distance_list</span> <span class="o">=</span> <span class="n">distances</span><span class="p">(</span><span class="n">bonded_list</span><span class="p">,</span> <span class="n">positions</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">nonbonded_distance_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">collisions</span><span class="p">(</span>
+        <span class="n">nonbonded_distance_list</span><span class="p">,</span> <span class="n">distance_cutoff</span>
+    <span class="p">):</span>
+        <span class="c1"># minimize the whole thing again to check</span>
+        <span class="n">cgmodel</span><span class="o">.</span><span class="n">positions</span> <span class="o">=</span> <span class="n">positions</span>
+        <span class="n">cgmodel</span><span class="o">.</span><span class="n">topology</span> <span class="o">=</span> <span class="n">build_topology</span><span class="p">(</span><span class="n">cgmodel</span><span class="p">,</span> <span class="n">use_pdbfile</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">cgmodel</span><span class="o">.</span><span class="n">system</span> <span class="o">=</span> <span class="n">build_system</span><span class="p">(</span><span class="n">cgmodel</span><span class="p">)</span>
+        <span class="n">positions</span><span class="p">,</span> <span class="n">energy_init</span><span class="p">,</span> <span class="n">energy_final</span><span class="p">,</span> <span class="n">simulation</span> <span class="o">=</span> <span class="n">minimize_structure</span><span class="p">(</span>
+            <span class="n">cgmodel</span><span class="p">,</span> <span class="n">positions</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># good to go!</span>
+        <span class="k">return</span> <span class="n">positions</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: A model was successfully built, however,&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;particle collisions were detected.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The shortest nonbonded particle distance is:&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">nonbonded_distance_list</span><span class="p">)))</span>
+        <span class="c1"># collision = nonbonded_list[distance_list.index(min(distance_list))]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The nonbonded particle cutoff distance used for&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;random structure generation is set to:&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">distance_cutoff</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;the positions are: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">positions</span><span class="p">))</span>
+        <span class="n">simulation</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="c1">#          print(&quot;This will continue until the user issues a disruption command with the keyboard. (Ctrl + c)&quot;)</span>
+    <span class="k">return</span> <span class="n">positions</span></div>
+
+
+<div class="viewcode-block" id="distance"><a class="viewcode-back" href="../../../index.html#cg_openmm.utilities.random_builder.distance">[docs]</a><span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="n">positions_1</span><span class="p">,</span> <span class="n">positions_2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate the distance between two particles.</span>
+
+<span class="sd">        :param positions_1: Positions for a particle</span>
+<span class="sd">        :type positions_1: `Quantity() &lt;https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html&gt;`_</span>
+
+<span class="sd">        :param positions_2: Positions for a particle</span>
+<span class="sd">        :type positions_2: `Quantity() &lt;https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html&gt;`_</span>
+
+<span class="sd">        :returns:</span>
+<span class="sd">           - distance ( `Quantity() &lt;https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html&gt;`_ ) - The distance between the provided particles.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="c1"># Not sure why this is needed, but first strip units to prevent them being lost in the distance calculation    </span>
+    <span class="n">units</span> <span class="o">=</span> <span class="n">positions_1</span><span class="o">.</span><span class="n">unit</span>
+    <span class="n">positions_1_val</span> <span class="o">=</span> <span class="n">positions_1</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">units</span><span class="p">)</span>
+    <span class="n">positions_2_val</span> <span class="o">=</span> <span class="n">positions_2</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">units</span><span class="p">)</span>
+        
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">((</span><span class="n">positions_1_val</span> <span class="o">-</span> <span class="n">positions_2_val</span><span class="p">),</span><span class="mi">2</span><span class="p">)))</span> <span class="o">*</span> <span class="n">units</span></div>
+
+
+<div class="viewcode-block" id="distance_matrix"><a class="viewcode-back" href="../../../index.html#cg_openmm.utilities.random_builder.distance_matrix">[docs]</a><span class="k">def</span> <span class="nf">distance_matrix</span><span class="p">(</span><span class="n">positions</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Construct a matrix of the distances between an input array of particles.</span>
+
+<span class="sd">        :param positions: Positions for an array of particles.</span>
+<span class="sd">        :type positions: np.array( float * unit.angstrom ( num_particles x 3 ) )</span>
+
+<span class="sd">        :returns:</span>
+<span class="sd">         - distance_matrix (np.array(num_particles x num_particles)) - Matrix containing the distances between all beads.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="n">distance_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+        <span class="p">[[</span><span class="mf">0.0</span> <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="p">))]</span> <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="p">))]</span>
+    <span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">index_1</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">index_2</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="p">)):</span>
+            <span class="n">distance_matrix</span><span class="p">[</span><span class="n">index_1</span><span class="p">][</span><span class="n">index_2</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_distance</span><span class="p">(</span>
+                <span class="n">positions</span><span class="p">[</span><span class="n">index_1</span><span class="p">],</span> <span class="n">positions</span><span class="p">[</span><span class="n">index_2</span><span class="p">]</span>
+            <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">distance_matrix</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Shirts Group. Project structure based on the Computational Molecular Science Python Cookiecutter version 1.3
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

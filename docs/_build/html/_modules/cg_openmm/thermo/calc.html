@@ -1,0 +1,482 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cg_openmm.thermo.calc &mdash; cg_openmm  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> cg_openmm
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting Started</a></li>
+</ul>
+<p class="caption"><span class="caption-text">CGModel class:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../cgmodel_class.html">CGModel class</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API Documentation</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">cg_openmm</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>cg_openmm.thermo.calc</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for cg_openmm.thermo.calc</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">cg_openmm.parameters.reweight</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">openmmtools.multistate</span> <span class="kn">import</span> <span class="n">MultiStateReporter</span>
+<span class="kn">from</span> <span class="nn">openmmtools.multistate</span> <span class="kn">import</span> <span class="n">ReplicaExchangeAnalyzer</span>
+<span class="kn">import</span> <span class="nn">pymbar</span>
+<span class="kn">from</span> <span class="nn">pymbar</span> <span class="kn">import</span> <span class="n">timeseries</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">interpolate</span>
+
+<span class="n">kB</span> <span class="o">=</span> <span class="n">unit</span><span class="o">.</span><span class="n">MOLAR_GAS_CONSTANT_R</span>
+
+
+<div class="viewcode-block" id="plot_heat_capacity"><a class="viewcode-back" href="../../../index.html#cg_openmm.thermo.calc.plot_heat_capacity">[docs]</a><span class="k">def</span> <span class="nf">plot_heat_capacity</span><span class="p">(</span><span class="n">Cv</span><span class="p">,</span> <span class="n">dCv</span><span class="p">,</span> <span class="n">temperature_list</span><span class="p">,</span> <span class="n">file_name</span><span class="o">=</span><span class="s2">&quot;heat_capacity.pdf&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Given an array of temperature-dependent heat capacity values and the uncertainties in their estimates, this function plots the heat capacity curve.</span>
+<span class="sd">    </span>
+<span class="sd">        :param Cv: The heat capacity data to plot.</span>
+<span class="sd">        :type Cv: List( float )</span>
+<span class="sd">    </span>
+<span class="sd">        :param dC_v: The uncertainties in the heat capacity data</span>
+<span class="sd">        :type dCv: List( float )</span>
+<span class="sd">    </span>
+<span class="sd">        :param file_name: The name/path of the file where plotting output will be written, default = &quot;heat_capacity.png&quot;</span>
+<span class="sd">        :type file_name: str</span>
+<span class="sd">    </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="n">figure</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">Tunit</span> <span class="o">=</span> <span class="n">temperature_list</span><span class="o">.</span><span class="n">unit</span>
+    <span class="n">Cvunit</span> <span class="o">=</span> <span class="n">Cv</span><span class="o">.</span><span class="n">unit</span>
+    <span class="n">temperature_list</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">temperature_list</span><span class="p">)</span>
+    <span class="n">Cv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">Cv</span><span class="p">)</span>
+    <span class="n">dCv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dCv</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">errorbar</span><span class="p">(</span><span class="n">temperature_list</span><span class="p">,</span> <span class="n">Cv</span><span class="p">,</span> <span class="n">yerr</span><span class="o">=</span><span class="n">dCv</span><span class="p">,</span> <span class="n">figure</span><span class="o">=</span><span class="n">figure</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Temperature (</span><span class="si">{</span><span class="n">Tunit</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;C$_v$ (</span><span class="si">{</span><span class="n">Cvunit</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Heat capacity as a function of T&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span></div>
+    
+
+<div class="viewcode-block" id="get_heat_capacity_derivative"><a class="viewcode-back" href="../../../index.html#cg_openmm.thermo.calc.get_heat_capacity_derivative">[docs]</a><span class="k">def</span> <span class="nf">get_heat_capacity_derivative</span><span class="p">(</span><span class="n">Cv</span><span class="p">,</span> <span class="n">temperature_list</span><span class="p">,</span> <span class="n">plotfile</span><span class="o">=</span><span class="s1">&#39;dCv_dT.pdf&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Fit a heat capacity vs T dataset to cubic spline, and compute derivatives</span>
+<span class="sd">    </span>
+<span class="sd">    :param Cv: heat capacity data series</span>
+<span class="sd">    :type Cv: Quantity or numpy 1D array</span>
+<span class="sd">    </span>
+<span class="sd">    :param temperature_list: List of temperatures used in replica exchange simulations</span>
+<span class="sd">    :type temperature: Quantity or numpy 1D array</span>
+<span class="sd">    </span>
+<span class="sd">    :param plotfile: path to filename to output plot</span>
+<span class="sd">    :type plotfile: str</span>
+<span class="sd">    </span>
+<span class="sd">    :returns:</span>
+<span class="sd">          - dC_v_out ( 1D numpy array (float) ) - 1st derivative of heat capacity, from a cubic spline evaluated at each point in Cv)</span>
+<span class="sd">          - d2C_v_out ( 1D numpy array (float) ) - 2nd derivative of heat capacity, from a cubic spline evaluated at each point in Cv)</span>
+<span class="sd">          - spline_tck ( scipy spline object (tuple) ) - knot points (t), coefficients (c), and order of the spline (k) fit to Cv data</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">xdata</span> <span class="o">=</span> <span class="n">temperature_list</span>
+    <span class="n">ydata</span> <span class="o">=</span> <span class="n">Cv</span>
+    
+    <span class="c1"># Strip units off quantities:</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">xdata</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="n">unit</span><span class="o">.</span><span class="n">quantity</span><span class="o">.</span><span class="n">Quantity</span><span class="p">:</span>
+        <span class="n">xdata_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">xdata</span><span class="p">)))</span>
+        <span class="n">xunit</span> <span class="o">=</span> <span class="n">xdata</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">xdata</span><span class="p">)):</span>
+            <span class="n">xdata_val</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">xdata</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">xunit</span><span class="p">)</span>
+        <span class="n">xdata</span> <span class="o">=</span> <span class="n">xdata_val</span>
+    
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">ydata</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="n">unit</span><span class="o">.</span><span class="n">quantity</span><span class="o">.</span><span class="n">Quantity</span><span class="p">:</span>
+        <span class="n">ydata_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">ydata</span><span class="p">)))</span>
+        <span class="n">yunit</span> <span class="o">=</span> <span class="n">ydata</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ydata</span><span class="p">)):</span>
+            <span class="n">ydata_val</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">ydata</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">yunit</span><span class="p">)</span>
+        <span class="n">ydata</span> <span class="o">=</span> <span class="n">ydata_val</span>
+            
+    <span class="c1"># Fit cubic spline to data, no smoothing</span>
+    <span class="n">spline_tck</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">splrep</span><span class="p">(</span><span class="n">xdata</span><span class="p">,</span> <span class="n">ydata</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    
+    <span class="n">xfine</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">xdata</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">xdata</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="mi">1000</span><span class="p">)</span>
+    <span class="n">yfine</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">splev</span><span class="p">(</span><span class="n">xfine</span><span class="p">,</span> <span class="n">spline_tck</span><span class="p">,</span> <span class="n">der</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">dCv</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">splev</span><span class="p">(</span><span class="n">xfine</span><span class="p">,</span> <span class="n">spline_tck</span><span class="p">,</span> <span class="n">der</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">d2Cv</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">splev</span><span class="p">(</span><span class="n">xfine</span><span class="p">,</span> <span class="n">spline_tck</span><span class="p">,</span> <span class="n">der</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    
+    <span class="n">dCv_out</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">splev</span><span class="p">(</span><span class="n">xdata</span><span class="p">,</span> <span class="n">spline_tck</span><span class="p">,</span> <span class="n">der</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">d2Cv_out</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">splev</span><span class="p">(</span><span class="n">xdata</span><span class="p">,</span> <span class="n">spline_tck</span><span class="p">,</span> <span class="n">der</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    
+    
+    <span class="n">figure</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span>
+        <span class="n">nrows</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+        <span class="n">ncols</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+    
+    <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+        <span class="n">xdata</span><span class="p">,</span>
+        <span class="n">ydata</span><span class="p">,</span>
+        <span class="s1">&#39;ok&#39;</span><span class="p">,</span>
+        <span class="n">markersize</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+        <span class="n">fillstyle</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span>
+        <span class="n">label</span><span class="o">=</span><span class="s1">&#39;simulation data&#39;</span><span class="p">,</span>
+    <span class="p">)</span>
+    
+    <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+        <span class="n">xfine</span><span class="p">,</span>
+        <span class="n">yfine</span><span class="p">,</span>
+        <span class="s1">&#39;-b&#39;</span><span class="p">,</span>
+        <span class="n">label</span><span class="o">=</span><span class="s1">&#39;cubic spline&#39;</span><span class="p">,</span>
+    <span class="p">)</span>
+    
+    <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$C_</span><span class="si">{V}</span><span class="s1"> (kJ/mol/K)$&#39;</span><span class="p">)</span>
+    <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+    
+    <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+        <span class="n">xfine</span><span class="p">,</span>
+        <span class="n">dCv</span><span class="p">,</span>
+        <span class="s1">&#39;-r&#39;</span><span class="p">,</span>
+        <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;$\frac{dC_</span><span class="si">{V}</span><span class="s1">}</span><span class="si">{dT}</span><span class="s1">$&#39;</span><span class="p">,</span>
+    <span class="p">)</span>
+    
+    <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+    <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$\frac{dC_</span><span class="si">{V}</span><span class="s1">}</span><span class="si">{dT}</span><span class="s1">$&#39;</span><span class="p">)</span>
+    
+    <span class="n">axs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+        <span class="n">xfine</span><span class="p">,</span>
+        <span class="n">d2Cv</span><span class="p">,</span>
+        <span class="s1">&#39;-g&#39;</span><span class="p">,</span>
+        <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;$\frac{d^</span><span class="si">{2}</span><span class="s1">C_</span><span class="si">{V}</span><span class="s1">}{dT^</span><span class="si">{2}</span><span class="s1">}$&#39;</span><span class="p">,</span>
+    <span class="p">)</span>
+    
+    <span class="n">axs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+    <span class="n">axs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$\frac{d^</span><span class="si">{2}</span><span class="s1">C_</span><span class="si">{V}</span><span class="s1">}{dT^</span><span class="si">{2}</span><span class="s1">}$&#39;</span><span class="p">)</span>
+    <span class="n">axs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$T (K)$&#39;</span><span class="p">)</span>
+    
+    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+    
+    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">plotfile</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    
+    <span class="k">return</span> <span class="n">dCv_out</span><span class="p">,</span> <span class="n">d2Cv_out</span><span class="p">,</span> <span class="n">spline_tck</span></div>
+        
+
+<div class="viewcode-block" id="get_heat_capacity"><a class="viewcode-back" href="../../../index.html#cg_openmm.thermo.calc.get_heat_capacity">[docs]</a><span class="k">def</span> <span class="nf">get_heat_capacity</span><span class="p">(</span><span class="n">temperature_list</span><span class="p">,</span> <span class="n">frame_begin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">sample_spacing</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">output_data</span><span class="o">=</span><span class="s2">&quot;output/output.nc&quot;</span><span class="p">,</span> <span class="n">num_intermediate_states</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">frac_dT</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">plot_file</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    Given a .nc output, a temperature list, and a number of intermediate states to insert for the temperature list, this function calculates and plots the heat capacity profile.</span>
+<span class="sd">    </span>
+<span class="sd">    :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data, default = &quot;output/output.nc&quot;                                                                                            </span>
+<span class="sd">    :type output_data: str</span>
+<span class="sd">                             </span>
+<span class="sd">    :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)</span>
+<span class="sd">    :type frame_begin: int</span>
+<span class="sd">    </span>
+<span class="sd">    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData</span>
+<span class="sd">    :type sample_spacing: int                         </span>
+
+<span class="sd">    :param temperature_list: List of temperatures for which to perform replica exchange simulations, default = None</span>
+<span class="sd">    :type temperature: List( float * simtk.unit.temperature )</span>
+<span class="sd">    </span>
+<span class="sd">    :param num_intermediate_states: The number of states to insert between existing states in &#39;temperature_list&#39;</span>
+<span class="sd">    :type num_intermediate_states: int</span>
+
+<span class="sd">    :param frac_dT: The fraction difference between temperatures points used to calculate finite difference derivatives.</span>
+<span class="sd">    :type num_intermediate_states: float</span>
+
+<span class="sd">    :returns:</span>
+<span class="sd">          - C_v ( List( float ) ) - The heat capacity values for all (including inserted intermediates) states</span>
+<span class="sd">          - dC_v ( List( float ) ) - The uncertainty in the heat capacity values for intermediate states</span>
+<span class="sd">          - new_temp_list ( List( float * unit.simtk.temperature ) ) - The temperature list corresponding to the heat capacity values in &#39;C_v&#39;</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="c1"># extract reduced energies and the state indices from the .nc  </span>
+    <span class="n">reporter</span> <span class="o">=</span> <span class="n">MultiStateReporter</span><span class="p">(</span><span class="n">output_data</span><span class="p">,</span> <span class="n">open_mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+    <span class="n">analyzer</span> <span class="o">=</span> <span class="n">ReplicaExchangeAnalyzer</span><span class="p">(</span><span class="n">reporter</span><span class="p">)</span>
+    <span class="p">(</span>
+        <span class="n">replica_energies_all</span><span class="p">,</span>
+        <span class="n">unsampled_state_energies</span><span class="p">,</span>
+        <span class="n">neighborhoods</span><span class="p">,</span>
+        <span class="n">replica_state_indices</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">=</span> <span class="n">analyzer</span><span class="o">.</span><span class="n">read_energies</span><span class="p">()</span>
+    
+    <span class="c1"># Select production frames to analyze</span>
+    <span class="n">replica_energies</span> <span class="o">=</span> <span class="n">replica_energies_all</span><span class="p">[:,:,</span><span class="n">frame_begin</span><span class="p">::</span><span class="n">sample_spacing</span><span class="p">]</span>
+    
+    <span class="c1"># determine the numerical values of beta at each state in units consistent with the temperature</span>
+    <span class="n">Tunit</span> <span class="o">=</span> <span class="n">temperature_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span>
+    <span class="n">temps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">temp</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">Tunit</span><span class="p">)</span>  <span class="k">for</span> <span class="n">temp</span> <span class="ow">in</span> <span class="n">temperature_list</span><span class="p">])</span>  <span class="c1"># should this just be array to begin with</span>
+    <span class="n">beta_k</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">kB</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">unit</span><span class="o">.</span><span class="n">kilojoule_per_mole</span><span class="o">/</span><span class="n">Tunit</span><span class="p">)</span> <span class="o">*</span> <span class="n">temps</span><span class="p">)</span>
+
+    <span class="c1"># convert the energies from replica/evaluated state/sample form to evaluated state/sample form</span>
+    <span class="n">replica_energies</span> <span class="o">=</span> <span class="n">pymbar</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">kln_to_kn</span><span class="p">(</span><span class="n">replica_energies</span><span class="p">)</span>
+    
+    <span class="n">n_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">replica_energies</span><span class="p">[</span><span class="mi">0</span><span class="p">,:])</span>
+    
+    <span class="c1"># calculate the number of states we need expectations at.  We want it at all of the original</span>
+    <span class="c1"># temperatures, each intermediate temperature, and then temperatures +/- from the original</span>
+    <span class="c1"># to take finite derivatives.</span>
+
+    <span class="c1"># create  an array for the temperature and energy for each state, including the</span>
+    <span class="c1"># finite different state.</span>
+    <span class="n">num_sampled_T</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">temps</span><span class="p">)</span>
+    <span class="n">n_unsampled_states</span> <span class="o">=</span> <span class="mi">3</span><span class="o">*</span><span class="p">(</span><span class="n">num_sampled_T</span> <span class="o">+</span> <span class="p">(</span><span class="n">num_sampled_T</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">num_intermediate_states</span><span class="p">)</span>
+    <span class="n">unsampled_state_energies</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">n_unsampled_states</span><span class="p">,</span><span class="n">n_samples</span><span class="p">])</span>
+    <span class="n">full_T_list</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_unsampled_states</span><span class="p">)</span>
+
+    <span class="c1"># delta is the spacing between temperatures.</span>
+    <span class="n">delta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_sampled_T</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># fill in a list of temperatures at all original temperatures and all intermediate states.</span>
+    <span class="n">full_T_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">temps</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  
+    <span class="n">t</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_sampled_T</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">delta</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">temps</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">temps</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">/</span><span class="p">(</span><span class="n">num_intermediate_states</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_intermediate_states</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">full_T_list</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">temps</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">delta</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">j</span>
+            <span class="n">t</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">full_T_list</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">temps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">n_T_vals</span> <span class="o">=</span> <span class="n">t</span><span class="o">+</span><span class="mi">1</span>
+
+    <span class="c1"># add additional states for finite difference calculation and the requested spacing/    </span>
+    <span class="n">full_T_list</span><span class="p">[</span><span class="n">n_T_vals</span><span class="p">]</span> <span class="o">=</span> <span class="n">full_T_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">delta</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">frac_dT</span>
+    <span class="n">full_T_list</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">n_T_vals</span><span class="p">]</span> <span class="o">=</span> <span class="n">full_T_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">delta</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">frac_dT</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">n_T_vals</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">ii</span> <span class="o">=</span> <span class="n">i</span><span class="o">//</span><span class="p">(</span><span class="n">num_intermediate_states</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">full_T_list</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="n">n_T_vals</span><span class="p">]</span> <span class="o">=</span> <span class="n">full_T_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">delta</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span><span class="o">*</span><span class="n">frac_dT</span>
+        <span class="n">full_T_list</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">n_T_vals</span><span class="p">]</span> <span class="o">=</span> <span class="n">full_T_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">delta</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span><span class="o">*</span><span class="n">frac_dT</span>
+    <span class="n">full_T_list</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">n_T_vals</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">full_T_list</span><span class="p">[</span><span class="n">n_T_vals</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">delta</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">frac_dT</span>
+    <span class="n">full_T_list</span><span class="p">[</span><span class="mi">3</span><span class="o">*</span><span class="n">n_T_vals</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">full_T_list</span><span class="p">[</span><span class="n">n_T_vals</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">delta</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">frac_dT</span>        
+
+    <span class="c1"># calculate betas of all of these temperatures</span>
+    <span class="n">beta_full_k</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">kB</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">unit</span><span class="o">.</span><span class="n">kilojoule_per_mole</span><span class="o">/</span><span class="n">Tunit</span><span class="p">)</span> <span class="o">*</span> <span class="n">full_T_list</span><span class="p">)</span>
+    
+    <span class="n">ti</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">N_k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_unsampled_states</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_unsampled_states</span><span class="p">):</span>
+        <span class="c1"># Calculate the reduced energies at all temperatures, sampled and unsample.</span>
+        <span class="n">unsampled_state_energies</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">replica_energies</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span><span class="o">*</span><span class="p">(</span><span class="n">beta_full_k</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">/</span><span class="n">beta_k</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">ti</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">temps</span><span class="p">):</span>
+            <span class="c1"># store in N_k which states do and don&#39;t have samples.</span>
+            <span class="k">if</span> <span class="n">full_T_list</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">==</span> <span class="n">temps</span><span class="p">[</span><span class="n">ti</span><span class="p">]:</span>
+                <span class="n">ti</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">N_k</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">n_samples</span><span class="o">//</span><span class="nb">len</span><span class="p">(</span><span class="n">temps</span><span class="p">)</span>  <span class="c1"># these are the states that have samples</span>
+
+    <span class="c1"># call MBAR to find weights at all states, sampled and unsampled</span>
+    <span class="n">mbarT</span> <span class="o">=</span> <span class="n">pymbar</span><span class="o">.</span><span class="n">MBAR</span><span class="p">(</span><span class="n">unsampled_state_energies</span><span class="p">,</span><span class="n">N_k</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">relative_tolerance</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">);</span>
+
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_unsampled_states</span><span class="p">):</span>
+        <span class="c1"># get the &#39;unreduced&#39; potential -- we can&#39;t take differences of reduced potentials</span>
+        <span class="c1"># because the beta is different; math is much more confusing with derivatives of the reduced potentials.</span>
+        <span class="n">unsampled_state_energies</span><span class="p">[</span><span class="n">k</span><span class="p">,</span> <span class="p">:]</span> <span class="o">/=</span> <span class="n">beta_full_k</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
+    <span class="c1"># we don&#39;t actually need these expectations, but this code can be used to validate</span>
+    <span class="c1">#results = mbarT.computeExpectations(unsampled_state_energies, state_dependent=True)</span>
+    <span class="c1">#E_expect = results[0]</span>
+    <span class="c1">#dE_expect = results[1]</span>
+    
+    <span class="c1"># expectations for the differences between states, which we need for numerical derivatives                                               </span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">mbarT</span><span class="o">.</span><span class="n">computeExpectations</span><span class="p">(</span><span class="n">unsampled_state_energies</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s2">&quot;differences&quot;</span><span class="p">,</span> <span class="n">state_dependent</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">DeltaE_expect</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">dDeltaE_expect</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="c1"># Now calculate heat capacity (with uncertainties) using the finite difference approach. </span>
+    <span class="n">Cv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_T_vals</span><span class="p">)</span>
+    <span class="n">dCv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_T_vals</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_T_vals</span><span class="p">):</span>
+        <span class="n">im</span> <span class="o">=</span> <span class="n">k</span><span class="o">+</span><span class="n">n_T_vals</span>  <span class="c1"># +/- delta up and down.</span>
+        <span class="n">ip</span> <span class="o">=</span> <span class="n">k</span><span class="o">+</span><span class="mi">2</span><span class="o">*</span><span class="n">n_T_vals</span>
+        <span class="n">Cv</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">DeltaE_expect</span><span class="p">[</span><span class="n">im</span><span class="p">,</span> <span class="n">ip</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="n">full_T_list</span><span class="p">[</span><span class="n">ip</span><span class="p">]</span> <span class="o">-</span> <span class="n">full_T_list</span><span class="p">[</span><span class="n">im</span><span class="p">])</span>
+        <span class="n">dCv</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">dDeltaE_expect</span><span class="p">[</span><span class="n">im</span><span class="p">,</span> <span class="n">ip</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="n">full_T_list</span><span class="p">[</span><span class="n">ip</span><span class="p">]</span> <span class="o">-</span> <span class="n">full_T_list</span><span class="p">[</span><span class="n">im</span><span class="p">])</span>
+
+    <span class="c1"># add units so the plot has the right units.  </span>
+    <span class="n">Cv</span> <span class="o">*=</span> <span class="n">unit</span><span class="o">.</span><span class="n">kilojoule_per_mole</span> <span class="o">/</span> <span class="n">Tunit</span> <span class="c1"># always kJ/mol, since the OpenMM output is in kJ/mol.</span>
+    <span class="n">dCv</span> <span class="o">*=</span> <span class="n">unit</span><span class="o">.</span><span class="n">kilojoule_per_mole</span> <span class="o">/</span> <span class="n">Tunit</span>
+    <span class="n">full_T_list</span> <span class="o">*=</span> <span class="n">Tunit</span>
+
+    <span class="c1"># plot and return the heat capacity (with units)</span>
+    <span class="k">if</span> <span class="n">plot_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">plot_heat_capacity</span><span class="p">(</span><span class="n">Cv</span><span class="p">,</span> <span class="n">dCv</span><span class="p">,</span> <span class="n">full_T_list</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">n_T_vals</span><span class="p">],</span><span class="n">file_name</span><span class="o">=</span><span class="n">plot_file</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">Cv</span><span class="p">,</span> <span class="n">dCv</span><span class="p">,</span> <span class="n">full_T_list</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">n_T_vals</span><span class="p">])</span></div>
+
+
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Shirts Group. Project structure based on the Computational Molecular Science Python Cookiecutter version 1.3
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

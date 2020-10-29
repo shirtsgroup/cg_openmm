@@ -1,0 +1,272 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>cg_openmm.build.cg_build &mdash; cg_openmm  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="cg_openmm.cg_model.cgmodel" href="cg_openmm.cg_model.cgmodel.html" />
+    <link rel="prev" title="API Documentation" href="../api.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> cg_openmm
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Introduction:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting Started</a></li>
+</ul>
+<p class="caption"><span class="caption-text">CGModel class:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../cgmodel_class.html">CGModel class</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API documentation:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Documentation</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">cg_openmm.build.cg_build</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cg_openmm.cg_model.cgmodel.html">cg_openmm.cg_model.cgmodel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cg_openmm.ensembles.ens_build.html">cg_openmm.ensembles.ens_build</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cg_openmm.parameters.free_energy.html">cg_openmm.parameters.free_energy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cg_openmm.parameters.optimize.html">cg_openmm.parameters.optimize</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cg_openmm.parameters.reweight.html">cg_openmm.parameters.reweight</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cg_openmm.parameters.secondary_structure.html">cg_openmm.parameters.secondary_structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cg_openmm.simulation.physical_validation.html">cg_openmm.simulation.physical_validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cg_openmm.simulation.rep_exch.html">cg_openmm.simulation.rep_exch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cg_openmm.simulation.tools.html">cg_openmm.simulation.tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cg_openmm.thermo.calc.html">cg_openmm.thermo.calc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cg_openmm.utilities.iotools.html">cg_openmm.utilities.iotools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cg_openmm.utilities.random_builder.html">cg_openmm.utilities.random_builder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cg_openmm.utilities.util.html">cg_openmm.utilities.util</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">cg_openmm</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../api.html">API Documentation</a> &raquo;</li>
+        
+      <li>cg_openmm.build.cg_build</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/autosummary/cg_openmm.build.cg_build.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-cg_openmm.build.cg_build">
+<span id="cg-openmm-build-cg-build"></span><h1>cg_openmm.build.cg_build<a class="headerlink" href="#module-cg_openmm.build.cg_build" title="Permalink to this headline">¶</a></h1>
+<p class="rubric">Functions</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_force</span></code>(cgmodel[, force_type, …])</p></td>
+<td><p>Given a ‘cgmodel’ and ‘force_type’ as input, this function adds the OpenMM force corresponding to ‘force_type’ to ‘cgmodel.system’.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_new_elements</span></code>(cgmodel)</p></td>
+<td><p>Add coarse grained particle types to OpenMM.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_rosetta_exception_parameters</span></code>(cgmodel, …)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_system</span></code>(cgmodel[, …])</p></td>
+<td><p>Builds an OpenMM <a class="reference external" href="https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1System.html">System()</a> object, given a CGModel() as input.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_topology</span></code>(cgmodel[, use_pdbfile, pdbfile])</p></td>
+<td><p>Construct an OpenMM <a class="reference external" href="https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1topology_1_1Topology.html">Topology()</a> class object for our coarse grained model,</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_force</span></code>(cgmodel, force[, force_type])</p></td>
+<td><p>Given an OpenMM <a class="reference external" href="https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1Force.html">Force()</a>, this function determines if there are any problems with its configuration.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_forces</span></code>(cgmodel)</p></td>
+<td><p>Given a cgmodel that contains positions and an an OpenMM System() object, this function tests the forces for cgmodel.system.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_num_forces</span></code>(cgmodel)</p></td>
+<td><p>Given a CGModel() class object, this function determines how many forces we are including when evaluating the energy.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">verify_system</span></code>(cgmodel)</p></td>
+<td><p><p>Given a CGModel() class object, this function confirms that its OpenMM <a class="reference external" href="https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1System.html">System()</a> object is configured correctly.</p>
+</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">verify_topology</span></code>(cgmodel)</p></td>
+<td><p>Given a coarse grained model that contains a Topology() (cgmodel.topology), this function verifies the validity of the topology.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_xml_file</span></code>(cgmodel, xml_file_name)</p></td>
+<td><p>Write an XML-formatted forcefield file for a coarse grained model.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="cg_openmm.cg_model.cgmodel.html" class="btn btn-neutral float-right" title="cg_openmm.cg_model.cgmodel" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../api.html" class="btn btn-neutral float-left" title="API Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Shirts Group. Project structure based on the Computational Molecular Science Python Cookiecutter version 1.3
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
