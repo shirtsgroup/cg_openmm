@@ -144,27 +144,23 @@ def get_heat_capacity_derivative(Cv, temperature_list, plotfile='dCv_dT.pdf'):
     return dCv_out, d2Cv_out, spline_tck
         
 
-def get_heat_capacity(temperature_list, frame_begin=0, sample_spacing=1, output_data="output/output.nc", num_intermediate_states=0,frac_dT=0.05, plot_file=None):
+def get_heat_capacity(frame_begin=0, sample_spacing=1, output_data="output/output.nc", num_intermediate_states=0,frac_dT=0.05, plot_file=None):
     """
-
-    Given a .nc output, a temperature list, and a number of intermediate states to insert for the temperature list, this function calculates and plots the heat capacity profile.
-    
-    :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data, default = "output/output.nc"                                                                                            
-    :type output_data: str
+    Given a .nc output and a number of intermediate states to insert for the temperature list, this function calculates and plots the heat capacity profile.
                              
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
     :type frame_begin: int
     
-    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData
-    :type sample_spacing: int                         
+    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData (default=1)
+    :type sample_spacing: int  
 
-    :param temperature_list: List of temperatures for which to perform replica exchange simulations, default = None
-    :type temperature: List( float * simtk.unit.temperature )
+    :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data (default = "output/output.nc")                                                                                          
+    :type output_data: str    
     
-    :param num_intermediate_states: The number of states to insert between existing states in 'temperature_list'
+    :param num_intermediate_states: The number of states to insert between existing states in 'temperature_list' (default=0)
     :type num_intermediate_states: int
 
-    :param frac_dT: The fraction difference between temperatures points used to calculate finite difference derivatives.
+    :param frac_dT: The fraction difference between temperatures points used to calculate finite difference derivatives (default=0.05)
     :type num_intermediate_states: float
 
     :returns:
@@ -172,7 +168,7 @@ def get_heat_capacity(temperature_list, frame_begin=0, sample_spacing=1, output_
           - dC_v ( List( float ) ) - The uncertainty in the heat capacity values for intermediate states
           - new_temp_list ( List( float * unit.simtk.temperature ) ) - The temperature list corresponding to the heat capacity values in 'C_v'
 
-        """
+    """
 
     # extract reduced energies and the state indices from the .nc  
     reporter = MultiStateReporter(output_data, open_mode="r")
@@ -186,6 +182,13 @@ def get_heat_capacity(temperature_list, frame_begin=0, sample_spacing=1, output_
     
     # Select production frames to analyze
     replica_energies = replica_energies_all[:,:,frame_begin::sample_spacing]
+    
+    # Get the temperature list from .nc file:
+    states = reporter.read_thermodynamic_states()[0]
+    
+    temperature_list = []
+    for s in states:
+        temperature_list.append(s.temperature)
     
     # determine the numerical values of beta at each state in units consistent with the temperature
     Tunit = temperature_list[0].unit

@@ -642,7 +642,14 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
 
         if len(cgmodel.bond_list) >= 1:
             if not rosetta_functional_form:
-                nonbonded_force.createExceptionsFromBonds(cgmodel.bond_list, 1.0, 1.0)
+                # This should not be applied if there are no angle forces.
+                if cgmodel.include_bond_angle_forces:
+                    nonbonded_force.createExceptionsFromBonds(cgmodel.bond_list, 1.0, 1.0)
+                else:
+                    # Just remove the 1-2 nonbonded interactions.
+                    # If charge product and epsilon are 0, the interaction is omitted.
+                    for bond in cgmodel.bond_list:
+                        nonbonded_force.addException(bond[0], bond[1], 0.0, 1.0, 0.0)
             if rosetta_functional_form:
                 # Remove i+3 interactions
                 nonbonded_force.createExceptionsFromBonds(cgmodel.bond_list, 0.0, 0.0)
