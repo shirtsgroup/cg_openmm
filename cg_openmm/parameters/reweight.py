@@ -145,35 +145,6 @@ def get_free_energy_differences(mbar):
     return (df_ij, ddf_ij)
 
 
-def calc_temperature_spacing(min_temp, max_temp, num_replicas, replica_index):
-    """
-        Given the parameters to define a temperature range as input, as well as the current temperature index, this function uses logarithmic scaling to calculate the temperature spacing.
-
-        :param min_temp: The minimum temperature in the temperature list.
-        :type min_temp: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
-
-        :param max_temp: The maximum temperature in the temperature list.
-        :type max_temp: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
-
-        :param num_replicas: The number of temperatures in the list.
-        :type num_replicas: int
-
-        :param replica_index: The index for the current temperature of interest.
-        :type replica_index: int
-
-        :returns:
-          - delta ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The spacing to use when assigning the next temperature value.
-        """
-    T_replica_index = min_temp * exp(
-        replica_index * log(max_temp._value / min_temp._value) / (num_replicas - 1)
-    )
-    T_previous_index = min_temp * exp(
-        (replica_index - 1) * log(max_temp._value / min_temp._value) / (num_replicas - 1)
-    )
-    delta = T_replica_index - T_previous_index
-    return delta
-
-
 def get_temperature_list(min_temp, max_temp, num_replicas):
     """
         Given the parameters to define a temperature range as input, this function uses logarithmic spacing to generate a list of intermediate temperatures.
@@ -188,17 +159,21 @@ def get_temperature_list(min_temp, max_temp, num_replicas):
         :type num_replicas: int
 
         :returns:
-           - temperature_list ( List( float * simtk.unit.temperature ) ) - List of temperatures
+           - temperature_list ( 1D numpy array ( float * simtk.unit.temperature ) ) - List of temperatures
 
-        """
-    temperature_list = []
-    temperature_list.append(min_temp)
-    replica_index = 1
-    for i in range(1,num_replicas):
-        delta = calc_temperature_spacing(min_temp, max_temp, num_replicas, replica_index)
-        temperature = temperature_list[-1] + delta
-        temperature_list.append(temperature)
-        replica_index += 1
+    """
+    
+    T_unit = min_temp.unit
+    
+    temperature_list = np.logspace(
+        np.log10(min_temp.value_in_unit(T_unit)),
+        np.log10(max_temp.value_in_unit(T_unit)),
+        num=num_replicas
+        )
+        
+    # Reassign units:
+    temperature_list *= T_unit
+    
     return temperature_list
 
 
