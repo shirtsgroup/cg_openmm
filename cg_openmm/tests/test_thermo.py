@@ -21,14 +21,12 @@ def test_heat_capacity_calc(tmpdir):
     plot_directory = tmpdir.mkdir("plot_output")
     output_data = os.path.join(data_path, "output.nc")
     
-    number_replicas=12
-    min_temp = 200.0 * unit.kelvin
-    max_temp = 300.0 * unit.kelvin
-    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)  
+    # number_replicas=12
+    # min_temp = 200.0 * unit.kelvin
+    # max_temp = 300.0 * unit.kelvin
     
     # 1) With default starting frame (0)
     C_v, dC_v, new_temperature_list = get_heat_capacity(
-        temperature_list, 
         output_data=output_data,
         num_intermediate_states=2,
         plot_file=f"{plot_directory}/heat_capacity.pdf"
@@ -38,7 +36,6 @@ def test_heat_capacity_calc(tmpdir):
     
     # 2) With a non-default starting frame:
     C_v, dC_v, new_temperature_list = get_heat_capacity(
-        temperature_list,
         frame_begin=2,
         output_data=output_data,
         num_intermediate_states=2,
