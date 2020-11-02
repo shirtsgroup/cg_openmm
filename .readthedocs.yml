@@ -1,0 +1,9 @@
+# .readthedocs.yml
+
+version: 0
+
+build:
+  image: latest
+
+conda:
+  environment: docs/doc_env.yaml

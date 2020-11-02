@@ -1,0 +1,29 @@
+name: documentation
+channels:
+  - conda-forge
+  - omnia
+  - defaults
+dependencies:
+  - matplotlib-base
+  - mdtraj=1.9.4
+  - mpi4py=3.0.3
+  - numpy=1.18.5
+  - openmm=7.4.2
+  - openmmtools=0.19.0
+  - pickleshare
+  - pip
+  - pymbar=3.0.5
+  - pytest
+  - pytest-cov
+  - python
+  - pyyaml
+  - scikit-learn=0.23.1
+  - scipy=1.4.1
+  - yaml
+
+  # Pip-only installs
+  - pip:
+    - codecov
+    - git+https://github.com/shirtsgroup/physical-validation.git
+    - git+https://github.com/shirtsgroup/analyze_foldamers.git
+
