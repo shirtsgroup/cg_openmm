@@ -420,25 +420,25 @@ def plot_simulation_data(simulation_times, y_data, plot_type=None, output_direct
 
     """
     figure = pyplot.figure(1)
-    pyplot.xlabel("Simulation Time (Picoseconds)")
+    pyplot.xlabel("Simulation Time (ps)")
     if plot_type == "Potential Energy":
-        file_name = "Potential_Energy.png"
-        pyplot.ylabel("Potential Energy (kJ/mole)")
+        file_name = "Potential_Energy.pdf"
+        pyplot.ylabel("Potential Energy (kJ/mol)")
         pyplot.title("Simulation Potential Energy")
-    pyplot.xlabel("Simulation Time (Picoseconds)")
+
     if plot_type == "Kinetic Energy":
-        file_name = "Kinetic_Energy.png"
-        pyplot.ylabel("Kinetic Energy (kJ/mole)")
+        file_name = "Kinetic_Energy.pdf"
+        pyplot.ylabel("Kinetic Energy (kJ/mol)")
         pyplot.title("Simulation Kinetic Energy")
-    pyplot.xlabel("Simulation Time (Picoseconds)")
+
     if plot_type == "Total Energy":
-        file_name = "Total_Energy.png"
-        pyplot.ylabel("Total Energy (kJ/mole)")
+        file_name = "Total_Energy.pdf"
+        pyplot.ylabel("Total Energy (kJ/mol)")
         pyplot.title("Simulation Total Energy")
-    pyplot.xlabel("Simulation Time (Picoseconds)")
+
     if plot_type == "Temperature":
-        file_name = "Temperature.png"
-        pyplot.ylabel("Temperature (Kelvin)")
+        file_name = "Temperature.pdf"
+        pyplot.ylabel("Temperature (K)")
         pyplot.title("Simulation Temperature")
 
     pyplot.plot(simulation_times, y_data)
