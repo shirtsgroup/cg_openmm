@@ -10,48 +10,92 @@ import pickle
 
 class CGModel(object):
     """
+    Coarse-grained model class object containing:
+    
+        - particle and residue definitions
+        - monomer sequence
+        - bonded force field parameters
+        - nonbonded force field parameters
+        - initial particle positions
+    
+    :Example::
+    .. code-block:: python
+    
+        from simtk import unit
+        from cg_openmm.cg_model.cgmodel import CGModel
+        
+        # Specify backbone (bb) and sidechain (sc) particle parameters:
+        sigma = 0.3 * unit.nanometer
+        epsilon = 2 * unit.kilojoule_per_mole
+        mass = 100 * unit.amu
+        
+        bb = {"particle_type_name": "bb", "sigma": sigma, "epsilon": epsilon, "mass": mass}
+        sc = {"particle_type_name": "sc", "sigma": sigma, "epsilon": epsilon, "mass": mass}
+        
+        # Define monomer (residue):
+        A = {
+            "monomer_name": "A",
+            "particle_sequence": [bb, sc],
+            "bond_list": [[0, 1]],
+            "start": 0,
+            "end": 0}
+        
+        # Specify bonded parameters:
+        bond_lengths = {
+            "default_bond_length": 0.35 * unit.nanometer,
+            "bb_bb_bb_bond_length": 0.40 * unit.nanometer}
+            
+        bond_force_constants = {
+            "default_bond_force_constant": 1000 * unit.kilojoule_per_mole / unit.nanometer**2}
+        
+        equil_bond_angles = {
+            "default_equil_bond_angle": 120.0 * unit.degrees,
+            "bb_bb_bb_equil_bond_angle": 150.0 * unit.degrees}        
+        
+        bond_angle_force_constants = {
+            "default_bond_angle_force_constant": 100.0 * unit.kilojoule_per_mole / unit.radian**2}
 
-        Build a coarse-grained model class object.
+        equil_torsion_angles = {
+            "default_equil_torsion_angle": 150 * unit.degrees}        
+        
+        torsion_force_constants = {
+            "default_torsion_force_constant": 2.0 * unit.kilojoule_per_mole,
+            "bb_bb_bb_bb_torsion_force_constant": 5.0 * unit.kilojoule_per_mole}
 
-        :Example:
+        torsion_periodicities = {
+            "default_torsion_periodicity": 1}
 
-        >>> from foldamers.cg_model.cgmodel import CGModel
-        >>> cgmodel = CGModel()
+        # Define oligomer sequence:
+        sequence = 12 * [A]
+        
+        # Initial particle positions determined from random builder
+        
+        cgmodel = CGModel(
+            particle_type_list=[bb, sc],
+            bond_lengths=bond_lengths,
+            bond_force_constants=bond_force_constants,
+            bond_angle_force_constants=bond_angle_force_constants,
+            torsion_force_constants=torsion_force_constants,
+            equil_bond_angles=equil_bond_angles,
+            equil_torsion_angles=equil_torsion_angles,
+            torsion_periodicities=torsion_periodicities,
+            include_nonbonded_forces=True,
+            include_bond_forces=True,
+            include_bond_angle_forces=True,
+            include_torsion_forces=True,
+            constrain_bonds=False,
+            sequence=sequence,
+            monomer_types=[A],
+        )
 
-        :Example:
-
-        >>> from foldamers.cg_model.cgmodel import CGModel
-        >>> from simtk import unit
-        >>> bond_length = 7.5 * unit.angstrom
-        >>> bond_lengths = {'bb_bb_bond_length': bond_length,'bb_sc_bond_length': bond_length,'sc_sc_bond_length': bond_length}
-        >>> constrain_bonds = False
-        >>> cgmodel = CGModel(bond_lengths=bond_lengths,constrain_bonds=constrain_bonds)
-
-        :Example:
-
-        >>> from foldamers.cg_model.cgmodel import CGModel
-        >>> from simtk import unit
-        >>> backbone_length=1
-        >>> sidechain_length=1
-        >>> sidechain_positions=0
-        >>> bond_length = 7.5 * unit.angstrom
-        >>> sigma = 2.0 * bond_length
-        >>> epsilon = 0.2 * unit.kilocalorie_per_mole
-        >>> sigmas = {'bb_bb_sigma': sigma,'sc_sc_sigma': sigma}
-        >>> epsilons = {'bb_bb_eps': epsilon,'bb_sc_eps': epsilon,'sc_sc_eps': epsilon}
-        >>> A = {'monomer_name': "A", 'backbone_length': backbone_length, 'sidechain_length': sidechain_length, 'sidechain_positions': sidechain_positions, 'num_beads': num_beads, 'bond_lengths': bond_lengths, 'epsilons': epsilons, 'sigmas': sigmas}
-        >>> B = {'monomer_name': "B", 'backbone_length': backbone_length, 'sidechain_length': sidechain_length, 'sidechain_positions': sidechain_positions, 'num_beads': num_beads, 'bond_lengths': bond_lengths, 'epsilons': epsilons, 'sigmas': sigmas}
-        >>> monomer_types = [A,B]
-        >>> sequence = [A,A,A,B,A,A,A,B,A,A,A,B]
-        >>> cgmodel = CGModel(monomer_types=monomer_types,sequence=sequence)
-
-        """
+    """
 
     def __init__(
         self,
-        positions=None,
         particle_type_list={},
-        charges={},
+        monomer_types=None,
+        sequence=None,
+        positions=None,
         bond_lengths={},
         bond_force_constants={},
         bond_angle_force_constants={},
@@ -59,9 +103,9 @@ class CGModel(object):
         torsion_periodicities={},
         equil_bond_angles={},
         equil_torsion_angles={},
-        constrain_bonds=True,
-        include_bond_forces=False,
+        constrain_bonds=False,
         include_nonbonded_forces=True,
+        include_bond_forces=True,
         include_bond_angle_forces=True,
         include_torsion_forces=True,
         exclusions=True,
@@ -72,95 +116,92 @@ class CGModel(object):
         system=None,
         topology=None,
         simulation=None,
-        monomer_types=None,
-        sequence=None,
-    ):
+        ):
 
         """
-          Initialize definitions for all of the properties of a coarse-grained model
+        Initialize definitions for all of the attributes of a coarse-grained model
 
-          ..warning:: A large number of default definitions are applied when constructing the CGModel object, in an effort to make intiation of the class easier.  Please review these defaults (listed below) carefully before using this class.
+        .. Note:: Default definitions are applied to force field parameters not explicitly defined.
 
-          :param positions: Positions for the particles in the coarse-grained model, default = None
-          :type positions: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit )
+        :param positions: Positions for the particles in the coarse-grained model (default = None)
+        :type positions: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [cgmodel.num_beads,3] ), simtk.unit )
 
-          :param particle list: list of all particle types, default = None
-          :type particle: list 
+        :param particle_type_list: list of all particle types (default = None)
+        :type particle_type_list: list 
 
-          :param sigmas: Non-bonded bead Lennard-Jones equilibrium interaction distances, default = None
-          :type sigmas: dict( 'bb_bb_sigma': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ,'bb_sc_sigma': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ,'sc_sc_sigma': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )
+        :param monomer_types: A list of dictionary objects containing the properties for unique monomer types used to construct a heteropolymeric coarse-grained model (default = None)
+        :type monomer_types: List( dict( 'monomer_name': str, 'backbone_length': int, 'sidechain_length': int, 'sidechain_positions': List( int ), 'num_beads': int, 'bond_lengths': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ), 'epsilons': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ), 'sigmas': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) ) )        
+        
+        :param sequence: The sequence from which to build a heteropolymer.  Defined using a list of 'monomer_types', each of which contains the properties for that monomer (default = None (Homopolymer))
+        :type sequence: List( dict( 'monomer_name': str, 'backbone_length': int, 'sidechain_length': int, 'sidechain_positions': List( int ), 'num_beads': int, 'bond_lengths': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ), 'epsilons': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ), 'sigmas': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) ) )        
+        
+        :param bond_lengths: Equilibrium bond lengths for all bond types (default = None)
+        :type bond_lengths: dict( 'type_name1_type_name2_bond_length': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )
 
-          :param epsilons: Non-bonded Lennard-Jones equilibrium interaction strengths, default = None
-          :type epsilons: dict( 'bb_bb_eps': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ,'bb_sc_eps': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ,'sc_sc_eps': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )
+        :param bond_angle_force_constants: Harmonic bond angle-bending force constants for all bond types (default = None)
+        :type bond_angle_force_constants: dict( 'type_name1_type_name2_type_name3_angle_k': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )
 
-          :param bond_lengths: Bond lengths for all bonds, default = None
-          :type bond_lengths: dict( 'bb_bb_bond_length': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ,'bb_sc_bond_length': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ,'sc_sc_bond_length': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )
+        :param bond_force_constants: Harmonic bond-stretching force constants for all bond types (default = None)
+        :type bond_force_constants: dict( 'type_name1_type_name2_bond_k': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )
 
-          :param bond_angle_force_constants: Bond angle force constants for all bond types, default = None
-          :type bond_angle_force_constants: dict( 'bb_bb__bb_angle_k': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ,'bb_bb_sc_angle_k': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ , 'bb_sc_sc_angle_k': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ , 'sc_sc_sc_angle_k': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ , 'sc_bb_sc_angle_k': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ , 'sc_sc_bb_angle_k': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )
+        :param equil_bond_angles: Equilibrium bond bending angle for all angle types (default = None)
+        :type equil_bond_angles: dict('type_name1_type_name2_type_name3_angle_0': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ))
 
-          :param bond_force_constants: Bond force constants for all bond types, default = None
-          :type bond_force_constants: dict( 'bb_bb_bond_k': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ,'bb_sc_bond_k': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ , 'sc_sc_bond_k': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )
+        :param torsion_force_constants: Torsion force constants for all torsion types (default = None)
+        :type torsion_force_constants: dict( 'type_name1_type_name2_type_name3_type_name4_torsion_k': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ))
 
-          :param equil_bond_angles: Equilibrium bond angle for all bond angle types, default = None
-          :type equil_bond_angles: dict('bb_bb_bb_angle_0': float,'bb_bb_sc_angle_0': float,'bb_sc_sc_angle_0': float,'sc_sc_sc_angle_0': float, 'sc_bb_sc_angle_0': float,'sc_sc_bb_angle_0': float )
+        :param equil_torsion_angles: Equilibrium torsion angle for all unique torsion angle definitions (default = 0)
+        :type equil_torsion_angles: dict( 'type_name1_type_name2_type_name3_type_name4_torsion_0': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) )
 
-          :param torsion_force_constants: Torsion force constants for all unique torsion definitions, default = None
-          :type torsion_force_constants: dict( 'bb_bb_bb_bb_torsion_k': float,'bb_bb_bb_sc_torsion_k': float,'bb_bb_sc_sc_torsion_k': float, 'bb_sc_sc_sc_torsion_k': float, 'sc_bb_bb_sc_torsion_k': float, 'bb_sc_sc_bb_torsion_k': float, 'sc_sc_sc_sc_torsion_k': float,  'sc_bb_bb_bb_torsion_k': float )
+        :param constrain_bonds: Option to use rigid bond constaints during a simulation of the energy for the system (default = False)
+        :type constrain_bonds: Bool
 
-          :param equil_torsion_angles: Equilibrium torsion angle for all unique torsion angle definitions, default = 0
-          :type equil_torsion_angles: dict( 'bb_bb_bb_bb_torsion_0': float,'bb_bb_bb_sc_torsion_0': float,'bb_bb_sc_sc_torsion_0': float, 'bb_sc_sc_sc_torsion_0': float, 'sc_bb_bb_sc_torsion_0': float, 'bb_sc_sc_bb_torsion_0': float, 'sc_sc_sc_sc_torsion_0': float, 'sc_bb_bb_bb_torsion_0': float )
+        :param include_bond_forces: Include bond stretching potentials when calculating the potential energy (default = True)
+        :type include_bond_forces: Bool
 
-          :param charges: Charges for all particles, default = None
-          :type charges: dict( 'backbone_bead_charges': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ,'sidechain_bead_charges': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ )
+        :param include_nonbonded_forces: Include nonbonded interactions when calculating the potential energy (default = True)
+        :type include_nonbonded_forces: Bool
 
-          :param system: OpenMM System() object, which stores the forces for the coarse grained model, default = None
-          :type system: `System() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1System.html>`_
+        :param include_bond_angle_forces: Include contributions from bond angle forces when calculating the potential energy (default = True)
+        :type include_bond_angle_forces: Bool
 
-          :param topology: OpenMM Topology() object, which stores bonds, angles, and other structural attributes of the coarse-grained model, default = None
-          :type topology: `Topology() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1topology_1_1Topology.html>`_
+        :param include_torsion_forces: Include contributions from torsions when calculating the potential energy (default = True)
+        :type include_torsion_forces: Bool
+        
+        :param exclusions: ???
+        :type exclusions: Bool
+        
+        :param rosetta_functional_form: Option to use nonbonded exclusions consistent with Rosetta
+        :type rosetta_functional_form: Bool
 
-          :param constrain_bonds: Logical variable determining whether bond constraints are applied during a simulation of the energy for the system, default = True
-          :type constrain_bonds: Logical
+        :param check_energy_conservation: Flag designating whether or not to perform a test OpenMM simulation with this coarse-grained model (default = True).
+        :type check_energy_conservation: Bool
 
-          :param include_bond_forces: Include contributions from bond potentials when calculating the potential energy, default = False
-          :type include_bond_forces: Logical
+        :param use_structure_library: Flag designating whether or not to use a structure from the foldamers ensemble as the initial positions for the particles in the coarse-grained model (default = False)
+        :type use_structure_library: Bool
 
-          :param include_nonbonded_forces: Include contributions from nonbonded interactions when calculating the potential energy, default = True
-          :type include_nonbonded_forces: Logical
+        :param backbone_lengths: List of the number of beads in the backbone for unique monomer types within the coarse grained model (default = 1)
+        :type backbone_lengths: int
 
-          :param include_bond_angle_forces: Include contributions from bond angle forces when calculating the potential energy, default = True
-          :type include_bond_angle_forces: Logical
+        :param sidechain_lengths: List of the number of beads in the sidechain for unique monomer types within the coarse grained model (default = 1)
+        :type sidechain_lengths: int
 
-          :param include_torsion_forces: Include contributions from torsions when calculating the potential energy, default = True
-          :type include_torsion_forces: Logical
+        :param sidechain_positions: List of the indices of backbone beads upon which we will place sidechains, default = [0] (add a sidechain to the first backbone bead in each monomer)
+        :type sidechain_positions: List( int )
 
-          :param check_energy_conservation: Flag designating whether or not to perform a test OpenMM simulation with this coarse-grained model.
-          :type check_energy_conservation: Logical
+        :param random_positions: Flag designating whether or not to generate a set of random coordinates for the coarse-grained model (default = None)
+        :type random_positions: Bool
+        
+        :param system: OpenMM System() object, which stores the forces for the coarse grained model (default = None)
+        :type system: `System() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1openmm_1_1System.html>`_
 
-          :param use_structure_library: Flag designating whether or not to use a structure from the foldamers ensemble as the initial positions for the particles in the coarse-grained model, default = False
-          :type use_structure_library: Logical
+        :param topology: OpenMM Topology() object, which stores bonds, angles, and torsions coarse-grained model (default = None)
+        :type topology: `Topology() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1topology_1_1Topology.html>`_
+        
+        :param simulation: OpenMM Simulation() object (default = None)
+        :type simulation: `Simulation() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1simulation_1_1Simulation.html>`_        
 
-          :param monomer_types: A list of dictionary objects containing the properties for unique monomer types (used to construct a heteropolymeric coarse-grained model, default = None
-          :type monomer_types: List( dict( 'monomer_name': str, 'backbone_length': int, 'sidechain_length': int, 'sidechain_positions': List( int ), 'num_beads': int, 'bond_lengths': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ), 'epsilons': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ), 'sigmas': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) ) )
-
-          :param backbone_lengths: List of the number of beads in the backbone for unique monomer types within the coarse grained model, default = 1
-          :type backbone_lengths: int
-
-          :param sidechain_lengths: List of the number of beads in the sidechain for unique monomer types within the coarse grained model, default = 1
-          :type sidechain_lengths: int
-
-          :param sidechain_positions: List of the indices of backbone beads upon which we will place sidechains, default = [0] (add a sidechain to the first backbone bead in each monomer)
-          :type sidechain_positions: List( integer )
-
-
-          :param sequence: The sequence from which to build a heteropolymer.  Defined using a list of 'monomer_types', each of which contains the properties for that monomer, default = None (Homopolymer)
-          :type sequence: List( dict( 'monomer_name': str, 'backbone_length': int, 'sidechain_length': int, 'sidechain_positions': List( int ), 'num_beads': int, 'bond_lengths': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ), 'epsilons': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ), 'sigmas': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) ) )
-
-          :param random_positions: Flag designating whether or not to generate a set of random coordinates for the coarse-grained model, default = None
-
-
-          """
+        """
 
         # define some default units
         self.default_mass = 72 * unit.amu  # from martini 3.0 C1
@@ -177,9 +218,7 @@ class CGModel(object):
         self.default_charge = 0.0 * unit.elementary_charge
         self.default_periodicity = 1
 
-        """
-        Initialize user-defined input.
-        """
+        # Initialize user-defined input:
 
         # Assign forces based upon input flags
         self.rosetta_functional_form = rosetta_functional_form
@@ -236,17 +275,19 @@ class CGModel(object):
         else:
             self.system = system
 
+            
     def export(self, filename):
         """
-        export to a pickle file.
+        Export a cgmodel to a pickle file.
 
-        :param filename: filename for exporting the cgmodel
-        :type CGModel: str
+        :param filename: filename for exported cgmodel
+        :type filename: str
         """
 
         pickle_out = open(filename, "wb")
         pickle.dump(self, pickle_out)
         pickle_out.close()
+        
 
     def _validate_bonded_forces(self):
 
@@ -325,6 +366,7 @@ class CGModel(object):
                             f"Warning: force term '{force}' does not have proper suffix of {default_suffix}"
                         )
                         exit()
+                        
 
     def _validate_particle_type_list(self, particle_type_list):
         """
@@ -372,10 +414,18 @@ class CGModel(object):
 
         return particle_type_list
 
+        
     def build_polymer(self, sequence):
         """
-          Used to build a polymer, or reset the properties for a polymer after parameters such as the polymer_length or sequence have been modified.
-          """
+        Used to build a polymer, or reset the properties for a polymer after parameters such as the polymer_length or sequence have been modified.
+        
+        :param sequence: The sequence from which to build a heteropolymer.  Defined using a list of 'monomer_types', each of which contains the properties for that monomer (default = None (Homopolymer))
+        :type sequence: List( dict( 'monomer_name': str, 'backbone_length': int, 'sidechain_length': int, 'sidechain_positions': List( int ), 'num_beads': int, 'bond_lengths': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ), 'epsilons': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ), 'sigmas': List( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) ) )        
+        
+        :returns:
+           - self.nonbonded_interaction_list ( List( List( int, int ) ) ) - A list of the nonbonded interactions (which don't violate exclusion rules) in the coarse-grained model
+        """
+        
         self.polymer_length = len(sequence)
         self.sequence = sequence
         self.process_monomer_types()
@@ -398,15 +448,12 @@ class CGModel(object):
             self.nonbonded_exclusion_list = []
 
         self.nonbonded_interaction_list = self.get_nonbonded_interaction_list()
+        
 
     def process_monomer_types(self):
         """
-          Clean up a list of 'monomer_types' for all unique monomers.
-
-          :param CGModel: CGModel() class object
-          :type CGModel: class
-
-          """
+        Clean up a list of 'monomer_types' for all unique monomers.
+        """
 
         for monomer in self.monomer_types:
             if monomer["monomer_name"] is None:
@@ -464,34 +511,30 @@ class CGModel(object):
                 print(f"Error: particle {i} in monomer {mm} has no bonds.")
                 exit()
 
+                
     def get_num_beads(self):
         """
-          Calculate the number of beads in a coarse-grained model class object
+        Calculate the number of beads in a coarse-grained model class object
 
-          :param CGModel: CGModel() class object
-          :type CGModel: class
+        :returns: 
+           - num_beads (int) - The total number of beads in the coarse-grained model
 
-          :returns: 
-            - num_beads (int) - The total number of beads in the coarse-grained model
-
-          """
+        """
 
         num_beads = 0
         for monomer in self.sequence:
             num_beads = num_beads + monomer["num_beads"]
         return num_beads
+        
 
     def create_particle_list(self):
         """
-          Get a list of particles, where the indices correspond to those in the system/topology.
+        Get a list of particles, where the indices correspond to those in the system/topology.
 
-          :param CGModel: CGModel() class object
-          :type CGModel: class
+        :returns: 
+           - particle_list ( List( str ) ) - A list of unique particles in the coarse-grained model
 
-          :returns: 
-            - particle_list ( List( str ) ) - A list of unique particles in the coarse-grained model
-
-          """
+        """
         particle_index = 0
         particle_list = []
         for i, monomer in enumerate(self.sequence):
@@ -511,18 +554,16 @@ class CGModel(object):
                 particle_list.append(particle)
                 particle_index += 1
         return particle_list
+        
 
     def get_bond_list(self):
         """
-          Construct a bond list for the coarse-grained model
+        Construct a bond list for the coarse-grained model
 
-          :param CGModel: CGModel() class object
-          :type CGModel: class
-
-          :returns: 
-             - bond_list ( List( List( int, int ) ) ) - A list of the bonds in the coarse-grained model.
-
-          """
+        :returns: 
+           - bond_list ( List( List( int, int ) ) ) - A list of the bonds in the coarse-grained model.
+        """
+        
         bond_list = []
         bead_index = 0
         if self.include_bond_forces or self.constrain_bonds:
@@ -541,18 +582,15 @@ class CGModel(object):
                     bead_index = bead_index + 1  # increment for bookkeeping
                 bond_list += monomer_bond_list
         return bond_list
+        
 
     def get_nonbonded_interaction_list(self):
         """
-          Construct a nonbonded interaction list for the coarse-grained model
+        Construct a nonbonded interaction list for the coarse-grained model
 
-          :param CGModel: CGModel() class object
-          :type CGModel: class
-
-          :returns: 
-             - interaction_list ( List( List( int, int ) ) ) - A list of the nonbonded interactions (which don't violate exclusion rules) in the coarse-grained model
-
-          """
+        :returns: 
+           - interaction_list ( List( List( int, int ) ) ) - A list of the nonbonded interactions (which don't violate exclusion rules) in the coarse-grained model
+        """
 
         interaction_list = []
 
@@ -583,18 +621,19 @@ class CGModel(object):
                 for particle_2 in range(particle_1 + 1, self.num_beads):
                     interaction_list.append([particle_1, particle_2])
         return interaction_list
+        
 
     def get_nonbonded_exclusion_list(self, rosetta_functional_form=False):
         """
-          Get a list of the nonbonded interaction exclusions, which are assigned if two particles are separated by less than three bonds
+        Get a list of the nonbonded interaction exclusions, which are assigned if two particles are separated by less than three bonds
 
-          :param CGModel: CGModel() class object
-          :type CGModel: class
+        :param rosetta_functional_form: Option to use nonbonded exclusions consistent with Rosetta
+        :type rosetta_functional_form: Bool
 
-          :returns: 
-             - exclusion_list ( List( List( int, int ) ) ) - A list of the nonbonded particle interaction exclusions for the coarse-grained model
-
-          """
+        :returns: 
+           - exclusion_list ( List( List( int, int ) ) ) - A list of the nonbonded particle interaction exclusions for the coarse-grained model
+        """
+        
         bond_list = self.bond_list
         exclusion_list = []
 
@@ -627,18 +666,18 @@ class CGModel(object):
                     exclusion_list.append(torsion_ends)
 
         return exclusion_list
+        
 
     def get_bond_angle_list(self):
         """
-          Construct a list of bond angles, which can be used to build bond angle potentials for the coarse-grained model
+        Construct a list of bond angles, which can be used to build bond angle potentials for the coarse-grained model
 
-          :param CGModel: CGModel() class object
-          :type CGModel: class
+        :param CGModel: CGModel() class object
+        :type CGModel: class
 
-          :returns: 
-             - bond_angles ( List( List( int, int, int ) ) ) - A list of indices for all of the bond angles in the coarse-grained model
-
-          """
+        :returns: 
+           - bond_angles ( List( List( int, int, int ) ) ) - A list of indices for all of the bond angles in the coarse-grained model
+        """
 
         bond_list = self.bond_list
         bond_angles = []
@@ -677,18 +716,15 @@ class CGModel(object):
                     if len(bond_angles) == 0 and len(bond_angle) != 0:
                         bond_angles.append(bond_angle)
         return bond_angles
+        
 
     def get_torsion_list(self):  # MRS: really slow, should be looked at.
         """
-          Construct a list of particle indices from which to define torsions for the coarse-grained model
+        Construct a list of particle indices from which to define torsions for the coarse-grained model
 
-          :param CGModel: CGModel() class object
-          :type CGModel: class
-
-          :returns: 
-            - torsions ( List( List( int, int, int, int ) ) ) - A list of the particle indices for the torsions in the coarse-grained model
-
-          """
+        :returns: 
+           - torsions ( List( List( int, int, int, int ) ) ) - A list of the particle indices for the torsions in the coarse-grained model
+        """
 
         bond_list = self.bond_list
         angle_list = self.bond_angle_list
@@ -789,10 +825,20 @@ class CGModel(object):
         torsion_set = set(tuple(torsion) for torsion in torsions)
         torsions = [list(torsion) for torsion in torsion_set]
         return torsions
+        
 
     def get_particle_attribute(self, particle, attribute):
         """
-        get various attributes of a particle, given either the index or the particle dictionary
+        Get various attributes of a particle, given either the index or the particle dictionary
+        
+        :param particle: Index of the particle of interest OR particle dictionary
+        :type particle: int or dict()
+        
+        :param attribute: options are "monomer", "monomer_type", "name", "index", "type", "mass", "charge", "epsilon", "sigma", "particle_type_name"
+        :type attribute: str
+        
+        :returns:
+           - attribute of interest
 
         """
 
@@ -809,176 +855,151 @@ class CGModel(object):
             elif type(particle) == int:
                 return self.particle_list[particle]["type"][attribute]
         return
+        
 
     def get_particle_name(self, particle):
         """
-          Returns the name of a particle, given its index within the model
+        Returns the name of a particle, given its index within the model
 
-          :param CGModel: CGModel() class object
-          :type CGModel: class
+        :param particle_index: Index of the particle for which we would like to determine the type
+        :type particle_index: int
 
-          :param particle_index: Index of the particle for which we would like to determine the type
-          :type particle_index: int
-
-          :returns: 
-            - particle_name ( str ) - The name of the particle
-
-          """
+        :returns:
+           - particle_name ( str ) - The name of the particle
+        """
+        
         return self.get_particle_attribute(particle, "name")
 
+        
     def get_particle_index(self, particle):
         """
-          Returns the index of a particle, given its index within the model or the particle dictionary. Obviously,
-          kind of redundant if using the index instead of the particle dictionary
+        Returns the index of a particle, given its index within the model or the particle dictionary. Obviously,
+        kind of redundant if using the index instead of the particle dictionary
 
-          :param CGModel: CGModel() class object
-          :type CGModel: class
+        :param particle_index: Index of the particle for which we would like to determine the type
+        :type particle_index: int
 
-          :param particle_index: Index of the particle for which we would like to determine the type
-          :type particle_index: int
-
-          :returns: 
-            - particle_name ( str ) - The name of the particle
-
-          """
+        :returns: 
+           - particle_name ( str ) - The name of the particle
+        """
+        
         return self.get_particle_attribute(particle, "index")
+        
 
     def get_particle_type(self, particle):
         """
-          Gives the type of a particle (a dictionary)
+        Gives the type of a particle (a dictionary)
 
-          :param CGModel: CGModel() class object
-          :type CGModel: class
+        :param particle: Index of the particle for which we would like to determine the type OR particle dictionary
+        :type particle: int or dict()
 
-          :param particle: Index of the particle for which we would like to determine the type OR partice dictionary
-          :type particle: int or dict()
-
-          :returns: 
-             - particle_type (str):
-
-          """
+        :returns: 
+           - particle_type (str):
+        """
 
         return self.get_particle_attribute(particle, "type")
+        
 
     def get_particle_type_name(self, particle):
         """
-          Gives the type of a particle.
+        Gives the type name of a particle.
 
-          :param CGModel: CGModel() class object
-          :type CGModel: class
+        :param particle_index: Index of the particle for which we would like to determine the type name OR particle dictionary
+        :type particle_index: int or dict()
 
-          :param particle_index: Index of the particle for which we would like to determine the type OR partice dictionary
-          :type particle_index: int or dict()
-
-          :returns: 
-             - particle_type (str):
-
-          """
+        :returns: 
+           - particle_type_name (str):
+        """
 
         return self.get_particle_attribute(particle, "particle_type_name")
+        
 
     def get_particle_monomer_type(self, particle):
         """
-          Indicates which type of monomer a particle belongs to
+        Indicates which type of monomer a particle belongs to
 
-          :param CGModel: CGModel() class object
-          :type CGModel: class
+        :param particle_index: Index of the particle for which we would like to determine the monomer type
+        :type particle_index: int
 
-          :param particle_index: Index of the particle for which we would like to determine the monomer type
-          :type particle_index: int
-
-          :returns: 
-             - monomer_type (dict) : monomer type
-
-          """
+        :returns: 
+           - monomer_type (dict) : monomer type
+        """
+          
         return self.get_particle_attribute(particle, "monomer_type")
+        
 
     def get_particle_monomer(self, particle):
+        """
+        Indicates which monomer index a particle belongs to
+
+        :param particle_index: Index of the particle for which we would like to determine the monomer type
+        :type particle_index: int
+
+        :returns: 
+           - monomer_type (dict) : monomer type
 
         """
-          Indicates which monomer index a particle belongs to
-
-          :param CGModel: CGModel() class object
-          :type CGModel: class
-
-          :param particle_index: Index of the particle for which we would like to determine the monomer type
-          :type particle_index: int
-
-          :returns: 
-             - monomer_type (dict) : monomer type
-
-          """
+        
         return self.get_particle_attribute(particle, "monomer")
+        
 
     def get_particle_mass(self, particle):
         """
-          Returns the mass of a particle, given its index within the coarse-grained model or the particle dictionary
+        Returns the mass of a particle, given its index within the coarse-grained model or the particle dictionary
 
-          :param CGModel: CGModel() class object
-          :type CGModel: class
+        :param particle: Index of the particle for which we would like to determine the type, or dict()
+        :type particle: int or dict()
 
-          :param particle: Index of the particle for which we would like to determine the type, or dict()
-          :type particle: int or dict()
-
-          :returns: 
-             - epsilon ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The assigned Lennard-Jones epsilon value for the provided particle index
-
-
-          """
+        :returns: 
+           - epsilon ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The assigned Lennard-Jones epsilon value for the provided particle index
+        """
 
         return self.get_particle_attribute(particle, "mass")
+        
 
     def get_particle_charge(self, particle):
         """
-          Returns the charge for a particle, given its index within the coarse-grained model, or the dict
+        Returns the charge for a particle, given its index within the coarse-grained model, or the dict
 
-          :param CGModel: CGModel() class object
-          :type CGModel: class
+        :param particle_index: Index of the particle for which we would like to determine the type
+        :type particle_index: int
 
-          :param particle_index: Index of the particle for which we would like to determine the type
-          :type particle_index: int
+        :returns: 
+           - particle_charge ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The charge for the provided particle index
 
-          :returns: 
-            - particle_charge ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The charge for the provided particle index
-
-          """
+        """
         return self.get_particle_attribute(particle, "charge")
+        
 
     def get_particle_sigma(self, particle):
 
         """
-          Returns the Lennard-Jones potential sigma value for a particle, given the particle index
+        Returns the Lennard-Jones potential sigma value for a particle, given the particle index
 
-          :param CGModel: CGModel() class object
-          :type CGModel: class
+        :param particle_index: Index of the particle for which we would like to determine the type
+        :type particle_index: int
 
-          :param particle_index: Index of the particle for which we would like to determine the type
-          :type particle_index: int
+        :returns: 
+           - sigma ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The assigned Lennard-Jones sigma value for the provided particle index
 
-          :returns: 
-            - sigma ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The assigned Lennard-Jones sigma value for the provided particle index
-
-          """
+        """
         return self.get_particle_attribute(particle, "sigma")
+        
 
     def get_particle_epsilon(self, particle):
         """
-          Returns the Lennard-Jones potential epsilon value for a particle, given its index within the coarse-grained model.
+        Returns the Lennard-Jones epsilon value for a particle, given its index within the coarse-grained model.
 
-          :param CGModel: CGModel() class object
-          :type CGModel: class
+        :param particle_index: Index of the particle for which we would like to determine the type
+        :type particle_index: int
 
-          :param particle_index: Index of the particle for which we would like to determine the type
-          :type particle_index: int
-
-          :returns: 
-             - epsilon ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The assigned Lennard-Jones epsilon value for the provided particle index
-
-
-          """
+        :returns: 
+           - epsilon ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The assigned Lennard-Jones epsilon value for the provided particle index
+        """
 
         return self.get_particle_attribute(particle, "epsilon")
 
+        
     def _get_bonded_parameter(self, particle_types, force):
 
         """
@@ -1024,24 +1045,19 @@ class CGModel(object):
                 parameter_value = forces[string_name]
 
         return parameter_value
+        
 
     def get_bond_length(self, bond):
         """
-          Determines the correct bond length for two particles, given their indices.
+        Determines the correct bond length for two particles, given their indices.
 
-          :param CGModel: CGModel() class object
-          :type CGModel: class
+        :param bond: A list of the indices for the particles in a bond
+        :type bond: List ( int )
 
-          :param particle_1_index: Index for the first particle
-          :type particle_1_index: int
+        :returns: 
+           - bond_length ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The assigned bond length for the provided particles
 
-          :param particle_2_index: Index for the second particle
-          :type particle_2_index: int
-
-          :returns: 
-             - bond_length ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The assigned bond length for the provided particles
-
-          """
+        """
 
         particle_types = [
             self.get_particle_type_name(bond[0]),
@@ -1050,23 +1066,18 @@ class CGModel(object):
 
         return self._get_bonded_parameter(particle_types, "bond_lengths")
 
+        
     def get_bond_force_constant(self, bond):
         """
-          Determines the correct bond force constant for two particles, given their indices
+        Determines the correct bond force constant for two particles, given their indices
 
-          :param CGModel: CGModel() class object
-          :type CGModel: class
+        :param bond: A list of the indices for the particles in a bond
+        :type bond: List ( int )
+        
+        :returns: 
+           - bond_force_constant ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The assigned bond force constant for the provided particles
 
-          :param particle_1_index: Index for the first particle
-          :type particle_1_index: int
-
-          :param particle_2_index: Index for the second particle
-          :type particle_2_index: int
-
-          :returns: 
-             - bond_force_constant ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The assigned bond force constant for the provided particles
-
-          """
+        """
 
         particle_types = [
             self.get_particle_type_name(bond[0]),
@@ -1074,27 +1085,19 @@ class CGModel(object):
         ]
 
         return self._get_bonded_parameter(particle_types, "bond_force_constants")
+        
 
     def get_equil_bond_angle(self, angle):
         """
-          Determines the correct equilibrium bond angle between three particles, given their indices within the coarse-grained model
+        Determines the correct equilibrium bond angle between three particles, given their indices within the coarse-grained model
 
-          :param CGModel: CGModel() class object
-          :type CGModel: class
+        :param angle: A list of the indices for the particles in an angle
+        :type angle: List ( int )
+        
+        :returns: 
+           - equil_bond_angle (float) - The assigned equilibrium bond angle for the provided particles
 
-          :param particle_1_index: Index for the first particle
-          :type particle_1_index: int
-
-          :param particle_2_index: Index for the second particle
-          :type particle_2_index: int
-
-          :param particle_3_index: Index for the third particle
-          :type particle_3_index: int
-
-          :returns: 
-            - equil_bond_angle (float) - The assigned equilibrium bond angle for the provided particles
-
-          """
+        """
 
         particle_types = [
             self.get_particle_type_name(angle[0]),
@@ -1103,28 +1106,19 @@ class CGModel(object):
         ]
 
         return self._get_bonded_parameter(particle_types, "equil_bond_angles")
+        
 
     def get_bond_angle_force_constant(self, angle):
         """
-          Determines the correct bond angle force constant for a bond angle between three particles, given their indices within the coarse-grained model
+        Determines the correct bond angle force constant for a bond angle between three particles, given their indices within the coarse-grained model
 
-          :param CGModel: CGModel() class object
-          :type CGModel: class
+        :param angle: A list of the indices for the particles in an angle
+        :type angle: List ( int )
 
-          :param particle_1_index: Index for the first particle
-          :type particle_1_index: int
-
-          :param particle_2_index: Index for the second particle
-          :type particle_2_index: int
-
-          :param particle_3_index: Index for the third particle
-          :type particle_3_index: int
-
-          :returns: 
-             - bond_angle_force_constant ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The assigned bond angle force constant for the provided particles
-
-
-          """
+        :returns: 
+           - bond_angle_force_constant ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The assigned bond angle force constant for the provided particles
+        """
+        
         particle_types = [
             self.get_particle_type_name(angle[0]),
             self.get_particle_type_name(angle[1]),
@@ -1132,20 +1126,17 @@ class CGModel(object):
         ]
 
         return self._get_bonded_parameter(particle_types, "bond_angle_force_constants")
+        
 
     def get_torsion_periodicity(self, torsion):
         """         
-        Determines the correct periodicity for a torsion (bond angle involving four particles), given their indices within the coarse-grained model
-
-        :param CGModel: CGModel() class object
-        :type CGModel: class
-
+        Determines the periodicity for a torsion, given a quadruplet of particle indices 
+        
         :param torsion: A list of the indices for the particles in a torsion
         :type torsion: List( int )
 
         :returns:
-        - torsion_periodicity ( int ) - The periodicity for the input torsion
-
+           - torsion_periodicity ( int ) - The periodicity for the input torsion
         """
 
         particle_types = [
@@ -1156,21 +1147,18 @@ class CGModel(object):
         ]
 
         return self._get_bonded_parameter(particle_types, "torsion_periodicities")
+        
 
     def get_torsion_force_constant(self, torsion):
         """         
-          Determines the correct torsion force constant for a torsion (bond angle involving four particles), given their indices within the coarse-grained model
+        Determines the correct torsion force constant for a torsion (bond angle involving four particles), given their indices within the coarse-grained model
 
-          :param CGModel: CGModel() class object
-          :type CGModel: class
+        :param torsion: A list of the indices for the particles in a torsion
+        :type torsion: List( int )
 
-          :param torsion: A list of the indices for the particles in a torsion
-          :type torsion: List( int )
-
-          :returns: 
-             - torsion_force_constant ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The assigned torsion force constant for the provided particles
-
-          """
+        :returns: 
+            - torsion_force_constant ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The assigned torsion force constant for the provided particles
+        """
         particle_types = [
             self.get_particle_type_name(torsion[0]),
             self.get_particle_type_name(torsion[1]),
@@ -1179,21 +1167,18 @@ class CGModel(object):
         ]
 
         return self._get_bonded_parameter(particle_types, "torsion_force_constants")
+        
 
     def get_equil_torsion_angle(self, torsion):
         """         
-          Determines the correct equilibrium angle for a torsion (bond angle involving four particles), given their indices within the coarse-grained model
+        Determines the correct equilibrium angle for a torsion (bond angle involving four particles), given their indices within the coarse-grained model
 
-          :param CGModel: CGModel() class object
-          :type CGModel: class
+        :param torsion: A list of the indices for the particles in a torsion
+        :type torsion: List( int )
 
-          :param torsion: A list of the indices for the particles in a torsion
-          :type torsion: List( int )
-
-          :returns: 
-             - equil_torsion_angle (float) - The assigned equilibrium torsion angle for the provided particles
-
-          """
+        :returns: 
+           - equil_torsion_angle (float) - The assigned equilibrium torsion angle for the provided particles
+        """
         particle_types = [
             self.get_particle_type_name(torsion[0]),
             self.get_particle_type_name(torsion[1]),
