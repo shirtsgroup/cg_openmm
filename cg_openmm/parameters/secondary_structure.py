@@ -86,15 +86,12 @@ def get_native_contacts(cgmodel, native_structure_file, native_contact_distance_
     return native_contact_list, native_contact_distances, contact_type_dict
 
 
-def expectations_fraction_contacts(fraction_native_contacts, temperature_list, frame_begin=0, sample_spacing=1, output_data="output/output.nc", num_intermediate_states=0):
+def expectations_fraction_contacts(fraction_native_contacts, frame_begin=0, sample_spacing=1, output_data="output/output.nc", num_intermediate_states=0):
     """
     Given a .nc output, a temperature list, and a number of intermediate states to insert for the temperature list, this function calculates the native contacts expectation.   
     
     :param fraction_native_contacts: The fraction of native contacts for all selected frames in the trajectories.
     :type fraction_native_contacts: numpy array (float * nframes x nreplicas)
-    
-    :param temperature_list: List of temperatures corresponding to the states in the .nc output file
-    :type temperature: List( float * simtk.unit.temperature )
     
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
     :type frame_begin: int
@@ -122,6 +119,13 @@ def expectations_fraction_contacts(fraction_native_contacts, temperature_list, f
     
     # Select production frames to analyze
     replica_energies = replica_energies_all[:,:,frame_begin::sample_spacing]
+    
+    # Get the temperature list from .nc file:
+    states = reporter.read_thermodynamic_states()[0]
+    
+    temperature_list = []
+    for s in states:
+        temperature_list.append(s.temperature)
     
     # Check the size of the fraction_native_contacts array:
     if np.shape(replica_energies)[2] != np.shape(fraction_native_contacts)[0]:
@@ -306,29 +310,52 @@ def fraction_native_contacts(
     
 
 def optimize_Q_cut(
-    cgmodel, temperature_list, native_structure_file, traj_file_list, output_data="output/output.nc",
-    num_intermediate_states=0, frame_begin=0, frame_stride=1, opt_method='Nelder-Mead'):
+    cgmodel, native_structure_file, traj_file_list, output_data="output/output.nc",
+    num_intermediate_states=0, frame_begin=0, frame_stride=1, opt_method='Nelder-Mead',
+    plotfile='native_contacts_opt.pdf'):
     """
     Given a coarse grained model and a native structure as input
 
     :param cgmodel: CGModel() class object
     :type cgmodel: class
+    
+    :param native_structure_file: Path to file ('pdb' or 'dcd') containing particle positions for the native structure.
+    :type native_structure_file: str 
+    
+    :param traj_file_list: A list of replica PDB or DCD trajectory files corresponding to the energies in the .nc file, or a single file name
+    :type traj_file_list: List( str ) or str
+    
+    :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data, default = ("output/output.nc")                                                                                                  
+    :type output_data: str
 
-    :param native_structure: Positions for the native structure.
-    :type native_structure: np.array( float * unit.angstrom ( num_particles x 3 ) )
+    :param num_intermediate_states: The number of states to insert between existing states in 'temperature_list'
+    :type num_intermediate_states: int 
+    
+    :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
+    :type frame_begin: int
 
-    :param ensemble: A list of poses that will be used to optimize the cutoff distance for defining native contacts
-    :type ensemble: List(positions(np.array(float*simtk.unit (shape = num_beads x 3))))
+    :param frame_stride: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData
+    :type frame_stride: int 
+    
+    :param opt_method: scipy.optimize.minimize method (default='Nelder-Mead')
+    :type opt_method: str
 
     :returns:
-       - native_structure_contact_distance_cutoff ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The ideal distance below which two nonbonded, interacting particles should be defined as a "native contact"
+       - native_contact_cutoff ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The ideal distance below which two nonbonded, interacting particles should be defined as a "native contact"
+       - native_contact_cutoff_ratio ( float ) - cutoff for native contacts when scanning trajectory, in multiples of native_contact_cutoff
+       - opt_results ( dict ) - results of the native contact cutoff scipy.optimize.minimize optimization
+       - Q_expect_results ( dict ) - results of the native contact fraction expectation calculation containing 'Q' and 'T'
+       - sigmoid_param_opt ( 1D numpy array ) - optimized sigmoid parameters (x0, y0, y1, d) 
+       - sigmoid_param_cov ( 2D numpy array ) - estimated covariance of sigmoid_param_opt
+       - contact_type_dict ( dict ) - a dictionary of {native contact particle type pair: counts}
     """
 
-    # Initial guess for native_contact_cutoff, native_contact_cutoff_ratio:
+    # Initial guess for native_contact_cutoff (unit.angstrom), native_contact_cutoff_ratio (unitless):
     # TODO: estimate this from the cgmodel rather than hard coding
     x0 = [3.0, 1.5]
     
     def minimize_sigmoid_width(x0):
+        # Function to minimize:
    
         native_contact_cutoff = x0[0]
         native_contact_cutoff_ratio = x0[1]
@@ -354,7 +381,6 @@ def optimize_Q_cut(
             # Get expectations 
             results = expectations_fraction_contacts(
                 Q,
-                temperature_list,
                 frame_begin=frame_begin,
                 sample_spacing=frame_stride,
                 output_data=output_data,
@@ -363,9 +389,9 @@ def optimize_Q_cut(
             
             param_opt, param_cov = fit_sigmoid(results["T"],results["Q"])
             
-            print(f"nc_cut: {native_contact_cutoff}")
-            print(f"nc_cut_ratio: {native_contact_cutoff_ratio}")
-            print(param_opt)
+            # print(f"nc_cut: {native_contact_cutoff}")
+            # print(f"nc_cut_ratio: {native_contact_cutoff_ratio}")
+            # print(param_opt)
             
             return param_opt[3]**2
             
@@ -376,6 +402,7 @@ def optimize_Q_cut(
             # There are no native contacts for this iteration
             return np.nan
         
+    # ***Note: Default tolerance is 1E-4. We should allow this to be specified in the future.    
     opt_results = minimize(minimize_sigmoid_width, x0,
         method=opt_method, options={'xatol':0.001, 'fatol':0.001})
     
@@ -401,18 +428,17 @@ def optimize_Q_cut(
     )
 
     # Get expectations 
-    results = expectations_fraction_contacts(
+    Q_expect_results = expectations_fraction_contacts(
         Q,
-        temperature_list,
         frame_begin=frame_begin,
         sample_spacing=frame_stride,
         output_data=output_data,
         num_intermediate_states=num_intermediate_states,
     )
     
-    param_opt, param_cov = fit_sigmoid(results["T"],results["Q"],plotfile="native_contacts_fit.pdf")
+    param_opt, param_cov = fit_sigmoid(Q_expect_results["T"],Q_expect_results["Q"],plotfile=plotfile)
     
-    return opt_results, param_opt, param_cov
+    return native_contact_cutoff, native_contact_cutoff_ratio, opt_results, Q_expect_results, sigmoid_param_opt, sigmoid_param_cov, contact_type_dict
     
 
 def plot_native_contact_fraction(temperature_list, Q, Q_uncertainty,plotfile="Q_vs_T.pdf"):
