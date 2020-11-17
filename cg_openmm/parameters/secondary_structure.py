@@ -312,7 +312,7 @@ def fraction_native_contacts(
 def optimize_Q_cut(
     cgmodel, native_structure_file, traj_file_list, output_data="output/output.nc",
     num_intermediate_states=0, frame_begin=0, frame_stride=1, opt_method='Nelder-Mead',
-    plotfile='native_contacts_opt.pdf'):
+    plotfile='native_contacts_opt.pdf', verbose=False):
     """
     Given a coarse grained model and a native structure as input
 
@@ -389,9 +389,12 @@ def optimize_Q_cut(
             
             param_opt, param_cov = fit_sigmoid(results["T"],results["Q"])
             
-            # print(f"nc_cut: {native_contact_cutoff}")
-            # print(f"nc_cut_ratio: {native_contact_cutoff_ratio}")
-            # print(param_opt)
+            
+            if verbose:
+                # Print parameters at each iteration:
+                print(f"native_contact_cutoff: {native_contact_cutoff}")
+                print(f"native_contact_cutoff_ratio: {native_contact_cutoff_ratio}")
+                print(f"sigmoid params: {param_opt}\n")
             
             return param_opt[3]**2
             
@@ -436,7 +439,7 @@ def optimize_Q_cut(
         num_intermediate_states=num_intermediate_states,
     )
     
-    param_opt, param_cov = fit_sigmoid(Q_expect_results["T"],Q_expect_results["Q"],plotfile=plotfile)
+    sigmoid_param_opt, sigmoid_param_cov = fit_sigmoid(Q_expect_results["T"],Q_expect_results["Q"],plotfile=plotfile)
     
     return native_contact_cutoff, native_contact_cutoff_ratio, opt_results, Q_expect_results, sigmoid_param_opt, sigmoid_param_cov, contact_type_dict
     

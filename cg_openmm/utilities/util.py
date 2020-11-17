@@ -130,6 +130,10 @@ def fit_sigmoid(xdata, ydata, plotfile='Q_vs_T_fit.pdf', xlabel='T (K)', ylabel=
     
     :param ydata: y data series
     :type ydata: Quantity or numpy 1D array
+    
+    :returns:
+        - param_opt ( 1D numpy array ) - optimized sigmoid parameters (x0, y0, y1, d) 
+        - param_cov ( 2D numpy array ) - estimated covariance of param_opt
 
     """
     
