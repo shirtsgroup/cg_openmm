@@ -197,7 +197,6 @@ def test_expectations_fraction_contacts_pdb(tmpdir):
 
     results = expectations_fraction_contacts(
         Q,
-        temperature_list,
         frame_begin=100,
         output_data=output_data,
         num_intermediate_states=num_intermediate_states,
@@ -354,7 +353,6 @@ def test_expectations_fraction_contacts_dcd(tmpdir):
 
     results = expectations_fraction_contacts(
         Q,
-        temperature_list,
         frame_begin=100,
         output_data=output_data,
         num_intermediate_states=num_intermediate_states,
