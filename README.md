@@ -2,6 +2,7 @@ cg_openmm
 ==============================
 [//]: # (Badges)
 [![Travis Build Status](https://travis-ci.com/shirtsgroup/cg_openmm.svg?branch=master)](https://travis-ci.com/shirtsgroup/cg_openmm)
+![Python package](https://github.com/shirtsgroup/cg_openmm/workflows/python-package.yml/badge.svg)
 [![codecov](https://codecov.io/gh/shirtsgroup/cg_openmm/branch/master/graph/badge.svg)](https://codecov.io/gh/shirtsgroup/cg_openmm/branch/master)
 [![Documentation Status](https://readthedocs.org/projects/cg-openmm/badge/?version=latest)](https://cg-openmm.readthedocs.io/en/latest/?badge=latest)
 
