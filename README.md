@@ -1,7 +1,7 @@
 cg_openmm
 ==============================
 [//]: # (Badges)
-[![GH Actions Status](https://github.com/shirtsgroup/cg_openmm/workflows/CI.yml/badge.svg)](https://github.com/shirtsgroup/cg_openmm/actions?query=branch%3Amaster)
+[![GH Actions Status](https://github.com/shirtsgroup/cg_openmm/workflows/CI/badge.svg)](https://github.com/shirtsgroup/cg_openmm/actions?query=branch%3Amaster)
 [![codecov](https://codecov.io/gh/shirtsgroup/cg_openmm/branch/master/graph/badge.svg)](https://codecov.io/gh/shirtsgroup/cg_openmm/branch/master)
 [![Documentation Status](https://readthedocs.org/projects/cg-openmm/badge/?version=latest)](https://cg-openmm.readthedocs.io/en/latest/?badge=latest)
 
