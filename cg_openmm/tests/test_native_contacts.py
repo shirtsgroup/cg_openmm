@@ -374,5 +374,73 @@ def test_expectations_fraction_contacts_dcd(tmpdir):
         plotfile=f"{output_directory}/Q_vs_T_fit.pdf",
     )
     
-    assert os.path.isfile(f"{output_directory}/Q_vs_T_fit.pdf")  
+    assert os.path.isfile(f"{output_directory}/Q_vs_T_fit.pdf")
+    
+    
+def test_optimize_Q_cut_pdb(tmpdir):
+    """Test the native contact cutoff optimization workflow"""
+
+    output_directory = tmpdir.mkdir("output")
+    output_data = os.path.join(data_path, "output.nc")
+
+    # Replica exchange settings
+    number_replicas = 12
+    min_temp = 200.0 * unit.kelvin
+    max_temp = 300.0 * unit.kelvin
+    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
+
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+
+    # Create list of pdb trajectories to analyze
+    # For expectation fraction native contacts, we use replica trajectories: 
+    pdb_file_list = []
+    for i in range(len(temperature_list)):
+        pdb_file_list.append(f"{data_path}/replica_{i+1}.pdb")
+        
+    # Load in native structure file:    
+    native_structure_file=f"{structures_path}/medoid_0.pdb"    
+    
+    (native_contact_cutoff, native_contact_cutoff_ratio, opt_results, Q_expect_results, \
+    sigmoid_param_opt, sigmoid_param_cov, contact_type_dict) = optimize_Q_cut(
+        cgmodel, native_structure_file, pdb_file_list, num_intermediate_states=0,
+        output_data=output_data, frame_begin=100, frame_stride=20,
+        opt_method='Nelder-mead', verbose=True,
+        plotfile=f'{output_directory}/native_contacts_opt.pdf')    
+        
+    assert os.path.isfile(f'{output_directory}/native_contacts_opt.pdf')
+    
+    
+def test_optimize_Q_cut_dcd(tmpdir):
+    """Test the native contact cutoff optimization workflow"""
+
+    output_directory = tmpdir.mkdir("output")
+    output_data = os.path.join(data_path, "output.nc")
+
+    # Replica exchange settings
+    number_replicas = 12
+    min_temp = 200.0 * unit.kelvin
+    max_temp = 300.0 * unit.kelvin
+    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
+
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+
+    # Create list of pdb trajectories to analyze
+    # For expectation fraction native contacts, we use replica trajectories: 
+    dcd_file_list = []
+    for i in range(len(temperature_list)):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+        
+    # Load in native structure file:    
+    native_structure_file=f"{structures_path}/medoid_0.dcd"    
+    
+    (native_contact_cutoff, native_contact_cutoff_ratio, opt_results, Q_expect_results, \
+    sigmoid_param_opt, sigmoid_param_cov, contact_type_dict) = optimize_Q_cut(
+        cgmodel, native_structure_file, dcd_file_list, num_intermediate_states=0,
+        output_data=output_data,frame_begin=100, frame_stride=20,
+        opt_method='Nelder-mead', verbose=True,
+        plotfile=f'{output_directory}/native_contacts_opt.pdf')
+        
+    assert os.path.isfile(f'{output_directory}/native_contacts_opt.pdf')
     
