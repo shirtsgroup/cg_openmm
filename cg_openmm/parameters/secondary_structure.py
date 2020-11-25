@@ -216,6 +216,7 @@ def fraction_native_contacts(
     native_contact_distances,
     frame_begin=0,
     native_contact_cutoff_ratio=1.00,
+    subsample=True,
 ):
     """
     Given a cgmodel, mdtraj trajectory object, and positions for the native structure, this function calculates the fraction of native contacts for the model.
@@ -237,6 +238,9 @@ def fraction_native_contacts(
     
     :param native_contact_cutoff_ratio: The distance below which two nonbonded, interacting particles in a non-native pose are assigned as a "native contact", as a ratio of the distance for that contact in the native structure, default=1.00
     :type native_contact_cutoff_ratio: float
+    
+    :param subsample: option to use pymbar subsampleCorrelatedData to detect and return the interval between uncorrelated data points (default=True)
+    :type subsample: Boolean
 
     :returns:
       - Q ( numpy array (float * nframes x nreplicas) ) - The fraction of native contacts for all selected frames in the trajectories.
@@ -294,17 +298,21 @@ def fraction_native_contacts(
     # Determine the decorrelation time of native contact fraction timeseries data:
     # Note: if these are replica trajectories, we will get a folding rate
     # If these are state trajectories, we will get decorrelation time for constant state
-    max_sample_spacing = 1
-    subsample_indices = {}
-    for rep in range(n_replicas):
-        subsample_indices[rep] = timeseries.subsampleCorrelatedData(
-            Q[:,rep],
-            conservative=True,
-        )
-        if (subsample_indices[rep][1]-subsample_indices[rep][0]) > max_sample_spacing:
-            max_sample_spacing = (subsample_indices[rep][1]-subsample_indices[rep][0])
     
-    decorrelation_spacing = max_sample_spacing
+    if subsample:
+        max_sample_spacing = 1
+        subsample_indices = {}
+        for rep in range(n_replicas):
+            subsample_indices[rep] = timeseries.subsampleCorrelatedData(
+                Q[:,rep],
+                conservative=True,
+            )
+            if (subsample_indices[rep][1]-subsample_indices[rep][0]) > max_sample_spacing:
+                max_sample_spacing = (subsample_indices[rep][1]-subsample_indices[rep][0])
+        
+        decorrelation_spacing = max_sample_spacing
+    else:
+        decorrelation_spacing = None
         
     return Q, Q_avg, Q_stderr, decorrelation_spacing
     
@@ -352,7 +360,7 @@ def optimize_Q_cut(
 
     # Initial guess for native_contact_cutoff (unit.angstrom), native_contact_cutoff_ratio (unitless):
     # TODO: estimate this from the cgmodel rather than hard coding
-    x0 = [3.0, 1.5]
+    x0 = [3.0, 1.0]
     
     def minimize_sigmoid_width(x0):
         # Function to minimize:
@@ -375,71 +383,97 @@ def optimize_Q_cut(
                 native_contact_list,
                 native_contact_distances,
                 frame_begin=frame_begin,
-                native_contact_cutoff_ratio=native_contact_cutoff_ratio
-            )
-
-            # Get expectations 
-            results = expectations_fraction_contacts(
-                Q,
-                frame_begin=frame_begin,
-                sample_spacing=frame_stride,
-                output_data=output_data,
-                num_intermediate_states=num_intermediate_states,
+                native_contact_cutoff_ratio=native_contact_cutoff_ratio,
+                subsample=False,
             )
             
-            param_opt, param_cov = fit_sigmoid(results["T"],results["Q"])
-            
-            
-            if verbose:
-                # Print parameters at each iteration:
-                print(f"native_contact_cutoff: {native_contact_cutoff}")
-                print(f"native_contact_cutoff_ratio: {native_contact_cutoff_ratio}")
-                print(f"sigmoid params: {param_opt}\n")
-            
-            return param_opt[3]**2
-            
-            # Or, if we want to maximum the difference between the max and min Q:
-            # return 1-abs(param_opt[2]-param_opt[1])
+            if Q.sum() == 0:
+                # There are no native contacts in the trajectory
+                min_val = 1E9
+                param_opt = None
+                
+            else:    
+                try:
+                    # Get expectations 
+                    results = expectations_fraction_contacts(
+                        Q,
+                        frame_begin=frame_begin,
+                        sample_spacing=frame_stride,
+                        output_data=output_data,
+                        num_intermediate_states=num_intermediate_states,
+                    )
+                    
+                    param_opt, param_cov = fit_sigmoid(results["T"],results["Q"])
+                    min_val = param_opt[3]**2
+                    
+                    # Or, if we want to maximum the difference between the max and min Q:
+                    # fitness = 1-abs(param_opt[2]-param_opt[1])
         
+                
+                except:
+                    # Error with computing expectation, likely due to few little non-zero Q
+                    min_val = 1E9
+                    param_opt = None
+            
         else:
             # There are no native contacts for this iteration
-            return np.nan
+            min_val = 1E9
+            param_opt = None
+            
+        if verbose:
+            # Print parameters at each iteration:
+            print(f"native_contact_cutoff: {native_contact_cutoff}")
+            print(f"native_contact_cutoff_ratio: {native_contact_cutoff_ratio}")
+            print(f"sigmoid params: {param_opt}\n")
+        
+        return min_val
+        
         
     # ***Note: Default tolerance is 1E-4. We should allow this to be specified in the future.    
     opt_results = minimize(minimize_sigmoid_width, x0,
         method=opt_method, options={'xatol':0.001, 'fatol':0.001})
     
-    # Repeat for final plotting:
-    native_contact_cutoff = opt_results.x[0] * unit.angstrom
-    native_contact_cutoff_ratio = opt_results.x[1]
-    
-    # Determine native contacts:
-    native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
-        cgmodel,
-        native_structure_file,
-        native_contact_cutoff,
-    )
+    if opt_results['success'] == True:
+        # Repeat for final plotting:
+        native_contact_cutoff = opt_results.x[0] * unit.angstrom
+        native_contact_cutoff_ratio = opt_results.x[1]
+        
+        # Determine native contacts:
+        native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
+            cgmodel,
+            native_structure_file,
+            native_contact_cutoff,
+        )
 
-    # Get native contact fraction of all frames
-    Q, Q_avg, Q_stderr, decorrelation_time = fraction_native_contacts(
-        cgmodel,
-        traj_file_list,
-        native_contact_list,
-        native_contact_distances,
-        frame_begin=frame_begin,
-        native_contact_cutoff_ratio=native_contact_cutoff_ratio
-    )
+        # Get native contact fraction of all frames
+        Q, Q_avg, Q_stderr, decorrelation_time = fraction_native_contacts(
+            cgmodel,
+            traj_file_list,
+            native_contact_list,
+            native_contact_distances,
+            frame_begin=frame_begin,
+            native_contact_cutoff_ratio=native_contact_cutoff_ratio
+        )
 
-    # Get expectations 
-    Q_expect_results = expectations_fraction_contacts(
-        Q,
-        frame_begin=frame_begin,
-        sample_spacing=frame_stride,
-        output_data=output_data,
-        num_intermediate_states=num_intermediate_states,
-    )
+        # Get expectations 
+        Q_expect_results = expectations_fraction_contacts(
+            Q,
+            frame_begin=frame_begin,
+            sample_spacing=frame_stride,
+            output_data=output_data,
+            num_intermediate_states=num_intermediate_states,
+        )
     
-    sigmoid_param_opt, sigmoid_param_cov = fit_sigmoid(Q_expect_results["T"],Q_expect_results["Q"],plotfile=plotfile)
+        sigmoid_param_opt, sigmoid_param_cov = fit_sigmoid(Q_expect_results["T"],Q_expect_results["Q"],plotfile=plotfile)
+    
+    else: 
+        print('Optimization failed using a starting guess of {x0}')
+        native_contact_cutoff = None
+        native_contact_cutoff_ratio = None
+        Q_expect_results = None
+        sigmoid_param_opt = None
+        sigmoid_param_cov = None
+        contact_type_dict = None
     
     return native_contact_cutoff, native_contact_cutoff_ratio, opt_results, Q_expect_results, sigmoid_param_opt, sigmoid_param_cov, contact_type_dict
     
