@@ -119,7 +119,7 @@ def lj_v(positions_1, positions_2, sigma, epsilon):
     rep = quot.__pow__(12.0)
     v = 4.0 * epsilon.__mul__(rep.__sub__(attr))
     return v
-    
+   
     
 def fit_sigmoid(xdata, ydata, plotfile='Q_vs_T_fit.pdf', xlabel='T (K)', ylabel='Q'):
     """
@@ -130,6 +130,10 @@ def fit_sigmoid(xdata, ydata, plotfile='Q_vs_T_fit.pdf', xlabel='T (K)', ylabel=
     
     :param ydata: y data series
     :type ydata: Quantity or numpy 1D array
+    
+    :returns:
+        - param_opt ( 1D numpy array ) - optimized sigmoid parameters (x0, y0, y1, d) 
+        - param_cov ( 2D numpy array ) - estimated covariance of param_opt
 
     """
     
@@ -152,63 +156,68 @@ def fit_sigmoid(xdata, ydata, plotfile='Q_vs_T_fit.pdf', xlabel='T (K)', ylabel=
     def tanh_switch(x,x0,y0,y1,d):
         return (y0+y1)/2-((y0-y1)/2)*np.tanh(np.radians(x-x0)/d)
         
-    param_guess = [np.mean(xdata),0.15,0.85,(np.max(ydata)-np.min(ydata))/2]
+    param_guess = [np.mean(xdata),np.min(ydata),np.max(ydata),(np.max(xdata)-np.min(xdata))/10]
+    bounds = (
+        [np.min(xdata), 0, 0, 0],
+        [np.max(xdata), 1, 1, (np.max(xdata)-np.min(xdata))])
     
-    param_opt, param_cov = curve_fit(tanh_switch, xdata, ydata, param_guess)
+    param_opt, param_cov = curve_fit(tanh_switch, xdata, ydata, param_guess, bounds=bounds)
     
-    figure = plt.figure()
-    
-    xfit = np.linspace(np.min(xdata),np.max(xdata),1000)
-    yfit = tanh_switch(xfit,param_opt[0],param_opt[1],param_opt[2],param_opt[3])
-    
-    # Value of y at the critical value of x:
-    y_x0 = (param_opt[1]+param_opt[2])/2
-    y_x0_err = np.sqrt(np.power(param_cov[1,1],2)+np.power(param_cov[2,2],2))
-    
-    line1 = plt.plot(
-        xdata,
-        ydata,
-        'ok',
-        markersize=4,
-        fillstyle='none',
-        label='simulation data',
-    )
-    
-    line2 = plt.plot(
-        xfit,
-        yfit,
-        '-b',
-        label='hyperbolic fit',
-    )
-    
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    
-    plt.legend()
-    
-    xlim = plt.xlim()
-    ylim = plt.ylim()
-    
-    plt.text(
-        ((xlim[0]+xlim[1])/2),
-        (ylim[0]+0.75*(ylim[1]-ylim[0])),
-        r'$y(x)=\frac{y0+y1}{2}-\frac{y0-y1}{2}\left(\tanh\left(\frac{(x-x0)}{d}\right)\right)$',
-    )
-    
-    plt.text(
-        (xlim[0]+0.55*(xlim[1]-xlim[0])),
-        (ylim[0]+0.50*(ylim[1]-ylim[0])),
-        f'x0 = {param_opt[0]:.4e} \u00B1 {param_cov[0,0]:.4e}\n' \
-        f'y0 = {param_opt[1]:.4e} \u00B1 {param_cov[1,1]:.4e}\n' \
-        f'y1 = {param_opt[2]:.4e} \u00B1 {param_cov[2,2]:.4e}\n' \
-        f'd = {param_opt[3]:.4e} \u00B1 {param_cov[3,3]:.4e}\n' \
-        f'y(x0) = {y_x0:>.4e} \u00B1 {y_x0_err:.4e}',
-        {'fontsize': 8},
-        horizontalalignment='left',
-    )
-    
-    plt.savefig(plotfile)
-    plt.close()
+    if plotfile is not None:
+        figure = plt.figure()
+        
+        xfit = np.linspace(np.min(xdata),np.max(xdata),1000)
+        yfit = tanh_switch(xfit,param_opt[0],param_opt[1],param_opt[2],param_opt[3])
+        
+        # Value of y at the critical value of x:
+        y_x0 = (param_opt[1]+param_opt[2])/2
+        y_x0_err = np.sqrt(np.power(param_cov[1,1],2)+np.power(param_cov[2,2],2))
+        
+        line1 = plt.plot(
+            xdata,
+            ydata,
+            'ok',
+            markersize=4,
+            fillstyle='none',
+            label='simulation data',
+        )
+        
+        line2 = plt.plot(
+            xfit,
+            yfit,
+            '-b',
+            label='hyperbolic fit',
+        )
+        
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        
+        plt.legend()
+        
+        xlim = plt.xlim()
+        ylim = plt.ylim()
+        
+        plt.text(
+            (xlim[0]+0.05*(xlim[1]-xlim[0])),
+            (ylim[0]+0.60*(ylim[1]-ylim[0])),
+            r'$y(x)=\frac{y0+y1}{2}-\frac{y0-y1}{2}\left(\tanh\left(\frac{(x-x0)}{d}\right)\right)$',
+            {'fontsize': 10},
+        )
+        
+        plt.text(
+            (xlim[0]+0.05*(xlim[1]-xlim[0])),
+            (ylim[0]+0.25*(ylim[1]-ylim[0])),
+            f'x0 = {param_opt[0]:.4e} \u00B1 {param_cov[0,0]:.4e}\n' \
+            f'y0 = {param_opt[1]:.4e} \u00B1 {param_cov[1,1]:.4e}\n' \
+            f'y1 = {param_opt[2]:.4e} \u00B1 {param_cov[2,2]:.4e}\n' \
+            f'd = {param_opt[3]:.4e} \u00B1 {param_cov[3,3]:.4e}\n' \
+            f'y(x0) = {y_x0:>.4e} \u00B1 {y_x0_err:.4e}',
+            {'fontsize': 10},
+            horizontalalignment='left',
+        )
+        
+        plt.savefig(plotfile)
+        plt.close()
     
     return param_opt, param_cov
     

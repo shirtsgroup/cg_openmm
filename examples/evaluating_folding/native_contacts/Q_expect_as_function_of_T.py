@@ -22,95 +22,67 @@ import time
 output_directory = "output"
 output_data = os.path.join(output_directory, "output.nc")
 number_replicas = 36
-min_temp = 50.0 * unit.kelvin
-max_temp = 400.0 * unit.kelvin
+min_temp = 100.0 * unit.kelvin
+max_temp = 500.0 * unit.kelvin
 temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
 
 # Load in cgmodel
 cgmodel = pickle.load(open( "stored_cgmodel.pkl", "rb" ))
 
-# Here we will estimate the native structure as a medoid from KMeans clustering
-# with the lowest intra-cluster RMSD.
-
 # Create list of trajectory files for clustering analysis
 number_replicas = 36
-pdb_file_list_rep = []
+dcd_file_list_rep = []
 
 # For expectation native contact fraction calculation, we use replica trajectories,
-# which can be generated from a .nc file using rep_exch.make_replica_pdb_files()
+# which can be generated from a .nc file using rep_exch.make_replica_dcd_files()
+
 for i in range(number_replicas):
-    pdb_file_list_rep.append(f"{output_directory}/replica_{i+1}.pdb")
+    dcd_file_list_rep.append("output/replica_%s.dcd" %(i+1))
 
-# Set clustering parameters
-n_clusters=2
-frame_start=0
-frame_stride=100
-frame_end=-1
+# Here we will estimate the native structure as a medoid from DBSCAN clustering
+# with the lowest intra-cluster RMSD
 
-# Run KMeans clustering
-medoid_positions, cluster_size, cluster_rmsd = get_cluster_medoid_positions(
-    file_list=pdb_file_list_rep,
+# DBSCAN parameters:
+min_samples=10
+eps = 0.1
+
+medoid_positions, cluster_sizes, cluster_rmsd, n_noise, silhouette_avg = get_cluster_medoid_positions_DBSCAN(
+    file_list=dcd_file_list_rep,
     cgmodel=cgmodel,
-    n_clusters=n_clusters,
-    frame_start=frame_start,
-    frame_stride=frame_stride,
-    frame_end=-1)
-    
-print(cluster_rmsd)
-
-# The smaller intra-cluster rmsd will be the folded state if it is very stable
-if cluster_rmsd[0] < cluster_rmsd[1]:
-    native_structure_file="cluster_output/medoid_0.pdb"
-else:
-    native_structure_file="cluster_output/medoid_1.pdb"
-
-native_positions = PDBFile(native_structure_file).getPositions()
-
-
-# Scan cutoff for native structure pairwise distances:
-for c in [2.5, 3.0, 3.5, 4.0, 4.5]:
-
-    native_contact_cutoff = c* unit.angstrom
-    nccut_str = f"{str(native_contact_cutoff)[0]}_{str(native_contact_cutoff)[2]}"
-
-    # Cutoff for current trajectory distances, as a multiple of native_contact_cutoff
-    native_contact_cutoff_ratio = 1.00
-
-    # Determine native contacts:
-    native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
-        cgmodel,
-        native_positions,
-        native_contact_cutoff
-    )
-
-    # Determine native contact fraction of current trajectories:
-    Q, Q_avg, Q_stderr, decorrelation_spacing = fraction_native_contacts(
-        pdb_file_list_rep,
-        native_contact_list,
-        native_contact_distances,
-        frame_begin=0,
-        native_contact_cutoff_ratio=native_contact_cutoff_ratio
+    min_samples=min_samples,
+    eps=eps,
+    frame_start=10000,
+    frame_stride=100,
+    frame_end=frame_end,
+    filter_ratio=0.05
     )
     
-    results = expectations_fraction_contacts(
-        Q,
-        temperature_list,
-        frame_begin=0,
-        output_data=output_data,
-        num_intermediate_states=1,
-    )
-    
-    plot_native_contact_fraction(
-        results["T"],
-        results["Q"],
-        results["dQ"],
-        plotfile=f"{output_directory}/nccut_{nccut_str}_Q_expect_vs_T.pdf",
-    )
-    
-    # fit to hyperbolic switching function
-    param_opt, param_cov = fit_sigmoid(
-        results["T"],
-        results["Q"],
-        plotfile=f"{output_directory}/nccut_{nccut_str}_Q_expect_vs_T_fit.pdf",
-    )
+print(f"min_samples: {min_samples}")
+print(f"cluster sizes: {cluster_sizes}")
+print(f"noise points: {n_noise}")
+print(f"intra-cluster rmsd: {cluster_rmsd}")
+print(f"fraction noise: {n_noise/(np.sum(cluster_sizes)+n_noise)}")
+print(f"average silhouette score: {silhouette_avg}")
+
+# Choose the medoid cluster with the smallest rmsd as the native structure.
+
+k_min = np.argmin(cluster_rmsd)
+native_structure_file=f"cluster_output/medoid_{k_min}.dcd"
+
+# We can also choose to run an energy minimization of the native structure
+# positions, PE_start, PE_end, simulation = minimize_structure(
+    # cgmodel,
+    # medoid_positions[k_min],
+    # output_file=f"medoid_min_kmin_{k_min}.dcd",
+# )
+
+# print(f"PE start: {PE_start} kJ/mol")
+# print(f"PE_end: {PE_end} kJ/mol" )
+
+# Optimize native contact parameters:
+
+(native_contact_cutoff, native_contact_cutoff_ratio, opt_results, Q_expect_results, \
+sigmoid_param_opt, sigmoid_param_cov, contact_type_dict) = optimize_Q_cut(
+    cgmodel, native_structure_file, dcd_file_list_rep, num_intermediate_states=1,
+    frame_begin=frame_start, frame_stride=frame_stride, opt_method='Nelder-mead')  
     

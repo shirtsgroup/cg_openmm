@@ -656,5 +656,6 @@ def plot_free_energy_results(full_T_list, deltaF_values, deltaF_uncertainty,plot
     plt.ylabel(ylabel)
     pyplot.legend(legend_str)
     plt.savefig(f"{plotfile}")
+    plt.close()
 
     return
