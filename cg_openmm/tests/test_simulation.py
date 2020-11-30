@@ -346,7 +346,7 @@ def test_run_replica_exchange(tmpdir):
     
     # Process replica exchange output
     # 1) With detect equilibrium:
-    replica_energies, replica_positions, replica_states, production_start, sample_spacing = process_replica_exchange_data(
+    replica_energies, replica_states, production_start, sample_spacing = process_replica_exchange_data(
         output_data=output_data,
         output_directory=output_directory,
         detect_equilibration=True,
@@ -356,7 +356,7 @@ def test_run_replica_exchange(tmpdir):
     assert production_start is not None
     
     # 2) Without detect equilibrium:
-    replica_energies, replica_positions, replica_states, production_start, sample_spacing = process_replica_exchange_data(
+    replica_energies, replica_states, production_start, sample_spacing = process_replica_exchange_data(
         output_data=output_data,
         output_directory=output_directory,
         detect_equilibration=False,
@@ -365,7 +365,7 @@ def test_run_replica_exchange(tmpdir):
     assert production_start is None    
     
     # 3) Without writing .dat file:
-    replica_energies, replica_positions, replica_states, production_start, sample_spacing = process_replica_exchange_data(
+    replica_energies, replica_states, production_start, sample_spacing = process_replica_exchange_data(
         output_data=output_data,
         output_directory=output_directory,
         detect_equilibration=False,
@@ -375,14 +375,11 @@ def test_run_replica_exchange(tmpdir):
     # Test pdb writer:
     make_replica_pdb_files(
         cgmodel.topology,
-        replica_positions,
-        output_dir=output_directory
+        output_dir=output_directory,
     )
         
     make_state_pdb_files(
         cgmodel.topology,
-        replica_positions,
-        replica_states,
         output_dir=output_directory
     )
     
@@ -392,38 +389,31 @@ def test_run_replica_exchange(tmpdir):
     # With non-default frame_begin, stride, no centering:
     make_replica_pdb_files(
         cgmodel.topology,
-        replica_positions,
         frame_begin=10,
-        stride=2,
+        frame_stride=2,
         output_dir=output_directory
     )
     
     make_state_pdb_files(
         cgmodel.topology,
-        replica_positions,
-        replica_states,
         frame_begin=10,
-        stride=2,
+        frame_stride=2,
         output_dir=output_directory,
         center=False
     )
     
-    
     # Test dcd writer:
     make_replica_dcd_files(
         cgmodel.topology,
-        replica_positions,
-        simulation_time_step,
-        exchange_frequency,
+        timestep=simulation_time_step,
+        time_interval=exchange_frequency,
         output_dir=output_directory
     )
         
     make_state_dcd_files(
         cgmodel.topology,
-        replica_positions,
-        replica_states,
-        simulation_time_step,
-        exchange_frequency,
+        timestep=simulation_time_step,
+        time_interval=exchange_frequency,
         output_dir=output_directory
     )
     
@@ -433,22 +423,19 @@ def test_run_replica_exchange(tmpdir):
     # With non-default frame_begin, stride, no centering:
     make_replica_dcd_files(
         cgmodel.topology,
-        replica_positions,
-        simulation_time_step,
-        exchange_frequency,
+        timestep=simulation_time_step,
+        time_interval=exchange_frequency,
         frame_begin=10,
-        stride=2,
+        frame_stride=2,
         output_dir=output_directory
     )
     
     make_state_dcd_files(
         cgmodel.topology,
-        replica_positions,
-        replica_states,
-        simulation_time_step,
-        exchange_frequency,
+        timestep=simulation_time_step,
+        time_interval=exchange_frequency,
         frame_begin=10,
-        stride=2,
+        frame_stride=2,
         output_dir=output_directory,
         center=False
     )

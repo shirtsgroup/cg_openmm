@@ -24,7 +24,7 @@ output_data = os.path.join(output_directory, "output.nc")
 
 # Replica exchange simulation settings
 cgmodel = pickle.load(open("stored_cgmodel.pkl","rb"))
-replica_energies, replica_positions, replica_states, production_start, decorrelation_spacing = process_replica_exchange_data(
+replica_energies, replica_states, production_start, decorrelation_spacing = process_replica_exchange_data(
     output_data=output_data,
     output_directory="output",
 )
@@ -32,18 +32,24 @@ replica_energies, replica_positions, replica_states, production_start, decorrela
 print(production_start)
 print(decorrelation_spacing)
 
-make_replica_dcd_files(
+# make_replica_dcd_files(
+    # cgmodel.topology,
+    # timestep=10*unit.femtosecond,
+    # time_interval=100,
+    # output_dir=output_directory,
+# )
+# make_state_dcd_files(
+    # cgmodel.topology,
+    # timestep=10*unit.femtosecond,
+    # time_interval=100,
+    # output_dir=output_directory,
+# )
+
+make_replica_pdb_files(
     cgmodel.topology,
-    replica_positions,
-    timestep=10*unit.femtosecond,
-    time_interval=100,
     output_dir=output_directory,
 )
-make_state_dcd_files(
+make_state_pdb_files(
     cgmodel.topology,
-    replica_positions,
-    replica_states,
-    timestep=10*unit.femtosecond,
-    time_interval=100,
     output_dir=output_directory,
 )
