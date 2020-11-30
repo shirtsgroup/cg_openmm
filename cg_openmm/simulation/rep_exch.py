@@ -26,7 +26,7 @@ def make_replica_dcd_files(
     output_dir="output", output_data="output.nc", checkpoint_data="output_checkpoint.nc",
     frame_begin=0, frame_stride=1):
     """
-    Make dcd files from replica exchange simulation trajectory data
+    Make dcd files from replica exchange simulation trajectory data.
     
     :param topology: OpenMM Topology
     :type topology: `Topology() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1topology_1_1Topology.html>`_
@@ -86,8 +86,7 @@ def make_replica_pdb_files(
     topology, output_dir="output", output_data="output.nc", checkpoint_data="output_checkpoint.nc",
     frame_begin=0, frame_stride=1):
     """
-    Make PDB files by state from replica exchange simulation trajectory data.
-    Note: these are discontinuous trajectories with constant temperature state.
+    Make pdb files from replica exchange simulation trajectory data.
     
     :param topology: OpenMM Topology
     :type topology: `Topology() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1topology_1_1Topology.html>`_
@@ -151,7 +150,8 @@ def make_state_dcd_files(
     output_dir="output", output_data="output.nc", checkpoint_data="output_checkpoint.nc",
     frame_begin=0, frame_stride=1, center=True):
     """
-    Make dcd files from replica exchange simulation trajectory data
+    Make dcd files by state from replica exchange simulation trajectory data.
+    Note: these are discontinuous trajectories with constant temperature state.
     
     :param topology: OpenMM Topology
     :type topology: `Topology() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1topology_1_1Topology.html>`_
@@ -225,7 +225,7 @@ def make_state_pdb_files(
     topology, output_dir="output", output_data="output.nc", checkpoint_data="output_checkpoint.nc",
     frame_begin=0, frame_stride=1, center=True):
     """
-    Make PDB files by state from replica exchange simulation trajectory data.
+    Make pdb files by state from replica exchange simulation trajectory data.
     Note: these are discontinuous trajectories with constant temperature state.
     
     :param topology: OpenMM Topology
@@ -507,7 +507,6 @@ def process_replica_exchange_data(
         f = open(os.path.join(output_directory, "replica_energies.dat"), "w")
         for step in range(total_steps):
             f.write(f"{step:10d}")
-            sampler_states = reporter.read_sampler_states(iteration=step)
             for replica_index in range(n_replicas):
                 f.write(f"{replica_energies[replica_index,replica_index,step]:12.6f}")
             f.write("\n")
