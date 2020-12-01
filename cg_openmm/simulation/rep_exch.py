@@ -61,6 +61,9 @@ def make_replica_dcd_files(
     reporter = MultiStateReporter(output_data_path, open_mode="r")
     states = reporter.read_thermodynamic_states()[0]
     n_replicas=len(states)
+    
+    sampler_states = reporter.read_sampler_states(iteration=0)
+    xunit = sampler_states[0].positions[0].unit
         
     for replica_index in range(n_replicas):
         replica_trajectory = extract_trajectory(topology, replica_index=replica_index,
@@ -73,7 +76,7 @@ def make_replica_dcd_files(
         
         for positions in replica_trajectory:
             # Add the units consistent with replica_energies
-            positions *= unit.angstrom
+            positions *= xunit
             DCDFile.writeModel(dcd_file, positions)
             
         file.close()
@@ -121,6 +124,9 @@ def make_replica_pdb_files(
     states = reporter.read_thermodynamic_states()[0]
     n_replicas = len(states)
     
+    sampler_states = reporter.read_sampler_states(iteration=0)
+    xunit = sampler_states[0].positions[0].unit
+    
     for replica_index in range(n_replicas):
         replica_trajectory = extract_trajectory(topology, replica_index=replica_index, 
             output_data=output_data_path, checkpoint_data=checkpoint_data,
@@ -134,7 +140,7 @@ def make_replica_pdb_files(
         
         for positions in replica_trajectory:    
             # Add the units consistent with replica_energies
-            positions *= unit.angstrom
+            positions *= xunit
             PDBFile.writeModel(topology, positions, file=file, modelIndex=modelIndex)
             
         PDBFile.writeFooter(topology, file=file)
@@ -189,6 +195,9 @@ def make_state_dcd_files(
     # Get number of states:
     reporter = MultiStateReporter(output_data_path, open_mode="r")
     states = reporter.read_thermodynamic_states()[0]
+    
+    sampler_states = reporter.read_sampler_states(iteration=0)
+    xunit = sampler_states[0].positions[0].unit
         
     for state_index in range(len(states)):
         state_trajectory = extract_trajectory(topology, state_index=state_index,
@@ -212,7 +221,7 @@ def make_state_dcd_files(
                 positions[:,2] += (center_z - np.mean(positions[:,2]))
                 
             # Add the units consistent with replica_energies
-            positions *= unit.angstrom
+            positions *= xunit
             DCDFile.writeModel(dcd_file, positions)
             
         file.close()
@@ -260,6 +269,9 @@ def make_state_pdb_files(
     reporter = MultiStateReporter(output_data_path, open_mode="r")
     states = reporter.read_thermodynamic_states()[0]
     
+    sampler_states = reporter.read_sampler_states(iteration=0)
+    xunit = sampler_states[0].positions[0].unit
+    
     for state_index in range(len(states)):
         state_trajectory = extract_trajectory(topology, state_index=state_index, 
             output_data=output_data_path, checkpoint_data=checkpoint_data,
@@ -284,7 +296,8 @@ def make_state_pdb_files(
                 positions[:,2] += (center_z - np.mean(positions[:,2]))
                 
             # Add the units consistent with replica_energies
-            positions *= unit.angstrom
+            positions *= xunit
+            
             PDBFile.writeModel(topology, positions, file=file, modelIndex=modelIndex)
             
         PDBFile.writeFooter(topology, file=file)
