@@ -700,16 +700,98 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
             torsion_force_constant = cgmodel.get_torsion_force_constant(torsion)
             equil_torsion_angle = cgmodel.get_equil_torsion_angle(torsion)
             periodicity = cgmodel.get_torsion_periodicity(torsion)
-            torsion_force.addTorsion(
-                torsion[0],
-                torsion[1],
-                torsion[2],
-                torsion[3],
-                periodicity,
-                equil_torsion_angle.value_in_unit(unit.radian),
-                torsion_force_constant.value_in_unit(unit.kilojoule_per_mole),
-            )
+            
+            if type(periodicity) == list:
+                print("Multiple periodic torsion terms found - using sum")
+                
+                # Check periodic torsion parameter lists:
+                # These can be either a list of quantities, or a quantity with a list as its value
+                
+                # Check equil_torsion_angle parameters:
+                if type(equil_torsion_angle) == unit.quantity.Quantity:
+                    # This is either a single quantity, or quantity with a list value
+                    if type(equil_torsion_angle.value_in_unit(unit.radian)) == list:
+                        # Check if there are either 1 or len(periodicity) elements
+                        if len(equil_torsion_angle) != len(periodicity) and len(equil_torsion_angle) != 1:
+                            # Mismatch is list lengths
+                            print('ERROR: incompatible periodic torsion parameter lists')
+                            exit()
+                        if len(equil_torsion_angle) == 1:
+                            # This happens when input is '[value]*unit.radian'
+                            equil_torsion_angle_list = []
+                            for i in range(len(periodicity)):
+                                equil_torsion_angle_list.append(equil_torsion_angle[0])
+                            # This is a list of quantities
+                            equil_torsion_angle = equil_torsion_angle_list                            
+                    else:
+                        # Single quantity - apply same angle to all periodic terms:
+                        equil_torsion_angle_list = []
+                        for i in range(len(periodicity)):
+                            equil_torsion_angle_list.append(equil_torsion_angle)
+                        # This is a list of quantities
+                        equil_torsion_angle = equil_torsion_angle_list
+                else:
+                    # This is a list of quantities or incorrect input
+                    pass
+
+                # Check torsion_force_constant parameters:
+                if type(torsion_force_constant) == unit.quantity.Quantity:
+                    # This is either a single quantity, or quantity with a list value
+                    if type(torsion_force_constant.value_in_unit(unit.kilojoule_per_mole)) == list:
+                        # Check if there are either 1 or len(periodicity) elements
+                        if len(torsion_force_constant) != len(periodicity) and len(torsion_force_constant) != 1:
+                            # Mismatch is list lengths
+                            print('ERROR: incompatible periodic torsion parameter lists')
+                            exit()
+                        if len(torsion_force_constant) == 1:
+                            # This happens when input is '[value]*unit.kilojoule_per_mole'
+                            torsion_force_constant_list = []
+                            for i in range(len(periodicity)):
+                                torsion_force_constant_list.append(torsion_force_constant[0])
+                            # This is a list of quantities
+                            torsion_force_constant = torsion_force_constant_list      
+                    else:
+                        # Single quantity - apply same angle to all periodic terms:
+                        torsion_force_constant_list = []
+                        for i in range(len(periodicity)):
+                            torsion_force_constant_list.append(torsion_force_constant)
+                        # This is a list of quantities
+                        torsion_force_constant = torsion_force_constant_list
+                else:
+                    # This is a list of quantities or incorrect input  
+                    pass
+                
+                # Add torsion force:
+                for i in range(len(periodicity)):
+                    print(f'Addition torsion term to particles [{torsion[0]} {torsion[1]} {torsion[2]} {torsion[3]}]')
+                    print(f'periodicity: {periodicity[i]}')
+                    print(f'equil_torsion_angle: {equil_torsion_angle[i]}')
+                    print(f'torsion_force_constant: {torsion_force_constant[i]}\n')
+                    torsion_force.addTorsion(
+                        torsion[0],
+                        torsion[1],
+                        torsion[2],
+                        torsion[3],
+                        periodicity[i],
+                        equil_torsion_angle[i].value_in_unit(unit.radian),
+                        torsion_force_constant[i].value_in_unit(unit.kilojoule_per_mole),
+                    )
+                    
+            else:
+                # Single periodic torsion term:
+                torsion_force.addTorsion(
+                    torsion[0],
+                    torsion[1],
+                    torsion[2],
+                    torsion[3],
+                    periodicity,
+                    equil_torsion_angle.value_in_unit(unit.radian),
+                    torsion_force_constant.value_in_unit(unit.kilojoule_per_mole),
+                )                
+                
         cgmodel.system.addForce(torsion_force)
+        
+        print(f"Number of torsion forces: {cgmodel.system.getForces()[3].getNumTorsions()}")
         force = torsion_force
 
     return (cgmodel, force)
