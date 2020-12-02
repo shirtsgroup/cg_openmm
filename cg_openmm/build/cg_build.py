@@ -702,8 +702,6 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
             periodicity = cgmodel.get_torsion_periodicity(torsion)
             
             if type(periodicity) == list:
-                print("Multiple periodic torsion terms found - using sum")
-                
                 # Check periodic torsion parameter lists:
                 # These can be either a list of quantities, or a quantity with a list as its value
                 

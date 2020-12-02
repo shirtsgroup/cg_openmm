@@ -710,11 +710,11 @@ def test_sums_periodic_torsions_4():
 
     # Torsion angle definitions
     torsion_force_constants = {
-        "bb_bb_bb_bb_torsion_force_constant": [5*unit.kilojoule_per_mole]
+        "bb_bb_bb_bb_torsion_force_constant": 5*unit.kilojoule_per_mole
     }
 
     equil_torsion_angles = {
-        "bb_bb_bb_bb_equil_torsion_angle": [0*unit.degrees]
+        "bb_bb_bb_bb_equil_torsion_angle": 0*unit.degrees
     }
     torsion_periodicities = {
         "bb_bb_bb_bb_torsion_periodicity": [1,3],
