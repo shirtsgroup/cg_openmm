@@ -732,7 +732,13 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
                         equil_torsion_angle = equil_torsion_angle_list
                 else:
                     # This is a list of quantities or incorrect input
-                    pass
+                    if len(equil_torsion_angle) == 1:
+                        # This is a list containing a single quantity
+                        equil_torsion_angle_list = []
+                        for i in range(len(periodicity)):
+                            equil_torsion_angle_list.append(equil_torsion_angle[0])
+                        # This is a list of quantities
+                        equil_torsion_angle = equil_torsion_angle_list  
 
                 # Check torsion_force_constant parameters:
                 if type(torsion_force_constant) == unit.quantity.Quantity:
@@ -758,15 +764,21 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
                         # This is a list of quantities
                         torsion_force_constant = torsion_force_constant_list
                 else:
-                    # This is a list of quantities or incorrect input  
-                    pass
+                    # This is a list of quantities or incorrect input
+                    if len(torsion_force_constant) == 1:
+                        # This is a list containing a single quantity
+                        torsion_force_constant_list = []
+                        for i in range(len(periodicity)):
+                            torsion_force_constant_list.append(torsion_force_constant[0])
+                        # This is a list of quantities
+                        torsion_force_constant = torsion_force_constant_list  
                 
                 # Add torsion force:
                 for i in range(len(periodicity)):
-                    print(f'Addition torsion term to particles [{torsion[0]} {torsion[1]} {torsion[2]} {torsion[3]}]')
-                    print(f'periodicity: {periodicity[i]}')
-                    print(f'equil_torsion_angle: {equil_torsion_angle[i]}')
-                    print(f'torsion_force_constant: {torsion_force_constant[i]}\n')
+                    # print(f'Adding torsion term to particles [{torsion[0]} {torsion[1]} {torsion[2]} {torsion[3]}]')
+                    # print(f'periodicity: {periodicity[i]}')
+                    # print(f'equil_torsion_angle: {equil_torsion_angle[i]}')
+                    # print(f'torsion_force_constant: {torsion_force_constant[i]}\n')
                     torsion_force.addTorsion(
                         torsion[0],
                         torsion[1],
@@ -791,7 +803,7 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
                 
         cgmodel.system.addForce(torsion_force)
         
-        print(f"Number of torsion forces: {cgmodel.system.getForces()[3].getNumTorsions()}")
+        # print(f"Number of torsion forces: {cgmodel.system.getForces()[3].getNumTorsions()}")
         force = torsion_force
 
     return (cgmodel, force)

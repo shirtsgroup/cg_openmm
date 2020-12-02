@@ -347,4 +347,515 @@ def test_get_equil_torsion_angle(create_cgmodel):
     phi0 = cgmodel.get_equil_torsion_angle(torsion_list[0])
     # Particles [11,10,8,9], sc-bb-bb-sc
     assert phi0 == 0 * unit.degrees # default
+    
 
+def test_sums_periodic_torsions_1():
+    # Test cg_model with sums of periodic torsions - test 1
+    # Two periodic torsion terms, parameters input as quantities with list values
+    # All parameters are set explicitly in lists
+
+    # Coarse grained model settings
+    include_bond_forces = True
+    include_bond_angle_forces = True
+    include_nonbonded_forces = True
+    include_torsion_forces = True
+    constrain_bonds = False
+
+    # Bond definitions
+    bond_length = 1.5 * unit.angstrom
+    bond_lengths = {
+        "bb_bb_bond_length": bond_length,
+        "bb_sc_bond_length": bond_length,
+        "sc_sc_bond_length": bond_length,
+    }
+    bond_force_constant = 1000 * unit.kilojoule_per_mole / unit.nanometer / unit.nanometer
+    bond_force_constants = {
+        "bb_bb_bond_force_constant": bond_force_constant,
+        "bb_sc_bond_force_constant": bond_force_constant,
+        "sc_sc_bond_force_constant": bond_force_constant,
+    }
+
+    # Particle definitions
+    mass = 100.0 * unit.amu
+    r_min = 1.5 * bond_length  # Lennard-Jones potential r_min
+    # Factor of /(2.0**(1/6)) is applied to convert r_min to sigma
+    sigma = r_min / (2.0 ** (1.0 / 6.0))
+    epsilon = 0.5 * unit.kilojoule_per_mole
+    
+    bb = {"particle_type_name": "bb", "sigma": sigma, "epsilon": epsilon, "mass": mass}
+    sc = {"particle_type_name": "sc", "sigma": sigma, "epsilon": epsilon, "mass": mass}
+
+
+    # Bond angle definitions
+    bond_angle_force_constant = 100 * unit.kilojoule_per_mole / unit.radian / unit.radian
+    bond_angle_force_constants = {
+        "bb_bb_bb_bond_angle_force_constant": bond_angle_force_constant,
+        "bb_bb_sc_bond_angle_force_constant": bond_angle_force_constant,
+    }
+    # OpenMM requires angle definitions in units of radians
+    bb_bb_bb_equil_bond_angle = 120.0 * unit.degrees
+    bb_bb_sc_equil_bond_angle = 120.0 * unit.degrees
+    equil_bond_angles = {
+        "bb_bb_bb_equil_bond_angle": bb_bb_bb_equil_bond_angle,
+        "bb_bb_sc_equil_bond_angle": bb_bb_sc_equil_bond_angle,
+    }
+
+    # Torsion angle definitions
+    torsion_force_constants = {
+        "bb_bb_bb_bb_torsion_force_constant": [5,10]*unit.kilojoule_per_mole,
+    }
+
+    equil_torsion_angles = {
+        "bb_bb_bb_bb_equil_torsion_angle": [0,180]*unit.degrees,
+    }
+    torsion_periodicities = {
+        "bb_bb_bb_bb_torsion_periodicity": [1,3],
+    }
+
+    # Monomer definitions
+    A = {
+        "monomer_name": "A",
+        "particle_sequence": [bb, sc],
+        "bond_list": [[0, 1]],
+        "start": 0,
+        "end": 0,
+    }
+    
+    sequence = 24 * [A]
+    
+    pdb_path = os.path.join(data_path, "24mer_1b1s_initial_structure.pdb")
+    positions = PDBFile(pdb_path).getPositions()
+    
+    # Build a coarse grained model
+    cgmodel = CGModel(
+        particle_type_list=[bb, sc],
+        bond_lengths=bond_lengths,
+        bond_force_constants=bond_force_constants,
+        bond_angle_force_constants=bond_angle_force_constants,
+        torsion_force_constants=torsion_force_constants,
+        equil_bond_angles=equil_bond_angles,
+        equil_torsion_angles=equil_torsion_angles,
+        torsion_periodicities=torsion_periodicities,
+        include_nonbonded_forces=include_nonbonded_forces,
+        include_bond_forces=include_bond_forces,
+        include_bond_angle_forces=include_bond_angle_forces,
+        include_torsion_forces=include_torsion_forces,
+        constrain_bonds=constrain_bonds,
+        positions=positions,
+        sequence=sequence,
+        monomer_types=[A],
+    )
+    
+    # Check the number of periodic torsions terms:
+    n_torsion_forces = cgmodel.system.getForces()[3].getNumTorsions()
+    assert n_torsion_forces == 109
+    
+    
+def test_sums_periodic_torsions_2():
+    # Test cg_model with sums of periodic torsions - test 2
+    # Two periodic torsion terms, parameters input as lists of quantities
+    # All parameters are set explicitly in lists
+
+    # Coarse grained model settings
+    include_bond_forces = True
+    include_bond_angle_forces = True
+    include_nonbonded_forces = True
+    include_torsion_forces = True
+    constrain_bonds = False
+
+    # Bond definitions
+    bond_length = 1.5 * unit.angstrom
+    bond_lengths = {
+        "bb_bb_bond_length": bond_length,
+        "bb_sc_bond_length": bond_length,
+        "sc_sc_bond_length": bond_length,
+    }
+    bond_force_constant = 1000 * unit.kilojoule_per_mole / unit.nanometer / unit.nanometer
+    bond_force_constants = {
+        "bb_bb_bond_force_constant": bond_force_constant,
+        "bb_sc_bond_force_constant": bond_force_constant,
+        "sc_sc_bond_force_constant": bond_force_constant,
+    }
+
+    # Particle definitions
+    mass = 100.0 * unit.amu
+    r_min = 1.5 * bond_length  # Lennard-Jones potential r_min
+    # Factor of /(2.0**(1/6)) is applied to convert r_min to sigma
+    sigma = r_min / (2.0 ** (1.0 / 6.0))
+    epsilon = 0.5 * unit.kilojoule_per_mole
+    
+    bb = {"particle_type_name": "bb", "sigma": sigma, "epsilon": epsilon, "mass": mass}
+    sc = {"particle_type_name": "sc", "sigma": sigma, "epsilon": epsilon, "mass": mass}
+
+
+    # Bond angle definitions
+    bond_angle_force_constant = 100 * unit.kilojoule_per_mole / unit.radian / unit.radian
+    bond_angle_force_constants = {
+        "bb_bb_bb_bond_angle_force_constant": bond_angle_force_constant,
+        "bb_bb_sc_bond_angle_force_constant": bond_angle_force_constant,
+    }
+    # OpenMM requires angle definitions in units of radians
+    bb_bb_bb_equil_bond_angle = 120.0 * unit.degrees
+    bb_bb_sc_equil_bond_angle = 120.0 * unit.degrees
+    equil_bond_angles = {
+        "bb_bb_bb_equil_bond_angle": bb_bb_bb_equil_bond_angle,
+        "bb_bb_sc_equil_bond_angle": bb_bb_sc_equil_bond_angle,
+    }
+
+    # Torsion angle definitions
+    torsion_force_constants = {
+        "bb_bb_bb_bb_torsion_force_constant": [5*unit.kilojoule_per_mole, 10*unit.kilojoule_per_mole]
+    }
+
+    equil_torsion_angles = {
+        "bb_bb_bb_bb_equil_torsion_angle": [0*unit.degrees, 180*unit.degrees]
+    }
+    torsion_periodicities = {
+        "bb_bb_bb_bb_torsion_periodicity": [1,3],
+    }
+
+    # Monomer definitions
+    A = {
+        "monomer_name": "A",
+        "particle_sequence": [bb, sc],
+        "bond_list": [[0, 1]],
+        "start": 0,
+        "end": 0,
+    }
+    
+    sequence = 24 * [A]
+    
+    pdb_path = os.path.join(data_path, "24mer_1b1s_initial_structure.pdb")
+    positions = PDBFile(pdb_path).getPositions()
+    
+    # Build a coarse grained model
+    cgmodel = CGModel(
+        particle_type_list=[bb, sc],
+        bond_lengths=bond_lengths,
+        bond_force_constants=bond_force_constants,
+        bond_angle_force_constants=bond_angle_force_constants,
+        torsion_force_constants=torsion_force_constants,
+        equil_bond_angles=equil_bond_angles,
+        equil_torsion_angles=equil_torsion_angles,
+        torsion_periodicities=torsion_periodicities,
+        include_nonbonded_forces=include_nonbonded_forces,
+        include_bond_forces=include_bond_forces,
+        include_bond_angle_forces=include_bond_angle_forces,
+        include_torsion_forces=include_torsion_forces,
+        constrain_bonds=constrain_bonds,
+        positions=positions,
+        sequence=sequence,
+        monomer_types=[A],
+    )
+    
+    # Check the number of periodic torsions terms:
+    n_torsion_forces = cgmodel.system.getForces()[3].getNumTorsions()
+    assert n_torsion_forces == 109
+    
+    
+def test_sums_periodic_torsions_3():
+    # Test cg_model with sums of periodic torsions - test 3
+    # Two periodic torsion terms, parameters input as lists of quantities
+    # Force constant and phase angle are set implicitly for all periodicities
+    # as single element lists of quantities
+
+    # Coarse grained model settings
+    include_bond_forces = True
+    include_bond_angle_forces = True
+    include_nonbonded_forces = True
+    include_torsion_forces = True
+    constrain_bonds = False
+
+    # Bond definitions
+    bond_length = 1.5 * unit.angstrom
+    bond_lengths = {
+        "bb_bb_bond_length": bond_length,
+        "bb_sc_bond_length": bond_length,
+        "sc_sc_bond_length": bond_length,
+    }
+    bond_force_constant = 1000 * unit.kilojoule_per_mole / unit.nanometer / unit.nanometer
+    bond_force_constants = {
+        "bb_bb_bond_force_constant": bond_force_constant,
+        "bb_sc_bond_force_constant": bond_force_constant,
+        "sc_sc_bond_force_constant": bond_force_constant,
+    }
+
+    # Particle definitions
+    mass = 100.0 * unit.amu
+    r_min = 1.5 * bond_length  # Lennard-Jones potential r_min
+    # Factor of /(2.0**(1/6)) is applied to convert r_min to sigma
+    sigma = r_min / (2.0 ** (1.0 / 6.0))
+    epsilon = 0.5 * unit.kilojoule_per_mole
+    
+    bb = {"particle_type_name": "bb", "sigma": sigma, "epsilon": epsilon, "mass": mass}
+    sc = {"particle_type_name": "sc", "sigma": sigma, "epsilon": epsilon, "mass": mass}
+
+
+    # Bond angle definitions
+    bond_angle_force_constant = 100 * unit.kilojoule_per_mole / unit.radian / unit.radian
+    bond_angle_force_constants = {
+        "bb_bb_bb_bond_angle_force_constant": bond_angle_force_constant,
+        "bb_bb_sc_bond_angle_force_constant": bond_angle_force_constant,
+    }
+    # OpenMM requires angle definitions in units of radians
+    bb_bb_bb_equil_bond_angle = 120.0 * unit.degrees
+    bb_bb_sc_equil_bond_angle = 120.0 * unit.degrees
+    equil_bond_angles = {
+        "bb_bb_bb_equil_bond_angle": bb_bb_bb_equil_bond_angle,
+        "bb_bb_sc_equil_bond_angle": bb_bb_sc_equil_bond_angle,
+    }
+
+    # Torsion angle definitions
+    torsion_force_constants = {
+        "bb_bb_bb_bb_torsion_force_constant": [5*unit.kilojoule_per_mole]
+    }
+
+    equil_torsion_angles = {
+        "bb_bb_bb_bb_equil_torsion_angle": [0*unit.degrees]
+    }
+    torsion_periodicities = {
+        "bb_bb_bb_bb_torsion_periodicity": [1,3],
+    }
+
+    # Monomer definitions
+    A = {
+        "monomer_name": "A",
+        "particle_sequence": [bb, sc],
+        "bond_list": [[0, 1]],
+        "start": 0,
+        "end": 0,
+    }
+    
+    sequence = 24 * [A]
+    
+    pdb_path = os.path.join(data_path, "24mer_1b1s_initial_structure.pdb")
+    positions = PDBFile(pdb_path).getPositions()
+    
+    # Build a coarse grained model
+    cgmodel = CGModel(
+        particle_type_list=[bb, sc],
+        bond_lengths=bond_lengths,
+        bond_force_constants=bond_force_constants,
+        bond_angle_force_constants=bond_angle_force_constants,
+        torsion_force_constants=torsion_force_constants,
+        equil_bond_angles=equil_bond_angles,
+        equil_torsion_angles=equil_torsion_angles,
+        torsion_periodicities=torsion_periodicities,
+        include_nonbonded_forces=include_nonbonded_forces,
+        include_bond_forces=include_bond_forces,
+        include_bond_angle_forces=include_bond_angle_forces,
+        include_torsion_forces=include_torsion_forces,
+        constrain_bonds=constrain_bonds,
+        positions=positions,
+        sequence=sequence,
+        monomer_types=[A],
+    )
+    
+    # Check the number of periodic torsions terms:
+    n_torsion_forces = cgmodel.system.getForces()[3].getNumTorsions()
+    assert n_torsion_forces == 109
+
+
+def test_sums_periodic_torsions_4():
+    # Test cg_model with sums of periodic torsions - test 4
+    # Two periodic torsion terms, parameters input as lists of quantities
+    # Force constant and phase angle are set implicitly for all periodicities
+    # as single quantities
+
+    # Coarse grained model settings
+    include_bond_forces = True
+    include_bond_angle_forces = True
+    include_nonbonded_forces = True
+    include_torsion_forces = True
+    constrain_bonds = False
+
+    # Bond definitions
+    bond_length = 1.5 * unit.angstrom
+    bond_lengths = {
+        "bb_bb_bond_length": bond_length,
+        "bb_sc_bond_length": bond_length,
+        "sc_sc_bond_length": bond_length,
+    }
+    bond_force_constant = 1000 * unit.kilojoule_per_mole / unit.nanometer / unit.nanometer
+    bond_force_constants = {
+        "bb_bb_bond_force_constant": bond_force_constant,
+        "bb_sc_bond_force_constant": bond_force_constant,
+        "sc_sc_bond_force_constant": bond_force_constant,
+    }
+
+    # Particle definitions
+    mass = 100.0 * unit.amu
+    r_min = 1.5 * bond_length  # Lennard-Jones potential r_min
+    # Factor of /(2.0**(1/6)) is applied to convert r_min to sigma
+    sigma = r_min / (2.0 ** (1.0 / 6.0))
+    epsilon = 0.5 * unit.kilojoule_per_mole
+    
+    bb = {"particle_type_name": "bb", "sigma": sigma, "epsilon": epsilon, "mass": mass}
+    sc = {"particle_type_name": "sc", "sigma": sigma, "epsilon": epsilon, "mass": mass}
+
+
+    # Bond angle definitions
+    bond_angle_force_constant = 100 * unit.kilojoule_per_mole / unit.radian / unit.radian
+    bond_angle_force_constants = {
+        "bb_bb_bb_bond_angle_force_constant": bond_angle_force_constant,
+        "bb_bb_sc_bond_angle_force_constant": bond_angle_force_constant,
+    }
+    # OpenMM requires angle definitions in units of radians
+    bb_bb_bb_equil_bond_angle = 120.0 * unit.degrees
+    bb_bb_sc_equil_bond_angle = 120.0 * unit.degrees
+    equil_bond_angles = {
+        "bb_bb_bb_equil_bond_angle": bb_bb_bb_equil_bond_angle,
+        "bb_bb_sc_equil_bond_angle": bb_bb_sc_equil_bond_angle,
+    }
+
+    # Torsion angle definitions
+    torsion_force_constants = {
+        "bb_bb_bb_bb_torsion_force_constant": [5*unit.kilojoule_per_mole]
+    }
+
+    equil_torsion_angles = {
+        "bb_bb_bb_bb_equil_torsion_angle": [0*unit.degrees]
+    }
+    torsion_periodicities = {
+        "bb_bb_bb_bb_torsion_periodicity": [1,3],
+    }
+
+    # Monomer definitions
+    A = {
+        "monomer_name": "A",
+        "particle_sequence": [bb, sc],
+        "bond_list": [[0, 1]],
+        "start": 0,
+        "end": 0,
+    }
+    
+    sequence = 24 * [A]
+    
+    pdb_path = os.path.join(data_path, "24mer_1b1s_initial_structure.pdb")
+    positions = PDBFile(pdb_path).getPositions()
+    
+    # Build a coarse grained model
+    cgmodel = CGModel(
+        particle_type_list=[bb, sc],
+        bond_lengths=bond_lengths,
+        bond_force_constants=bond_force_constants,
+        bond_angle_force_constants=bond_angle_force_constants,
+        torsion_force_constants=torsion_force_constants,
+        equil_bond_angles=equil_bond_angles,
+        equil_torsion_angles=equil_torsion_angles,
+        torsion_periodicities=torsion_periodicities,
+        include_nonbonded_forces=include_nonbonded_forces,
+        include_bond_forces=include_bond_forces,
+        include_bond_angle_forces=include_bond_angle_forces,
+        include_torsion_forces=include_torsion_forces,
+        constrain_bonds=constrain_bonds,
+        positions=positions,
+        sequence=sequence,
+        monomer_types=[A],
+    )
+    
+    # Check the number of periodic torsions terms:
+    n_torsion_forces = cgmodel.system.getForces()[3].getNumTorsions()
+    assert n_torsion_forces == 109
+
+    
+def test_sums_periodic_torsions_5():
+    # Test cg_model with sums of periodic torsions - test 5
+    # Two periodic torsion terms, parameters input as quantities with list values
+    # Parameters are applied to all torsion types using the default input method
+
+    # Coarse grained model settings
+    include_bond_forces = True
+    include_bond_angle_forces = True
+    include_nonbonded_forces = True
+    include_torsion_forces = True
+    constrain_bonds = False
+
+    # Bond definitions
+    bond_length = 1.5 * unit.angstrom
+    bond_lengths = {
+        "bb_bb_bond_length": bond_length,
+        "bb_sc_bond_length": bond_length,
+        "sc_sc_bond_length": bond_length,
+    }
+    bond_force_constant = 1000 * unit.kilojoule_per_mole / unit.nanometer / unit.nanometer
+    bond_force_constants = {
+        "bb_bb_bond_force_constant": bond_force_constant,
+        "bb_sc_bond_force_constant": bond_force_constant,
+        "sc_sc_bond_force_constant": bond_force_constant,
+    }
+
+    # Particle definitions
+    mass = 100.0 * unit.amu
+    r_min = 1.5 * bond_length  # Lennard-Jones potential r_min
+    # Factor of /(2.0**(1/6)) is applied to convert r_min to sigma
+    sigma = r_min / (2.0 ** (1.0 / 6.0))
+    epsilon = 0.5 * unit.kilojoule_per_mole
+    
+    bb = {"particle_type_name": "bb", "sigma": sigma, "epsilon": epsilon, "mass": mass}
+    sc = {"particle_type_name": "sc", "sigma": sigma, "epsilon": epsilon, "mass": mass}
+
+
+    # Bond angle definitions
+    bond_angle_force_constant = 100 * unit.kilojoule_per_mole / unit.radian / unit.radian
+    bond_angle_force_constants = {
+        "bb_bb_bb_bond_angle_force_constant": bond_angle_force_constant,
+        "bb_bb_sc_bond_angle_force_constant": bond_angle_force_constant,
+    }
+    # OpenMM requires angle definitions in units of radians
+    bb_bb_bb_equil_bond_angle = 120.0 * unit.degrees
+    bb_bb_sc_equil_bond_angle = 120.0 * unit.degrees
+    equil_bond_angles = {
+        "bb_bb_bb_equil_bond_angle": bb_bb_bb_equil_bond_angle,
+        "bb_bb_sc_equil_bond_angle": bb_bb_sc_equil_bond_angle,
+    }
+
+    # Torsion angle definitions
+    torsion_force_constants = {
+        "default_torsion_force_constant": [5,10]*unit.kilojoule_per_mole,
+    }
+
+    equil_torsion_angles = {
+        "default_equil_torsion_angle": [0,180]*unit.degrees,
+    }
+    torsion_periodicities = {
+        "default_torsion_periodicity": [1,3],
+    }
+
+    # Monomer definitions
+    A = {
+        "monomer_name": "A",
+        "particle_sequence": [bb, sc],
+        "bond_list": [[0, 1]],
+        "start": 0,
+        "end": 0,
+    }
+    
+    sequence = 24 * [A]
+    
+    pdb_path = os.path.join(data_path, "24mer_1b1s_initial_structure.pdb")
+    positions = PDBFile(pdb_path).getPositions()
+    
+    # Build a coarse grained model
+    cgmodel = CGModel(
+        particle_type_list=[bb, sc],
+        bond_lengths=bond_lengths,
+        bond_force_constants=bond_force_constants,
+        bond_angle_force_constants=bond_angle_force_constants,
+        torsion_force_constants=torsion_force_constants,
+        equil_bond_angles=equil_bond_angles,
+        equil_torsion_angles=equil_torsion_angles,
+        torsion_periodicities=torsion_periodicities,
+        include_nonbonded_forces=include_nonbonded_forces,
+        include_bond_forces=include_bond_forces,
+        include_bond_angle_forces=include_bond_angle_forces,
+        include_torsion_forces=include_torsion_forces,
+        constrain_bonds=constrain_bonds,
+        positions=positions,
+        sequence=sequence,
+        monomer_types=[A],
+    )
+    
+    # Check the number of periodic torsions terms:
+    n_torsion_forces = cgmodel.system.getForces()[3].getNumTorsions()
+    assert n_torsion_forces == 176   
