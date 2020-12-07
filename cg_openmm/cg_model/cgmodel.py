@@ -1173,7 +1173,7 @@ class CGModel(object):
 
     def get_torsion_phase_angle(self, torsion):
         """         
-        Determines the correct equilibrium angle for a torsion (bond angle involving four particles), given their indices within the coarse-grained model
+        Determines the phase_angle for a torsion, given indices of the 4 particles within the coarse-grained model
         For sums of periodic torsions, this returns a list.
         
         :param torsion: A list of the indices for the particles in a torsion
