@@ -7,7 +7,11 @@ from simtk import unit
 from cg_openmm.cg_model.cgmodel import CGModel
 from cg_openmm.parameters.reweight import get_temperature_list
 from cg_openmm.simulation.rep_exch import *
+from analyze_foldamers.ensembles.cluster import *
+from analyze_foldamers.parameters.bond_distributions import *
+from analyze_foldamers.parameters.angle_distributions import *
 from openmmtools.cache import global_context_cache
+from openmmtools.multistate import ReplicaExchangeSampler
 import numpy as np
 import simtk.openmm as openmm
 import pickle
@@ -30,58 +34,77 @@ def run_replica_exchange_done(job):
     
 @FlowProject.label
 def process_replica_exchange_done(job):
-    return job.isfile("output/rep_ex_states.pdf")
+    return job.isfile("output/state_36.dcd")
     
 @FlowProject.label
 def heat_capacity_done(job):
     return job.isfile("output/heat_capacity.pdf")
+    
+@FlowProject.label
+def state_trajectories_created(job):
+    return job.isfile("output/state_1.dcd")
+    
+@FlowProject.label
+def clustering_done(job):
+    return job.isfile("output/native_medoid_min.pdb")
+    
+@FlowProject.label
+def ramachandran_done(job):
+    return job.isfile("output/ramachandran.pdb")
+    
+@FlowProject.label
+def bonded_distributions_done(job):
+    return job.isfile("output/bonds_all_states.pdf")
+    
     
 @replica_exchange_group
 @FlowProject.operation
 @FlowProject.post(run_replica_exchange_done)
 def signac_run_replica_exchange(job):
     # Run replica exchange simulation for current job parameters
-
+    # equil_bond_angle = job.sp.theta
+    # equil_torsion_angle = job.sp.alpha    
+    
     # Job settings
     output_directory = os.path.join(job.workspace(),"output")
     if not os.path.exists(output_directory):
         os.mkdir(output_directory)
     overwrite_files = True  # overwrite files.
     
-    global_context_cache.platform = openmm.Platform.getPlatformByName("CUDA")
-
+    global_context_cache.platform = openmm.Platform.getPlatformByName("CUDA")    
+    
     # Replica exchange simulation settings
-    total_simulation_time = 0.05 * unit.nanosecond
-    simulation_time_step = 10.0 * unit.femtosecond
+    total_simulation_time = 20.0 * unit.nanosecond
+    simulation_time_step = 5.0 * unit.femtosecond
     total_steps = int(np.floor(total_simulation_time / simulation_time_step))
     output_data = os.path.join(output_directory, "output.nc")
     number_replicas = 36
-    min_temp = 100.0 * unit.kelvin
+    min_temp = 200.0 * unit.kelvin
     max_temp = 500.0 * unit.kelvin
     temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
-    exchange_frequency = 100  # Number of steps between exchange attempts
+    exchange_frequency = 200  # Number of steps between exchange attempts
     collision_frequency = 5/unit.picosecond
 
     include_bond_forces = True
     include_bond_angle_forces = True
     include_nonbonded_forces = True
     include_torsion_forces = True
-    constrain_bonds = False
-
+    constrain_bonds = False    
+    
     mass = 100.0 * unit.amu
 
     # mass and charge are defaults.
     bb = {
         "particle_type_name": "bb",
-        "sigma": job.sp.sigma_bb * unit.nanometer,
-        "epsilon": job.sp.epsilon_bb * unit.kilojoules_per_mole,
+        "sigma": job.sp.sigma * unit.angstrom,
+        "epsilon": job.sp.epsilon * unit.kilojoules_per_mole,
         "mass": mass
     }
         
     sc = {
         "particle_type_name": "sc",
-        "sigma": job.sp.sigma_sc * unit.nanometer,
-        "epsilon": job.sp.epsilon_sc * unit.kilojoules_per_mole,
+        "sigma": job.sp.sigma * unit.angstrom,
+        "epsilon": job.sp.epsilon * unit.kilojoules_per_mole,
         "mass": mass
     }
 
@@ -108,7 +131,9 @@ def signac_run_replica_exchange(job):
         "default_bond_angle_force_constant": job.sp.k_angle * unit.kilojoule_per_mole / unit.radian / unit.radian
     }
 
-    equil_bond_angles = {"default_equil_bond_angle": job.sp.equil_bond_angle * unit.degrees}
+    equil_bond_angles = {
+        "default_equil_bond_angle": job.sp.equil_bond_angle_bb_bb_sc * unit.degrees,
+        "bb_bb_bb_equil_bond_angle": job.sp.equil_bond_angle_bb_bb_bb * unit.degrees}
 
     # torsion angle definitions
     torsion_force_constants = {
@@ -117,7 +142,7 @@ def signac_run_replica_exchange(job):
 
     torsion_phase_angles = {
         "sc_bb_bb_sc_torsion_phase_angle": 0 * unit.degrees,
-        "bb_bb_bb_bb_torsion_phase_angle": job.sp.torsion_phase_angle * unit.degrees,
+        "bb_bb_bb_bb_torsion_phase_angle": job.sp.torsion_phase_angle_bb_bb_bb_bb * unit.degrees,
         "bb_bb_bb_sc_torsion_phase_angle": 0 * unit.degrees,
     }
 
@@ -186,9 +211,9 @@ def signac_process_replica_exchange(job):
         output_data=output_data,
         output_directory=output_directory,
         write_data_file=False,
+        detect_equilibration=True,
     )
 
-    # Store trajectory analysis stats:
     analysis_stats["production_start"] = production_start
     analysis_stats["energy_decorrelation"] = sample_spacing
 
@@ -199,8 +224,8 @@ def signac_process_replica_exchange(job):
     make_replica_dcd_files(
         cgmodel.topology,
         replica_positions,
-        timestep=10*unit.femtosecond,
-        time_interval=1000,
+        timestep=5*unit.femtosecond,
+        time_interval=200,
         output_dir=output_directory
     )
 
@@ -208,8 +233,8 @@ def signac_process_replica_exchange(job):
         cgmodel.topology,
         replica_positions,
         replica_states,
-        timestep=10*unit.femtosecond,
-        time_interval=1000,
+        timestep=5*unit.femtosecond,
+        time_interval=200,
         output_dir=output_directory
     )
 
@@ -227,7 +252,7 @@ def signac_calc_heat_capacity(job):
     # Replica exchange simulation settings.
     #These must match the simulations that are being analyzed.
     number_replicas = 36
-    min_temp = 100 * unit.kelvin
+    min_temp = 200.0 * unit.kelvin
     max_temp = 500.0 * unit.kelvin
     temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
 
@@ -247,12 +272,134 @@ def signac_calc_heat_capacity(job):
     # Save C_v data to data file:
     job.data['C_v'] = C_v
     job.data['dC_v'] = dC_v
-    job.data['T_list_C_v'] = new_temperature_list      
-    
+    job.data['T_list_C_v'] = new_temperature_list    
+
     print(f"T({new_temperature_list[0].unit})  Cv({C_v[0].unit})  dCv({dC_v[0].unit})")
     for i, C in enumerate(C_v):
         print(f"{new_temperature_list[i]._value:>8.2f}{C_v[i]._value:>10.4f} {dC_v[i]._value:>10.4f}")
+ 
+    
+@analysis_group
+@FlowProject.operation
+@FlowProject.pre(process_replica_exchange_done)
+@FlowProject.post(clustering_done)
+def signac_clustering(job):
+    # Predict native structure from rmsd clustering:
+    
+    output_directory = os.path.join(job.workspace(),"output")
+    
+    # Load in cgmodel:
+    cgmodel = pickle.load(open(job.fn("stored_cgmodel.pkl"),"rb"))
+    
+    # Load in trajectory stats:
+    analysis_stats = pickle.load(open(job.fn("analysis_stats.pkl"),"rb"))
+    
+    medoid_positions, cluster_sizes, cluster_rmsd, n_noise, silhouette_avg = get_cluster_medoid_positions_DBSCAN(
+        file_list=dcd_file_list_rep,
+        cgmodel=cgmodel,
+        min_samples=50,
+        eps=0.1,
+        frame_start=analysis_stats["production_start"],
+        frame_stride=50,
+        frame_end=frame_end,
+        filter=True,
+        filter_ratio=filter_ratio,
+        output_dir=output_directory,
+        )
+    
+    job.data['cluster_sizes'] = cluster_sizes
+    job.data['noise_points'] = n_noise
+    job.data['cluster_rmsd'] = cluster_rmsd
+    job.data['avg_silhouette'] = silhouette_avg
+
+    # Choose the medoid cluster with the smallest rmsd as the native structure.
+    k_min = np.argmin(cluster_rmsd)
+
+    # Minimize energy of native structure
+    positions, PE_start, PE_end, simulation = minimize_structure(
+        cgmodel,
+        medoid_positions[k_min],
+        output_file=f"{output_directory}/native_medoid_min.pdb",
+    )
+
+    job.data['native_positions'] = medoid_positions[k_min]
+    job.data['native_positions_min'] = positions
+    job.data['native_PE'] = PE_start
+    job.data['native_PE_min'] = PE_end
     
     
+@analysis_group
+@FlowProject.operation
+@FlowProject.pre(state_trajectories_created)
+@FlowProject.post(ramachandran_done)
+def signac_ramachandran(job):
+    # Make alpha-theta ramachandran plots:
+    
+    output_directory = os.path.join(job.workspace(),"output")
+    
+    # Load in trajectory stats:
+    analysis_stats = pickle.load(open(job.fn("analysis_stats.pkl"),"rb"))    
+    
+    # Load in cgmodel:
+    cgmodel = pickle.load(open(job.fn("stored_cgmodel.pkl"),"rb"))    
+    
+    traj_file_list = []
+    number_replicas = 36
+    
+    for i in range(number_replicas):
+        traj_file_list.append(f"{output_directory}/state_{rep+1}.dcd")
+    
+    rama_hist, xedges, yedges = calc_ramachandran(
+        cgmodel,
+        traj_file_list,
+        plotfile=f"{output_directory}/ramachandran.pdf",
+        frame_start=analysis_stats["production_start"],
+        )
+        
+        
+@analysis_group
+@FlowProject.operation
+@FlowProject.pre(state_trajectories_created)
+@FlowProject.post(bonded_distributions_done)
+def signac_bonded_distributions(job):
+    # Make alpha-theta ramachandran plots:
+    
+    output_directory = os.path.join(job.workspace(),"output")
+    
+    # Load in trajectory stats:
+    analysis_stats = pickle.load(open(job.fn("analysis_stats.pkl"),"rb"))    
+    
+    # Load in cgmodel:
+    cgmodel = pickle.load(open(job.fn("stored_cgmodel.pkl"),"rb"))    
+    
+    traj_file_list = []
+    number_replicas = 36
+
+    min_temp = 200.0 * unit.kelvin
+    max_temp = 500.0 * unit.kelvin
+    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
+    
+    for i in range(number_replicas):
+        traj_file_list.append(f"{output_directory}/state_{i+1}.dcd")
+    
+    bond_hist_data = calc_bond_length_distribution(
+        cgmodel, traj_file_list, 
+        frame_start=analysis_stats["production_start"],
+        temperature_list=temperature_list,
+        plotfile=f"{output_directory}/bonds_all_states.pdf")
+        
+    angle_hist_data = calc_bond_angle_distribution(
+        cgmodel, traj_file_list,
+        frame_start=analysis_stats["production_start"],
+        temperature_list=temperature_list,
+        plotfile=f"{output_directory}/angles_all_states.pdf")
+        
+    bond_hist_data = calc_torsion_distribution(
+        cgmodel, traj_file_list,
+        frame_start=analysis_stats["production_start"],
+        temperature_list=temperature_list,
+        plotfile=f"{output_directory}/torsions_all_states.pdf")
+        
+   
 if __name__ == '__main__':
     FlowProject().main()

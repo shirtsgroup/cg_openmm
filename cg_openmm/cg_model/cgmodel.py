@@ -93,6 +93,7 @@ class CGModel(object):
     def __init__(
         self,
         particle_type_list={},
+        charges={},
         monomer_types=None,
         sequence=None,
         positions=None,

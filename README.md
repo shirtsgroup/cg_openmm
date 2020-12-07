@@ -1,8 +1,9 @@
 cg_openmm
 ==============================
 [//]: # (Badges)
-[![Travis Build Status](https://travis-ci.com/shirtsgroup/cg_openmm.svg?branch=master)](https://travis-ci.com/shirtsgroup/cg_openmm)
+[![GH Actions Status](https://github.com/shirtsgroup/cg_openmm/workflows/CI/badge.svg)](https://github.com/shirtsgroup/cg_openmm/actions?query=branch%3Amaster)
 [![codecov](https://codecov.io/gh/shirtsgroup/cg_openmm/branch/master/graph/badge.svg)](https://codecov.io/gh/shirtsgroup/cg_openmm/branch/master)
+[![Documentation Status](https://readthedocs.org/projects/cg-openmm/badge/?version=latest)](https://cg-openmm.readthedocs.io/en/latest/?badge=latest)
 
 This repository contains tools to perform coarse grained simulations in OpenMM.  This repository also enables the use of coarse grained models with OpenMM utilities such as Yank.
 
