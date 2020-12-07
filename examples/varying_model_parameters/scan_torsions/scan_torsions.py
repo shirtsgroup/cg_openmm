@@ -87,21 +87,21 @@ if scan_sc_bb_bb_sc_torsions == True:
         "bb_bb_bb_bb_torsion_k": torsion_force_constant,
         "sc_bb_bb_sc_torsion_k": torsion_force_constant,
     }
-    bb_bb_bb_bb_equil_torsion_angle = 78.0 * (
+    bb_bb_bb_bb_torsion_phase_angle = 78.0 * (
         3.14 / 180.0
     )  # OpenMM defaults to units of radians for angle definitions
-    sc_bb_bb_sc_equil_torsion_angle = 120.0 * (3.14 / 180.0)
-    equil_torsion_angles = {
-        "bb_bb_bb_bb_torsion_0": bb_bb_bb_bb_equil_torsion_angle,
-        "sc_bb_bb_sc_torsion_0": sc_bb_bb_sc_equil_torsion_angle,
+    sc_bb_bb_sc_torsion_phase_angle = 120.0 * (3.14 / 180.0)
+    torsion_phase_angles = {
+        "bb_bb_bb_bb_torsion_0": bb_bb_bb_bb_torsion_phase_angle,
+        "sc_bb_bb_sc_torsion_0": sc_bb_bb_sc_torsion_phase_angle,
     }
     torsion_periodicities = {"bb_bb_bb_bb_period": 1, "sc_bb_bb_sc_period": 1}
 else:
     torsion_force_constants = {"bb_bb_bb_bb_torsion_k": torsion_force_constant}
-    bb_bb_bb_bb_equil_torsion_angle = 78.0 * (
+    bb_bb_bb_bb_torsion_phase_angle = 78.0 * (
         3.14 / 180.0
     )  # OpenMM defaults to units of radians for angle definitions
-    equil_torsion_angles = {"bb_bb_bb_bb_torsion_0": bb_bb_bb_bb_equil_torsion_angle}
+    torsion_phase_angles = {"bb_bb_bb_bb_torsion_0": bb_bb_bb_bb_torsion_phase_angle}
     torsion_periodicities = {"bb_bb_bb_bb_period": 1}
 
 # Get initial positions from local file
@@ -121,7 +121,7 @@ cgmodel = CGModel(
     bond_angle_force_constants=bond_angle_force_constants,
     torsion_force_constants=torsion_force_constants,
     equil_bond_angles=equil_bond_angles,
-    equil_torsion_angles=equil_torsion_angles,
+    torsion_phase_angles=torsion_phase_angles,
     torsion_periodicities=torsion_periodicities,
     include_nonbonded_forces=include_nonbonded_forces,
     include_bond_forces=include_bond_forces,
@@ -167,16 +167,16 @@ if not os.path.exists(output_directory):
     os.mkdir(output_directory)
 
 # Create a list of the torsion angles that we will investigate in our parameter scan
-bb_bb_bb_bb_equil_torsion_angles = [
-    float(bb_bb_bb_bb_equil_torsion_angle + i * 0.05) for i in range(-grid_points, grid_points, 1)
+bb_bb_bb_bb_torsion_phase_angles = [
+    float(bb_bb_bb_bb_torsion_phase_angle + i * 0.05) for i in range(-grid_points, grid_points, 1)
 ]
 if scan_sc_bb_bb_sc_torsions == True:
-    sc_bb_bb_sc_equil_torsion_angles = [
-        float(sc_bb_bb_sc_equil_torsion_angle + i * 0.05)
+    sc_bb_bb_sc_torsion_phase_angles = [
+        float(sc_bb_bb_sc_torsion_phase_angle + i * 0.05)
         for i in range(-grid_points, grid_points, 1)
     ]
 else:
-    sc_bb_bb_sc_equil_torsion_angles = [0.0]
+    sc_bb_bb_sc_torsion_phase_angles = [0.0]
 
 if calculate_dQ:
     # Set parameters for evaluating native contacts
@@ -203,15 +203,15 @@ C_v_list = []
 dC_v_list = []
 
 # This is where we start evaluating the properties of models with different equilibrium torsion angles
-for sc_bb_bb_sc_equil_torsion_angle in sc_bb_bb_sc_equil_torsion_angles:
-    for bb_bb_bb_bb_equil_torsion_angle in bb_bb_bb_bb_equil_torsion_angles:
+for sc_bb_bb_sc_torsion_phase_angle in sc_bb_bb_sc_torsion_phase_angles:
+    for bb_bb_bb_bb_torsion_phase_angle in bb_bb_bb_bb_torsion_phase_angles:
         if scan_sc_bb_bb_sc_torsions == True:
-            equil_torsion_angles = {
-                "bb_bb_bb_bb_torsion_0": bb_bb_bb_bb_equil_torsion_angle,
-                "sc_bb_bb_sc_torsion_0": sc_bb_bb_sc_equil_torsion_angle,
+            torsion_phase_angles = {
+                "bb_bb_bb_bb_torsion_0": bb_bb_bb_bb_torsion_phase_angle,
+                "sc_bb_bb_sc_torsion_0": sc_bb_bb_sc_torsion_phase_angle,
             }
         else:
-            equil_torsion_angles = {"bb_bb_bb_bb_torsion_0": bb_bb_bb_bb_equil_torsion_angle}
+            torsion_phase_angles = {"bb_bb_bb_bb_torsion_0": bb_bb_bb_bb_torsion_phase_angle}
         # Build a coarse grained model that has the torsion parameters for this grid point.
         positions = PDBFile("helix.pdb").getPositions()
         cgmodel = CGModel(
@@ -227,7 +227,7 @@ for sc_bb_bb_sc_equil_torsion_angle in sc_bb_bb_sc_equil_torsion_angles:
             bond_angle_force_constants=bond_angle_force_constants,
             torsion_force_constants=torsion_force_constants,
             equil_bond_angles=equil_bond_angles,
-            equil_torsion_angles=equil_torsion_angles,
+            torsion_phase_angles=torsion_phase_angles,
             torsion_periodicities=torsion_periodicities,
             include_nonbonded_forces=include_nonbonded_forces,
             include_bond_forces=include_bond_forces,
@@ -241,30 +241,30 @@ for sc_bb_bb_sc_equil_torsion_angle in sc_bb_bb_sc_equil_torsion_angles:
             output_data = str(
                 str(output_directory)
                 + "/torsions_"
-                + str(round(bb_bb_bb_bb_equil_torsion_angle * (180.0 / 3.14), 1))
+                + str(round(bb_bb_bb_bb_torsion_phase_angle * (180.0 / 3.14), 1))
                 + "_"
-                + str(round(sc_bb_bb_sc_equil_torsion_angle * (180.0 / 3.14), 1))
+                + str(round(sc_bb_bb_sc_torsion_phase_angle * (180.0 / 3.14), 1))
                 + ".nc"
             )
             file_name = str(
                 str(output_directory)
                 + "/re_min_"
-                + str(round(bb_bb_bb_bb_equil_torsion_angle * (180.0 / 3.14), 1))
+                + str(round(bb_bb_bb_bb_torsion_phase_angle * (180.0 / 3.14), 1))
                 + "_"
-                + str(round(sc_bb_bb_sc_equil_torsion_angle * (180.0 / 3.14), 1))
+                + str(round(sc_bb_bb_sc_torsion_phase_angle * (180.0 / 3.14), 1))
                 + ".pdb"
             )
         else:
             output_data = str(
                 str(output_directory)
                 + "/torsions_"
-                + str(round(bb_bb_bb_bb_equil_torsion_angle * (180.0 / 3.14), 1))
+                + str(round(bb_bb_bb_bb_torsion_phase_angle * (180.0 / 3.14), 1))
                 + ".nc"
             )
             file_name = str(
                 str(output_directory)
                 + "/re_min_"
-                + str(round(bb_bb_bb_bb_equil_torsion_angle * (180.0 / 3.14), 1))
+                + str(round(bb_bb_bb_bb_torsion_phase_angle * (180.0 / 3.14), 1))
                 + ".pdb"
             )
         if os.path.exists(file_name):
@@ -272,13 +272,13 @@ for sc_bb_bb_sc_equil_torsion_angle in sc_bb_bb_sc_equil_torsion_angles:
             print("Reading existing simulation data for a coarse grained model")
             print(
                 "with bb_bb_bb_bb torsion angles of "
-                + str(round(bb_bb_bb_bb_equil_torsion_angle * (180.0 / 3.14), 1))
+                + str(round(bb_bb_bb_bb_torsion_phase_angle * (180.0 / 3.14), 1))
                 + " degrees."
             )
             if scan_sc_bb_bb_sc_torsions == True:
                 print(
                     "and sc_bb_bb_sc torsion angles of "
-                    + str(round(sc_bb_bb_sc_equil_torsion_angle * (180.0 / 3.14), 1))
+                    + str(round(sc_bb_bb_sc_torsion_phase_angle * (180.0 / 3.14), 1))
                     + " degrees."
                 )
             print("\n")
@@ -297,13 +297,13 @@ for sc_bb_bb_sc_equil_torsion_angle in sc_bb_bb_sc_equil_torsion_angles:
             print("Performing simulations for a coarse grained model")
             print(
                 "with bb_bb_bb_bb torsion angles of "
-                + str(round(bb_bb_bb_bb_equil_torsion_angle * (180.0 / 3.14), 1))
+                + str(round(bb_bb_bb_bb_torsion_phase_angle * (180.0 / 3.14), 1))
                 + " degrees."
             )
             if scan_sc_bb_bb_sc_torsions == True:
                 print(
                     "and sc_bb_bb_sc torsion angles of "
-                    + str(round(sc_bb_bb_sc_equil_torsion_angle * (180.0 / 3.14), 1))
+                    + str(round(sc_bb_bb_sc_torsion_phase_angle * (180.0 / 3.14), 1))
                     + " degrees."
                 )
             print("\n")
@@ -387,30 +387,30 @@ for sc_bb_bb_sc_equil_torsion_angle in sc_bb_bb_sc_equil_torsion_angles:
                 nonnative_ensemble_directory = str(
                     str(output_directory)
                     + "/ens_"
-                    + str(round(bb_bb_bb_bb_equil_torsion_angle * (180.0 / 3.14), 1))
+                    + str(round(bb_bb_bb_bb_torsion_phase_angle * (180.0 / 3.14), 1))
                     + "_"
-                    + str(round(sc_bb_bb_sc_equil_torsion_angle * (180.0 / 3.14), 1))
+                    + str(round(sc_bb_bb_sc_torsion_phase_angle * (180.0 / 3.14), 1))
                     + "_nonnative"
                 )
                 native_ensemble_directory = str(
                     str(output_directory)
                     + "/ens_"
-                    + str(round(bb_bb_bb_bb_equil_torsion_angle * (180.0 / 3.14), 1))
+                    + str(round(bb_bb_bb_bb_torsion_phase_angle * (180.0 / 3.14), 1))
                     + "_"
-                    + str(round(sc_bb_bb_sc_equil_torsion_angle * (180.0 / 3.14), 1))
+                    + str(round(sc_bb_bb_sc_torsion_phase_angle * (180.0 / 3.14), 1))
                     + "_native"
                 )
             else:
                 nonnative_ensemble_directory = str(
                     str(output_directory)
                     + "/ens_"
-                    + str(round(bb_bb_bb_bb_equil_torsion_angle * (180.0 / 3.14), 1))
+                    + str(round(bb_bb_bb_bb_torsion_phase_angle * (180.0 / 3.14), 1))
                     + "_nonnative"
                 )
                 native_ensemble_directory = str(
                     str(output_directory)
                     + "/ens_"
-                    + str(round(bb_bb_bb_bb_equil_torsion_angle * (180.0 / 3.14), 1))
+                    + str(round(bb_bb_bb_bb_torsion_phase_angle * (180.0 / 3.14), 1))
                     + "_native"
                 )
             # We build an ensemble of nonnative poses for energetic comparison with the native pose.
@@ -501,17 +501,17 @@ for sc_bb_bb_sc_equil_torsion_angle in sc_bb_bb_sc_equil_torsion_angles:
             dC_v_list.append(dC_v)
 
 if scan_sc_bb_bb_sc_torsions == True:
-    file_name = "dQ_for_variable_equil_torsion_angles.png"
+    file_name = "dQ_for_variable_torsion_phase_angles.png"
     figure = pyplot.figure(1)
-    bb_bb_bb_bb_equil_torsion_angles = np.array(
-        [float(equil_torsion_angle) for equil_torsion_angle in bb_bb_bb_bb_equil_torsion_angles]
+    bb_bb_bb_bb_torsion_phase_angles = np.array(
+        [float(torsion_phase_angle) for torsion_phase_angle in bb_bb_bb_bb_torsion_phase_angles]
     )
-    sc_bb_bb_sc_equil_torsion_angles = np.array(
-        [float(equil_torsion_angle) for equil_torsion_angle in sc_bb_bb_sc_equil_torsion_angles]
+    sc_bb_bb_sc_torsion_phase_angles = np.array(
+        [float(torsion_phase_angle) for torsion_phase_angle in sc_bb_bb_sc_torsion_phase_angles]
     )
 
-    x = np.unique(bb_bb_bb_bb_equil_torsion_angles * (180.0 / 3.14))
-    y = np.unique(sc_bb_bb_sc_equil_torsion_angles * (180.0 / 3.14))
+    x = np.unique(bb_bb_bb_bb_torsion_phase_angles * (180.0 / 3.14))
+    y = np.unique(sc_bb_bb_sc_torsion_phase_angles * (180.0 / 3.14))
     X, Y = np.meshgrid(x, y)
     Z = dQ_list.reshape(len(x), len(y))
 
@@ -528,7 +528,7 @@ if calculate_dQ:
     file_name = "dQ_for_variable_bb_bb_bb_bb_torsion_angle.png"
     figure = pyplot.figure(1)
 
-    x = np.array([float(angle * (180.0 / 3.14)) for angle in bb_bb_bb_bb_equil_torsion_angles])
+    x = np.array([float(angle * (180.0 / 3.14)) for angle in bb_bb_bb_bb_torsion_phase_angles])
     y = np.array([float(dQ) for dQ in dQ_list])
 
     pyplot.xlabel(r"$ \alpha_{0}^{BB-BB-BB-BB} $ ( Degrees )")
@@ -544,7 +544,7 @@ if calculate_free_energies:
     figure = pyplot.figure(1)
     legend_title = r"$ \alpha_{0}^{BB-BB-BB-BB} $ (Degrees)"
     legend_labels = np.array(
-        [float(round(angle * (180.0 / 3.14), 1)) for angle in bb_bb_bb_bb_equil_torsion_angles]
+        [float(round(angle * (180.0 / 3.14), 1)) for angle in bb_bb_bb_bb_torsion_phase_angles]
     )
     temperatures = np.array([temperature for temperature in new_temp_list])
     index = 0
@@ -567,7 +567,7 @@ if calculate_free_energies:
     figure = pyplot.figure(1)
     legend_title = r"$ \alpha_{0}^{BB-BB-BB-BB} $ (Degrees)"
     legend_labels = np.array(
-        [float(round(angle * (180.0 / 3.14), 1)) for angle in bb_bb_bb_bb_equil_torsion_angles]
+        [float(round(angle * (180.0 / 3.14), 1)) for angle in bb_bb_bb_bb_torsion_phase_angles]
     )
     temperatures = np.array([temperature for temperature in new_temp_list])
     index = 0
@@ -590,7 +590,7 @@ if evaluate_heat_capacity:
     figure = pyplot.figure(1)
     legend_title = r"$ \alpha_{0}^{BB-BB-BB-BB} $ (Degrees)"
     legend_labels = np.array(
-        [float(round(angle * (180.0 / 3.14), 1)) for angle in bb_bb_bb_bb_equil_torsion_angles]
+        [float(round(angle * (180.0 / 3.14), 1)) for angle in bb_bb_bb_bb_torsion_phase_angles]
     )
     temperatures = np.array([temperature for temperature in new_temp_list])
     index = 0

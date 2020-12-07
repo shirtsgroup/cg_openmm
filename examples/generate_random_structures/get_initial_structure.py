@@ -49,8 +49,8 @@ torsion_force_constants = {
     "default_torsion_force_constant" : 10 * unit.kilojoule_per_mole
 }
 
-equil_torsion_angles = {
-    "default_equil_torsion_angle" : 0.0 * unit.degrees
+torsion_phase_angles = {
+    "default_torsion_phase_angle" : 0.0 * unit.degrees
 }
 
 torsion_periodicities = {
@@ -77,7 +77,7 @@ cgmodel = CGModel(
     bond_angle_force_constants=bond_angle_force_constants,
     torsion_force_constants=torsion_force_constants,
     equil_bond_angles=equil_bond_angles,
-    equil_torsion_angles=equil_torsion_angles,
+    torsion_phase_angles=torsion_phase_angles,
     torsion_periodicities=torsion_periodicities,
     include_nonbonded_forces=include_nonbonded_forces,
     include_bond_forces=include_bond_forces,

@@ -72,13 +72,13 @@ torsion_force_constant = 0.0001 * unit.kilocalorie_per_mole / unit.radian / unit
 torsion_force_constants = {
     "bb_bb_bb_bb_torsion_k": torsion_force_constant
 }  # ,'sc_bb_bb_sc_torsion_k': torsion_force_constant}
-bb_bb_bb_bb_equil_torsion_angle = 78.0 * (
+bb_bb_bb_bb_torsion_phase_angle = 78.0 * (
     3.14 / 180.0
 )  # OpenMM defaults to units of radians for angle definitions
-# sc_bb_bb_sc_equil_torsion_angle = 110.0 * (3.14/180.0)
-equil_torsion_angles = {
-    "bb_bb_bb_bb_torsion_0": bb_bb_bb_bb_equil_torsion_angle
-}  # ,'sc_bb_bb_sc_torsion_0': sc_bb_bb_sc_equil_torsion_angle}
+# sc_bb_bb_sc_torsion_phase_angle = 110.0 * (3.14/180.0)
+torsion_phase_angles = {
+    "bb_bb_bb_bb_torsion_0": bb_bb_bb_bb_torsion_phase_angle
+}  # ,'sc_bb_bb_sc_torsion_0': sc_bb_bb_sc_torsion_phase_angle}
 torsion_periodicities = {"bb_bb_bb_bb_period": 1}  # ,'sc_bb_bb_sc_period': 2}
 
 # Initiate cgmodel using positions from local file
@@ -96,7 +96,7 @@ cgmodel = CGModel(
     bond_lengths=bond_lengths,
     bond_force_constants=bond_force_constants,
     torsion_force_constants=torsion_force_constants,
-    equil_torsion_angles=equil_torsion_angles,
+    torsion_phase_angles=torsion_phase_angles,
     torsion_periodicities=torsion_periodicities,
     include_nonbonded_forces=include_nonbonded_forces,
     include_bond_forces=include_bond_forces,

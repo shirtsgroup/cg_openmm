@@ -42,16 +42,16 @@ equil_bond_angle = [120, 140, 160]
 # Periodic torsion parameters #
 #-----------------------------#
 # k_torsion - torsion force constant (unit.kilojoule_per_mole)
-# equil_torsion_angle - equilibrium torsion angle (unit.degrees)
+# torsion_phase_angle - equilibrium torsion angle (unit.degrees)
 # torsion_periodicity - (unitless)
 
 k_torsion = 3 
-equil_torsion_angle = [110, 130, 150]
+torsion_phase_angle = [110, 130, 150]
 torsion_periodicity = 1
 
 # For varying alpha and theta angles:
 for theta in equil_bond_angle:
-    for alpha in equil_torsion_angle:
+    for alpha in torsion_phase_angle:
         sp = {
             'epsilon_bb': epsilon_bb,
             'epsilon_sc': epsilon_sc,
@@ -62,7 +62,7 @@ for theta in equil_bond_angle:
             'k_angle': k_angle,
             'equil_bond_angle': theta,
             'k_torsion': k_torsion,
-            'equil_torsion_angle': alpha,
+            'torsion_phase_angle': alpha,
             'torsion_periodicity': torsion_periodicity,
         }
         job = project.open_job(sp)

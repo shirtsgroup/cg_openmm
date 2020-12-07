@@ -140,11 +140,10 @@ def signac_run_replica_exchange(job):
         "default_torsion_force_constant": 0.0 * unit.kilojoule_per_mole,
         "bb_bb_bb_bb_torsion_force_constant": job.sp.k_torsion * unit.kilojoule_per_mole}
 
-    # Need to substract 180 degrees from specified torsion for mdtraj consistency
-    equil_torsion_angles = {
-        "sc_bb_bb_sc_equil_torsion_angle": 0 * unit.degrees,
-        "bb_bb_bb_bb_equil_torsion_angle": (job.sp.equil_torsion_angle_bb_bb_bb_bb-180) * unit.degrees,
-        "bb_bb_bb_sc_equil_torsion_angle": 0 * unit.degrees,
+    torsion_phase_angles = {
+        "sc_bb_bb_sc_torsion_phase_angle": 0 * unit.degrees,
+        "bb_bb_bb_bb_torsion_phase_angle": job.sp.torsion_phase_angle_bb_bb_bb_bb * unit.degrees,
+        "bb_bb_bb_sc_torsion_phase_angle": 0 * unit.degrees,
     }
 
     torsion_periodicities = {
@@ -165,7 +164,7 @@ def signac_run_replica_exchange(job):
         bond_angle_force_constants=bond_angle_force_constants,
         torsion_force_constants=torsion_force_constants,
         equil_bond_angles=equil_bond_angles,
-        equil_torsion_angles=equil_torsion_angles,
+        torsion_phase_angles=torsion_phase_angles,
         torsion_periodicities=torsion_periodicities,
         include_nonbonded_forces=include_nonbonded_forces,
         include_bond_forces=include_bond_forces,

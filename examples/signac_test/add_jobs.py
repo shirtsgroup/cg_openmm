@@ -45,12 +45,12 @@ equil_bond_angle = [120, 130, 140, 150, 160]
 # Periodic torsion parameters #
 #-----------------------------#
 # k_torsion - torsion force constant (unit.kilojoule_per_mole)
-# equil_torsion_angle - equilibrium torsion angle (unit.degrees)
+# torsion_phase_angle - equilibrium torsion angle (unit.degrees)
 # torsion_periodicity - (unitless)
 
 k_torsion = 3 
 # New points are 120, 140
-equil_torsion_angle = [110, 120, 130, 140, 150]
+torsion_phase_angle = [110, 120, 130, 140, 150]
 torsion_periodicity = 1
 
 # Create list of the existing statepoints:
@@ -61,7 +61,7 @@ for job in project:
 
 # For varying alpha and theta angles:
 for theta in equil_bond_angle:
-    for alpha in equil_torsion_angle:
+    for alpha in torsion_phase_angle:
         sp = {
             'epsilon_bb': epsilon_bb,
             'epsilon_sc': epsilon_sc,
@@ -72,7 +72,7 @@ for theta in equil_bond_angle:
             'k_angle': k_angle,
             'equil_bond_angle': theta,
             'k_torsion': k_torsion,
-            'equil_torsion_angle': alpha,
+            'torsion_phase_angle': alpha,
             'torsion_periodicity': torsion_periodicity,
         }
         
