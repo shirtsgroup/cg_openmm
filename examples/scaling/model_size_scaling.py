@@ -74,12 +74,12 @@ torsion_force_constants = {
     "sc_bb_bb_sc_torsion_k": torsion_force_constant,
 }
 # OpenMM defaults to units of radians for angle definitions
-bb_bb_bb_bb_equil_torsion_angle = 78.0 * (np.math.pi / 180.0)
-equil_torsion_angle = 0.0 * (np.math.pi / 180.0)
-equil_torsion_angles = {
-    "bb_bb_bb_bb_torsion_0": bb_bb_bb_bb_equil_torsion_angle,
-    "bb_bb_bb_sc_torsion_0": equil_torsion_angle,
-    "sc_bb_bb_sc_torsion_0": equil_torsion_angle,
+bb_bb_bb_bb_torsion_phase_angle = 78.0 * (np.math.pi / 180.0)
+torsion_phase_angle = 0.0 * (np.math.pi / 180.0)
+torsion_phase_angles = {
+    "bb_bb_bb_bb_torsion_0": bb_bb_bb_bb_torsion_phase_angle,
+    "bb_bb_bb_sc_torsion_0": torsion_phase_angle,
+    "sc_bb_bb_sc_torsion_0": torsion_phase_angle,
 }
 torsion_periodicity = 1
 torsion_periodicities = {
@@ -105,7 +105,7 @@ for polymer_length in [8, 10, 20, 30]:
         bond_angle_force_constants=bond_angle_force_constants,
         torsion_force_constants=torsion_force_constants,
         equil_bond_angles=equil_bond_angles,
-        equil_torsion_angles=equil_torsion_angles,
+        torsion_phase_angles=torsion_phase_angles,
         torsion_periodicities=torsion_periodicities,
         include_nonbonded_forces=include_nonbonded_forces,
         include_bond_forces=include_bond_forces,

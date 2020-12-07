@@ -55,8 +55,8 @@ class CGModel(object):
         bond_angle_force_constants = {
             "default_bond_angle_force_constant": 100.0 * unit.kilojoule_per_mole / unit.radian**2}
 
-        equil_torsion_angles = {
-            "default_equil_torsion_angle": 150 * unit.degrees}        
+        torsion_phase_angles = {
+            "default_torsion_phase_angle": 150 * unit.degrees}        
         
         torsion_force_constants = {
             "default_torsion_force_constant": 2.0 * unit.kilojoule_per_mole,
@@ -77,7 +77,7 @@ class CGModel(object):
             bond_angle_force_constants=bond_angle_force_constants,
             torsion_force_constants=torsion_force_constants,
             equil_bond_angles=equil_bond_angles,
-            equil_torsion_angles=equil_torsion_angles,
+            torsion_phase_angles=torsion_phase_angles,
             torsion_periodicities=torsion_periodicities,
             include_nonbonded_forces=True,
             include_bond_forces=True,
@@ -102,7 +102,7 @@ class CGModel(object):
         torsion_force_constants={},
         torsion_periodicities={},
         equil_bond_angles={},
-        equil_torsion_angles={},
+        torsion_phase_angles={},
         constrain_bonds=False,
         include_nonbonded_forces=True,
         include_bond_forces=True,
@@ -150,8 +150,8 @@ class CGModel(object):
         :param torsion_force_constants: Torsion force constants for all torsion types (default = None)
         :type torsion_force_constants: dict( 'type_name1_type_name2_type_name3_type_name4_torsion_k': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ))
 
-        :param equil_torsion_angles: Equilibrium torsion angle for all unique torsion angle definitions (default = 0)
-        :type equil_torsion_angles: dict( 'type_name1_type_name2_type_name3_type_name4_torsion_0': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) )
+        :param torsion_phase_angles: Periodic torsion phase angle for all unique torsion angle definitions (default = 0)
+        :type torsion_phase_angles: dict( 'type_name1_type_name2_type_name3_type_name4_torsion_0': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) )
 
         :param constrain_bonds: Option to use rigid bond constaints during a simulation of the energy for the system (default = False)
         :type constrain_bonds: Bool
@@ -247,7 +247,7 @@ class CGModel(object):
         self.equil_bond_angles = equil_bond_angles
         self.torsion_force_constants = torsion_force_constants
         self.torsion_periodicities = torsion_periodicities
-        self.equil_torsion_angles = equil_torsion_angles
+        self.torsion_phase_angles = torsion_phase_angles
         self._validate_bonded_forces()
 
         # Assign positions
@@ -325,10 +325,10 @@ class CGModel(object):
                 "default_value": self.default_bond_angle_force_constant,
                 "suffix": "bond_angle_force_constant",
             },
-            "equil_torsion_angles": {
-                "default_name": "default_equil_torsion_angle",
+            "torsion_phase_angles": {
+                "default_name": "default_torsion_phase_angle",
                 "default_value": self.default_angle,
-                "suffix": "equil_torsion_angle",
+                "suffix": "torsion_phase_angle",
             },
             "torsion_force_constants": {
                 "default_name": "default_torsion_force_constant",
@@ -1130,7 +1130,8 @@ class CGModel(object):
 
     def get_torsion_periodicity(self, torsion):
         """         
-        Determines the periodicity for a torsion, given a quadruplet of particle indices 
+        Determines the periodicity for a torsion, given a quadruplet of particle indices. 
+        For sums of periodic torsions, this returns a list.
         
         :param torsion: A list of the indices for the particles in a torsion
         :type torsion: List( int )
@@ -1151,8 +1152,9 @@ class CGModel(object):
 
     def get_torsion_force_constant(self, torsion):
         """         
-        Determines the correct torsion force constant for a torsion (bond angle involving four particles), given their indices within the coarse-grained model
-
+        Determines the correct torsion force constant for a torsion (bond angle involving four particles), given their indices within the coarse-grained model.
+        For sums of periodic torsions, this returns a list.
+        
         :param torsion: A list of the indices for the particles in a torsion
         :type torsion: List( int )
 
@@ -1169,15 +1171,16 @@ class CGModel(object):
         return self._get_bonded_parameter(particle_types, "torsion_force_constants")
         
 
-    def get_equil_torsion_angle(self, torsion):
+    def get_torsion_phase_angle(self, torsion):
         """         
         Determines the correct equilibrium angle for a torsion (bond angle involving four particles), given their indices within the coarse-grained model
-
+        For sums of periodic torsions, this returns a list.
+        
         :param torsion: A list of the indices for the particles in a torsion
         :type torsion: List( int )
 
         :returns: 
-           - equil_torsion_angle (float) - The assigned equilibrium torsion angle for the provided particles
+           - torsion_phase_angle (float) - The assigned periodic torsion phase angle for the provided particles
         """
         particle_types = [
             self.get_particle_type_name(torsion[0]),
@@ -1186,4 +1189,4 @@ class CGModel(object):
             self.get_particle_type_name(torsion[3]),
         ]
 
-        return self._get_bonded_parameter(particle_types, "equil_torsion_angles")
+        return self._get_bonded_parameter(particle_types, "torsion_phase_angles")

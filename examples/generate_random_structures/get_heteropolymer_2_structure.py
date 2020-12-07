@@ -51,8 +51,8 @@ torsion_force_constants = {
 }
 
 
-equil_torsion_angles = {
-    "a_a_a_b_equil_torsion_angle": 0.0 * unit.radians,
+torsion_phase_angles = {
+    "a_a_a_b_torsion_phase_angle": 0.0 * unit.radians,
 }
 
 A = {  # a weird triangular backbone, with 2-bead side chain
@@ -89,7 +89,7 @@ cgmodel = CGModel(
     bond_angle_force_constants=bond_angle_force_constants,
     torsion_force_constants=torsion_force_constants,
     equil_bond_angles=equil_bond_angles,
-    equil_torsion_angles=equil_torsion_angles,
+    torsion_phase_angles=torsion_phase_angles,
     include_nonbonded_forces=include_nonbonded_forces,
     include_bond_forces=include_bond_forces,
     include_bond_angle_forces=include_bond_angle_forces,

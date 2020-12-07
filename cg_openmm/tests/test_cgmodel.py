@@ -71,12 +71,12 @@ def create_cgmodel():
         "bb_bb_bb_sc_torsion_force_constant": torsion_force_constant
     }
 
-    bb_bb_bb_bb_equil_torsion_angle = 75.0 * unit.degrees
-    bb_bb_bb_sc_equil_torsion_angle = 75.0 * unit.degrees
+    bb_bb_bb_bb_torsion_phase_angle = 75.0 * unit.degrees
+    bb_bb_bb_sc_torsion_phase_angle = 75.0 * unit.degrees
 
-    equil_torsion_angles = {
-        "bb_bb_bb_bb_equil_torsion_angle": bb_bb_bb_bb_equil_torsion_angle,
-        "bb_bb_bb_sc_equil_torsion_angle": bb_bb_bb_sc_equil_torsion_angle
+    torsion_phase_angles = {
+        "bb_bb_bb_bb_torsion_phase_angle": bb_bb_bb_bb_torsion_phase_angle,
+        "bb_bb_bb_sc_torsion_phase_angle": bb_bb_bb_sc_torsion_phase_angle
     }
     torsion_periodicities = {
         "bb_bb_bb_bb_torsion_periodicity": 3,
@@ -104,7 +104,7 @@ def create_cgmodel():
         bond_angle_force_constants=bond_angle_force_constants,
         torsion_force_constants=torsion_force_constants,
         equil_bond_angles=equil_bond_angles,
-        equil_torsion_angles=equil_torsion_angles,
+        torsion_phase_angles=torsion_phase_angles,
         torsion_periodicities=torsion_periodicities,
         include_nonbonded_forces=include_nonbonded_forces,
         include_bond_forces=include_bond_forces,
@@ -341,10 +341,10 @@ def test_get_torsion_force_constant(create_cgmodel):
     assert k0 == 0 * unit.kilojoule_per_mole # default
     
     
-def test_get_equil_torsion_angle(create_cgmodel):
+def test_get_torsion_phase_angle(create_cgmodel):
     cgmodel = create_cgmodel
     torsion_list = cgmodel.get_torsion_list()
-    phi0 = cgmodel.get_equil_torsion_angle(torsion_list[0])
+    phi0 = cgmodel.get_torsion_phase_angle(torsion_list[0])
     # Particles [11,10,8,9], sc-bb-bb-sc
     assert phi0 == 0 * unit.degrees # default
     
@@ -405,8 +405,8 @@ def test_sums_periodic_torsions_1():
         "bb_bb_bb_bb_torsion_force_constant": [5,10]*unit.kilojoule_per_mole,
     }
 
-    equil_torsion_angles = {
-        "bb_bb_bb_bb_equil_torsion_angle": [0,180]*unit.degrees,
+    torsion_phase_angles = {
+        "bb_bb_bb_bb_torsion_phase_angle": [0,180]*unit.degrees,
     }
     torsion_periodicities = {
         "bb_bb_bb_bb_torsion_periodicity": [1,3],
@@ -434,7 +434,7 @@ def test_sums_periodic_torsions_1():
         bond_angle_force_constants=bond_angle_force_constants,
         torsion_force_constants=torsion_force_constants,
         equil_bond_angles=equil_bond_angles,
-        equil_torsion_angles=equil_torsion_angles,
+        torsion_phase_angles=torsion_phase_angles,
         torsion_periodicities=torsion_periodicities,
         include_nonbonded_forces=include_nonbonded_forces,
         include_bond_forces=include_bond_forces,
@@ -507,8 +507,8 @@ def test_sums_periodic_torsions_2():
         "bb_bb_bb_bb_torsion_force_constant": [5*unit.kilojoule_per_mole, 10*unit.kilojoule_per_mole]
     }
 
-    equil_torsion_angles = {
-        "bb_bb_bb_bb_equil_torsion_angle": [0*unit.degrees, 180*unit.degrees]
+    torsion_phase_angles = {
+        "bb_bb_bb_bb_torsion_phase_angle": [0*unit.degrees, 180*unit.degrees]
     }
     torsion_periodicities = {
         "bb_bb_bb_bb_torsion_periodicity": [1,3],
@@ -536,7 +536,7 @@ def test_sums_periodic_torsions_2():
         bond_angle_force_constants=bond_angle_force_constants,
         torsion_force_constants=torsion_force_constants,
         equil_bond_angles=equil_bond_angles,
-        equil_torsion_angles=equil_torsion_angles,
+        torsion_phase_angles=torsion_phase_angles,
         torsion_periodicities=torsion_periodicities,
         include_nonbonded_forces=include_nonbonded_forces,
         include_bond_forces=include_bond_forces,
@@ -610,8 +610,8 @@ def test_sums_periodic_torsions_3():
         "bb_bb_bb_bb_torsion_force_constant": [5*unit.kilojoule_per_mole]
     }
 
-    equil_torsion_angles = {
-        "bb_bb_bb_bb_equil_torsion_angle": [0*unit.degrees]
+    torsion_phase_angles = {
+        "bb_bb_bb_bb_torsion_phase_angle": [0*unit.degrees]
     }
     torsion_periodicities = {
         "bb_bb_bb_bb_torsion_periodicity": [1,3],
@@ -639,7 +639,7 @@ def test_sums_periodic_torsions_3():
         bond_angle_force_constants=bond_angle_force_constants,
         torsion_force_constants=torsion_force_constants,
         equil_bond_angles=equil_bond_angles,
-        equil_torsion_angles=equil_torsion_angles,
+        torsion_phase_angles=torsion_phase_angles,
         torsion_periodicities=torsion_periodicities,
         include_nonbonded_forces=include_nonbonded_forces,
         include_bond_forces=include_bond_forces,
@@ -713,8 +713,8 @@ def test_sums_periodic_torsions_4():
         "bb_bb_bb_bb_torsion_force_constant": 5*unit.kilojoule_per_mole
     }
 
-    equil_torsion_angles = {
-        "bb_bb_bb_bb_equil_torsion_angle": 0*unit.degrees
+    torsion_phase_angles = {
+        "bb_bb_bb_bb_torsion_phase_angle": 0*unit.degrees
     }
     torsion_periodicities = {
         "bb_bb_bb_bb_torsion_periodicity": [1,3],
@@ -742,7 +742,7 @@ def test_sums_periodic_torsions_4():
         bond_angle_force_constants=bond_angle_force_constants,
         torsion_force_constants=torsion_force_constants,
         equil_bond_angles=equil_bond_angles,
-        equil_torsion_angles=equil_torsion_angles,
+        torsion_phase_angles=torsion_phase_angles,
         torsion_periodicities=torsion_periodicities,
         include_nonbonded_forces=include_nonbonded_forces,
         include_bond_forces=include_bond_forces,
@@ -815,8 +815,8 @@ def test_sums_periodic_torsions_5():
         "default_torsion_force_constant": [5,10]*unit.kilojoule_per_mole,
     }
 
-    equil_torsion_angles = {
-        "default_equil_torsion_angle": [0,180]*unit.degrees,
+    torsion_phase_angles = {
+        "default_torsion_phase_angle": [0,180]*unit.degrees,
     }
     torsion_periodicities = {
         "default_torsion_periodicity": [1,3],
@@ -844,7 +844,7 @@ def test_sums_periodic_torsions_5():
         bond_angle_force_constants=bond_angle_force_constants,
         torsion_force_constants=torsion_force_constants,
         equil_bond_angles=equil_bond_angles,
-        equil_torsion_angles=equil_torsion_angles,
+        torsion_phase_angles=torsion_phase_angles,
         torsion_periodicities=torsion_periodicities,
         include_nonbonded_forces=include_nonbonded_forces,
         include_bond_forces=include_bond_forces,

@@ -21,7 +21,7 @@ if not os.path.exists(output_directory):
 
 # OpenMM simulation settings
 print_frequency = 5000  # Number of steps to skip when printing output
-total_simulation_time = 2.0 * unit.nanosecond  # Units = picoseconds
+total_simulation_time = 0.2 * unit.nanosecond  # Units = picoseconds
 simulation_time_step = 5.0 * unit.femtosecond
 total_steps = int(np.floor(total_simulation_time / simulation_time_step))
 temperature = 300.0 * unit.kelvin
@@ -76,9 +76,9 @@ equil_bond_angles = {"default_equil_bond_angle": 120.0 * unit.degrees}
 torsion_force_constants = {"bb_bb_bb_bb_torsion_force_constant": 20.0 * unit.kilojoule_per_mole}
 
 torsion_angle = 78.0 * unit.degrees
-equil_torsion_angles = {
-    "bb_bb_bb_bb_equil_torsion_angle": torsion_angle,
-    "bb_bb_bb_sc_equil_torsion_angle": torsion_angle,
+torsion_phase_angles = {
+    "bb_bb_bb_bb_torsion_phase_angle": torsion_angle,
+    "bb_bb_bb_sc_torsion_phase_angle": torsion_angle,
 }
 
 torsion_periodicities = {
@@ -97,7 +97,7 @@ cgmodel = CGModel(
     bond_angle_force_constants=bond_angle_force_constants,
     torsion_force_constants=torsion_force_constants,
     equil_bond_angles=equil_bond_angles,
-    equil_torsion_angles=equil_torsion_angles,
+    torsion_phase_angles=torsion_phase_angles,
     torsion_periodicities=torsion_periodicities,
     include_nonbonded_forces=include_nonbonded_forces,
     include_bond_forces=include_bond_forces,
@@ -108,6 +108,8 @@ cgmodel = CGModel(
     sequence=sequence,
     monomer_types=[A],
 )
+
+cgmodel.export("stored_cgmodel.pkl")
 
 # Run a simulation
 print("Running a simulation.")

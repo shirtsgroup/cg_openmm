@@ -73,12 +73,12 @@ def test_random_builder(tmpdir):
         "bb_bb_bb_sc_torsion_force_constant": torsion_force_constant
     }
 
-    bb_bb_bb_bb_equil_torsion_angle = 75.0 * unit.degrees
-    bb_bb_bb_sc_equil_torsion_angle = 75.0 * unit.degrees
+    bb_bb_bb_bb_torsion_phase_angle = 75.0 * unit.degrees
+    bb_bb_bb_sc_torsion_phase_angle = 75.0 * unit.degrees
 
-    equil_torsion_angles = {
-        "bb_bb_bb_bb_equil_torsion_angle": bb_bb_bb_bb_equil_torsion_angle,
-        "bb_bb_bb_sc_equil_torsion_angle": bb_bb_bb_sc_equil_torsion_angle
+    torsion_phase_angles = {
+        "bb_bb_bb_bb_torsion_phase_angle": bb_bb_bb_bb_torsion_phase_angle,
+        "bb_bb_bb_sc_torsion_phase_angle": bb_bb_bb_sc_torsion_phase_angle
     }
     torsion_periodicities = {
         "bb_bb_bb_bb_torsion_periodicity": 3,
@@ -102,7 +102,7 @@ def test_random_builder(tmpdir):
         bond_angle_force_constants=bond_angle_force_constants,
         torsion_force_constants=torsion_force_constants,
         equil_bond_angles=equil_bond_angles,
-        equil_torsion_angles=equil_torsion_angles,
+        torsion_phase_angles=torsion_phase_angles,
         torsion_periodicities=torsion_periodicities,
         include_nonbonded_forces=include_nonbonded_forces,
         include_bond_forces=include_bond_forces,

@@ -213,7 +213,7 @@ def write_xml_file(cgmodel, xml_file_name):
             torsion_force_constant = cgmodel.get_torsion_force_constant(
                 [torsion[0], torsion[1], torsion[2], torsion[3]]
             )
-            equil_torsion_angle = cgmodel.get_equil_torsion_angle(
+            torsion_phase_angle = cgmodel.get_torsion_phase_angle(
                 [torsion[0], torsion[1], torsion[2], torsion[3]]
             )
             particle_1_name = cgmodel.get_particle_name(torsion[0])
@@ -235,7 +235,7 @@ def write_xml_file(cgmodel, xml_file_name):
                 + '" periodicity1="'
                 + str(periodicity)
                 + '" phase1="'
-                + str(equil_torsion_angle)
+                + str(torsion_phase_angle)
                 + '" type1="'
                 + str(xml_type_1)
                 + '" type2="'
@@ -698,45 +698,45 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
         torsion_force = mm.PeriodicTorsionForce()
         for torsion in cgmodel.torsion_list:
             torsion_force_constant = cgmodel.get_torsion_force_constant(torsion)
-            equil_torsion_angle = cgmodel.get_equil_torsion_angle(torsion)
+            torsion_phase_angle = cgmodel.get_torsion_phase_angle(torsion)
             periodicity = cgmodel.get_torsion_periodicity(torsion)
             
             if type(periodicity) == list:
                 # Check periodic torsion parameter lists:
                 # These can be either a list of quantities, or a quantity with a list as its value
                 
-                # Check equil_torsion_angle parameters:
-                if type(equil_torsion_angle) == unit.quantity.Quantity:
+                # Check torsion_phase_angle parameters:
+                if type(torsion_phase_angle) == unit.quantity.Quantity:
                     # This is either a single quantity, or quantity with a list value
-                    if type(equil_torsion_angle.value_in_unit(unit.radian)) == list:
+                    if type(torsion_phase_angle.value_in_unit(unit.radian)) == list:
                         # Check if there are either 1 or len(periodicity) elements
-                        if len(equil_torsion_angle) != len(periodicity) and len(equil_torsion_angle) != 1:
+                        if len(torsion_phase_angle) != len(periodicity) and len(torsion_phase_angle) != 1:
                             # Mismatch is list lengths
                             print('ERROR: incompatible periodic torsion parameter lists')
                             exit()
-                        if len(equil_torsion_angle) == 1:
+                        if len(torsion_phase_angle) == 1:
                             # This happens when input is '[value]*unit.radian'
-                            equil_torsion_angle_list = []
+                            torsion_phase_angle_list = []
                             for i in range(len(periodicity)):
-                                equil_torsion_angle_list.append(equil_torsion_angle[0])
+                                torsion_phase_angle_list.append(torsion_phase_angle[0])
                             # This is a list of quantities
-                            equil_torsion_angle = equil_torsion_angle_list                            
+                            torsion_phase_angle = torsion_phase_angle_list                            
                     else:
                         # Single quantity - apply same angle to all periodic terms:
-                        equil_torsion_angle_list = []
+                        torsion_phase_angle_list = []
                         for i in range(len(periodicity)):
-                            equil_torsion_angle_list.append(equil_torsion_angle)
+                            torsion_phase_angle_list.append(torsion_phase_angle)
                         # This is a list of quantities
-                        equil_torsion_angle = equil_torsion_angle_list
+                        torsion_phase_angle = torsion_phase_angle_list
                 else:
                     # This is a list of quantities or incorrect input
-                    if len(equil_torsion_angle) == 1:
+                    if len(torsion_phase_angle) == 1:
                         # This is a list containing a single quantity
-                        equil_torsion_angle_list = []
+                        torsion_phase_angle_list = []
                         for i in range(len(periodicity)):
-                            equil_torsion_angle_list.append(equil_torsion_angle[0])
+                            torsion_phase_angle_list.append(torsion_phase_angle[0])
                         # This is a list of quantities
-                        equil_torsion_angle = equil_torsion_angle_list  
+                        torsion_phase_angle = torsion_phase_angle_list  
 
                 # Check torsion_force_constant parameters:
                 if type(torsion_force_constant) == unit.quantity.Quantity:
@@ -775,7 +775,7 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
                 for i in range(len(periodicity)):
                     # print(f'Adding torsion term to particles [{torsion[0]} {torsion[1]} {torsion[2]} {torsion[3]}]')
                     # print(f'periodicity: {periodicity[i]}')
-                    # print(f'equil_torsion_angle: {equil_torsion_angle[i]}')
+                    # print(f'torsion_phase_angle: {torsion_phase_angle[i]}')
                     # print(f'torsion_force_constant: {torsion_force_constant[i]}\n')
                     torsion_force.addTorsion(
                         torsion[0],
@@ -783,7 +783,7 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
                         torsion[2],
                         torsion[3],
                         periodicity[i],
-                        equil_torsion_angle[i].value_in_unit(unit.radian),
+                        torsion_phase_angle[i].value_in_unit(unit.radian),
                         torsion_force_constant[i].value_in_unit(unit.kilojoule_per_mole),
                     )
                     
@@ -795,7 +795,7 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
                     torsion[2],
                     torsion[3],
                     periodicity,
-                    equil_torsion_angle.value_in_unit(unit.radian),
+                    torsion_phase_angle.value_in_unit(unit.radian),
                     torsion_force_constant.value_in_unit(unit.kilojoule_per_mole),
                 )                
                 
