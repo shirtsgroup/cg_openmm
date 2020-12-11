@@ -11,16 +11,13 @@ def optimize_helix(n_particle_bb, sigma, epsilon, sidechain=False):
     with equal spacing of particles.
     """
     
-    # Set optimization bounds [t_detla, r, c]:
+    # Set optimization bounds [t_delta, r, c]:
     x0 = (0.5, sigma, sigma/3)
-    bounds = [(0.1,np.pi/2),(0.5,2*sigma),(0.01,sigma)]
+    bounds = [(0.1,np.pi/2),(sigma/4,2*sigma),(0.01,sigma)]
     
     params = (sigma, epsilon, n_particle_bb, sidechain)
     
-    # minimizer_kwargs = {"args": params}
-    # opt_sol = basinhopping(compute_LJ_helix_energy, x0, minimizer_kwargs=minimizer_kwargs)
-    
-    opt_sol = brute(compute_LJ_helix_energy, bounds, args=params)
+    opt_sol = differential_evolution(compute_LJ_helix_energy, bounds, args=params, polish=True,popsize=10)
     
     return opt_sol
     
@@ -69,8 +66,8 @@ def compute_LJ_helix_energy(geo, sigma, epsilon, n_particle_bb, sidechain):
     U_helix = 0    
     for i in range(xyz.shape[0]):
         for j in range(i+1,xyz.shape[0]):
-            U_helix += 4*epsilon*np.power((sigma/dist_unitless(xyz[i,:],xyz[j,:])),12) - \
-                np.power((sigma/dist_unitless(xyz[i,:],xyz[j,:])),6)   
+            U_helix += 4*epsilon*(np.power((sigma/dist_unitless(xyz[i,:],xyz[j,:])),12) - \
+                np.power((sigma/dist_unitless(xyz[i,:],xyz[j,:])),6)) 
         
     return U_helix
     
