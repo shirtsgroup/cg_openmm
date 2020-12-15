@@ -9,10 +9,32 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.colors import LightSource
 
 
-def optimize_helix(n_particle_bb, sigma, epsilon, sidechain=False, pdbfile='LJ_helix.pdb', plotfile='LJ_helix.pdf'):
+def optimize_helix(n_particle_bb, sigma, epsilon, sidechain=True, pdbfile='LJ_helix.pdb', plotfile='LJ_helix.pdf'):
     """
     Optimize backbone particle positions along a helix and helical radius, vertical rise,
     with equal spacing of particles.
+    
+    :param n_particle_bb: Number of backbone particles to model
+    :type n_particle_bb: int
+    
+    :param sigma: Lennard-Jones 12-6 sigma parameter
+    :type sigma: Quantity
+    
+    :param epsilon: Lennard-Jones 12-6 epsilon parameter
+    :type epsilon: Quantity
+    
+    :param sidechain: Option to include sidechain particles in a 1b1s model (default=True)
+    :type sidechain: bool
+    
+    :param pdbfile: Path to pdb file for saving the helical structure (default='LJ_helix.pdb')
+    :type pdbfile: str
+    
+    :param plotfile: Path to pdf file for plotting the helical equations and particle positions (default='LJ_helix.pdf')
+    :type plotfile: str
+    
+    :returns:
+      - opt_sol - Results from scipy.optimize (dict)
+      - geometry - Dictionary containing key geometric parameters of the optimized helix
     """
     
     sigma_unit = sigma.unit
@@ -64,8 +86,8 @@ def optimize_helix(n_particle_bb, sigma, epsilon, sidechain=False, pdbfile='LJ_h
     # Store key geometric parameters
     geometry = {}
     
-    geometry['helical radius'] = (r_opt*unit.nanometer).in_units_of(sigma_unit)
-    geometry['particle spacing'] = t_delta_opt * unit.radian
+    geometry['helical_radius'] = (r_opt*unit.nanometer).in_units_of(sigma_unit)
+    geometry['particle_spacing'] = t_delta_opt * unit.radian
     geometry['pitch'] = (2*np.pi*c_opt*unit.nanometer).in_units_of(sigma_unit)
     
     # Write pdb file
@@ -104,14 +126,14 @@ def optimize_helix(n_particle_bb, sigma, epsilon, sidechain=False, pdbfile='LJ_h
     return opt_sol, geometry
     
    
-# Distance function:
 def dist_unitless(positions_1, positions_2):
+    # Distance function:
     return np.sqrt(np.sum(np.power((positions_1 - positions_2),2)))   
     
    
 def compute_LJ_helix_energy(geo, sigma, epsilon, n_particle_bb, sidechain):
     """
-    Internal function for computing energy of Lennard-Jones helix
+    Internal function for computing energy of Lennard-Jones 12-6 helix
     """
     
     # Particle spacing (radians)
@@ -257,7 +279,7 @@ def write_helix_pdbfile(coordinates, filename, sidechain):
     
     for i in range(len(particle_list)):
         pdb_object.write(
-            f"ATOM{particle_list[i]+1:>7d} {particle_type_list[i]:>3s}{1}   A {monomer_index_list[i]:>4}    "
+            f"ATOM{particle_list[i]+1:>7d} {particle_type_list[i]:>3s}{1}   A A{monomer_index_list[i]:>4}    "
             f"{coordinates[i][0]:>8.3f}"
             f"{coordinates[i][1]:>8.3f}"
             f"{coordinates[i][2]:>8.3f}"
