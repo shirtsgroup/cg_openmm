@@ -38,8 +38,8 @@ def optimize_helix(n_particle_bb, sigma, epsilon, sidechain=True, pdbfile='LJ_he
     """
     
     sigma_unit = sigma.unit
-    # Use nanometers for writing pdb file:
-    sigma = sigma.value_in_unit(unit.nanometer)
+    # Use angstrom for writing pdb file:
+    sigma = sigma.value_in_unit(unit.angstrom)
     
     eps_unit = epsilon.unit
     epsilon = epsilon.value_in_unit(unit.kilojoule_per_mole)
@@ -86,9 +86,9 @@ def optimize_helix(n_particle_bb, sigma, epsilon, sidechain=True, pdbfile='LJ_he
     # Store key geometric parameters
     geometry = {}
     
-    geometry['helical_radius'] = (r_opt*unit.nanometer).in_units_of(sigma_unit)
+    geometry['helical_radius'] = (r_opt*unit.angstrom).in_units_of(sigma_unit)
     geometry['particle_spacing'] = t_delta_opt * unit.radian
-    geometry['pitch'] = (2*np.pi*c_opt*unit.nanometer).in_units_of(sigma_unit)
+    geometry['pitch'] = (2*np.pi*c_opt*unit.angstrom).in_units_of(sigma_unit)
     
     # Write pdb file
     write_helix_pdbfile(xyz_par, pdbfile, sidechain)
@@ -97,7 +97,7 @@ def optimize_helix(n_particle_bb, sigma, epsilon, sidechain=True, pdbfile='LJ_he
     traj = md.load(pdbfile)
     
     # Get bb-bb bond distance
-    geometry['bb_bb_distance'] = (dist_unitless(xyz_par[0,:],xyz_par[1,:]) * unit.nanometer).in_units_of(sigma_unit)
+    geometry['bb_bb_distance'] = (dist_unitless(xyz_par[0,:],xyz_par[1,:]) * unit.angstrom).in_units_of(sigma_unit)
     
     # Get bb-bb-bb angle
     angle_indices = np.array([[0,1,2]])
