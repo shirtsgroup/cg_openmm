@@ -45,7 +45,6 @@ def optimize_helix(n_particle_bb, sigma, epsilon, sidechain=True, pdbfile='LJ_he
     epsilon = epsilon.value_in_unit(unit.kilojoule_per_mole)
     
     # Set optimization bounds [t_delta, r, c]:
-    x0 = (0.5, sigma, sigma/3)
     bounds = [(0.1,np.pi/2),(sigma/4,2*sigma),(0.01,sigma)]
     
     params = (sigma, epsilon, n_particle_bb, sidechain)
@@ -114,7 +113,7 @@ def optimize_helix(n_particle_bb, sigma, epsilon, sidechain=True, pdbfile='LJ_he
         geometry['bb_bb_sc_angle'] = (md.compute_angles(traj,angle_indices)*unit.radians).in_units_of(unit.degrees)
         
         # Get sc-bb-bb-sc torsion
-        dihedral_indices = np.array([[1+int(xyz_par.shape[0]/2),1,2,2+int(xyz_par.shape[0]/2)]])
+        dihedral_indices = np.array([[int(xyz_par.shape[0]/2),0,1,1+int(xyz_par.shape[0]/2)]])
         geometry['sc_bb_bb_sc_angle'] = (md.compute_dihedrals(traj,dihedral_indices)*unit.radians).in_units_of(unit.degrees)
         
         # Get bb-bb-bb-sc torsion
