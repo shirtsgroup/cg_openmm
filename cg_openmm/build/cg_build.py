@@ -633,9 +633,6 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
             nonbonded_force = mm.CustomNonbondedForce(f"4*epsilon*((sigma/r)^12-(sigma/r)^6); sigma=0.5*(sigma1+sigma2); epsilon=(1-{kappa})*sqrt(epsilon1*epsilon2)")
             nonbonded_force.addPerParticleParameter("sigma")
             nonbonded_force.addPerParticleParameter("epsilon")
-            
-            print(cgmodel.binary_interaction_parameters)
-            
                 
             # We need to specify a default value of kappa when adding global parameter
             # nonbonded_force.addGlobalParameter("kappa",kappa)
