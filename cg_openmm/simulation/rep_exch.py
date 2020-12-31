@@ -2,6 +2,7 @@ import os
 import subprocess
 import numpy as np
 import matplotlib.pyplot as pyplot
+import matplotlib.cm as cm
 from matplotlib.backends.backend_pdf import PdfPages
 from simtk import unit
 import openmmtools
@@ -579,12 +580,47 @@ def process_replica_exchange_data(
             file_name=f"{output_directory}/rep_ex_states.pdf",
         )
         
-    t15 = time.perf_counter()
     if print_timing:
         print(f"plotting time: {t15-t14}")
-        print(f"total time elapsed: {t15-t1}")
+        
+    t15 = time.perf_counter()
+    
+    # Analyze replica exchange state transitions
+    # For each replica, how many times does the thermodynamic state go between state 0 and state n
+    
+    # Number of one-way transitions from states 0 to n or states n to 0 
+    n_transit = np.zeros((n_replicas,1))
+    
+    # Replica_state_indices is [n_replicas x n_iterations]
+    for rep in range(n_replicas):
+        last_bound = None
+        for i in range(replica_state_indices.shape[1]):
+            if replica_state_indices[rep,i] == 0 or replica_state_indices[rep,i] == (n_replicas-1):
+                if last_bound is None:
+                    # This is the first time state 0 or n is visited
+                    pass
+                else:
+                    if last_bound != replica_state_indices[rep,i]:
+                        # This is a completed transition from 0 to n or n to 0
+                        n_transit[rep] += 1
+                last_bound = replica_state_indices[rep,i]
+                        
+                        
+    t16 = time.perf_counter()
+    
+    if print_timing:
+        print(f"replica transition analysis: {t16-t15}")    
+        
+    
+    file_name = f"{output_directory}/state_probability_matrix.pdf"
+    
+    plot_replica_state_matrix(replica_state_indices, file_name)
+        
+        
+    if print_timing:
+        print(f"total time elapsed: {t16-t1}")
 
-    return (replica_energies, replica_state_indices, production_start, max_sample_spacing)
+    return (replica_energies, replica_state_indices, production_start, max_sample_spacing, n_transit)
 
 
 def run_replica_exchange(
@@ -901,7 +937,56 @@ def plot_replica_exchange_energy_histograms(
 
     return
     
+def plot_replica_state_matrix(
+    replica_state_indices,
+    file_name='state_probability_matrix.pdf'
+    ):
+    
+    # Plot a matrix of replica vs. state, coloring each box in the grid by normalized frequency 
+    # For each replica, histogram the state indices data 
+    # Then normalize the data and create [n_replica x n_state] patch graph
+    
+    n_replicas = replica_state_indices.shape[0]
+    
+    hist_all = np.zeros((n_replicas, n_replicas))
+    
+    state_bin_edges = np.linspace(-0.5,n_replicas-0.5,n_replicas+1)
+    state_bin_centers = 0.5+state_bin_edges[0:n_replicas]
+    
+    for rep in range(n_replicas):
+        hist_all[rep,:], bin_edges = np.histogram(
+            replica_state_indices[rep,:],bins=state_bin_edges,density=True,
+        )
+        
+    # No need for global normalization, since each replica's state probabilities must sum to 1
+    
+    pyplot.subplots(111)
+    ax = pyplot.gca()
+    ax.patch.set_facecolor('white')
+    ax.set_aspect('equal', 'box')
+    
+    ax.xaxis.set_major_locator(pyplot.NullLocator())
+    ax.yaxis.set_major_locator(pyplot.NullLocator())
+    
+    for rep in range(n_replicas):
+        for state in range(n_replicas):
+            color = cm.nipy_spectral(hist_all[rep,state])
+            square = pyplot.Rectangle([rep-1/2, state-1/2], 1, 1, facecolor=color, edgecolor=color)
+            ax.add_patch(square)
+        
+    ax.autoscale_view()
+    ax.invert_yaxis()    
+        
+    pyplot.xlabel("Replica")
+    pyplot.ylabel("State")
+    pyplot.title("Replica exchange state probabilities")
 
+    pyplot.savefig(file_name)
+    pyplot.close()    
+    
+    return hist_all
+    
+    
 def plot_replica_exchange_summary(
     replica_states,
     temperature_list,
