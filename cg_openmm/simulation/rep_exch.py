@@ -3,6 +3,7 @@ import subprocess
 import numpy as np
 import matplotlib.pyplot as pyplot
 import matplotlib.cm as cm
+from matplotlib.colors import Normalize
 from matplotlib.backends.backend_pdf import PdfPages
 from simtk import unit
 import openmmtools
@@ -960,9 +961,16 @@ def plot_replica_state_matrix(
         
     # No need for global normalization, since each replica's state probabilities must sum to 1
     
-    pyplot.subplots(111)
-    ax = pyplot.gca()
-    ax.patch.set_facecolor('white')
+    fig = pyplot.figure(constrained_layout=True)
+    widths = [1,0.05]
+    heights = [1]
+    
+    fig_specs = fig.add_gridspec(
+        ncols=2, nrows=1, width_ratios=widths, height_ratios=heights)
+    
+    ax = fig.add_subplot(fig_specs[0,0])
+    
+    #ax.patch.set_facecolor('white')
     ax.set_aspect('equal', 'box')
     
     ax.xaxis.set_major_locator(pyplot.NullLocator())
@@ -970,17 +978,33 @@ def plot_replica_state_matrix(
     
     for rep in range(n_replicas):
         for state in range(n_replicas):
-            color = cm.nipy_spectral(hist_all[rep,state])
-            square = pyplot.Rectangle([rep-1/2, state-1/2], 1, 1, facecolor=color, edgecolor=color)
-            ax.add_patch(square)
-        
-    ax.autoscale_view()
+            color = cm.nipy_spectral(hist_all[rep,state]/np.max(hist_all[rep,:]))
+            square = pyplot.Rectangle([state-1/2, rep-1/2], 1, 1, facecolor=color, edgecolor=color)
+            ax.add_patch(square) 
+      
+    ax.autoscale_view()  
     ax.invert_yaxis()    
-        
-    pyplot.xlabel("Replica")
-    pyplot.ylabel("State")
-    pyplot.title("Replica exchange state probabilities")
-
+     
+    # Add colorbar to right side:
+    cmap=pyplot.get_cmap('nipy_spectral') 
+    
+    cax = fig.add_subplot(fig_specs[0,1],frameon=False)
+    cax.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
+    
+    norm=Normalize(vmin=0,vmax=1)   
+    
+    pyplot.colorbar(
+        cm.ScalarMappable(cmap=cmap,norm=norm),
+        cax=cax,
+        ax=cax,
+        shrink=0.3,
+        pad=0,
+        label='normalized frequency')         
+     
+    ax.set_xlabel("State")
+    ax.set_ylabel("Replica")
+    pyplot.suptitle("Replica exchange state probabilities")  
+    
     pyplot.savefig(file_name)
     pyplot.close()    
     
