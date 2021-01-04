@@ -558,6 +558,11 @@ def process_replica_exchange_data(
             file_name=f"{output_directory}/rep_ex_states.pdf",
         )
         
+        plot_replica_state_matrix(
+            replica_state_indices[:,production_start:],
+            file_name=f"{output_directory}/state_probability_matrix.pdf",
+        )
+        
     else:
         plot_replica_exchange_energies(
             state_energies,
@@ -579,6 +584,11 @@ def process_replica_exchange_data(
             series_per_page,
             time_interval=time_interval,
             file_name=f"{output_directory}/rep_ex_states.pdf",
+        )
+        
+        plot_replica_state_matrix(
+            replica_state_indices,
+            file_name=f"{output_directory}/state_probability_matrix.pdf",
         )
         
     if print_timing:
@@ -604,21 +614,12 @@ def process_replica_exchange_data(
                     if last_bound != replica_state_indices[rep,i]:
                         # This is a completed transition from 0 to n or n to 0
                         n_transit[rep] += 1
-                last_bound = replica_state_indices[rep,i]
-                        
+                last_bound = replica_state_indices[rep,i]                
                         
     t16 = time.perf_counter()
     
     if print_timing:
-        print(f"replica transition analysis: {t16-t15}")    
-        
-    
-    file_name = f"{output_directory}/state_probability_matrix.pdf"
-    
-    plot_replica_state_matrix(replica_state_indices, file_name)
-        
-        
-    if print_timing:
+        print(f"replica transition analysis: {t16-t15}")
         print(f"total time elapsed: {t16-t1}")
 
     return (replica_energies, replica_state_indices, production_start, max_sample_spacing, n_transit)
@@ -937,6 +938,7 @@ def plot_replica_exchange_energy_histograms(
     pyplot.close()
 
     return
+    
     
 def plot_replica_state_matrix(
     replica_state_indices,

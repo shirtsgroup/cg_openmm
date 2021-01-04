@@ -399,7 +399,7 @@ def test_run_replica_exchange(tmpdir):
     
     # Process replica exchange output
     # 1) With detect equilibrium:
-    replica_energies, replica_states, production_start, sample_spacing = process_replica_exchange_data(
+    replica_energies, replica_states, production_start, sample_spacing, n_transit = process_replica_exchange_data(
         output_data=output_data,
         output_directory=output_directory,
         detect_equilibration=True,
@@ -409,7 +409,7 @@ def test_run_replica_exchange(tmpdir):
     assert production_start is not None
     
     # 2) Without detect equilibrium:
-    replica_energies, replica_states, production_start, sample_spacing = process_replica_exchange_data(
+    replica_energies, replica_states, production_start, sample_spacing, n_transit = process_replica_exchange_data(
         output_data=output_data,
         output_directory=output_directory,
         detect_equilibration=False,
@@ -418,7 +418,7 @@ def test_run_replica_exchange(tmpdir):
     assert production_start is None    
     
     # 3) Without writing .dat file:
-    replica_energies, replica_states, production_start, sample_spacing = process_replica_exchange_data(
+    replica_energies, replica_states, production_start, sample_spacing, n_transit = process_replica_exchange_data(
         output_data=output_data,
         output_directory=output_directory,
         detect_equilibration=False,
