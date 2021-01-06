@@ -24,7 +24,7 @@ output_data = os.path.join(output_directory, "output.nc")
 
 # Replica exchange simulation settings
 cgmodel = pickle.load(open("stored_cgmodel.pkl","rb"))
-replica_energies, replica_states, production_start, decorrelation_spacing, n_transit = process_replica_exchange_data(
+replica_energies, replica_states, production_start, decorrelation_spacing, n_transit, mixing_stats = process_replica_exchange_data(
     output_data=output_data,
     output_directory="output",
 )

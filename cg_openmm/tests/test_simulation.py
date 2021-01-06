@@ -398,18 +398,32 @@ def test_run_replica_exchange(tmpdir):
     assert os.path.isfile(f"{output_directory}/output.nc")
     
     # Process replica exchange output
-    # 1) With detect equilibrium:
-    replica_energies, replica_states, production_start, sample_spacing, n_transit = process_replica_exchange_data(
+    # 1) With detect equilibrium and print_timing:
+    replica_energies, replica_states, production_start, sample_spacing, n_transit, mixing_stats = process_replica_exchange_data(
         output_data=output_data,
         output_directory=output_directory,
         detect_equilibration=True,
         plot_production_only=True,
+        print_timing=True,
     )
     
     assert production_start is not None
     
-    # 2) Without detect equilibrium:
-    replica_energies, replica_states, production_start, sample_spacing, n_transit = process_replica_exchange_data(
+    # 2) With detect equilibrium, equil_nskip, and subsample_fast
+    replica_energies, replica_states, production_start, sample_spacing, n_transit, mixing_stats = process_replica_exchange_data(
+        output_data=output_data,
+        output_directory=output_directory,
+        detect_equilibration=True,
+        plot_production_only=True,
+        subsample_fast=True,
+        equil_nskip=2,
+    )
+    
+    assert production_start is not None    
+    
+    
+    # 3) Without detect equilibrium:
+    replica_energies, replica_states, production_start, sample_spacing, n_transit, mixing_stats = process_replica_exchange_data(
         output_data=output_data,
         output_directory=output_directory,
         detect_equilibration=False,
@@ -417,8 +431,8 @@ def test_run_replica_exchange(tmpdir):
     
     assert production_start is None    
     
-    # 3) Without writing .dat file:
-    replica_energies, replica_states, production_start, sample_spacing, n_transit = process_replica_exchange_data(
+    # 4) Without writing .dat file:
+    replica_energies, replica_states, production_start, sample_spacing, n_transit, mixing_stats = process_replica_exchange_data(
         output_data=output_data,
         output_directory=output_directory,
         detect_equilibration=False,

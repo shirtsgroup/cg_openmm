@@ -405,6 +405,8 @@ def process_replica_exchange_data(
         - replica_state_indices ( np.int64( [number_replicas,number_simulation_steps] ), simtk.unit ) - The thermodynamic state assignments for all replicas at all (printed) time steps
         - production_start ( int - The frame at which the production region begins for all replicas, as determined from pymbar detectEquilibration
         - max_sample_spacing ( int - The number of frames between uncorrelated state energies )
+        - n_transit ( np.float( [number_replicas] ) ) - Number of half-transitions between state 0 and n for each replica
+        - mixing_stats ( tuple ( np.float( [number_replicas x number_replicas] ) , np.float( [ number_replicas ] ) , float( statistical inefficiency ) ) ) - transition matrix, corresponding eigenvalues, and statistical inefficiency
     """
     
     t1 = time.perf_counter()
@@ -590,11 +592,11 @@ def process_replica_exchange_data(
             replica_state_indices,
             file_name=f"{output_directory}/state_probability_matrix.pdf",
         )
-        
+      
+    t15 = time.perf_counter()
+      
     if print_timing:
         print(f"plotting time: {t15-t14}")
-        
-    t15 = time.perf_counter()
     
     # Analyze replica exchange state transitions
     # For each replica, how many times does the thermodynamic state go between state 0 and state n
@@ -620,9 +622,18 @@ def process_replica_exchange_data(
     
     if print_timing:
         print(f"replica transition analysis: {t16-t15}")
-        print(f"total time elapsed: {t16-t1}")
+        
+    # Compute transition matrix from the analyzer
+    # If detect_equilibration=False, this will still try to find the start of the production region
+    mixing_stats = analyzer.generate_mixing_statistics(number_equilibrated=production_start)
+    
+    t17 = time.perf_counter()
+    
+    if print_timing:
+        print(f"compute transition matrix: {t17-t16}")
+        print(f"total time elapsed: {t17-t1}")
 
-    return (replica_energies, replica_state_indices, production_start, max_sample_spacing, n_transit)
+    return (replica_energies, replica_state_indices, production_start, max_sample_spacing, n_transit, mixing_stats)
 
 
 def run_replica_exchange(
