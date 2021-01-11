@@ -333,7 +333,15 @@ def get_opt_temperature_list(temperature_list_init, C_v, number_intermediate_sta
             
         T_opt_list[i+2] = T_opt_list[i+1]+opt_results_inner.x[0]
     
-    return T_opt_list * unit.kelvin  
+    # We can also use the entropy change to estimate the minimum number of replicas
+    
+    n_rep_min = int(np.ceil(deltaS/np.sqrt(kB.value_in_unit(Cv_unit)*np.min(C_v).value_in_unit(Cv_unit))))
+    
+    if verbose:
+        print(f"Current number of replicas: {len(T_opt_list)}")
+        print(f"Estimated minimum number of replicas: {n_rep_min}")
+    
+    return T_opt_list * unit.kelvin
     
         
 def get_intermediate_temperatures(T_from_file, NumIntermediates):
