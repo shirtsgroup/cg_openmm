@@ -180,7 +180,7 @@ def get_temperature_list(min_temp, max_temp, num_replicas):
     return temperature_list
     
     
-def get_opt_temperature_list(temperature_list_init, C_v, number_intermediate_states=0,plotfile=None, verbose=True):
+def get_opt_temperature_list(temperature_list_init, C_v, number_intermediate_states=0, plotfile=None, verbose=True):
     """
     Given an initial temperature list, and heat capacity curve that resulted from a replica exchange simulation
     using those temperatures, computes a revised temperature list satisfying the constant entropy increase (CEI) method
@@ -240,21 +240,22 @@ def get_opt_temperature_list(temperature_list_init, C_v, number_intermediate_sta
     # Fit cubic spline to data, no smoothing
     spline_tck = interpolate.splrep(xdata, ydata, s=0)
     
-    # Plot the spline fit:
-    figure = plt.figure()
-    line1 = plt.plot(xdata,ydata,'ok',fillstyle='none',label='simulation_data')
-    
-    xspline = np.linspace(xdata[0],xdata[-1],1000)
-    yspline = interpolate.splev(xspline, spline_tck, der=0)
-    
-    line2 = plt.plot(xspline,yspline,'-b',label='spline fit')
-    
-    plt.xlabel('Temperature (K)')
-    plt.ylabel('C_v / T (kJ/mol)')
-    plt.legend()
-    
-    plt.savefig('C_v_spline_fit.pdf')
-    plt.close()
+    if plotfile is not None:
+        # Plot the spline fit:
+        figure = plt.figure()
+        line1 = plt.plot(xdata,ydata,'ok',fillstyle='none',label='simulation_data')
+        
+        xspline = np.linspace(xdata[0],xdata[-1],1000)
+        yspline = interpolate.splev(xspline, spline_tck, der=0)
+        
+        line2 = plt.plot(xspline,yspline,'-b',label='spline fit')
+        
+        plt.xlabel('Temperature (K)')
+        plt.ylabel('C_v / T (kJ/mol)')
+        plt.legend()
+        
+        plt.savefig(f'{plotfile}')
+        plt.close()
     
     # The first temperature interval will fix the entropy change for all states
     # The optimization target is to match the new and original final temperatures
