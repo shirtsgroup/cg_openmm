@@ -10,7 +10,7 @@ from cg_openmm.cg_model.cgmodel import CGModel
 from cg_openmm.thermo.calc import * 
 from cg_openmm.parameters.reweight import get_temperature_list, get_opt_temperature_list
 from cg_openmm.simulation.physical_validation import *
-from numpy.testing import assert_almost_equal    
+from numpy.testing import assert_almost_equal, assert_allclose
     
 current_path = os.path.dirname(os.path.abspath(__file__))
 data_path = os.path.join(current_path, 'test_data')
@@ -54,7 +54,7 @@ def test_heat_capacity_calc(tmpdir):
     assert os.path.isfile(f"{plot_directory}/dCv_dT.pdf")
     
     # Test constant entropy increase temperature spacing optimization
-    opt_temperature_list = get_opt_temperature_list(
+    opt_temperature_list, deltaS_list = get_opt_temperature_list(
         new_temperature_list, C_v,
         number_intermediate_states=2,
         verbose=True)
@@ -64,6 +64,10 @@ def test_heat_capacity_calc(tmpdir):
         new_temperature_list[-1].value_in_unit(unit.kelvin),
         decimal=6
         )
+        
+    assert_allclose(deltaS_list/np.max(deltaS_list),np.ones(len(deltaS_list)))
+        
+    
     
 
 def test_physical_validation(tmpdir):

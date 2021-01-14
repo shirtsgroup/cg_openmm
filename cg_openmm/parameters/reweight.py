@@ -7,7 +7,7 @@ import simtk.unit as unit
 import pymbar
 from pymbar import timeseries
 from scipy import interpolate
-from scipy.optimize import minimize
+from scipy.optimize import minimize, minimize_scalar, Bounds, LinearConstraint
 from matplotlib import pyplot as plt
 
 kB = (unit.MOLAR_GAS_CONSTANT_R).in_units_of(unit.kilojoule / (unit.kelvin * unit.mole))
@@ -216,6 +216,10 @@ def get_opt_temperature_list(temperature_list_init, C_v, number_intermediate_sta
         T_init_sampled_val[i] = T_init_sampled[i].value_in_unit(Tunit)
         
     T_init_sampled = T_init_sampled_val
+    
+    # First and last temps are fixed bounds:
+    T0 = T_init_sampled[0]
+    TN = T_init_sampled[-1]
             
     # Fit C_v/T vs. T data to spline
     xdata = temperature_list_init
@@ -257,92 +261,69 @@ def get_opt_temperature_list(temperature_list_init, C_v, number_intermediate_sta
         plt.savefig(f'{plotfile}')
         plt.close()
     
-    # The first temperature interval will fix the entropy change for all states
-    # The optimization target is to match the new and original final temperatures
+    # Fix the first and last temps, with intermediate temps varied in a minimization,
+    # With constraint that the temperature spacings must sum to the original temp range.
+    # The objective function is the standard deviation of the entropy differences between all adjacent temps.
     
-    def entropy_diff(T_delta, deltaS, T_curr):
-        diff_S = abs(deltaS-interpolate.splint(T_curr,T_curr+T_delta, spline_tck))
-        return diff_S    
+    def entropy_stdev(T_deltas):
+        # Compute standard deviation of entropy differences
+        T_opt_list = np.zeros(len(T_deltas)+1)
+        deltaS_list = np.zeros(len(T_deltas))
+ 
+        T_opt_list[0] = T0
+        for i in range(len(T_deltas)-1):
+            T_opt_list[i+1] = T_opt_list[i]+T_deltas[i]  
+        T_opt_list[-1] = TN
+        
+        for i in range(len(T_deltas)):
+            deltaS_list[i] = interpolate.splint(T_opt_list[i],T_opt_list[i+1], spline_tck)
+        return np.std(deltaS_list)
     
-    def t_final_diff(T_delta0):
+        
+    # For initial guess, use the original spacing:
+    T_delta0 = T_init_sampled[1::]-T_init_sampled[0:-1]
     
-        T_opt_list = np.zeros(len(T_init_sampled))
+    # Set up linear equality constraint:
+    constraint = LinearConstraint(
+        np.ones(len(T_init_sampled)-1),
+        lb=(T_init_sampled[-1]-T_init_sampled[0]),
+        ub=(T_init_sampled[-1]-T_init_sampled[0]),
+        )
         
-        T_opt_list[0] = xdata[0]
-        T_opt_list[1] = xdata[0]+T_delta0
+    bounds = Bounds(np.ones(len(T_delta0))*1E-3,np.ones(len(T_delta0))*500)
     
-        # Integrate spline for first interval:
-        deltaS = interpolate.splint(xdata[0],xdata[0]+T_delta0, spline_tck)
-        
-        #print(deltaS)
-        
-        # We need to optimize each subsequent T to match the entropy change
-        for i in range(len(T_init_sampled)-2):
-            T_delta_guess = T_init_sampled[i+1]*np.sqrt((kB.value_in_unit(Cv_unit)/C_v[i+1].value_in_unit(Cv_unit)))
-            opt_results_inner = minimize(
-                entropy_diff,
-                T_delta_guess,
-                args=(deltaS,T_init_sampled[i+1]),
-                bounds=[(0,1000)],
-                method='SLSQP',
-                options={'ftol':1E-12},
-                )  
-                
-            T_opt_list[i+2] = T_opt_list[i+1]+opt_results_inner.x[0]
-        
-        T_final_diff = abs(T_opt_list[-1]-xdata[-1])
-        
-        return T_final_diff
-        
-    # For initial guess, assume constant heat capacity over the temperature interval     
-    T_delta0_guess = T_init_sampled[0]*np.sqrt((kB.value_in_unit(Cv_unit)/C_v[0].value_in_unit(Cv_unit)))
-    
-    opt_results_outer = minimize(
-        t_final_diff,
-        T_delta0_guess,
-        bounds=[(0,1000)],
+    opt_results = minimize(
+        entropy_stdev,
+        T_delta0,
+        bounds=bounds,
+        constraints=constraint,
         method='SLSQP',
-        options={'ftol':1E-12},
+        options={
+            'ftol':1E-12,
+            'maxit':500}
         )   
-
+        
+    if not opt_results.success:
+        print('Error: CEI optimization did not converge')
+        exit()
+        
     if verbose:
-        print(f'Constant entropy increase optimization results:\n{opt_results_outer}')
+        print(f'Constant entropy increase optimization results:\n{opt_results}')
     
-    # Evaluate once again using the optimal T_delta0
-    # This should give the exact same answer provided that the minimizer is not stochastic
+    # Retreive final temperature list and entropy diff list:
+    T_deltas_opt = opt_results.x
     
-    T_delta0 = opt_results_outer.x[0]
-    T_opt_list = np.zeros(len(T_init_sampled))
-    
-    T_opt_list[0] = xdata[0]
-    T_opt_list[1] = xdata[0]+T_delta0
+    T_opt_list = np.zeros(len(T_deltas_opt)+1)
+    deltaS_list = np.zeros(len(T_deltas_opt))
 
-    # Integrate spline for first interval:
-    deltaS = interpolate.splint(xdata[0],xdata[0]+T_delta0, spline_tck)
+    T_opt_list[0] = T0
+    for i in range(len(T_deltas_opt)):
+        T_opt_list[i+1] = T_opt_list[i]+T_deltas_opt[i]  
     
-    # We need to optimize each subsequent T to match the entropy change
-    for i in range(len(T_init_sampled)-2):
-        T_delta_guess = T_init_sampled[i+1]*np.sqrt((kB.value_in_unit(Cv_unit)/C_v[i+1].value_in_unit(Cv_unit)))
-        opt_results_inner = minimize(
-            entropy_diff,
-            T_delta_guess,
-            args=(deltaS,T_init_sampled[i+1]),
-            bounds=[(0,1000)],
-            method='SLSQP',
-            options={'ftol':1E-12},
-            )  
-            
-        T_opt_list[i+2] = T_opt_list[i+1]+opt_results_inner.x[0]
+    for i in range(len(T_deltas_opt)):
+        deltaS_list[i] = interpolate.splint(T_opt_list[i],T_opt_list[i+1], spline_tck)
     
-    # We can also use the entropy change to estimate the minimum number of replicas
-    
-    n_rep_min = int(np.ceil(deltaS/np.sqrt(kB.value_in_unit(Cv_unit)*np.min(C_v).value_in_unit(Cv_unit))))
-    
-    if verbose:
-        print(f"Current number of replicas: {len(T_opt_list)}")
-        print(f"Estimated minimum number of replicas: {n_rep_min}")
-    
-    return T_opt_list * unit.kelvin
+    return T_opt_list*unit.kelvin, deltaS_list
     
         
 def get_intermediate_temperatures(T_from_file, NumIntermediates):
