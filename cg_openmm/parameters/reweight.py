@@ -300,7 +300,7 @@ def get_opt_temperature_list(temperature_list_init, C_v, number_intermediate_sta
         method='SLSQP',
         options={
             'ftol':1E-12,
-            'maxit':500}
+            'maxiter':1E6}
         )   
         
     if not opt_results.success:
