@@ -371,7 +371,7 @@ def extract_trajectory(
     
 def process_replica_exchange_data(
     output_data="output/output.nc", output_directory="output", series_per_page=4, write_data_file=True, detect_equilibration=True, plot_production_only=False,
-    print_timing=False, subsample_fast=False, equil_nskip=1,
+    print_timing=False, equil_nskip=1, frame_end=-1,
 ):
     """
     Read replica exchange simulation data, detect equilibrium and decorrelation time, and plot replica exchange results.
@@ -393,12 +393,12 @@ def process_replica_exchange_data(
     
     :param plot_production_only: Option to plot only the production region, as determined from pymbar detectEquilibration (default=False)
     :type plot_production_only: Boolean    
-    
-    :param subsample_fast: use fast mode of pymbar subsampleCorrelatedData (use with caution - this reduces accuracy)
-    :type subsample_fast: Boolean
 
     :param equil_nskip: skip this number of frames to sparsify the energy timeseries for pymbar detectEquilibration (default=1)
     :type equil_nskip: Boolean
+    
+    :param frame_end: (for testing purposes) - analyze up to this frame only, discarding the rest. May also be useful for improved subsampling/equilibration detection.
+    :type frame_end: int
 
     :returns:
         - replica_energies ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.float( [number_replicas,number_simulation_steps] ), simtk.unit ) ) - The potential energies for all replicas at all (printed) time steps
@@ -450,6 +450,16 @@ def process_replica_exchange_data(
         replica_state_indices,
     ) = analyzer.read_energies()
     
+    # Truncate output of read_energies() to last frame of interest
+    if frame_end > 0:
+        replica_energies = replica_energies[:,:,:frame_end]
+        unsampled_state_energies = unsampled_state_energies[:,:,:frame_end]
+        neighborhoods = neighborhoods[:,:,:frame_end]
+        replica_state_indices = replica_state_indices[:,:frame_end]
+    else:
+        # Use all frames (nothing to do here)
+        pass
+    
     t6 = time.perf_counter()
     if print_timing:
         print(f"read_energies time: {t6-t5}")
@@ -483,7 +493,6 @@ def process_replica_exchange_data(
     # can run physical-valication on these state_energies
         
     # Use pymbar timeseries module to detect production period
-    # We can also add in the subsampleCorrelatedData routine
     
     t10 = time.perf_counter()
     
@@ -491,20 +500,28 @@ def process_replica_exchange_data(
     max_sample_spacing = 1
     
     if detect_equilibration==True:
+        # Start of equilibrated data:
         t0 = np.zeros((n_replicas))
+        # Statistical inefficiency:
+        g = np.zeros((n_replicas))
+        
         subsample_indices = {}
         for state in range(n_replicas):
-            t0[state], g, Neff_max = timeseries.detectEquilibration(state_energies[state], nskip=equil_nskip)
+            t0[state], g[state], Neff_max = timeseries.detectEquilibration(state_energies[state], nskip=equil_nskip)
+            
+        # Choose the latest equil timestep to apply to all states    
         production_start = int(np.max(t0))
         
-        # Choose the most conservative sample spacing
-        for state in range(n_replicas):
-            subsample_indices[state] = timeseries.subsampleCorrelatedData(
-                state_energies[state][production_start:],
-                conservative=True, fast=subsample_fast,
-            )
-            if (subsample_indices[state][1]-subsample_indices[state][0]) > max_sample_spacing:
-                max_sample_spacing = (subsample_indices[state][1]-subsample_indices[state][0])
+        # Choose the most conservative sample spacing to apply to all states
+        max_sample_spacing=int(np.max(g))
+        
+        # Indices of the subsampled data could be obtained by the following:
+        # for state in range(n_replicas):
+            # subsample_indices[state] = timeseries.subsampleCorrelatedData(
+                # state_energies[state][production_start:],
+                # conservative=True,
+                # g=max_sample_spacing,
+            # )
     
     t11 = time.perf_counter()
     if print_timing:
@@ -856,6 +873,14 @@ def plot_replica_exchange_energies(
     
     simulation_times += time_shift.value_in_unit(unit.picosecond)
     
+    # To improve pdf render speed, sparsify data to display less than 2000 data points
+    n_xdata = len(simulation_times)
+    
+    if n_xdata <= 1000:
+        plot_stride = 1
+    else:
+        plot_stride = int(np.floor(n_xdata/1000))
+    
     # If more than series_per_page replicas, split into separate pages for better visibility
     nmax = series_per_page
     npage = int(np.ceil(len(temperature_list)/nmax))
@@ -867,8 +892,8 @@ def plot_replica_exchange_energies(
         for state in range(len(temperature_list)):
             if plotted_per_page <= (nmax):
                 pyplot.plot(
-                    simulation_times,
-                    state_energies[state,:],
+                    simulation_times[::plot_stride],
+                    state_energies[state,::plot_stride],
                     alpha=0.5,
                     linewidth=1,
                 )
@@ -1054,8 +1079,6 @@ def plot_replica_exchange_summary(
     :param legend: Controls whether a legend is added to the plot
     :type legend: Logical
 
-    ..warning:: If more than 10 replica exchange trajectories are provided as input data, by default, this function will only plot the first 10 thermodynamic states.  These thermodynamic states are chosen based upon their indices, not their instantaneous temperature (ensemble) assignment.
-
     """
     
     simulation_times = np.array(
@@ -1066,6 +1089,14 @@ def plot_replica_exchange_summary(
     )
     
     simulation_times += time_shift.value_in_unit(unit.picosecond)
+    
+    # To improve pdf render speed, sparsify data to display less than 2000 data points
+    n_xdata = len(simulation_times)
+    
+    if n_xdata <= 1000:
+        plot_stride = 1
+    else:
+        plot_stride = int(np.floor(n_xdata/1000))
     
     # If more than series_per_page replicas, split into separate pages for better visibility
     nmax = series_per_page
@@ -1079,9 +1110,10 @@ def plot_replica_exchange_summary(
             state_indices = np.array([int(round(state)) for state in replica_states[replica]])
             
             if plotted_per_page <= (nmax):
+                
                 pyplot.plot(
-                    simulation_times,
-                    state_indices,
+                    simulation_times[::plot_stride],
+                    state_indices[::plot_stride],
                     alpha=0.5,
                     linewidth=1
                 )
