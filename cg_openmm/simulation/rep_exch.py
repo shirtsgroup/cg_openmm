@@ -454,17 +454,10 @@ def process_replica_exchange_data(
     # Truncate output of read_energies() to last frame of interest
     if frame_end > 0:
         # Use frames from frame_begin to frame_end
-        replica_energies = replica_energies[:,:,frame_begin:frame_end]
-        unsampled_state_energies = unsampled_state_energies[:,:,frame_begin:frame_end]
-        neighborhoods = neighborhoods[:,:,frame_begin:frame_end]
-        replica_state_indices = replica_state_indices[:,frame_begin:frame_end]
-    else:
-        # Use all frames starting from frame_begin
-        replica_energies = replica_energies[:,:,frame_begin:]
-        unsampled_state_energies = unsampled_state_energies[:,:,frame_begin:]
-        neighborhoods = neighborhoods[:,:,frame_begin:]
-        replica_state_indices = replica_state_indices[:,frame_begin:]
-        
+        replica_energies = replica_energies[:,:,:frame_end]
+        unsampled_state_energies = unsampled_state_energies[:,:,:frame_end]
+        neighborhoods = neighborhoods[:,:,:frame_end]
+        replica_state_indices = replica_state_indices[:,:frame_end]
     
     t6 = time.perf_counter()
     if print_timing:
@@ -631,6 +624,9 @@ def process_replica_exchange_data(
     
     # Analyze replica exchange state transitions
     # For each replica, how many times does the thermodynamic state go between state 0 and state n
+    # For consistency with the other mixing statistics, use only the production region here
+    
+    replica_stats_indices_prod = replica_state_indices[:,production_start:]
     
     # Number of one-way transitions from states 0 to n or states n to 0 
     n_transit = np.zeros((n_replicas,1))
@@ -638,16 +634,16 @@ def process_replica_exchange_data(
     # Replica_state_indices is [n_replicas x n_iterations]
     for rep in range(n_replicas):
         last_bound = None
-        for i in range(replica_state_indices.shape[1]):
-            if replica_state_indices[rep,i] == 0 or replica_state_indices[rep,i] == (n_replicas-1):
+        for i in range(replica_state_indices_prod.shape[1]):
+            if replica_state_indices_prod[rep,i] == 0 or replica_state_indices_prod[rep,i] == (n_replicas-1):
                 if last_bound is None:
                     # This is the first time state 0 or n is visited
                     pass
                 else:
-                    if last_bound != replica_state_indices[rep,i]:
+                    if last_bound != replica_state_indices_prod[rep,i]:
                         # This is a completed transition from 0 to n or n to 0
                         n_transit[rep] += 1
-                last_bound = replica_state_indices[rep,i]                
+                last_bound = replica_state_indices_prod[rep,i]                
                         
     t16 = time.perf_counter()
     
@@ -655,7 +651,6 @@ def process_replica_exchange_data(
         print(f"replica transition analysis: {t16-t15}")
         
     # Compute transition matrix from the analyzer
-    # If detect_equilibration=False, this will still try to find the start of the production region
     mixing_stats = analyzer.generate_mixing_statistics(number_equilibrated=production_start)
     
     t17 = time.perf_counter()
