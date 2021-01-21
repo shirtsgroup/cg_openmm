@@ -626,7 +626,7 @@ def process_replica_exchange_data(
     # For each replica, how many times does the thermodynamic state go between state 0 and state n
     # For consistency with the other mixing statistics, use only the production region here
     
-    replica_stats_indices_prod = replica_state_indices[:,production_start:]
+    replica_state_indices_prod = replica_state_indices[:,production_start:]
     
     # Number of one-way transitions from states 0 to n or states n to 0 
     n_transit = np.zeros((n_replicas,1))
