@@ -422,7 +422,6 @@ def test_run_replica_exchange(tmpdir):
     )   
     
     # 4) With frame end specified to analyze only the beginning of a trajectory
-    # 3) With frame_begin used to circumvent detectEquilibration
     replica_energies, replica_states, production_start, sample_spacing, n_transit, mixing_stats = process_replica_exchange_data(
         output_data=output_data,
         output_directory=output_directory,
