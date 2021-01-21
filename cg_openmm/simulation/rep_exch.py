@@ -210,7 +210,7 @@ def make_state_dcd_files(
         file = open(file_name, "wb")
         dcd_file = DCDFile(file, topology, timestep, firstStep=frame_begin, interval=time_interval)
         
-        #***Note: if we have different masses for particle types, need to update this
+        # TODO: replace this with MDTraj alignment tool
         if center==True:
             center_x = np.mean(state_trajectory[0,:,0])
             center_y = np.mean(state_trajectory[0,:,1])
@@ -285,7 +285,7 @@ def make_state_pdb_files(
         PDBFile.writeHeader(topology, file=file)
         modelIndex = 1
         
-        #***Note: if we have different masses for particle types, need to update this
+        # TODO: replace this with MDTraj alignment tool
         if center==True:
             center_x = np.mean(state_trajectory[0,:,0])
             center_y = np.mean(state_trajectory[0,:,1])
@@ -370,8 +370,9 @@ def extract_trajectory(
     
     
 def process_replica_exchange_data(
-    output_data="output/output.nc", output_directory="output", series_per_page=4, write_data_file=True, detect_equilibration=True, plot_production_only=False,
-    print_timing=False, equil_nskip=1, frame_end=-1,
+    output_data="output/output.nc", output_directory="output", series_per_page=4,
+    write_data_file=True, plot_production_only=False, print_timing=False,
+    equil_nskip=1, frame_begin=0, frame_end=-1,
 ):
     """
     Read replica exchange simulation data, detect equilibrium and decorrelation time, and plot replica exchange results.
@@ -388,16 +389,16 @@ def process_replica_exchange_data(
     :param write_data_file: Option to write a text data file containing the state_energies array (default=True)
     :type write_data_file: Boolean
     
-    :param detect_equilibration: Option to determine the frame at which the production region begins (default=True)
-    :type detect_equilibration: Boolean
-    
     :param plot_production_only: Option to plot only the production region, as determined from pymbar detectEquilibration (default=False)
     :type plot_production_only: Boolean    
 
-    :param equil_nskip: skip this number of frames to sparsify the energy timeseries for pymbar detectEquilibration (default=1)
+    :param equil_nskip: skip this number of frames to sparsify the energy timeseries for pymbar detectEquilibration (default=1) - this is used only when frame_begin=0 and the trajectory has less than 20000 frames.
     :type equil_nskip: Boolean
     
-    :param frame_end: (for testing purposes) - analyze up to this frame only, discarding the rest. May also be useful for improved subsampling/equilibration detection.
+    :param frame_begin: analyze starting from this frame, discarding all prior as equilibration period (default=0)
+    :type frame_begin: int
+    
+    :param frame_end: analyze up to this frame only, discarding the rest (default=-1).
     :type frame_end: int
 
     :returns:
@@ -452,13 +453,18 @@ def process_replica_exchange_data(
     
     # Truncate output of read_energies() to last frame of interest
     if frame_end > 0:
-        replica_energies = replica_energies[:,:,:frame_end]
-        unsampled_state_energies = unsampled_state_energies[:,:,:frame_end]
-        neighborhoods = neighborhoods[:,:,:frame_end]
-        replica_state_indices = replica_state_indices[:,:frame_end]
+        # Use frames from frame_begin to frame_end
+        replica_energies = replica_energies[:,:,frame_begin:frame_end]
+        unsampled_state_energies = unsampled_state_energies[:,:,frame_begin:frame_end]
+        neighborhoods = neighborhoods[:,:,frame_begin:frame_end]
+        replica_state_indices = replica_state_indices[:,frame_begin:frame_end]
     else:
-        # Use all frames (nothing to do here)
-        pass
+        # Use all frames starting from frame_begin
+        replica_energies = replica_energies[:,:,frame_begin:]
+        unsampled_state_energies = unsampled_state_energies[:,:,frame_begin:]
+        neighborhoods = neighborhoods[:,:,frame_begin:]
+        replica_state_indices = replica_state_indices[:,frame_begin:]
+        
     
     t6 = time.perf_counter()
     if print_timing:
@@ -496,32 +502,40 @@ def process_replica_exchange_data(
     
     t10 = time.perf_counter()
     
-    production_start = None
-    max_sample_spacing = 1
+    # Start of equilibrated data:
+    t0 = np.zeros((n_replicas))
+    # Statistical inefficiency:
+    g = np.zeros((n_replicas))
     
-    if detect_equilibration==True:
-        # Start of equilibrated data:
-        t0 = np.zeros((n_replicas))
-        # Statistical inefficiency:
-        g = np.zeros((n_replicas))
-        
-        subsample_indices = {}
-        for state in range(n_replicas):
-            t0[state], g[state], Neff_max = timeseries.detectEquilibration(state_energies[state], nskip=equil_nskip)
+    subsample_indices = {}
+    
+    # If sufficiently large, discard the first 10000 frames as equilibration period and use 
+    # subsampleCorrelatedData to get the energy decorrelation time.
+    if total_steps >= 20000 or frame_begin > 0:
+        if frame_begin > 0:
+            # If specified, use frame_begin as the start of the production region
+            production_start=frame_begin
+        else:
+            # Otherwise, use frame 10000
+            production_start=10000
             
-        # Choose the latest equil timestep to apply to all states    
-        production_start = int(np.max(t0))
-        
-        # Choose the most conservative sample spacing to apply to all states
-        max_sample_spacing=int(np.max(g))
-        
-        # Indices of the subsampled data could be obtained by the following:
-        # for state in range(n_replicas):
-            # subsample_indices[state] = timeseries.subsampleCorrelatedData(
-                # state_energies[state][production_start:],
-                # conservative=True,
-                # g=max_sample_spacing,
-            # )
+        for state in range(n_replicas):
+            subsample_indices[state] = timeseries.subsampleCorrelatedData(
+                state_energies[state][production_start:],
+                conservative=True,
+            )
+            g[state] = subsample_indices[state][1]-subsample_indices[state][0]
+    
+    else:
+        # For small trajectories, use detectEquilibration
+        for state in range(n_replicas):
+            t0[state], g[state], Neff_max = timeseries.detectEquilibration(state_energies[state], nskip=equil_nskip)  
+
+            # Choose the latest equil timestep to apply to all states    
+            production_start = int(np.max(t0))
+    
+    # Choose the average sample spacing to apply to all states
+    max_sample_spacing=int(np.ceil(np.mean(g)))
     
     t11 = time.perf_counter()
     if print_timing:
@@ -740,7 +754,6 @@ def run_replica_exchange(
         )  # no box vectors, non-periodic system.
 
     # Create and configure simulation object.
-    # GHMC is metropolized form of LangevinSplittingDynamicsMove (uses BAOAB velocity verlet)
     move = openmmtools.mcmc.LangevinDynamicsMove(
         timestep=simulation_time_step,
         collision_rate=friction,
