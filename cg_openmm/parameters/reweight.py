@@ -201,7 +201,8 @@ def get_opt_temperature_list(temperature_list_init, C_v, number_intermediate_sta
     :type verbose: bool
     
     :returns:
-       - temperature_list ( 1D numpy array ( float * simtk.unit.temperature ) ) - New optimally spaced temperature list
+       - T_opt_list ( 1D numpy array ( float * simtk.unit.temperature ) ) - New optimally spaced temperature list
+       - deltaS_list ( 1D numpy array ( float * simtk.unit ) ) - Actual entropy increases for adjacent temperatures in T_opt_list
     """
         
     # Process initial temperature list
@@ -323,7 +324,7 @@ def get_opt_temperature_list(temperature_list_init, C_v, number_intermediate_sta
     for i in range(len(T_deltas_opt)):
         deltaS_list[i] = interpolate.splint(T_opt_list[i],T_opt_list[i+1], spline_tck)
     
-    return T_opt_list*unit.kelvin, deltaS_list
+    return T_opt_list*unit.kelvin, deltaS_list*Cv_unit
     
         
 def get_intermediate_temperatures(T_from_file, NumIntermediates):

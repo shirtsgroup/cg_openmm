@@ -65,7 +65,7 @@ def test_heat_capacity_calc(tmpdir):
         decimal=6
         )
         
-    assert_allclose(deltaS_list/np.max(deltaS_list),np.ones(len(deltaS_list)))
+    assert_allclose(deltaS_list.value_in_unit(C_v.unit)/np.max(deltaS_list.value_in_unit(C_v.unit)),np.ones(len(deltaS_list)))
         
     
     
