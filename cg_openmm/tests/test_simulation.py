@@ -18,6 +18,7 @@ from cg_openmm.simulation.rep_exch import *
 from cg_openmm.utilities import random_builder
 from cg_openmm.build.cg_build import build_topology
 import numpy as np
+from numpy.testing import assert_almost_equal
 from openmmtools.cache import global_context_cache
 import pickle
 
@@ -74,6 +75,58 @@ def test_minimize_structure_dcd():
     
     assert PE_end < PE_start
     assert os.path.isfile(f"{structures_path}/medoid_min.dcd")    
+    
+
+def test_set_binary_interaction():
+    """Regression test for adding binary interaction parameter with customNonbondedForce"""
+
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))    
+
+    binary_interaction_parameters = {
+        "bb_sc_binary_interaction": 0.0}
+    
+    cgmodel_new = CGModel(
+        particle_type_list=cgmodel.particle_type_list,
+        bond_lengths=cgmodel.bond_lengths,
+        bond_force_constants=cgmodel.bond_force_constants,
+        bond_angle_force_constants=cgmodel.bond_angle_force_constants,
+        torsion_force_constants=cgmodel.torsion_force_constants,
+        equil_bond_angles=cgmodel.equil_bond_angles,
+        torsion_periodicities=cgmodel.torsion_periodicities,
+        binary_interaction_parameters=binary_interaction_parameters,
+        include_nonbonded_forces=cgmodel.include_nonbonded_forces,
+        include_bond_forces=cgmodel.include_bond_forces,
+        include_bond_angle_forces=cgmodel.include_bond_angle_forces,
+        include_torsion_forces=cgmodel.include_torsion_forces,
+        constrain_bonds=cgmodel.constrain_bonds,
+        sequence=cgmodel.sequence,
+        positions=cgmodel.positions,
+        monomer_types=cgmodel.monomer_types,
+    )
+    
+    native_structure_file=f"{structures_path}/medoid_0.dcd"
+
+    native_traj = md.load(native_structure_file,top=md.Topology.from_openmm(cgmodel.topology))    
+    
+    positions = native_traj.xyz[0] * unit.nanometer
+    
+    # Minimize energy of native structure
+    positions, PE_start, PE_end, simulation = minimize_structure(
+        cgmodel_new,
+        positions,
+        output_file=f"{structures_path}/medoid_min.dcd",
+    )
+    
+    # These should be equal to ~3 decimal places (1 Joule/mol)
+    PE_start_kappa_off = -47.523193359375
+    PE_end_kappa_off = -73.21410369873047
+    
+    PE_start_kappa_on = PE_start.value_in_unit(unit.kilojoule_per_mole)
+    PE_end_kappa_on = PE_end.value_in_unit(unit.kilojoule_per_mole)
+    
+    assert_almost_equal(PE_start_kappa_on,PE_start_kappa_off,decimal=4)
+    assert_almost_equal(PE_end_kappa_on,PE_end_kappa_off,decimal=4)
     
     
 def test_run_simulation(tmpdir):

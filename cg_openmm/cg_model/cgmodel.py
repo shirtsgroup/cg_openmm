@@ -104,6 +104,7 @@ class CGModel(object):
         torsion_periodicities={},
         equil_bond_angles={},
         torsion_phase_angles={},
+        binary_interaction_parameters={},
         constrain_bonds=False,
         include_nonbonded_forces=True,
         include_bond_forces=True,
@@ -154,6 +155,9 @@ class CGModel(object):
         :param torsion_phase_angles: Periodic torsion phase angle for all unique torsion angle definitions (default = 0)
         :type torsion_phase_angles: dict( 'type_name1_type_name2_type_name3_type_name4_torsion_0': `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) )
 
+        :param binary_interaction_parameters: Binary interaction parameters used to scale nonbonded interactions between unlike particles (default=None)
+        :type binary_interaction_parameters: dict( 'type_name1_type_name2_binary_interaction': float )
+        
         :param constrain_bonds: Option to use rigid bond constaints during a simulation of the energy for the system (default = False)
         :type constrain_bonds: Bool
 
@@ -241,6 +245,10 @@ class CGModel(object):
 
         # Assign particle properties
         self.particle_types = add_new_elements(self)
+        
+        # Assign binary interaction parameters
+        self.binary_interaction_parameters = binary_interaction_parameters
+        self._validate_binary_interaction
 
         # Assign bonded force properties
         self.bond_force_constants = bond_force_constants
@@ -414,7 +422,43 @@ class CGModel(object):
                 particle["charge"] = self.default_charge
 
         return particle_type_list
-
+        
+        
+    def _validate_binary_interaction(self, binary_interaction_parameters):    
+        """
+        Check that the binary interaction definitions are valid.
+        Each entry in the dictionary should be 'type_name1_type_name2_binary_interaction': float
+        """
+        
+        if binary_interaction_parameters is not None:
+            for key, value in binary_interaction_parameters.items():
+                # Extract the particle types:
+                kappa_list = []
+                string = ""
+                for c in key:
+                    if c == '_':
+                        kappa_list.append(string)
+                        string = ""
+                    else:
+                        string += c
+                kappa_list.append(string)
+                
+                if kappa_list[-2] != 'binary' or kappa_list[-1] != 'interaction':
+                    print(f'Incorrect suffix for binary interaction parameter for {binary_interaction_parameters[key]}')
+                    exit()
+  
+                # Use the first two particles in the dictionary key:
+                kappa_particle_list = kappa_list[0:2]
+                
+                for particle in kappa_particle_list:
+                    if particle in self.particle_type_list:
+                        pass
+                    else:
+                        print(f'Invalid particle name {particle} in binary interaction parameter definition') 
+                        exit()
+                        
+        return
+        
         
     def build_polymer(self, sequence):
         """
