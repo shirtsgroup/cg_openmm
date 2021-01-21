@@ -443,7 +443,7 @@ class CGModel(object):
                         string += c
                 kappa_list.append(string)
                 
-                if kappa_list[-2] != 'binary' and kappa_list[-1] != 'interaction':
+                if kappa_list[-2] != 'binary' or kappa_list[-1] != 'interaction':
                     print(f'Incorrect suffix for binary interaction parameter for {binary_interaction_parameters[key]}')
                     exit()
   
