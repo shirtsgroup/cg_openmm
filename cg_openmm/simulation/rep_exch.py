@@ -405,7 +405,7 @@ def process_replica_exchange_data(
         - replica_energies ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.float( [number_replicas,number_simulation_steps] ), simtk.unit ) ) - The potential energies for all replicas at all (printed) time steps
         - replica_state_indices ( np.int64( [number_replicas,number_simulation_steps] ), simtk.unit ) - The thermodynamic state assignments for all replicas at all (printed) time steps
         - production_start ( int - The frame at which the production region begins for all replicas, as determined from pymbar detectEquilibration
-        - max_sample_spacing ( int - The number of frames between uncorrelated state energies )
+        - mean_sample_spacing ( int - The number of frames between uncorrelated state energies )
         - n_transit ( np.float( [number_replicas] ) ) - Number of half-transitions between state 0 and n for each replica
         - mixing_stats ( tuple ( np.float( [number_replicas x number_replicas] ) , np.float( [ number_replicas ] ) , float( statistical inefficiency ) ) ) - transition matrix, corresponding eigenvalues, and statistical inefficiency
     """
@@ -535,7 +535,7 @@ def process_replica_exchange_data(
             production_start = int(np.max(t0))
     
     # Choose the average sample spacing to apply to all states
-    max_sample_spacing=int(np.ceil(np.mean(g)))
+    mean_sample_spacing=int(np.ceil(np.mean(g)))
     
     t11 = time.perf_counter()
     if print_timing:
@@ -543,8 +543,8 @@ def process_replica_exchange_data(
                 
     print("state    mean energies  variance")
     for state in range(n_replicas):
-        state_mean = np.mean(state_energies[state,production_start::max_sample_spacing])
-        state_std = np.std(state_energies[state,production_start::max_sample_spacing])
+        state_mean = np.mean(state_energies[state,production_start::mean_sample_spacing])
+        state_std = np.std(state_energies[state,production_start::mean_sample_spacing])
         print(
             f"  {state:4d}    {state_mean:10.6f} {state_std:10.6f}"
         )
@@ -664,7 +664,7 @@ def process_replica_exchange_data(
         print(f"compute transition matrix: {t17-t16}")
         print(f"total time elapsed: {t17-t1}")
 
-    return (replica_energies, replica_state_indices, production_start, max_sample_spacing, n_transit, mixing_stats)
+    return (replica_energies, replica_state_indices, production_start, mean_sample_spacing, n_transit, mixing_stats)
 
 
 def run_replica_exchange(
