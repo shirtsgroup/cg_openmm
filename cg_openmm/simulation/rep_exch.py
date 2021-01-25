@@ -1033,7 +1033,7 @@ def plot_replica_state_matrix(
         cm.ScalarMappable(cmap=cmap,norm=norm),
         cax=cax,
         label='normalized frequency',
-        shrink=0.5)
+        )
      
     ax.set_xlabel("State")
     ax.set_ylabel("Replica")
