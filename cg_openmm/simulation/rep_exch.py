@@ -5,6 +5,7 @@ import matplotlib.pyplot as pyplot
 import matplotlib.cm as cm
 from matplotlib.colors import Normalize
 from matplotlib.backends.backend_pdf import PdfPages
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from simtk import unit
 import openmmtools
 from cg_openmm.utilities.util import set_box_vectors, get_box_vectors
@@ -1031,49 +1032,36 @@ def plot_replica_state_matrix(
         
     # No need for global normalization, since each replica's state probabilities must sum to 1
     
-    fig = pyplot.figure(constrained_layout=True)
-    widths = [1,0.05]
-    heights = [1]
-    
-    fig_specs = fig.add_gridspec(
-        ncols=2, nrows=1, width_ratios=widths, height_ratios=heights)
-    
-    ax = fig.add_subplot(fig_specs[0,0])
-    
-    #ax.patch.set_facecolor('white')
-    ax.set_aspect('equal', 'box')
-    
-    ax.xaxis.set_major_locator(pyplot.NullLocator())
-    ax.yaxis.set_major_locator(pyplot.NullLocator())
-    
+    hist_norm = np.zeros_like(hist_all)
     for rep in range(n_replicas):
         for state in range(n_replicas):
-            color = cm.nipy_spectral(hist_all[rep,state]/np.max(hist_all[rep,:]))
-            square = pyplot.Rectangle([state-1/2, rep-1/2], 1, 1, facecolor=color, edgecolor=color)
-            ax.add_patch(square) 
-      
-    ax.autoscale_view()  
-    ax.invert_yaxis()    
-     
-    # Add colorbar to right side:
+            hist_norm[rep,state] = hist_all[rep,state]/np.max(hist_all[rep,:])    
+    
+    mean_score = np.mean(hist_norm)
+    min_score = np.amin(hist_norm)
+    
+    ax = pyplot.subplot(111)
+    
     cmap=pyplot.get_cmap('nipy_spectral') 
+    ax.imshow(hist_norm,cmap=cmap)
     
-    cax = fig.add_subplot(fig_specs[0,1],frameon=False)
-    cax.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
+    ax.set_aspect('equal', 'box')
     
+    # Append colorbar axis to right side
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right",size="5%",pad=0.20)
+
     norm=Normalize(vmin=0,vmax=1)   
     
     pyplot.colorbar(
         cm.ScalarMappable(cmap=cmap,norm=norm),
         cax=cax,
-        ax=cax,
-        shrink=0.3,
-        pad=0,
-        label='normalized frequency')         
+        label='normalized frequency',
+        )
      
     ax.set_xlabel("State")
     ax.set_ylabel("Replica")
-    pyplot.suptitle("Replica exchange state probabilities")  
+    pyplot.suptitle(f"Replica exchange state probabilities\n(Mean: {mean_score:.4f} Min: {min_score:.4f})")  
     
     pyplot.savefig(file_name)
     pyplot.close()    
