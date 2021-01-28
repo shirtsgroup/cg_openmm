@@ -13,6 +13,8 @@ from simtk.openmm.app.dcdfile import DCDFile
 from mdtraj.formats import PDBTrajectoryFile
 from mdtraj import Topology
 from pymbar import timeseries
+from scipy.special import erf
+from scipy.optimize import minimize_scalar
 import time
 
 from openmmtools.multistate import MultiStateReporter, MultiStateSampler, ReplicaExchangeSampler
@@ -405,7 +407,7 @@ def process_replica_exchange_data(
         - replica_energies ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.float( [number_replicas,number_simulation_steps] ), simtk.unit ) ) - The potential energies for all replicas at all (printed) time steps
         - replica_state_indices ( np.int64( [number_replicas,number_simulation_steps] ), simtk.unit ) - The thermodynamic state assignments for all replicas at all (printed) time steps
         - production_start ( int - The frame at which the production region begins for all replicas, as determined from pymbar detectEquilibration
-        - mean_sample_spacing ( int - The number of frames between uncorrelated state energies )
+        - sample_spacing ( int - The number of frames between uncorrelated state energies, estimated as 75th percentile among all state values  )
         - n_transit ( np.float( [number_replicas] ) ) - Number of half-transitions between state 0 and n for each replica
         - mixing_stats ( tuple ( np.float( [number_replicas x number_replicas] ) , np.float( [ number_replicas ] ) , float( statistical inefficiency ) ) ) - transition matrix, corresponding eigenvalues, and statistical inefficiency
     """
@@ -502,15 +504,15 @@ def process_replica_exchange_data(
     
     subsample_indices = {}
     
-    # If sufficiently large, discard the first 10000 frames as equilibration period and use 
+    # If sufficiently large, discard the first 20000 frames as equilibration period and use 
     # subsampleCorrelatedData to get the energy decorrelation time.
-    if total_steps >= 20000 or frame_begin > 0:
+    if total_steps >= 40000 or frame_begin > 0:
         if frame_begin > 0:
             # If specified, use frame_begin as the start of the production region
             production_start=frame_begin
         else:
-            # Otherwise, use frame 10000
-            production_start=10000
+            # Otherwise, use frame 20000
+            production_start=20000
             
         for state in range(n_replicas):
             subsample_indices[state] = timeseries.subsampleCorrelatedData(
@@ -527,8 +529,30 @@ def process_replica_exchange_data(
             # Choose the latest equil timestep to apply to all states    
             production_start = int(np.max(t0))
     
-    # Choose the average sample spacing to apply to all states
-    mean_sample_spacing=int(np.ceil(np.mean(g)))
+    # Assume a normal distribution (very rough approximation), and use mean plus
+    # the number of standard deviations which leads to (n_replica-1)/n_replica coverage
+    # For 12 replicas this should be the mean + 1.7317 standard deviations
+    
+    # x standard deviations is the solution to (n_replica-1)/n_replica = erf(x/sqrt(2))
+    # This is equivalent to a target of 23/24 CDF value 
+    
+    print(f"g: {g}")
+    print(f"mean g: {np.mean(g)}")
+    
+    def erf_fun(x):
+        return np.power((erf(x/np.sqrt(2))-(n_replicas-1)/n_replicas),2)
+        
+    # x must be larger than zero    
+    opt_g_results = minimize_scalar(
+        erf_fun,
+        bounds=(0,10)
+        )
+    
+    print(f"erf opt results: {opt_g_results}")
+    
+    sample_spacing = int(np.ceil(np.mean(g)+opt_g_results.x*np.std(g)))
+    print(f"g opt: {sample_spacing}")
+    
     
     t11 = time.perf_counter()
     if print_timing:
@@ -536,8 +560,8 @@ def process_replica_exchange_data(
                 
     print("state    mean energies  variance")
     for state in range(n_replicas):
-        state_mean = np.mean(state_energies[state,production_start::mean_sample_spacing])
-        state_std = np.std(state_energies[state,production_start::mean_sample_spacing])
+        state_mean = np.mean(state_energies[state,production_start::sample_spacing])
+        state_std = np.std(state_energies[state,production_start::sample_spacing])
         print(
             f"  {state:4d}    {state_mean:10.6f} {state_std:10.6f}"
         )
@@ -659,7 +683,7 @@ def process_replica_exchange_data(
         print(f"compute transition matrix: {t17-t16}")
         print(f"total time elapsed: {t17-t1}")
 
-    return (replica_energies, replica_state_indices, production_start, mean_sample_spacing, n_transit, mixing_stats)
+    return (replica_energies, replica_state_indices, production_start, sample_spacing, n_transit, mixing_stats)
 
 
 def run_replica_exchange(
