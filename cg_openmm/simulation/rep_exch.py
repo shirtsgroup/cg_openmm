@@ -537,7 +537,7 @@ def process_replica_exchange_data(
     # x standard deviations is the solution to (n_replica-1)/n_replica = erf(x/sqrt(2))
     # This is equivalent to a target of 23/24 CDF value 
     
-    print(f"g: {int(g)}")
+    print(f"g: {g.astype(int)}")
     
     def erf_fun(x):
         return np.power((erf(x/np.sqrt(2))-(n_replicas-1)/n_replicas),2)
