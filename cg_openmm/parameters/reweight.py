@@ -6,6 +6,9 @@ import mdtraj as md
 import simtk.unit as unit
 import pymbar
 from pymbar import timeseries
+from scipy import interpolate
+from scipy.optimize import minimize, minimize_scalar, Bounds, LinearConstraint
+from matplotlib import pyplot as plt
 
 kB = (unit.MOLAR_GAS_CONSTANT_R).in_units_of(unit.kilojoule / (unit.kelvin * unit.mole))
 
@@ -175,8 +178,156 @@ def get_temperature_list(min_temp, max_temp, num_replicas):
     temperature_list *= T_unit
     
     return temperature_list
+    
+    
+def get_opt_temperature_list(temperature_list_init, C_v, number_intermediate_states=0, plotfile=None, verbose=True):
+    """
+    Given an initial temperature list, and heat capacity curve that resulted from a replica exchange simulation
+    using those temperatures, computes a revised temperature list satisfying the constant entropy increase (CEI) method
+    
+    :param temperature_list_init: List of temperatures for initial replica exchange run
+    :type temperature_list_init: 1D numpy array ( float * simtk.unit.temperature )
+    
+    :param C_v: List of heat capacities evaluated at each temperature in temperature_list_init 
+    :type C_v: 1D numpy array [ Quantity ]
+    
+    :param number_intermediate_states: number of unsampled states between each pair of sampled states (default=0)
+    :type number_intermediate_states: int
+    
+    :param plotfile: path to filename for plotting spline fit to C_v/T vs. T (default=None)
+    :type plotfile: str
+    
+    :param verbose: option to print final output of scipy optimization routines
+    :type verbose: bool
+    
+    :returns:
+       - T_opt_list ( 1D numpy array ( float * simtk.unit.temperature ) ) - New optimally spaced temperature list
+       - deltaS_list ( 1D numpy array ( float * simtk.unit ) ) - Actual entropy increases for adjacent temperatures in T_opt_list
+    """
+        
+    # Process initial temperature list
+    # Check for intermediate states from pymbar
+    # (more intermediate states will give better estimate of new temperatures)
+    
 
+    T_init_sampled = temperature_list_init[::(number_intermediate_states+1)]
+    T_init_sampled_val = np.zeros((len(T_init_sampled)))
+    Tunit = T_init_sampled[0].unit
+    for i in range(len(T_init_sampled)):
+        T_init_sampled_val[i] = T_init_sampled[i].value_in_unit(Tunit)
+        
+    T_init_sampled = T_init_sampled_val
+    
+    # First and last temps are fixed bounds:
+    T0 = T_init_sampled[0]
+    TN = T_init_sampled[-1]
+            
+    # Fit C_v/T vs. T data to spline
+    xdata = temperature_list_init
+    ydata = C_v / temperature_list_init
+    Cv_unit = C_v[0].unit
+    
+    # Strip units off quantities:
+    if type(xdata[0]) == unit.quantity.Quantity:
+        xdata_val = np.zeros((len(xdata)))
+        xunit = xdata[0].unit
+        for i in range(len(xdata)):
+            xdata_val[i] = xdata[i].value_in_unit(xunit)
+        xdata = xdata_val
+    
+    if type(ydata[0]) == unit.quantity.Quantity:
+        ydata_val = np.zeros((len(ydata)))
+        yunit = ydata[0].unit
+        for i in range(len(ydata)):
+            ydata_val[i] = ydata[i].value_in_unit(yunit)
+        ydata = ydata_val    
+    
+    # Fit cubic spline to data, no smoothing
+    spline_tck = interpolate.splrep(xdata, ydata, s=0)
+    
+    if plotfile is not None:
+        # Plot the spline fit:
+        figure = plt.figure()
+        line1 = plt.plot(xdata,ydata,'ok',fillstyle='none',label='simulation_data')
+        
+        xspline = np.linspace(xdata[0],xdata[-1],1000)
+        yspline = interpolate.splev(xspline, spline_tck, der=0)
+        
+        line2 = plt.plot(xspline,yspline,'-b',label='spline fit')
+        
+        plt.xlabel('Temperature (K)')
+        plt.ylabel('C_v / T (kJ/mol/K^2)')
+        plt.legend()
+        
+        plt.savefig(f'{plotfile}')
+        plt.close()
+    
+    # Fix the first and last temps, with intermediate temps varied in a minimization,
+    # With constraint that the temperature spacings must sum to the original temp range.
+    # The objective function is the standard deviation of the entropy differences between all adjacent temps.
+    
+    def entropy_stdev(T_deltas):
+        # Compute standard deviation of entropy differences
+        T_opt_list = np.zeros(len(T_deltas)+1)
+        deltaS_list = np.zeros(len(T_deltas))
+ 
+        T_opt_list[0] = T0
+        for i in range(len(T_deltas)-1):
+            T_opt_list[i+1] = T_opt_list[i]+T_deltas[i]  
+        T_opt_list[-1] = TN
+        
+        for i in range(len(T_deltas)):
+            deltaS_list[i] = interpolate.splint(T_opt_list[i],T_opt_list[i+1], spline_tck)
+        return np.std(deltaS_list)
+    
+        
+    # For initial guess, use the original spacing:
+    T_delta0 = T_init_sampled[1::]-T_init_sampled[0:-1]
+    
+    # Set up linear equality constraint:
+    constraint = LinearConstraint(
+        np.ones(len(T_init_sampled)-1),
+        lb=(T_init_sampled[-1]-T_init_sampled[0]),
+        ub=(T_init_sampled[-1]-T_init_sampled[0]),
+        )
+        
+    bounds = Bounds(np.ones(len(T_delta0))*1E-3,np.ones(len(T_delta0))*500)
+    
+    opt_results = minimize(
+        entropy_stdev,
+        T_delta0,
+        bounds=bounds,
+        constraints=constraint,
+        method='SLSQP',
+        options={
+            'ftol':1E-12,
+            'maxiter':1E6}
+        )         
+        
+    if not opt_results.success:
+        print('Error: CEI optimization did not converge')
+        print(f'Constant entropy increase optimization results:\n{opt_results}') 
+        exit()
+    
+    if verbose:
+        print(f'Constant entropy increase optimization results:\n{opt_results}')      
+    
+    # Retreive final temperature list and entropy diff list:
+    T_deltas_opt = opt_results.x
+    
+    T_opt_list = np.zeros(len(T_deltas_opt)+1)
+    deltaS_list = np.zeros(len(T_deltas_opt))
 
+    T_opt_list[0] = T0
+    for i in range(len(T_deltas_opt)):
+        T_opt_list[i+1] = T_opt_list[i]+T_deltas_opt[i]  
+    
+    for i in range(len(T_deltas_opt)):
+        deltaS_list[i] = interpolate.splint(T_opt_list[i],T_opt_list[i+1], spline_tck)
+    
+    return T_opt_list*unit.kelvin, deltaS_list*Cv_unit
+    
+        
 def get_intermediate_temperatures(T_from_file, NumIntermediates):
     """
         Given a list of temperatures and a number of intermediate states as input, this function calculates the values for temperatures intermediate between those in this list, as the mean between values in the list.

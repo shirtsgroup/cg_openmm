@@ -144,7 +144,7 @@ def get_heat_capacity_derivative(Cv, temperature_list, plotfile='dCv_dT.pdf'):
     return dCv_out, d2Cv_out, spline_tck
         
 
-def get_heat_capacity(frame_begin=0, sample_spacing=1, output_data="output/output.nc", num_intermediate_states=0,frac_dT=0.05, plot_file=None):
+def get_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, output_data="output/output.nc", num_intermediate_states=0,frac_dT=0.05, plot_file=None):
     """
     Given a .nc output and a number of intermediate states to insert for the temperature list, this function calculates and plots the heat capacity profile.
                              
@@ -152,7 +152,10 @@ def get_heat_capacity(frame_begin=0, sample_spacing=1, output_data="output/outpu
     :type frame_begin: int
     
     :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData (default=1)
-    :type sample_spacing: int  
+    :type sample_spacing: int
+    
+    :param frame_end: index of last frame to include in heat capacity calculation (default=-1)
+    :type frame_end: int
 
     :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data (default = "output/output.nc")                                                                                          
     :type output_data: str    
@@ -181,7 +184,10 @@ def get_heat_capacity(frame_begin=0, sample_spacing=1, output_data="output/outpu
     ) = analyzer.read_energies()
     
     # Select production frames to analyze
-    replica_energies = replica_energies_all[:,:,frame_begin::sample_spacing]
+    if frame_end > 0:
+        replica_energies = replica_energies_all[:,:,frame_begin:frame_end:sample_spacing]
+    else:
+        replica_energies = replica_energies_all[:,:,frame_begin::sample_spacing]
     
     # Get the temperature list from .nc file:
     states = reporter.read_thermodynamic_states()[0]

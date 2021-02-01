@@ -2,7 +2,10 @@ import os
 import subprocess
 import numpy as np
 import matplotlib.pyplot as pyplot
+import matplotlib.cm as cm
+from matplotlib.colors import Normalize
 from matplotlib.backends.backend_pdf import PdfPages
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from simtk import unit
 import openmmtools
 from cg_openmm.utilities.util import set_box_vectors, get_box_vectors
@@ -11,6 +14,8 @@ from simtk.openmm.app.dcdfile import DCDFile
 from mdtraj.formats import PDBTrajectoryFile
 from mdtraj import Topology
 from pymbar import timeseries
+from scipy.special import erf
+from scipy.optimize import minimize_scalar
 import time
 
 from openmmtools.multistate import MultiStateReporter, MultiStateSampler, ReplicaExchangeSampler
@@ -208,7 +213,7 @@ def make_state_dcd_files(
         file = open(file_name, "wb")
         dcd_file = DCDFile(file, topology, timestep, firstStep=frame_begin, interval=time_interval)
         
-        #***Note: if we have different masses for particle types, need to update this
+        # TODO: replace this with MDTraj alignment tool
         if center==True:
             center_x = np.mean(state_trajectory[0,:,0])
             center_y = np.mean(state_trajectory[0,:,1])
@@ -283,7 +288,7 @@ def make_state_pdb_files(
         PDBFile.writeHeader(topology, file=file)
         modelIndex = 1
         
-        #***Note: if we have different masses for particle types, need to update this
+        # TODO: replace this with MDTraj alignment tool
         if center==True:
             center_x = np.mean(state_trajectory[0,:,0])
             center_y = np.mean(state_trajectory[0,:,1])
@@ -368,8 +373,9 @@ def extract_trajectory(
     
     
 def process_replica_exchange_data(
-    output_data="output/output.nc", output_directory="output", series_per_page=4, write_data_file=True, detect_equilibration=True, plot_production_only=False,
-    print_timing=False, subsample_fast=False, equil_nskip=1,
+    output_data="output/output.nc", output_directory="output", series_per_page=4,
+    write_data_file=True, plot_production_only=False, print_timing=False,
+    equil_nskip=1, frame_begin=0, frame_end=-1,
 ):
     """
     Read replica exchange simulation data, detect equilibrium and decorrelation time, and plot replica exchange results.
@@ -386,23 +392,25 @@ def process_replica_exchange_data(
     :param write_data_file: Option to write a text data file containing the state_energies array (default=True)
     :type write_data_file: Boolean
     
-    :param detect_equilibration: Option to determine the frame at which the production region begins (default=True)
-    :type detect_equilibration: Boolean
-    
     :param plot_production_only: Option to plot only the production region, as determined from pymbar detectEquilibration (default=False)
     :type plot_production_only: Boolean    
-    
-    :param subsample_fast: use fast mode of pymbar subsampleCorrelatedData (use with caution - this reduces accuracy)
-    :type subsample_fast: Boolean
 
-    :param equil_nskip: skip this number of frames to sparsify the energy timeseries for pymbar detectEquilibration (default=1)
+    :param equil_nskip: skip this number of frames to sparsify the energy timeseries for pymbar detectEquilibration (default=1) - this is used only when frame_begin=0 and the trajectory has less than 40000 frames.
     :type equil_nskip: Boolean
+    
+    :param frame_begin: analyze starting from this frame, discarding all prior as equilibration period (default=0)
+    :type frame_begin: int
+    
+    :param frame_end: analyze up to this frame only, discarding the rest (default=-1).
+    :type frame_end: int
 
     :returns:
         - replica_energies ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.float( [number_replicas,number_simulation_steps] ), simtk.unit ) ) - The potential energies for all replicas at all (printed) time steps
         - replica_state_indices ( np.int64( [number_replicas,number_simulation_steps] ), simtk.unit ) - The thermodynamic state assignments for all replicas at all (printed) time steps
         - production_start ( int - The frame at which the production region begins for all replicas, as determined from pymbar detectEquilibration
-        - max_sample_spacing ( int - The number of frames between uncorrelated state energies )
+        - sample_spacing ( int - The number of frames between uncorrelated state energies, estimated using heuristic algorithm )
+        - n_transit ( np.float( [number_replicas] ) ) - Number of half-transitions between state 0 and n for each replica
+        - mixing_stats ( tuple ( np.float( [number_replicas x number_replicas] ) , np.float( [ number_replicas ] ) , float( statistical inefficiency ) ) ) - transition matrix, corresponding eigenvalues, and statistical inefficiency
     """
     
     t1 = time.perf_counter()
@@ -446,6 +454,14 @@ def process_replica_exchange_data(
         replica_state_indices,
     ) = analyzer.read_energies()
     
+    # Truncate output of read_energies() to last frame of interest
+    if frame_end > 0:
+        # Use frames from frame_begin to frame_end
+        replica_energies = replica_energies[:,:,:frame_end]
+        unsampled_state_energies = unsampled_state_energies[:,:,:frame_end]
+        neighborhoods = neighborhoods[:,:,:frame_end]
+        replica_state_indices = replica_state_indices[:,:frame_end]
+    
     t6 = time.perf_counter()
     if print_timing:
         print(f"read_energies time: {t6-t5}")
@@ -479,28 +495,65 @@ def process_replica_exchange_data(
     # can run physical-valication on these state_energies
         
     # Use pymbar timeseries module to detect production period
-    # We can also add in the subsampleCorrelatedData routine
     
     t10 = time.perf_counter()
     
-    production_start = None
-    max_sample_spacing = 1
+    # Start of equilibrated data:
+    t0 = np.zeros((n_replicas))
+    # Statistical inefficiency:
+    g = np.zeros((n_replicas))
     
-    if detect_equilibration==True:
-        t0 = np.zeros((n_replicas))
-        subsample_indices = {}
-        for state in range(n_replicas):
-            t0[state], g, Neff_max = timeseries.detectEquilibration(state_energies[state], nskip=equil_nskip)
-        production_start = int(np.max(t0))
-        
-        # Choose the most conservative sample spacing
+    subsample_indices = {}
+    
+    # If sufficiently large, discard the first 20000 frames as equilibration period and use 
+    # subsampleCorrelatedData to get the energy decorrelation time.
+    if total_steps >= 40000 or frame_begin > 0:
+        if frame_begin > 0:
+            # If specified, use frame_begin as the start of the production region
+            production_start=frame_begin
+        else:
+            # Otherwise, use frame 20000
+            production_start=20000
+            
         for state in range(n_replicas):
             subsample_indices[state] = timeseries.subsampleCorrelatedData(
                 state_energies[state][production_start:],
-                conservative=True, fast=subsample_fast,
+                conservative=True,
             )
-            if (subsample_indices[state][1]-subsample_indices[state][0]) > max_sample_spacing:
-                max_sample_spacing = (subsample_indices[state][1]-subsample_indices[state][0])
+            g[state] = subsample_indices[state][1]-subsample_indices[state][0]
+    
+    else:
+        # For small trajectories, use detectEquilibration
+        for state in range(n_replicas):
+            t0[state], g[state], Neff_max = timeseries.detectEquilibration(state_energies[state], nskip=equil_nskip)  
+
+            # Choose the latest equil timestep to apply to all states    
+            production_start = int(np.max(t0))
+    
+    # Assume a normal distribution (very rough approximation), and use mean plus
+    # the number of standard deviations which leads to (n_replica-1)/n_replica coverage
+    # For 12 replicas this should be the mean + 1.7317 standard deviations
+    
+    # x standard deviations is the solution to (n_replica-1)/n_replica = erf(x/sqrt(2))
+    # This is equivalent to a target of 23/24 CDF value 
+    
+    print(f"g: {g.astype(int)}")
+    
+    def erf_fun(x):
+        return np.power((erf(x/np.sqrt(2))-(n_replicas-1)/n_replicas),2)
+        
+    # x must be larger than zero    
+    opt_g_results = minimize_scalar(
+        erf_fun,
+        bounds=(0,10)
+        )
+    
+    if not opt_g_results.success:
+        print("Error solving for correlation time, exiting...")
+        print(f"erf opt results: {opt_g_results}")
+        exit()
+    
+    sample_spacing = int(np.ceil(np.mean(g)+opt_g_results.x*np.std(g)))
     
     t11 = time.perf_counter()
     if print_timing:
@@ -508,8 +561,8 @@ def process_replica_exchange_data(
                 
     print("state    mean energies  variance")
     for state in range(n_replicas):
-        state_mean = np.mean(state_energies[state,production_start::max_sample_spacing])
-        state_std = np.std(state_energies[state,production_start::max_sample_spacing])
+        state_mean = np.mean(state_energies[state,production_start::sample_spacing])
+        state_std = np.std(state_energies[state,production_start::sample_spacing])
         print(
             f"  {state:4d}    {state_mean:10.6f} {state_std:10.6f}"
         )
@@ -556,6 +609,11 @@ def process_replica_exchange_data(
             file_name=f"{output_directory}/rep_ex_states.pdf",
         )
         
+        plot_replica_state_matrix(
+            replica_state_indices[:,production_start:],
+            file_name=f"{output_directory}/state_probability_matrix.pdf",
+        )
+        
     else:
         plot_replica_exchange_energies(
             state_energies,
@@ -579,12 +637,54 @@ def process_replica_exchange_data(
             file_name=f"{output_directory}/rep_ex_states.pdf",
         )
         
+        plot_replica_state_matrix(
+            replica_state_indices,
+            file_name=f"{output_directory}/state_probability_matrix.pdf",
+        )
+      
     t15 = time.perf_counter()
+      
     if print_timing:
         print(f"plotting time: {t15-t14}")
-        print(f"total time elapsed: {t15-t1}")
+    
+    # Analyze replica exchange state transitions
+    # For each replica, how many times does the thermodynamic state go between state 0 and state n
+    # For consistency with the other mixing statistics, use only the production region here
+    
+    replica_state_indices_prod = replica_state_indices[:,production_start:]
+    
+    # Number of one-way transitions from states 0 to n or states n to 0 
+    n_transit = np.zeros((n_replicas,1))
+    
+    # Replica_state_indices is [n_replicas x n_iterations]
+    for rep in range(n_replicas):
+        last_bound = None
+        for i in range(replica_state_indices_prod.shape[1]):
+            if replica_state_indices_prod[rep,i] == 0 or replica_state_indices_prod[rep,i] == (n_replicas-1):
+                if last_bound is None:
+                    # This is the first time state 0 or n is visited
+                    pass
+                else:
+                    if last_bound != replica_state_indices_prod[rep,i]:
+                        # This is a completed transition from 0 to n or n to 0
+                        n_transit[rep] += 1
+                last_bound = replica_state_indices_prod[rep,i]                
+                        
+    t16 = time.perf_counter()
+    
+    if print_timing:
+        print(f"replica transition analysis: {t16-t15}")
+        
+    # Compute transition matrix from the analyzer
+    mixing_stats = analyzer.generate_mixing_statistics(number_equilibrated=production_start)
+    
+    t17 = time.perf_counter()
+    
+    if print_timing:
+        print(f"compute transition matrix: {t17-t16}")
+        print(f"total time elapsed: {t17-t1}")
 
-    return (replica_energies, replica_state_indices, production_start, max_sample_spacing)
+    return (replica_energies, replica_state_indices, production_start, sample_spacing, n_transit, mixing_stats)
 
 
 def run_replica_exchange(
@@ -674,7 +774,6 @@ def run_replica_exchange(
         )  # no box vectors, non-periodic system.
 
     # Create and configure simulation object.
-    # GHMC is metropolized form of LangevinSplittingDynamicsMove (uses BAOAB velocity verlet)
     move = openmmtools.mcmc.LangevinDynamicsMove(
         timestep=simulation_time_step,
         collision_rate=friction,
@@ -807,6 +906,14 @@ def plot_replica_exchange_energies(
     
     simulation_times += time_shift.value_in_unit(unit.picosecond)
     
+    # To improve pdf render speed, sparsify data to display less than 2000 data points
+    n_xdata = len(simulation_times)
+    
+    if n_xdata <= 1000:
+        plot_stride = 1
+    else:
+        plot_stride = int(np.floor(n_xdata/1000))
+    
     # If more than series_per_page replicas, split into separate pages for better visibility
     nmax = series_per_page
     npage = int(np.ceil(len(temperature_list)/nmax))
@@ -818,8 +925,8 @@ def plot_replica_exchange_energies(
         for state in range(len(temperature_list)):
             if plotted_per_page <= (nmax):
                 pyplot.plot(
-                    simulation_times,
-                    state_energies[state,:],
+                    simulation_times[::plot_stride],
+                    state_energies[state,::plot_stride],
                     alpha=0.5,
                     linewidth=1,
                 )
@@ -901,7 +1008,67 @@ def plot_replica_exchange_energy_histograms(
 
     return
     
+    
+def plot_replica_state_matrix(
+    replica_state_indices,
+    file_name='state_probability_matrix.pdf'
+    ):
+    
+    # Plot a matrix of replica vs. state, coloring each box in the grid by normalized frequency 
+    # For each replica, histogram the state indices data 
+    # Then normalize the data and create [n_replica x n_state] patch graph
+    
+    n_replicas = replica_state_indices.shape[0]
+    
+    hist_all = np.zeros((n_replicas, n_replicas))
+    
+    state_bin_edges = np.linspace(-0.5,n_replicas-0.5,n_replicas+1)
+    state_bin_centers = 0.5+state_bin_edges[0:n_replicas]
+    
+    for rep in range(n_replicas):
+        hist_all[rep,:], bin_edges = np.histogram(
+            replica_state_indices[rep,:],bins=state_bin_edges,density=True,
+        )
+        
+    # No need for global normalization, since each replica's state probabilities must sum to 1
+    
+    hist_norm = np.zeros_like(hist_all)
+    for rep in range(n_replicas):
+        for state in range(n_replicas):
+            hist_norm[rep,state] = hist_all[rep,state]/np.max(hist_all[rep,:])    
+    
+    mean_score = np.mean(hist_norm)
+    min_score = np.amin(hist_norm)
+    
+    ax = pyplot.subplot(111)
+    
+    cmap=pyplot.get_cmap('nipy_spectral') 
+    ax.imshow(hist_norm,cmap=cmap)
+    
+    ax.set_aspect('equal', 'box')
+    
+    # Append colorbar axis to right side
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right",size="5%",pad=0.20)
 
+    norm=Normalize(vmin=0,vmax=1)   
+    
+    pyplot.colorbar(
+        cm.ScalarMappable(cmap=cmap,norm=norm),
+        cax=cax,
+        label='normalized frequency',
+        )
+     
+    ax.set_xlabel("State")
+    ax.set_ylabel("Replica")
+    pyplot.suptitle(f"Replica exchange state probabilities\n(Mean: {mean_score:.4f} Min: {min_score:.4f})")  
+    
+    pyplot.savefig(file_name)
+    pyplot.close()    
+    
+    return hist_all
+    
+    
 def plot_replica_exchange_summary(
     replica_states,
     temperature_list,
@@ -932,8 +1099,6 @@ def plot_replica_exchange_summary(
     :param legend: Controls whether a legend is added to the plot
     :type legend: Logical
 
-    ..warning:: If more than 10 replica exchange trajectories are provided as input data, by default, this function will only plot the first 10 thermodynamic states.  These thermodynamic states are chosen based upon their indices, not their instantaneous temperature (ensemble) assignment.
-
     """
     
     simulation_times = np.array(
@@ -944,6 +1109,14 @@ def plot_replica_exchange_summary(
     )
     
     simulation_times += time_shift.value_in_unit(unit.picosecond)
+    
+    # To improve pdf render speed, sparsify data to display less than 2000 data points
+    n_xdata = len(simulation_times)
+    
+    if n_xdata <= 1000:
+        plot_stride = 1
+    else:
+        plot_stride = int(np.floor(n_xdata/1000))
     
     # If more than series_per_page replicas, split into separate pages for better visibility
     nmax = series_per_page
@@ -957,9 +1130,10 @@ def plot_replica_exchange_summary(
             state_indices = np.array([int(round(state)) for state in replica_states[replica]])
             
             if plotted_per_page <= (nmax):
+                
                 pyplot.plot(
-                    simulation_times,
-                    state_indices,
+                    simulation_times[::plot_stride],
+                    state_indices[::plot_stride],
                     alpha=0.5,
                     linewidth=1
                 )

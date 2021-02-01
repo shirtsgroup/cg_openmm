@@ -125,8 +125,8 @@ def test_set_binary_interaction():
     PE_start_kappa_on = PE_start.value_in_unit(unit.kilojoule_per_mole)
     PE_end_kappa_on = PE_end.value_in_unit(unit.kilojoule_per_mole)
     
-    assert_almost_equal(PE_start_kappa_on,PE_start_kappa_off,decimal=4)
-    assert_almost_equal(PE_end_kappa_on,PE_end_kappa_off,decimal=4)
+    assert_almost_equal(PE_start_kappa_on,PE_start_kappa_off,decimal=3)
+    assert_almost_equal(PE_end_kappa_on,PE_end_kappa_off,decimal=3)
     
     
 def test_run_simulation(tmpdir):
@@ -398,30 +398,40 @@ def test_run_replica_exchange(tmpdir):
     assert os.path.isfile(f"{output_directory}/output.nc")
     
     # Process replica exchange output
-    # 1) With detect equilibrium:
-    replica_energies, replica_states, production_start, sample_spacing = process_replica_exchange_data(
+    # 1) With plot production only and print_timing:
+    replica_energies, replica_states, production_start, sample_spacing, n_transit, mixing_stats = process_replica_exchange_data(
         output_data=output_data,
         output_directory=output_directory,
-        detect_equilibration=True,
         plot_production_only=True,
+        print_timing=True,
     )
     
-    assert production_start is not None
-    
-    # 2) Without detect equilibrium:
-    replica_energies, replica_states, production_start, sample_spacing = process_replica_exchange_data(
+    # 2) With non-default equil_nskip
+    replica_energies, replica_states, production_start, sample_spacing, n_transit, mixing_stats = process_replica_exchange_data(
         output_data=output_data,
         output_directory=output_directory,
-        detect_equilibration=False,
+        plot_production_only=True,
+        equil_nskip=2,
     )
     
-    assert production_start is None    
-    
-    # 3) Without writing .dat file:
-    replica_energies, replica_states, production_start, sample_spacing = process_replica_exchange_data(
+    # 3) With frame_begin used to circumvent detectEquilibration
+    replica_energies, replica_states, production_start, sample_spacing, n_transit, mixing_stats = process_replica_exchange_data(
         output_data=output_data,
         output_directory=output_directory,
-        detect_equilibration=False,
+        frame_begin=5,
+    )   
+    
+    # 4) With frame end specified to analyze only the beginning of a trajectory
+    replica_energies, replica_states, production_start, sample_spacing, n_transit, mixing_stats = process_replica_exchange_data(
+        output_data=output_data,
+        output_directory=output_directory,
+        frame_end=25,
+    )   
+    
+    # 5) Without writing .dat file:
+    replica_energies, replica_states, production_start, sample_spacing, n_transit, mixing_stats = process_replica_exchange_data(
+        output_data=output_data,
+        output_directory=output_directory,
         write_data_file=False,
     )
     
