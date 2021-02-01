@@ -256,7 +256,7 @@ def get_opt_temperature_list(temperature_list_init, C_v, number_intermediate_sta
         line2 = plt.plot(xspline,yspline,'-b',label='spline fit')
         
         plt.xlabel('Temperature (K)')
-        plt.ylabel('C_v / T (kJ/mol)')
+        plt.ylabel('C_v / T (kJ/mol/K^2)')
         plt.legend()
         
         plt.savefig(f'{plotfile}')
@@ -302,14 +302,15 @@ def get_opt_temperature_list(temperature_list_init, C_v, number_intermediate_sta
         options={
             'ftol':1E-12,
             'maxiter':1E6}
-        )   
+        )         
         
     if not opt_results.success:
         print('Error: CEI optimization did not converge')
+        print(f'Constant entropy increase optimization results:\n{opt_results}') 
         exit()
-        
+    
     if verbose:
-        print(f'Constant entropy increase optimization results:\n{opt_results}')
+        print(f'Constant entropy increase optimization results:\n{opt_results}')      
     
     # Retreive final temperature list and entropy diff list:
     T_deltas_opt = opt_results.x
