@@ -395,7 +395,7 @@ def process_replica_exchange_data(
     :param plot_production_only: Option to plot only the production region, as determined from pymbar detectEquilibration (default=False)
     :type plot_production_only: Boolean    
 
-    :param equil_nskip: skip this number of frames to sparsify the energy timeseries for pymbar detectEquilibration (default=1) - this is used only when frame_begin=0 and the trajectory has less than 20000 frames.
+    :param equil_nskip: skip this number of frames to sparsify the energy timeseries for pymbar detectEquilibration (default=1) - this is used only when frame_begin=0 and the trajectory has less than 40000 frames.
     :type equil_nskip: Boolean
     
     :param frame_begin: analyze starting from this frame, discarding all prior as equilibration period (default=0)
@@ -408,7 +408,7 @@ def process_replica_exchange_data(
         - replica_energies ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.float( [number_replicas,number_simulation_steps] ), simtk.unit ) ) - The potential energies for all replicas at all (printed) time steps
         - replica_state_indices ( np.int64( [number_replicas,number_simulation_steps] ), simtk.unit ) - The thermodynamic state assignments for all replicas at all (printed) time steps
         - production_start ( int - The frame at which the production region begins for all replicas, as determined from pymbar detectEquilibration
-        - sample_spacing ( int - The number of frames between uncorrelated state energies, estimated as 75th percentile among all state values  )
+        - sample_spacing ( int - The number of frames between uncorrelated state energies, estimated using heuristic algorithm )
         - n_transit ( np.float( [number_replicas] ) ) - Number of half-transitions between state 0 and n for each replica
         - mixing_stats ( tuple ( np.float( [number_replicas x number_replicas] ) , np.float( [ number_replicas ] ) , float( statistical inefficiency ) ) ) - transition matrix, corresponding eigenvalues, and statistical inefficiency
     """
@@ -537,8 +537,7 @@ def process_replica_exchange_data(
     # x standard deviations is the solution to (n_replica-1)/n_replica = erf(x/sqrt(2))
     # This is equivalent to a target of 23/24 CDF value 
     
-    print(f"g: {g}")
-    print(f"mean g: {np.mean(g)}")
+    print(f"g: {int(g)}")
     
     def erf_fun(x):
         return np.power((erf(x/np.sqrt(2))-(n_replicas-1)/n_replicas),2)
@@ -549,11 +548,12 @@ def process_replica_exchange_data(
         bounds=(0,10)
         )
     
-    print(f"erf opt results: {opt_g_results}")
+    if not opt_g_results.success:
+        print("Error solving for correlation time, exiting...")
+        print(f"erf opt results: {opt_g_results}")
+        exit()
     
     sample_spacing = int(np.ceil(np.mean(g)+opt_g_results.x*np.std(g)))
-    print(f"g opt: {sample_spacing}")
-    
     
     t11 = time.perf_counter()
     if print_timing:
