@@ -325,7 +325,7 @@ def fraction_native_contacts_preloaded(
     native_contact_list,
     native_contact_distances,
     frame_begin=0,
-    native_contact_cutoff_ratio=1.00,
+    native_contact_tol=1*unit.angstrom,
     subsample=True,
 ):
     """
@@ -346,8 +346,8 @@ def fraction_native_contacts_preloaded(
     :param frame_begin: Frame at which to start native contacts analysis (default=0)
     :type frame_begin: int        
     
-    :param native_contact_cutoff_ratio: The distance below which two nonbonded, interacting particles in a non-native pose are assigned as a "native contact", as a ratio of the distance for that contact in the native structure, default=1.00
-    :type native_contact_cutoff_ratio: float
+    :param native_contact_tol: Tolerance beyond the native distance for determining whether a pair of particles is 'native' (in distance units)
+    :type native_contact_tol: float
     
     :param subsample: option to use pymbar subsampleCorrelatedData to detect and return the interval between uncorrelated data points (default=True)
     :type subsample: Boolean
@@ -386,7 +386,7 @@ def fraction_native_contacts_preloaded(
         # This produces a [nframe x len(native_contacts)] array
   
         # Compute Boolean matrix for whether or not a distance is native
-        native_contact_matrix = (traj_distances<(native_contact_cutoff_ratio*native_contact_distances.value_in_unit(nc_unit)))
+        native_contact_matrix = (traj_distances<(native_contact_tol.value_in_unit(nc_unit)+native_contact_distances.value_in_unit(nc_unit)))
 
         number_native_interactions=np.sum(native_contact_matrix,axis=1)
 
@@ -422,7 +422,7 @@ def fraction_native_contacts_preloaded(
     
 def optimize_Q_cut(
     cgmodel, native_structure_file, traj_file_list, output_data="output/output.nc",
-    num_intermediate_states=0, frame_begin=0, frame_stride=1, opt_method='TNC',
+    num_intermediate_states=0, frame_begin=0, frame_stride=1, opt_method='differential_evolution',
     plotfile='native_contacts_opt.pdf', verbose=False):
     """
     Given a coarse grained model and a native structure as input
@@ -453,7 +453,7 @@ def optimize_Q_cut(
 
     :returns:
        - native_contact_cutoff ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The ideal distance below which two nonbonded, interacting particles should be defined as a "native contact"
-       - native_contact_cutoff_ratio ( float ) - cutoff for native contacts when scanning trajectory, in multiples of native_contact_cutoff
+       - native_contact_tol( Quantity() ) -  tolerance beyond the native distance for determining whether a pair of particles is 'native'
        - opt_results ( dict ) - results of the native contact cutoff scipy.optimize.minimize optimization
        - Q_expect_results ( dict ) - results of the native contact fraction expectation calculation containing 'Q' and 'T'
        - sigmoid_param_opt ( 1D numpy array ) - optimized sigmoid parameters (x0, y0, y1, d) 
@@ -488,7 +488,7 @@ def optimize_Q_cut(
         # Function to minimize:
    
         native_contact_cutoff = x0[0]
-        native_contact_cutoff_ratio = x0[1]
+        native_contact_tol = x0[1]
         
         # Determine native contacts:
         native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
@@ -506,7 +506,7 @@ def optimize_Q_cut(
                 native_contact_list,
                 native_contact_distances,
                 frame_begin=frame_begin,
-                native_contact_cutoff_ratio=native_contact_cutoff_ratio,
+                native_contact_tol=native_contact_tol*unit.angstrom,
                 subsample=False,
             )
             
@@ -547,28 +547,25 @@ def optimize_Q_cut(
         if verbose:
             # Print parameters at each iteration:
             print(f"native_contact_cutoff: {native_contact_cutoff}")
-            print(f"native_contact_cutoff_ratio: {native_contact_cutoff_ratio}")
+            print(f"native_contact_tol: {native_contact_tol}")
             print(f"sigmoid params: {param_opt}\n")
         
         return min_val
         
     # The native_contact_cutoff_ratio should not be less than 1.
     #bounds = Bounds(np.array([0.5,1]),np.array([10,2]))
-    bounds = [(0.5,10),(1,2)]
+    bounds = [(0.5,7),(0,2)]
      
     # ***Note: Default tolerance is 1E-6. We should allow this to be specified in the future.    
     #opt_results = minimize(minimize_sigmoid_width, x0, method=opt_method,
     #   bounds=bounds)
     
-    opt_results = brute(minimize_sigmoid_width,(slice(0.5,7,0.5),slice(1,1.5,0.05)))
+    opt_results = differential_evolution(minimize_sigmoid_width,bounds)
     
     #if opt_results['success'] == True:
         # Repeat for final plotting:
-        #native_contact_cutoff = opt_results.x[0] * unit.angstrom
-        #native_contact_cutoff_ratio = opt_results.x[1]
-        
-    native_contact_cutoff = opt_results[0] * unit.angstrom
-    native_contact_cutoff_ratio = opt_results[1]
+    native_contact_cutoff = opt_results.x[0] * unit.angstrom
+    native_contact_tol = opt_results.x[1]
     
     # Determine native contacts:
     native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
@@ -584,7 +581,7 @@ def optimize_Q_cut(
         native_contact_list,
         native_contact_distances,
         frame_begin=frame_begin,
-        native_contact_cutoff_ratio=native_contact_cutoff_ratio
+        native_contact_tol=native_contact_tol
     )
 
     # Get expectations 
@@ -607,7 +604,7 @@ def optimize_Q_cut(
         # sigmoid_param_cov = None
         # contact_type_dict = None
     
-    return native_contact_cutoff, native_contact_cutoff_ratio, opt_results, Q_expect_results, sigmoid_param_opt, sigmoid_param_cov, contact_type_dict
+    return native_contact_cutoff, native_contact_tol, opt_results, Q_expect_results, sigmoid_param_opt, sigmoid_param_cov, contact_type_dict
     
 
 def plot_native_contact_fraction(temperature_list, Q, Q_uncertainty,plotfile="Q_vs_T.pdf"):
