@@ -12,7 +12,7 @@ from openmmtools.multistate import MultiStateReporter, ReplicaExchangeAnalyzer
 import pymbar
 from pymbar import timeseries
 import mdtraj as md
-from scipy.optimize import minimize
+from scipy.optimize import minimize, Bounds, brute, dual_annealing, differential_evolution
 from cg_openmm.utilities.util import fit_sigmoid  
 
 kB = unit.MOLAR_GAS_CONSTANT_R # Boltzmann constant
@@ -37,13 +37,13 @@ def get_native_contacts(cgmodel, native_structure_file, native_contact_distance_
     """
 
     # Parse native structure file
-    if native_structure_file[-3:] == 'dcd':
-        native_traj = md.load(native_structure_file,top=md.Topology.from_openmm(cgmodel.topology))
-        # ***Note: The clustering dcds are written with unit nanometers,
-        # but this may not always be the case.
-        native_structure = native_traj[0].xyz[0]*unit.nanometer
-    else:
-        native_structure = PDBFile(native_structure_file).getPositions()
+    # if native_structure_file[-3:] == 'dcd':
+    native_traj = md.load(native_structure_file,top=md.Topology.from_openmm(cgmodel.topology))
+    # ***Note: The clustering dcds are written with unit nanometers,
+    # but this may not always be the case.
+    native_structure = native_traj[0].xyz[0]*unit.nanometer
+    # else:
+        # native_structure = PDBFile(native_structure_file).getPositions()
         
     nonbonded_interaction_list = cgmodel.nonbonded_interaction_list
     native_structure_distances = distances(nonbonded_interaction_list, native_structure)
@@ -299,6 +299,8 @@ def fraction_native_contacts(
     # Note: if these are replica trajectories, we will get a folding rate
     # If these are state trajectories, we will get decorrelation time for constant state
     
+    #***Update this to use the same heuristic as the replica exchange energy decorrelation.
+    
     if subsample:
         max_sample_spacing = 1
         subsample_indices = {}
@@ -316,10 +318,111 @@ def fraction_native_contacts(
         
     return Q, Q_avg, Q_stderr, decorrelation_spacing
     
+    
+def fraction_native_contacts_preloaded(
+    cgmodel,
+    traj_dict,
+    native_contact_list,
+    native_contact_distances,
+    frame_begin=0,
+    native_contact_cutoff_ratio=1.00,
+    subsample=True,
+):
+    """
+    Given a cgmodel, mdtraj trajectory object, and positions for the native structure, this function calculates the fraction of native contacts for the model.
+    
+    :param cgmodel: CGModel() class object
+    :type cgmodel: class
+        
+    :param traj_data: A dictionary of preloaded MDTraj trajectory objects
+    :type traj_data: dict{replica: MDTraj trajectory object}
 
+    :param native_contact_list: A list of the nonbonded interactions whose inter-particle distances are less than the 'native_contact_cutoff_distance'.
+    :type native_contact_list: List
+    
+    :param native_contact_distances: A numpy array of the native pairwise distances corresponding to native_contact_list
+    :type native_contact_distances: Quantity
+
+    :param frame_begin: Frame at which to start native contacts analysis (default=0)
+    :type frame_begin: int        
+    
+    :param native_contact_cutoff_ratio: The distance below which two nonbonded, interacting particles in a non-native pose are assigned as a "native contact", as a ratio of the distance for that contact in the native structure, default=1.00
+    :type native_contact_cutoff_ratio: float
+    
+    :param subsample: option to use pymbar subsampleCorrelatedData to detect and return the interval between uncorrelated data points (default=True)
+    :type subsample: Boolean
+
+    :returns:
+      - Q ( numpy array (float * nframes x nreplicas) ) - The fraction of native contacts for all selected frames in the trajectories.
+      - Q_avg ( numpy array (float * nreplicas) ) - Mean values of Q for each replica.
+      - Q_stderr ( numpy array (float * nreplicas) ) - Standard error of the mean of Q for each replica.
+      - decorrelation_spacing ( int ) - Number of frames between uncorrelated native contact fractions
+      
+    """
+
+    if len(native_contact_list)==0:
+        print("ERROR: there are 0 'native' interactions with the current cutoff distance.")
+        print("Try increasing the 'native_structure_contact_distance_cutoff'")
+        exit()
+        
+    n_replicas = len(traj_dict)
+      
+    nc_unit = native_contact_distances.unit
+    Q_avg = np.zeros((n_replicas))
+    Q_stderr = np.zeros((n_replicas))
+      
+    for rep in range(n_replicas):            
+        if rep == 0:
+            nframes = traj_dict[rep].n_frames
+            Q = np.zeros((nframes,n_replicas))
+        
+        traj_distances = md.compute_distances(
+            traj_dict[rep][frame_begin:],native_contact_list,periodic=False,opt=True)
+            
+        if rep == 0:
+            nframes = traj_dict[rep][frame_begin:].n_frames
+            Q = np.zeros((nframes,n_replicas))
+            
+        # This produces a [nframe x len(native_contacts)] array
+  
+        # Compute Boolean matrix for whether or not a distance is native
+        native_contact_matrix = (traj_distances<(native_contact_cutoff_ratio*native_contact_distances.value_in_unit(nc_unit)))
+
+        number_native_interactions=np.sum(native_contact_matrix,axis=1)
+
+        Q[:,rep] = number_native_interactions/len(native_contact_distances)
+        Q_avg[rep] = np.mean(Q[:,rep])
+        # Compute standard error:
+        Q_stderr[rep] = np.std(Q[:,rep])/np.sqrt(len(Q[:,rep]))
+    
+    # Determine the decorrelation time of native contact fraction timeseries data:
+    # Note: if these are replica trajectories, we will get a folding rate
+    # If these are state trajectories, we will get decorrelation time for constant state
+    
+    #***Update this to use the same heuristic as the replica exchange energy decorrelation.
+    
+    if subsample:
+        max_sample_spacing = 1
+        subsample_indices = {}
+        for rep in range(n_replicas):
+            subsample_indices[rep] = timeseries.subsampleCorrelatedData(
+                Q[:,rep],
+                conservative=True,
+            )
+            if (subsample_indices[rep][1]-subsample_indices[rep][0]) > max_sample_spacing:
+                max_sample_spacing = (subsample_indices[rep][1]-subsample_indices[rep][0])
+        
+        decorrelation_spacing = max_sample_spacing
+    else:
+        decorrelation_spacing = None
+        
+    return Q, Q_avg, Q_stderr, decorrelation_spacing
+    
+    
+    
 def optimize_Q_cut(
     cgmodel, native_structure_file, traj_file_list, output_data="output/output.nc",
-    num_intermediate_states=0, frame_begin=0, frame_stride=1, opt_method='Nelder-Mead',
+    num_intermediate_states=0, frame_begin=0, frame_stride=1, opt_method='TNC',
     plotfile='native_contacts_opt.pdf', verbose=False):
     """
     Given a coarse grained model and a native structure as input
@@ -360,7 +463,26 @@ def optimize_Q_cut(
 
     # Initial guess for native_contact_cutoff (unit.angstrom), native_contact_cutoff_ratio (unitless):
     # TODO: estimate this from the cgmodel rather than hard coding
-    x0 = [3.0, 1.0]
+    
+    x0 = [5.0, 1.0]
+    
+    # Pre-load the replica trajectories into MDTraj objects, to avoid having to load them
+    # at each iteration (very costly for pdb in particular)
+    
+    traj_dict = {}
+    
+    if type(traj_file_list) == list:
+        n_replicas = len(traj_file_list)
+    elif type(traj_file_list) == str:
+        # Convert to a 1 element list if not one
+        traj_file_list = traj_file_list.split()  
+        n_replicas = 1
+        
+    for rep in range(n_replicas):
+        if traj_file_list[rep][-3:] == 'dcd':
+            traj_dict[rep] = md.load(traj_file_list[rep],top=md.Topology.from_openmm(cgmodel.topology))
+        else:
+            traj_dict[rep] = md.load(traj_file_list[rep])
     
     def minimize_sigmoid_width(x0):
         # Function to minimize:
@@ -377,9 +499,10 @@ def optimize_Q_cut(
         
         if len(native_contact_list) > 0:
             # Get native contact fraction of all frames
-            Q, Q_avg, Q_stderr, decorrelation_time = fraction_native_contacts(
+            # To avoid loading in files each iteration, use alternate version of fraction_native_contacts code
+            Q, Q_avg, Q_stderr, decorrelation_time = fraction_native_contacts_preloaded(
                 cgmodel,
-                traj_file_list,
+                traj_dict,
                 native_contact_list,
                 native_contact_distances,
                 frame_begin=frame_begin,
@@ -403,15 +526,16 @@ def optimize_Q_cut(
                         num_intermediate_states=num_intermediate_states,
                     )
                     
-                    param_opt, param_cov = fit_sigmoid(results["T"],results["Q"])
-                    min_val = param_opt[3]**2
+                    param_opt, param_cov = fit_sigmoid(results["T"],results["Q"],plotfile=None)
+                    # min_val = param_opt[3]**2
                     
                     # Or, if we want to maximum the difference between the max and min Q:
-                    # fitness = 1-abs(param_opt[2]-param_opt[1])
+                    min_val = 1-abs(param_opt[2]-param_opt[1])
+                    print(f'min_val: {min_val}')
         
                 
                 except:
-                    # Error with computing expectation, likely due to few little non-zero Q
+                    # Error with computing expectation, likely due to few non-zero Q
                     min_val = 1E9
                     param_opt = None
             
@@ -428,52 +552,60 @@ def optimize_Q_cut(
         
         return min_val
         
-        
-    # ***Note: Default tolerance is 1E-4. We should allow this to be specified in the future.    
-    opt_results = minimize(minimize_sigmoid_width, x0,
-        method=opt_method, options={'xatol':0.001, 'fatol':0.001})
+    # The native_contact_cutoff_ratio should not be less than 1.
+    #bounds = Bounds(np.array([0.5,1]),np.array([10,2]))
+    bounds = [(0.5,10),(1,2)]
+     
+    # ***Note: Default tolerance is 1E-6. We should allow this to be specified in the future.    
+    #opt_results = minimize(minimize_sigmoid_width, x0, method=opt_method,
+    #   bounds=bounds)
     
-    if opt_results['success'] == True:
+    opt_results = brute(minimize_sigmoid_width,(slice(0.5,7,0.5),slice(1,1.5,0.05)))
+    
+    #if opt_results['success'] == True:
         # Repeat for final plotting:
-        native_contact_cutoff = opt_results.x[0] * unit.angstrom
-        native_contact_cutoff_ratio = opt_results.x[1]
+        #native_contact_cutoff = opt_results.x[0] * unit.angstrom
+        #native_contact_cutoff_ratio = opt_results.x[1]
         
-        # Determine native contacts:
-        native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
-            cgmodel,
-            native_structure_file,
-            native_contact_cutoff,
-        )
-
-        # Get native contact fraction of all frames
-        Q, Q_avg, Q_stderr, decorrelation_time = fraction_native_contacts(
-            cgmodel,
-            traj_file_list,
-            native_contact_list,
-            native_contact_distances,
-            frame_begin=frame_begin,
-            native_contact_cutoff_ratio=native_contact_cutoff_ratio
-        )
-
-        # Get expectations 
-        Q_expect_results = expectations_fraction_contacts(
-            Q,
-            frame_begin=frame_begin,
-            sample_spacing=frame_stride,
-            output_data=output_data,
-            num_intermediate_states=num_intermediate_states,
-        )
+    native_contact_cutoff = opt_results[0] * unit.angstrom
+    native_contact_cutoff_ratio = opt_results[1]
     
-        sigmoid_param_opt, sigmoid_param_cov = fit_sigmoid(Q_expect_results["T"],Q_expect_results["Q"],plotfile=plotfile)
-    
-    else: 
-        print('Optimization failed using a starting guess of {x0}')
-        native_contact_cutoff = None
-        native_contact_cutoff_ratio = None
-        Q_expect_results = None
-        sigmoid_param_opt = None
-        sigmoid_param_cov = None
-        contact_type_dict = None
+    # Determine native contacts:
+    native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
+        cgmodel,
+        native_structure_file,
+        native_contact_cutoff,
+    )
+
+    # Get native contact fraction of all frames
+    Q, Q_avg, Q_stderr, decorrelation_time = fraction_native_contacts_preloaded(
+        cgmodel,
+        traj_dict,
+        native_contact_list,
+        native_contact_distances,
+        frame_begin=frame_begin,
+        native_contact_cutoff_ratio=native_contact_cutoff_ratio
+    )
+
+    # Get expectations 
+    Q_expect_results = expectations_fraction_contacts(
+        Q,
+        frame_begin=frame_begin,
+        sample_spacing=frame_stride,
+        output_data=output_data,
+        num_intermediate_states=num_intermediate_states,
+    )
+
+    sigmoid_param_opt, sigmoid_param_cov = fit_sigmoid(Q_expect_results["T"],Q_expect_results["Q"],plotfile=plotfile)
+
+    # else: 
+        # print('Optimization failed using a starting guess of {x0}')
+        # native_contact_cutoff = None
+        # native_contact_cutoff_ratio = None
+        # Q_expect_results = None
+        # sigmoid_param_opt = None
+        # sigmoid_param_cov = None
+        # contact_type_dict = None
     
     return native_contact_cutoff, native_contact_cutoff_ratio, opt_results, Q_expect_results, sigmoid_param_opt, sigmoid_param_cov, contact_type_dict
     
@@ -565,6 +697,14 @@ def plot_native_contact_timeseries(
     xlabel="Simulation time (ps)"
     ylabel="Q"
     
+    # To improve pdf render speed, sparsify data to display less than 2000 data points
+    n_xdata = len(simulation_times)
+    
+    if n_xdata <= 1000:
+        plot_stride = 1
+    else:
+        plot_stride = int(np.floor(n_xdata/1000))    
+    
     with PdfPages(plotfile) as pdf:
         plotted_per_page=0
         page_num=1
@@ -574,8 +714,8 @@ def plot_native_contact_timeseries(
             
             plt.subplot(nrow,1,plotted_per_page)
             plt.plot(
-                simulation_times,
-                Q[:,i],
+                simulation_times[::plot_stride],
+                Q[::plot_stride,i],
                 '-',
                 linewidth=0.5,
                 markersize=4,

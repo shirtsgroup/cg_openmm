@@ -439,7 +439,7 @@ def test_optimize_Q_cut_dcd(tmpdir):
     sigmoid_param_opt, sigmoid_param_cov, contact_type_dict) = optimize_Q_cut(
         cgmodel, native_structure_file, dcd_file_list, num_intermediate_states=0,
         output_data=output_data,frame_begin=100, frame_stride=20,
-        opt_method='Nelder-mead', verbose=True,
+        opt_method='TNC', verbose=True,
         plotfile=f'{output_directory}/native_contacts_opt.pdf')
         
     assert os.path.isfile(f'{output_directory}/native_contacts_opt.pdf')
