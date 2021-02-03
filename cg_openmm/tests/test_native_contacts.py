@@ -47,14 +47,14 @@ def test_native_contacts_pdb(tmpdir):
     # Cutoff for native structure pairwise distances:
     native_contact_cutoff = 3.5* unit.angstrom
 
-    # Cutoff for current trajectory distances, as a multiple of native_contact_cutoff
-    native_contact_cutoff_ratio = 1.25
+    # Tolerance for current trajectory distances:
+    native_contact_tol = 0.75 * unit.angstrom
     
     # Determine native contacts:
     native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
         cgmodel,
         native_structure_file,
-        native_contact_cutoff
+        native_contact_cutoff,
     )
     
     # Determine native contact fraction of current trajectories:
@@ -63,7 +63,7 @@ def test_native_contacts_pdb(tmpdir):
         pdb_file_list,
         native_contact_list,
         native_contact_distances,
-        native_contact_cutoff_ratio=native_contact_cutoff_ratio
+        native_contact_tol=native_contact_tol,
     )   
 
     plot_native_contact_fraction(
@@ -104,14 +104,14 @@ def test_native_contacts_dcd(tmpdir):
     # Cutoff for native structure pairwise distances:
     native_contact_cutoff = 3.5* unit.angstrom
 
-    # Cutoff for current trajectory distances, as a multiple of native_contact_cutoff
-    native_contact_cutoff_ratio = 1.25
+    # Tolerance for current trajectory distances:
+    native_contact_tol = 0.75 * unit.angstrom
     
     # Determine native contacts:
     native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
         cgmodel,
         native_structure_file,
-        native_contact_cutoff
+        native_contact_cutoff,
     )
     
     # Determine native contact fraction of current trajectories:
@@ -120,7 +120,7 @@ def test_native_contacts_dcd(tmpdir):
         dcd_file_list,
         native_contact_list,
         native_contact_distances,
-        native_contact_cutoff_ratio=native_contact_cutoff_ratio
+        native_contact_tol=native_contact_tol,
     )   
 
     plot_native_contact_fraction(
@@ -159,15 +159,15 @@ def test_expectations_fraction_contacts_pdb(tmpdir):
     # Set cutoff parameters:
     # Cutoff for native structure pairwise distances:
     native_contact_cutoff = 3.5* unit.angstrom
-    
-    # Cutoff for current trajectory distances, as a multiple of native_contact_cutoff
-    native_contact_cutoff_ratio = 1.25
+
+    # Tolerance for current trajectory distances:
+    native_contact_tol = 0.75 * unit.angstrom
 
     # Get native contacts:
     native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
         cgmodel,
         native_structure_file,
-        native_contact_cutoff
+        native_contact_cutoff,
     )
 
     Q, Q_avg, Q_stderr, decorrelation_spacing = fraction_native_contacts(
@@ -176,11 +176,11 @@ def test_expectations_fraction_contacts_pdb(tmpdir):
         native_contact_list,
         native_contact_distances,
         frame_begin=100,
-        native_contact_cutoff_ratio=native_contact_cutoff_ratio
+        native_contact_tol=native_contact_tol,
     )
     
     # Determine how many folding transitions each replica underwent:
-    # plot Q_avg vs. frame
+    # plot Q vs. frame
     plot_native_contact_timeseries(
         Q,
         frame_begin=100,
@@ -315,15 +315,15 @@ def test_expectations_fraction_contacts_dcd(tmpdir):
     # Set cutoff parameters:
     # Cutoff for native structure pairwise distances:
     native_contact_cutoff = 3.5* unit.angstrom
-    
-    # Cutoff for current trajectory distances, as a multiple of native_contact_cutoff
-    native_contact_cutoff_ratio = 1.25
+
+    # Tolerance for current trajectory distances:
+    native_contact_tol = 0.75 * unit.angstrom
 
     # Get native contacts:
     native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
         cgmodel,
         native_structure_file,
-        native_contact_cutoff
+        native_contact_cutoff,
     )
 
     Q, Q_avg, Q_stderr, decorrelation_spacing = fraction_native_contacts(
@@ -332,7 +332,7 @@ def test_expectations_fraction_contacts_dcd(tmpdir):
         native_contact_list,
         native_contact_distances,
         frame_begin=100,
-        native_contact_cutoff_ratio=native_contact_cutoff_ratio
+        native_contact_tol=native_contact_tol,
     )
     
     # Determine how many folding transitions each replica underwent:
@@ -435,12 +435,18 @@ def test_optimize_Q_cut_dcd(tmpdir):
     # Load in native structure file:    
     native_structure_file=f"{structures_path}/medoid_0.dcd"    
     
-    (native_contact_cutoff, native_contact_cutoff_ratio, opt_results, Q_expect_results, \
+    (native_contact_cutoff, native_contact_tol, opt_results, Q_expect_results, \
     sigmoid_param_opt, sigmoid_param_cov, contact_type_dict) = optimize_Q_cut(
-        cgmodel, native_structure_file, dcd_file_list, num_intermediate_states=0,
-        output_data=output_data,frame_begin=100, frame_stride=20,
-        opt_method='TNC', verbose=True,
-        plotfile=f'{output_directory}/native_contacts_opt.pdf')
+        cgmodel,
+        native_structure_file,
+        dcd_file_list,
+        num_intermediate_states=0,
+        output_data=output_data,
+        frame_begin=100,
+        frame_stride=20,
+        verbose=True,
+        plotfile=f'{output_directory}/native_contacts_opt.pdf'
+        )
         
     assert os.path.isfile(f'{output_directory}/native_contacts_opt.pdf')
     

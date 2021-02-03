@@ -12,7 +12,9 @@ from openmmtools.multistate import MultiStateReporter, ReplicaExchangeAnalyzer
 import pymbar
 from pymbar import timeseries
 import mdtraj as md
-from scipy.optimize import minimize, Bounds, brute, dual_annealing, differential_evolution
+from scipy.optimize import minimize, Bounds, brute, differential_evolution
+from scipy.special import erf
+from scipy.optimize import minimize_scalar
 from cg_openmm.utilities.util import fit_sigmoid  
 
 kB = unit.MOLAR_GAS_CONSTANT_R # Boltzmann constant
@@ -37,14 +39,15 @@ def get_native_contacts(cgmodel, native_structure_file, native_contact_distance_
     """
 
     # Parse native structure file
-    # if native_structure_file[-3:] == 'dcd':
-    native_traj = md.load(native_structure_file,top=md.Topology.from_openmm(cgmodel.topology))
-    # ***Note: The clustering dcds are written with unit nanometers,
-    # but this may not always be the case.
-    native_structure = native_traj[0].xyz[0]*unit.nanometer
-    # else:
-        # native_structure = PDBFile(native_structure_file).getPositions()
+    if native_structure_file[-3:] == 'dcd':
+        native_traj = md.load(native_structure_file,top=md.Topology.from_openmm(cgmodel.topology))
+        # ***Note: The clustering dcds are written with unit nanometers,
+        # but this may not always be the case.
+        native_structure = native_traj[0].xyz[0]*unit.nanometer
+    else:
+        native_structure = PDBFile(native_structure_file).getPositions()
         
+    # Include only pairs contained in the nonbonded_interaction_list    
     nonbonded_interaction_list = cgmodel.nonbonded_interaction_list
     native_structure_distances = distances(nonbonded_interaction_list, native_structure)
     native_contact_list = []
@@ -215,7 +218,7 @@ def fraction_native_contacts(
     native_contact_list,
     native_contact_distances,
     frame_begin=0,
-    native_contact_cutoff_ratio=1.00,
+    native_contact_tol=1*unit.angstrom,
     subsample=True,
 ):
     """
@@ -236,8 +239,8 @@ def fraction_native_contacts(
     :param frame_begin: Frame at which to start native contacts analysis (default=0)
     :type frame_begin: int        
     
-    :param native_contact_cutoff_ratio: The distance below which two nonbonded, interacting particles in a non-native pose are assigned as a "native contact", as a ratio of the distance for that contact in the native structure, default=1.00
-    :type native_contact_cutoff_ratio: float
+    :param native_contact_tol: Tolerance beyond the native distance for determining whether a pair of particles is 'native' (in distance units)
+    :type native_contact_tol: float
     
     :param subsample: option to use pymbar subsampleCorrelatedData to detect and return the interval between uncorrelated data points (default=True)
     :type subsample: Boolean
@@ -286,7 +289,7 @@ def fraction_native_contacts(
         # This produces a [nframe x len(native_contacts)] array
   
         # Compute Boolean matrix for whether or not a distance is native
-        native_contact_matrix = (traj_distances<(native_contact_cutoff_ratio*native_contact_distances.value_in_unit(nc_unit)))
+        native_contact_matrix = (traj_distances<(native_contact_tol.value_in_unit(nc_unit)+native_contact_distances.value_in_unit(nc_unit)))
 
         number_native_interactions=np.sum(native_contact_matrix,axis=1)
 
@@ -299,20 +302,32 @@ def fraction_native_contacts(
     # Note: if these are replica trajectories, we will get a folding rate
     # If these are state trajectories, we will get decorrelation time for constant state
     
-    #***Update this to use the same heuristic as the replica exchange energy decorrelation.
+    # Assume a normal distribution (very rough approximation), and use mean plus
+    # the number of standard deviations which leads to (n_replica-1)/n_replica coverage
+    # For 12 replicas this should be the mean + 1.7317 standard deviations
+    
+    # x standard deviations is the solution to (n_replica-1)/n_replica = erf(x/sqrt(2))
+    # This is equivalent to a target of 23/24 CDF value
+    
+    def erf_fun(x):
+        return np.power((erf(x/np.sqrt(2))-(n_replicas-1)/n_replicas),2)    
     
     if subsample:
-        max_sample_spacing = 1
+        g = np.zeros(n_replicas)
         subsample_indices = {}
         for rep in range(n_replicas):
             subsample_indices[rep] = timeseries.subsampleCorrelatedData(
                 Q[:,rep],
                 conservative=True,
             )
-            if (subsample_indices[rep][1]-subsample_indices[rep][0]) > max_sample_spacing:
-                max_sample_spacing = (subsample_indices[rep][1]-subsample_indices[rep][0])
+            g[rep] = (subsample_indices[rep][1]-subsample_indices[rep][0])
         
-        decorrelation_spacing = max_sample_spacing
+        # Determine value of decorrelation time to use  
+        opt_g_results = minimize_scalar(
+            erf_fun,
+            bounds=(0,10)
+            )
+        decorrelation_spacing = int(np.ceil(np.mean(g)+opt_g_results.x*np.std(g)))
     else:
         decorrelation_spacing = None
         
@@ -399,20 +414,32 @@ def fraction_native_contacts_preloaded(
     # Note: if these are replica trajectories, we will get a folding rate
     # If these are state trajectories, we will get decorrelation time for constant state
     
-    #***Update this to use the same heuristic as the replica exchange energy decorrelation.
+    # Assume a normal distribution (very rough approximation), and use mean plus
+    # the number of standard deviations which leads to (n_replica-1)/n_replica coverage
+    # For 12 replicas this should be the mean + 1.7317 standard deviations
+    
+    # x standard deviations is the solution to (n_replica-1)/n_replica = erf(x/sqrt(2))
+    # This is equivalent to a target of 23/24 CDF value
+    
+    def erf_fun(x):
+        return np.power((erf(x/np.sqrt(2))-(n_replicas-1)/n_replicas),2)    
     
     if subsample:
-        max_sample_spacing = 1
+        g = np.zeros(n_replicas)
         subsample_indices = {}
         for rep in range(n_replicas):
             subsample_indices[rep] = timeseries.subsampleCorrelatedData(
                 Q[:,rep],
                 conservative=True,
             )
-            if (subsample_indices[rep][1]-subsample_indices[rep][0]) > max_sample_spacing:
-                max_sample_spacing = (subsample_indices[rep][1]-subsample_indices[rep][0])
+            g[rep] = (subsample_indices[rep][1]-subsample_indices[rep][0])
         
-        decorrelation_spacing = max_sample_spacing
+        # Determine value of decorrelation time to use  
+        opt_g_results = minimize_scalar(
+            erf_fun,
+            bounds=(0,10)
+            )
+        decorrelation_spacing = int(np.ceil(np.mean(g)+opt_g_results.x*np.std(g)))
     else:
         decorrelation_spacing = None
         
@@ -422,7 +449,7 @@ def fraction_native_contacts_preloaded(
     
 def optimize_Q_cut(
     cgmodel, native_structure_file, traj_file_list, output_data="output/output.nc",
-    num_intermediate_states=0, frame_begin=0, frame_stride=1, opt_method='differential_evolution',
+    num_intermediate_states=0, frame_begin=0, frame_stride=1,
     plotfile='native_contacts_opt.pdf', verbose=False):
     """
     Given a coarse grained model and a native structure as input
@@ -461,11 +488,6 @@ def optimize_Q_cut(
        - contact_type_dict ( dict ) - a dictionary of {native contact particle type pair: counts}
     """
 
-    # Initial guess for native_contact_cutoff (unit.angstrom), native_contact_cutoff_ratio (unitless):
-    # TODO: estimate this from the cgmodel rather than hard coding
-    
-    x0 = [5.0, 1.0]
-    
     # Pre-load the replica trajectories into MDTraj objects, to avoid having to load them
     # at each iteration (very costly for pdb in particular)
     
@@ -527,12 +549,14 @@ def optimize_Q_cut(
                     )
                     
                     param_opt, param_cov = fit_sigmoid(results["T"],results["Q"],plotfile=None)
+                    
+                    # This minimizes the width of the sigmoid:
                     # min_val = param_opt[3]**2
                     
-                    # Or, if we want to maximum the difference between the max and min Q:
+                    # Maximum the difference between the max and min Q:
                     min_val = 1-abs(param_opt[2]-param_opt[1])
-                    print(f'min_val: {min_val}')
-        
+                    if verbose:
+                        print(f'min_val: {min_val}')
                 
                 except:
                     # Error with computing expectation, likely due to few non-zero Q
@@ -548,61 +572,60 @@ def optimize_Q_cut(
             # Print parameters at each iteration:
             print(f"native_contact_cutoff: {native_contact_cutoff}")
             print(f"native_contact_tol: {native_contact_tol}")
+            print(f"number native contacts: {len(native_contact_list)}")
             print(f"sigmoid params: {param_opt}\n")
-        
+            
         return min_val
-        
-    # The native_contact_cutoff_ratio should not be less than 1.
-    #bounds = Bounds(np.array([0.5,1]),np.array([10,2]))
-    bounds = [(0.5,7),(0,2)]
+    
+    bounds = [(2,4),(0,2)]
      
-    # ***Note: Default tolerance is 1E-6. We should allow this to be specified in the future.    
     #opt_results = minimize(minimize_sigmoid_width, x0, method=opt_method,
     #   bounds=bounds)
     
-    opt_results = differential_evolution(minimize_sigmoid_width,bounds)
+    opt_results = differential_evolution(minimize_sigmoid_width,bounds,polish=True)
     
-    #if opt_results['success'] == True:
+    if opt_results['success'] == True:
         # Repeat for final plotting:
-    native_contact_cutoff = opt_results.x[0] * unit.angstrom
-    native_contact_tol = opt_results.x[1]
-    
-    # Determine native contacts:
-    native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
-        cgmodel,
-        native_structure_file,
-        native_contact_cutoff,
-    )
+        native_contact_cutoff = opt_results.x[0] * unit.angstrom
+        native_contact_tol = opt_results.x[1] * unit.angstrom
+        
+        # Determine native contacts:
+        native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
+            cgmodel,
+            native_structure_file,
+            native_contact_cutoff,
+        )
 
-    # Get native contact fraction of all frames
-    Q, Q_avg, Q_stderr, decorrelation_time = fraction_native_contacts_preloaded(
-        cgmodel,
-        traj_dict,
-        native_contact_list,
-        native_contact_distances,
-        frame_begin=frame_begin,
-        native_contact_tol=native_contact_tol
-    )
+        # Get native contact fraction of all frames
+        Q, Q_avg, Q_stderr, decorrelation_time = fraction_native_contacts_preloaded(
+            cgmodel,
+            traj_dict,
+            native_contact_list,
+            native_contact_distances,
+            frame_begin=frame_begin,
+            native_contact_tol=native_contact_tol
+        )
 
-    # Get expectations 
-    Q_expect_results = expectations_fraction_contacts(
-        Q,
-        frame_begin=frame_begin,
-        sample_spacing=frame_stride,
-        output_data=output_data,
-        num_intermediate_states=num_intermediate_states,
-    )
+        # Get expectations 
+        Q_expect_results = expectations_fraction_contacts(
+            Q,
+            frame_begin=frame_begin,
+            sample_spacing=frame_stride,
+            output_data=output_data,
+            num_intermediate_states=num_intermediate_states,
+        )
 
-    sigmoid_param_opt, sigmoid_param_cov = fit_sigmoid(Q_expect_results["T"],Q_expect_results["Q"],plotfile=plotfile)
+        sigmoid_param_opt, sigmoid_param_cov = fit_sigmoid(Q_expect_results["T"],Q_expect_results["Q"],plotfile=plotfile)
 
-    # else: 
-        # print('Optimization failed using a starting guess of {x0}')
-        # native_contact_cutoff = None
-        # native_contact_cutoff_ratio = None
-        # Q_expect_results = None
-        # sigmoid_param_opt = None
-        # sigmoid_param_cov = None
-        # contact_type_dict = None
+    else: 
+        print('Error: native contact optimization failed')
+        print(opt_results)
+        native_contact_cutoff = None
+        native_contact_tol = None
+        Q_expect_results = None
+        sigmoid_param_opt = None
+        sigmoid_param_cov = None
+        contact_type_dict = None
     
     return native_contact_cutoff, native_contact_tol, opt_results, Q_expect_results, sigmoid_param_opt, sigmoid_param_cov, contact_type_dict
     
