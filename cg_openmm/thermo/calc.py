@@ -7,6 +7,7 @@ from openmmtools.multistate import ReplicaExchangeAnalyzer
 import pymbar
 from pymbar import timeseries
 from scipy import interpolate
+from sklearn.utils import resample
 
 kB = unit.MOLAR_GAS_CONSTANT_R
 
@@ -144,7 +145,8 @@ def get_heat_capacity_derivative(Cv, temperature_list, plotfile='dCv_dT.pdf'):
     return dCv_out, d2Cv_out, spline_tck
         
 
-def get_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, output_data="output/output.nc", num_intermediate_states=0,frac_dT=0.05, plot_file=None):
+def get_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, output_data="output/output.nc",
+    num_intermediate_states=0,frac_dT=0.05, plot_file=None, bootstrap_energies=None):
     """
     Given a .nc output and a number of intermediate states to insert for the temperature list, this function calculates and plots the heat capacity profile.
                              
@@ -165,6 +167,12 @@ def get_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, output_data
 
     :param frac_dT: The fraction difference between temperatures points used to calculate finite difference derivatives (default=0.05)
     :type num_intermediate_states: float
+    
+    :param plotfile: path to filename to output plot
+    :type plotfile: str
+    
+    :param bootstrap_energies: a custom replica_energies array to be used for bootstrapping calculations. Used instead of the energies in the .nc file.
+    :type bootstrap_energies: 2d numpy array (float)
 
     :returns:
           - C_v ( List( float ) ) - The heat capacity values for all (including inserted intermediates) states
@@ -173,21 +181,27 @@ def get_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, output_data
 
     """
 
-    # extract reduced energies and the state indices from the .nc  
-    reporter = MultiStateReporter(output_data, open_mode="r")
-    analyzer = ReplicaExchangeAnalyzer(reporter)
-    (
-        replica_energies_all,
-        unsampled_state_energies,
-        neighborhoods,
-        replica_state_indices,
-    ) = analyzer.read_energies()
-    
-    # Select production frames to analyze
-    if frame_end > 0:
-        replica_energies = replica_energies_all[:,:,frame_begin:frame_end:sample_spacing]
+    if bootstrap_energies is not None:
+        # Use a subsampled replica_energy matrix instead of reading from file
+        replica_energies = bootstrap_energies    
+        # Still need to get the thermodynamic states
+        reporter = MultiStateReporter(output_data, open_mode="r")
     else:
-        replica_energies = replica_energies_all[:,:,frame_begin::sample_spacing]
+        # extract reduced energies and the state indices from the .nc  
+        reporter = MultiStateReporter(output_data, open_mode="r")
+        analyzer = ReplicaExchangeAnalyzer(reporter)
+        (
+            replica_energies_all,
+            unsampled_state_energies,
+            neighborhoods,
+            replica_state_indices,
+        ) = analyzer.read_energies()
+        
+        # Select production frames to analyze
+        if frame_end > 0:
+            replica_energies = replica_energies_all[:,:,frame_begin:frame_end:sample_spacing]
+        else:
+            replica_energies = replica_energies_all[:,:,frame_begin::sample_spacing]
     
     # Get the temperature list from .nc file:
     states = reporter.read_thermodynamic_states()[0]
@@ -293,3 +307,118 @@ def get_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, output_data
     return (Cv, dCv, full_T_list[0:n_T_vals])
 
 
+def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_file='heat_capacity_boot.pdf',
+    output_data="output/output.nc", num_intermediate_states=0,frac_dT=0.05, 
+    n_sample_boot=500, n_trial_boot=100):
+    """
+    Calculate and plot the heat capacity curve, with uncertainty determined using bootstrapping.
+    n_sample_boot uncorrelated samples are selected using a random starting frame, repeated n_trial_boot 
+    times. Uncertainty in melting point and full-width half maximum of the C_v curve are also returned.
+    
+    :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
+    :type frame_begin: int
+    
+    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData (default=1)
+    :type sample_spacing: int
+    
+    :param frame_end: index of last frame to include in heat capacity calculation (default=-1)
+    :type frame_end: int
+
+    :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data (default = "output/output.nc")                                                                                          
+    :type output_data: str    
+    
+    :param num_intermediate_states: The number of states to insert between existing states in 'temperature_list' (default=0)
+    :type num_intermediate_states: int
+
+    :param frac_dT: The fraction difference between temperatures points used to calculate finite difference derivatives (default=0.05)
+    :type num_intermediate_states: float    
+    
+    :param n_sample_boot: number of samples (frames) to draw during bootstrapping
+    :type n_sample_boot: int
+    
+    :param n_trial_boot: number of trials to run for generating bootstrapping uncertainties
+    :type n_trial_boot: int
+    """
+    
+    # extract reduced energies and the state indices from the .nc
+    reporter = MultiStateReporter(output_data, open_mode="r")
+    analyzer = ReplicaExchangeAnalyzer(reporter)
+    (
+        replica_energies_all,
+        unsampled_state_energies,
+        neighborhoods,
+        replica_state_indices,
+    ) = analyzer.read_energies()    
+    
+    # Store data for each sampling trial:
+    C_v_values_boot = {}
+    C_v_uncertainty_boot = {}
+    
+    Tm_boot = np.zeros(n_trial_boot)
+
+    for i_boot in range(n_trial_boot):
+    
+        # Select production frames to analyze
+        # Here we can potentially change the reference frame for each bootstrap trial.
+        ref_shift = np.random.randint(sample_spacing)
+        # ***We should check if these energies arrays will be the same size for
+        # different reference frames
+        replica_energies = replica_energies_all[:,:,(frame_begin+ref_shift)::sample_spacing]
+    
+        # Get all possible sample indices
+        sample_indices_all = np.arange(0,len(replica_energies[0,0,:]))
+        sample_indices = resample(sample_indices_all, replace=True, n_samples=n_sample_boot)
+        
+        n_state = replica_energies.shape[0]
+        
+        replica_energies_resample = np.zeros((n_state,n_state,n_sample_boot))
+        # replica_energies is [n_states x n_states x n_frame]
+        
+        # Select the sampled frames from array_folded_states and replica_energies:
+        j = 0
+        for i in sample_indices:
+            replica_energies_resample[:,:,j] = replica_energies[:,:,i]
+            j += 1
+            
+        # Run heat capacity expectation calculation:
+        C_v_values_boot[i_boot], C_v_uncertainty_boot[i_boot], T_list = get_heat_capacity(
+            output_data=output_data,
+            num_intermediate_states=num_intermediate_states,
+            frac_dT=frac_dT,
+            plot_file=None,
+            bootstrap_energies=replica_energies_resample,
+            )
+            
+        if i_boot == 0:
+            # Get units:
+            C_v_unit = C_v_values_boot[0][0].unit
+            T_unit = T_list[0].unit    
+            
+        # Compute the melting point:
+        Tm_boot[i_boot] = T_list[np.argmax(C_v_values_boot[i_boot])].value_in_unit(T_unit)
+        
+        # Compute the peak height:
+        
+        # Compute the FWHM:
+        
+    # Compute uncertainty at all temps in T_list over the n_trial_boot trials performed:
+    
+    # Convert dicts to array
+    arr_C_v_values_boot = np.zeros((n_trial_boot, len(T_list)))
+    
+    for i_boot in range(n_trial_boot):
+        arr_C_v_values_boot[i_boot,:] = C_v_values_boot[i_boot].value_in_unit(C_v_unit)
+            
+    C_v_uncertainty = np.std(arr_C_v_values_boot,axis=0)*C_v_unit
+    C_v_values = np.mean(arr_C_v_values_boot,axis=0)*C_v_unit
+                    
+    Tm_uncertainty = np.std(Tm_boot)*T_unit                
+    Tm_value = np.mean(Tm_boot)*T_unit
+    
+    # plot and return the heat capacity (with units)
+    if plot_file is not None:
+        plot_heat_capacity(C_v_values, C_v_uncertainty, T_list, file_name=plot_file)
+                    
+    return T_list, C_v_values, C_v_uncertainty, Tm_uncertainty, Tm_value
+        
+    
