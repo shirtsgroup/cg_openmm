@@ -320,11 +320,11 @@ def get_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, output_data
 
 
 def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_file='heat_capacity_boot.pdf',
-    output_data="output/output.nc", num_intermediate_states=0,frac_dT=0.05,conf_percent=90,
-    n_sample_boot=500, n_trial_boot=100):
+    output_data="output/output.nc", num_intermediate_states=0,frac_dT=0.05,conf_percent=68.27,
+    n_trial_boot=200):
     """
     Calculate and plot the heat capacity curve, with uncertainty determined using bootstrapping.
-    n_sample_boot uncorrelated samples are selected using a random starting frame, repeated n_trial_boot 
+    Uncorrelated datasets are selected using a random starting frame, repeated n_trial_boot 
     times. Uncertainty in melting point and full-width half maximum of the C_v curve are also returned.
     
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
@@ -345,11 +345,8 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
     :param frac_dT: The fraction difference between temperatures points used to calculate finite difference derivatives (default=0.05)
     :type num_intermediate_states: float    
     
-    :param conf_percent: Confidence level in percent for outputting uncertainties (default=90)
+    :param conf_percent: Confidence level in percent for outputting uncertainties (default = 68.27 = 1 sigma)
     :type conf_percent: float
-    
-    :param n_sample_boot: number of samples (frames) to draw during bootstrapping
-    :type n_sample_boot: int
     
     :param n_trial_boot: number of trials to run for generating bootstrapping uncertainties
     :type n_trial_boot: int
@@ -394,11 +391,12 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
     
         # Get all possible sample indices
         sample_indices_all = np.arange(0,len(replica_energies[0,0,:]))
-        sample_indices = resample(sample_indices_all, replace=True, n_samples=n_sample_boot)
+        # n_samples should match the size of the sliced replica energy dataset
+        sample_indices = resample(sample_indices_all, replace=True, n_samples=len(sample_indices_all))
         
         n_state = replica_energies.shape[0]
         
-        replica_energies_resample = np.zeros((n_state,n_state,n_sample_boot))
+        replica_energies_resample = np.zeros_like(replica_energies)
         # replica_energies is [n_states x n_states x n_frame]
         
         # Select the sampled frames from array_folded_states and replica_energies:

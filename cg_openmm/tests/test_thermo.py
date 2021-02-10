@@ -84,7 +84,6 @@ def test_bootstrap_heat_capacity(tmpdir):
         num_intermediate_states=2,
         frame_begin=2,
         sample_spacing=2,
-        n_sample_boot=20,
         n_trial_boot=100,
         plot_file=f"{plot_directory}/heat_capacity_boot.pdf",
         conf_percent=80,
