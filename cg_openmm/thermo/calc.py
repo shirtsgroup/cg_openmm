@@ -320,7 +320,7 @@ def get_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, output_data
 
 
 def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_file='heat_capacity_boot.pdf',
-    output_data="output/output.nc", num_intermediate_states=0,frac_dT=0.05,conf_percent=68.27,
+    output_data="output/output.nc", num_intermediate_states=0,frac_dT=0.05,conf_percent='sigma',
     n_trial_boot=200):
     """
     Calculate and plot the heat capacity curve, with uncertainty determined using bootstrapping.
@@ -492,44 +492,66 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
     for i_boot in range(n_trial_boot):
         arr_C_v_values_boot[i_boot,:] = C_v_values_boot[i_boot].value_in_unit(C_v_unit)
             
-    # Compute confidence intervals:   
-    p_lo = (100-conf_percent)/2
-    p_hi = 100-p_lo
-            
-    # C_v values:
-    C_v_diff = arr_C_v_values_boot-np.mean(arr_C_v_values_boot,axis=0)
-    C_v_conf_lo = np.percentile(C_v_diff,p_lo,axis=0,interpolation='linear')
-    C_v_conf_hi = np.percentile(C_v_diff,p_hi,axis=0,interpolation='linear')
-      
-    C_v_values = np.mean(arr_C_v_values_boot,axis=0)*C_v_unit
-    C_v_uncertainty = (C_v_conf_lo*C_v_unit, C_v_conf_hi*C_v_unit) 
-                    
-    # C_v peak height:                
-    Cv_height_diff = Cv_height-np.mean(Cv_height)
-    Cv_height_conf_lo = np.percentile(Cv_height_diff,p_lo,interpolation='linear')
-    Cv_height_conf_hi = np.percentile(Cv_height_diff,p_hi,interpolation='linear')
-    
-    Cv_height_value = np.mean(Cv_height)*C_v_unit    
-    Cv_height_uncertainty = (Cv_height_conf_lo*C_v_unit, Cv_height_conf_hi*C_v_unit)                  
-    
-    # Melting point: 
-    Tm_diff = Tm_boot-np.mean(Tm_boot)
-    Tm_conf_lo = np.percentile(Tm_diff,p_lo,interpolation='linear')
-    Tm_conf_hi = np.percentile(Tm_diff,p_hi,interpolation='linear')
-    
+    # Compute mean values:        
+    C_v_values = np.mean(arr_C_v_values_boot,axis=0)*C_v_unit      
+    Cv_height_value = np.mean(Cv_height)*C_v_unit      
     Tm_value = np.mean(Tm_boot)*T_unit
-    Tm_uncertainty = (Tm_conf_lo*T_unit, Tm_conf_hi*T_unit)  
+    FWHM_value = np.mean(FWHM)*T_unit    
     
-    # Full width half maximum:
+    # Compute confidence intervals:
+    if conf_percent == 'sigma':
+        # Use analytical standard deviation instead of percentile method:
+        
+        # C_v values:
+        C_v_std = np.std(arr_C_v_values_boot,axis=0)
+        C_v_uncertainty = (-C_v_std*C_v_unit, C_v_std*C_v_unit)
+        
+        # C_v peak height:
+        Cv_height_std = np.std(Cv_height)
+        Cv_height_uncertainty = (-Cv_height_std*C_v_unit, Cv_height_std*C_v_unit)   
+        
+        # Melting point:
+        Tm_std = np.std(Tm_boot)
+        Tm_uncertainty = (-Tm_std*T_unit, Tm_std*T_unit)
+        
+        # Full width half maximum:
+        FWHM_std = np.std(FWHM)
+        FWHM_uncertainty = (-FWHM_std*T_unit, FWHM_std*T_unit)
+        
+    else:
+        # Compute specified confidence interval:
+        p_lo = (100-conf_percent)/2
+        p_hi = 100-p_lo
+                
+        # C_v values:
+        C_v_diff = arr_C_v_values_boot-np.mean(arr_C_v_values_boot,axis=0)
+        C_v_conf_lo = np.percentile(C_v_diff,p_lo,axis=0,interpolation='linear')
+        C_v_conf_hi = np.percentile(C_v_diff,p_hi,axis=0,interpolation='linear')
+      
+        C_v_uncertainty = (C_v_conf_lo*C_v_unit, C_v_conf_hi*C_v_unit) 
+                    
+        # C_v peak height:                
+        Cv_height_diff = Cv_height-np.mean(Cv_height)
+        Cv_height_conf_lo = np.percentile(Cv_height_diff,p_lo,interpolation='linear')
+        Cv_height_conf_hi = np.percentile(Cv_height_diff,p_hi,interpolation='linear')
+        
+        Cv_height_uncertainty = (Cv_height_conf_lo*C_v_unit, Cv_height_conf_hi*C_v_unit)                  
+        
+        # Melting point: 
+        Tm_diff = Tm_boot-np.mean(Tm_boot)
+        Tm_conf_lo = np.percentile(Tm_diff,p_lo,interpolation='linear')
+        Tm_conf_hi = np.percentile(Tm_diff,p_hi,interpolation='linear')
+        
+        Tm_uncertainty = (Tm_conf_lo*T_unit, Tm_conf_hi*T_unit)  
+        
+        # Full width half maximum:
+        FWHM_diff = FWHM-np.mean(FWHM)
+        FWHM_conf_lo = np.percentile(FWHM_diff,p_lo,interpolation='linear')
+        FWHM_conf_hi = np.percentile(FWHM_diff,p_hi,interpolation='linear')
+        
+        FWHM_uncertainty = (FWHM_conf_lo*T_unit, FWHM_conf_hi*T_unit) 
     
-    FWHM_diff = FWHM-np.mean(FWHM)
-    FWHM_conf_lo = np.percentile(FWHM_diff,p_lo,interpolation='linear')
-    FWHM_conf_hi = np.percentile(FWHM_diff,p_hi,interpolation='linear')
-    
-    FWHM_value = np.mean(FWHM)*T_unit
-    FWHM_uncertainty = (FWHM_conf_lo*T_unit, FWHM_conf_hi*T_unit) 
-    
-    # plot and return the heat capacity (with units)
+    # Plot and return the heat capacity (with units)
     if plot_file is not None:
         plot_heat_capacity(C_v_values, C_v_uncertainty, T_list, file_name=plot_file)
                     
