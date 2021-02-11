@@ -20,7 +20,7 @@ def expectations_free_energy(array_folded_states, temperature_list, frame_begin=
     :param array_folded_states: An array specifying the configurational state of each structure (ranging from 1 to n)
     :type array_folded_states: np.array( int * n_frames*len(temperature_list) ) 
 
-    :param temperature_list: List of temperatures for the simulation data.
+    :param temperature_list: List of temperatures for the simulation data (necessary because bootstrap version doesn't read in the file)
     :type temperature_list: List( float * simtk.unit.temperature )
     
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
@@ -197,16 +197,13 @@ def expectations_free_energy(array_folded_states, temperature_list, frame_begin=
     return full_T_list, deltaF_values, deltaF_uncertainty
     
 
-def bootstrap_free_energy_folding(array_folded_states, temperature_list, output_data="output/output.nc", frame_begin=0, sample_spacing=1,
-    n_sample_boot=500, n_trial_boot=100, num_intermediate_states=0):
+def bootstrap_free_energy_folding(array_folded_states, output_data="output/output.nc", frame_begin=0, sample_spacing=1,
+    n_trial_boot=200, num_intermediate_states=0):
     """
     Function for computing uncertainty of free energy, entropy, and enthalpy using standard bootstrapping
 
     :param array_folded_states: An array specifying the configurational state of each structure (ranging from 1 to n)
     :type array_folded_states: np.array( int * n_frames*len(temperature_list) ) 
-
-    :param temperature_list: List of temperatures for the simulation data.
-    :type temperature_list: List( float * simtk.unit.temperature )
     
     :param output_data: Path to the simulation .nc file.
     :type output_data: str    
@@ -216,11 +213,8 @@ def bootstrap_free_energy_folding(array_folded_states, temperature_list, output_
     
     :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData
     :type sample_spacing: int     
-
-    :param n_sample_boot: number of samples (frames) to draw during bootstrapping
-    :type n_sample_boot: int
     
-    :param n_trial_boot: number of trials to run for generating bootstrapping uncertainties
+    :param n_trial_boot: number of trials to run for generating bootstrapping uncertainties (default=200)
     :type n_trial_boot: int
     
     :param num_intermediate_states: Number of unsampled thermodynamic states between sampled states to include in the calculation
@@ -249,6 +243,14 @@ def bootstrap_free_energy_folding(array_folded_states, temperature_list, output_
         neighborhoods,
         replica_state_indices,
     ) = analyzer.read_energies()    
+    
+    # Get temperature_list from .nc file:
+    states = reporter.read_thermodynamic_states()[0]
+    
+    temperature_list = []
+    for s in states:
+        temperature_list.append(s.temperature)    
+    
     
     # Select production frames to analyze
     replica_energies = replica_energies_all[:,:,frame_begin::sample_spacing]
@@ -292,13 +294,15 @@ def bootstrap_free_energy_folding(array_folded_states, temperature_list, output_
     sample_indices_all = np.arange(0,len(replica_energies[0,0,:]))
     
     for i_boot in range(n_trial_boot):
-        sample_indices = resample(sample_indices_all, replace=True, n_samples=n_sample_boot)
+        # Here we can potentially change the reference frame for each bootstrap trial.
+        # This requires the array slicing to be done here, not above.
+        sample_indices = resample(sample_indices_all, replace=True, n_samples=len(sample_indices_all))
         
         n_state = len(array_folded_states[0,:])
         
         # array_folded_states is [n_frame x n_state]
-        array_folded_states_resample = np.zeros((n_sample_boot,n_state))
-        replica_energies_resample = np.zeros((n_state,n_state,n_sample_boot))
+        array_folded_states_resample = np.zeros((len(sample_indices_all),n_state))
+        replica_energies_resample = np.zeros_like(replica_energies)
         # replica_energies is [n_states x n_states x n_frame]
         
         # Select the sampled frames from array_folded_states and replica_energies:
@@ -526,6 +530,7 @@ def plot_entropy_enthalpy(
     plt.close()
     
     return
+    
     
 def get_free_energy_derivative(deltaF, temperature_list, plotfile=None):
     """
