@@ -14,7 +14,7 @@ https://cg-openmm.readthedocs.io/en/latest/
 ## Installation
 To install `CG_openmm`, run `python setup.py install` in the base directory.
 
-To use structural analysis features, including native structure determination and calculation of bonded distributions, also install [analyze_foldamers](github.com/shirtsgroup/analyze_foldamers).
+To use structural analysis features, including native structure determination and calculation of bonded distributions, also install [analyze_foldamers](https://github.com/shirtsgroup/analyze_foldamers).
 
 ## Dependencies:
 
