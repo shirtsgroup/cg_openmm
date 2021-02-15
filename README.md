@@ -5,25 +5,21 @@ cg_openmm
 [![codecov](https://codecov.io/gh/shirtsgroup/cg_openmm/branch/master/graph/badge.svg)](https://codecov.io/gh/shirtsgroup/cg_openmm/branch/master)
 [![Documentation Status](https://readthedocs.org/projects/cg-openmm/badge/?version=latest)](https://cg-openmm.readthedocs.io/en/latest/?badge=latest)
 
-This repository contains tools to perform coarse grained simulations in OpenMM.  This repository also enables the use of coarse grained models with OpenMM utilities such as Yank.
+`CG_openmm` is a python package for setup and thermodynamic analysis of coarse-grained foldamer replica exchange molecular dynamics simulations run using OpenMM.
 
-Web-based documentation for this software is available via 'readthedocs':
+For further details refer to the web-based documentation:
+
 https://cg-openmm.readthedocs.io/en/latest/
 
-## To use this repository install it using standard Python conventions:
+## Installation
+To install `CG_openmm`, run `python setup.py install` in the base directory.
 
-python setup.py install
+To use structural analysis features, including native structure determination and calculation of bonded distributions, also install [analyze_foldamers](github.com/shirtsgroup/analyze_foldamers).
 
 ## Dependencies:
 
-For a detailed list of dependencies, and more detailed installation instructions, please read the "Installation notes" section of "manual.pdf".
+[mdtraj](https://mdtraj.org/1.9.4/index.html) | [mpi4py](https://mpi4py.readthedocs.io/en/stable/) | [numpy](https://numpy.org) | [openmm](http://openmm.org/) | [openmmtools](https://openmmtools.readthedocs.io/en/latest/) | [physical_validation](https://physical-validation.readthedocs.io/en/latest/index.html) | [scikit-learn](https://scikit-learn.org/stable/index.html) | [scipy](scipy.org) 
 
 ## Testing your installation:
 
-Test your installation by opening a new Python session and typing the following:
-
-import cg_openmm
-
-**For full documentation please refer to 'manual.pdf'.**
-
-
+To test your installation, open a new Python session and type the command `import cg_openmm`.
