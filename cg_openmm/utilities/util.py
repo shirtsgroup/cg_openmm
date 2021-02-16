@@ -189,6 +189,7 @@ def fit_sigmoid(xdata, ydata, plotfile='Q_vs_T_fit.pdf', xlabel='T (K)', ylabel=
             label='hyperbolic fit',
         )
         
+        plt.ylim((0,1))
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
         

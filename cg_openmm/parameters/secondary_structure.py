@@ -21,7 +21,8 @@ kB = unit.MOLAR_GAS_CONSTANT_R # Boltzmann constant
 
 def get_native_contacts(cgmodel, native_structure_file, native_contact_distance_cutoff):
     """
-    Given a coarse grained model, positions for that model, and positions for the native structure, this function calculates the fraction of native contacts for the model.
+    Given a coarse grained model, positions for the native structure, and cutoff, this function determines which pairs
+    are native contacts.
 
     :param cgmodel: CGModel() class object
     :type cgmodel: class
@@ -87,6 +88,120 @@ def get_native_contacts(cgmodel, native_structure_file, native_contact_distance_
                 contact_type_dict[reverse_string_name] += 1
             
     return native_contact_list, native_contact_distances, contact_type_dict
+    
+    
+def get_helix_contacts(cgmodel, native_structure_file, backbone_type_name='bb'):
+    """
+    Given a coarse grained model and positions for the native structure this function determines which pairs
+    are native contacts. This function assumes helical geometry with native contacts being backbone pairs
+    iteracting as (i) to (i+n) neighbors, where n defines the pairs which on average are the shortest distance.
+
+    :param cgmodel: CGModel() class object
+    :type cgmodel: class
+
+    :param native_structure_file: Path to file ('pdb' or 'dcd') containing particle positions for the native structure.
+    :type native_structure_file: str
+
+    :param backbone_type_name: type name in cgmodel which corresponds to the particles forming the helical backbone.
+    :type backbone_type_name: str
+    
+    :returns:
+       - native_contact_list - A list of the nonbonded interactions whose inter-particle distances are less than the 'native_contact_cutoff_distance'.
+       - native_contact_distances - A Quantity numpy array of the native pairwise distances corresponding to native_contact_list
+       - opt_seq_spacing - The (i) to (i+n) number n defining contacting backbone beads
+    """
+
+    # Parse native structure file
+    if native_structure_file[-3:] == 'dcd':
+        native_traj = md.load(native_structure_file,top=md.Topology.from_openmm(cgmodel.topology))
+        # ***Note: The clustering dcds are written with unit nanometers,
+        # but this may not always be the case.
+        native_structure = native_traj[0].xyz[0]*unit.nanometer
+    else:
+        native_structure = PDBFile(native_structure_file).getPositions()
+        
+    # Include only pairs contained in the nonbonded_interaction_list
+    # This is a list of lists, with inner lists being the interaction pairs
+    nonbonded_interaction_list = cgmodel.nonbonded_interaction_list
+    
+    # Now, filter out non-backbone types and determine the number of bonds separating each.
+    bb_interaction_list = []
+    for pair in nonbonded_interaction_list:
+        if cgmodel.get_particle_type_name(pair[0])==backbone_type_name and cgmodel.get_particle_type_name(pair[1])==backbone_type_name:
+            bb_interaction_list.append(pair)
+            
+    # From the bonds list, determine the sequence of backbone particles
+    bond_list = cgmodel.get_bond_list()
+    bb_bond_list = []
+    bb_bond_particle_list = []
+    for bond in bond_list:
+        if cgmodel.get_particle_type_name(bond[0])==backbone_type_name and cgmodel.get_particle_type_name(bond[1])==backbone_type_name:
+            bb_bond_list.append(bond)
+            # Save the bond particles to a single list:
+            bb_bond_particle_list.append(bond[0])
+            bb_bond_particle_list.append(bond[1])
+            
+            
+    print(f'bb_bond_list: {bb_bond_list}')        
+            
+    # Now determine the ordering. Find an end bead and build from there.
+    tail_found=False
+    bb_sequence = []
+    for bead in bb_bond_particle_list:
+        if bb_bond_particle_list.count(bead) == 1:
+            # End of chain found
+            bb_sequence.append(bead)
+            break
+    
+    # Find which bead is bonded to the chain end, and so on and so forth
+    # We should test this on arbitrary sequences such as:
+    #[6*, 4], [4,2], [2,8*]
+    for i in range(len(bb_bond_list)):
+        for bond in bb_bond_list:
+            if bond[0] == bb_sequence[-1]:
+                # Check if this is a new pair:
+                if bond[1] not in bb_sequence:
+                    bb_sequence.append(bond[1])
+                    break
+            elif bond[1] == bb_sequence[-1]:
+                # Check if this is a new pair:
+                if bond[0] not in bb_sequence:
+                    bb_sequence.append(bond[0])
+                    break
+                    
+    print(f'bb sequence: {bb_sequence}')            
+                                
+    # Now compute the relevant distances for (i) to (i+k):
+    ik_pairs = {}
+    ik_dist_arr = {}
+    seq_spacing = [3,4,5,6,7]
+    i_mean_dist_array = np.zeros(5)
+    j = 0
+    
+    for k in seq_spacing:
+        ik_pairs[f'i{k}'] = []
+        for i in range(len(bb_sequence)-k):
+            ik_pairs[f'i{k}'].append([bb_sequence[i],bb_sequence[i+k]])
+        ik_dist_list = distances(ik_pairs[f'i{k}'], native_structure)
+        ik_dist_arr[f'i{k}'] = np.zeros(len(ik_dist_list))
+        for i in range(len(ik_dist_list)):
+            ik_dist_arr[f'i{k}'][i] = ik_dist_list[i].value_in_unit(unit.nanometer)
+        i_mean_dist_array[j] = np.mean(ik_dist_arr[f'i{k}'])
+        j += 1
+    
+    print(f"i to i+3: {ik_dist_arr['i3']}")
+    print(f"i to i+4: {ik_dist_arr['i4']}")
+    print(f"i to i+5: {ik_dist_arr['i5']}")
+    print(f"i to i+6: {ik_dist_arr['i6']}")
+    print(f"i to i+7: {ik_dist_arr['i7']}")
+    
+    print(f'i_mean_dist_array: {i_mean_dist_array}')
+    
+    opt_seq_spacing = seq_spacing[np.argmin(i_mean_dist_array)]
+    native_contact_list = ik_pairs[f'i{opt_seq_spacing}']
+    native_contact_distances = ik_dist_arr[f'i{opt_seq_spacing}']*unit.nanometer
+       
+    return native_contact_list, native_contact_distances, opt_seq_spacing
 
 
 def expectations_fraction_contacts(fraction_native_contacts, frame_begin=0, sample_spacing=1, output_data="output/output.nc", num_intermediate_states=0):
