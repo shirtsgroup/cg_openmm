@@ -21,7 +21,8 @@ kB = unit.MOLAR_GAS_CONSTANT_R # Boltzmann constant
 
 def get_native_contacts(cgmodel, native_structure_file, native_contact_distance_cutoff):
     """
-    Given a coarse grained model, positions for that model, and positions for the native structure, this function calculates the fraction of native contacts for the model.
+    Given a coarse grained model, positions for the native structure, and cutoff, this function determines which pairs
+    are native contacts.
 
     :param cgmodel: CGModel() class object
     :type cgmodel: class
@@ -87,6 +88,121 @@ def get_native_contacts(cgmodel, native_structure_file, native_contact_distance_
                 contact_type_dict[reverse_string_name] += 1
             
     return native_contact_list, native_contact_distances, contact_type_dict
+    
+    
+def get_helix_contacts(cgmodel, native_structure_file, backbone_type_name='bb', verbose=False):
+    """
+    Given a coarse grained model and positions for the native structure this function determines which pairs
+    are native contacts. This function assumes helical geometry with native contacts being backbone pairs
+    iteracting as (i) to (i+n) neighbors, where n defines the pairs which on average are the shortest distance.
+
+    :param cgmodel: CGModel() class object
+    :type cgmodel: class
+
+    :param native_structure_file: Path to file ('pdb' or 'dcd') containing particle positions for the native structure.
+    :type native_structure_file: str
+
+    :param backbone_type_name: type name in cgmodel which corresponds to the particles forming the helical backbone.
+    :type backbone_type_name: str
+    
+    :returns:
+       - native_contact_list - A list of the nonbonded interactions whose inter-particle distances are less than the 'native_contact_cutoff_distance'.
+       - native_contact_distances - A Quantity numpy array of the native pairwise distances corresponding to native_contact_list
+       - opt_seq_spacing - The (i) to (i+n) number n defining contacting backbone beads
+    """
+
+    # Parse native structure file
+    if native_structure_file[-3:] == 'dcd':
+        native_traj = md.load(native_structure_file,top=md.Topology.from_openmm(cgmodel.topology))
+        # ***Note: The clustering dcds are written with unit nanometers,
+        # but this may not always be the case.
+        native_structure = native_traj[0].xyz[0]*unit.nanometer
+    else:
+        native_structure = PDBFile(native_structure_file).getPositions()
+        
+    # Include only pairs contained in the nonbonded_interaction_list
+    # This is a list of lists, with inner lists being the interaction pairs
+    nonbonded_interaction_list = cgmodel.nonbonded_interaction_list
+    
+    # Now, filter out non-backbone types and determine the number of bonds separating each.
+    bb_interaction_list = []
+    for pair in nonbonded_interaction_list:
+        if cgmodel.get_particle_type_name(pair[0])==backbone_type_name and cgmodel.get_particle_type_name(pair[1])==backbone_type_name:
+            bb_interaction_list.append(pair)
+            
+    # From the bonds list, determine the sequence of backbone particles
+    bond_list = cgmodel.get_bond_list()
+    bb_bond_list = []
+    bb_bond_particle_list = []
+    for bond in bond_list:
+        if cgmodel.get_particle_type_name(bond[0])==backbone_type_name and cgmodel.get_particle_type_name(bond[1])==backbone_type_name:
+            bb_bond_list.append(bond)
+            # Save the bond particles to a single list:
+            bb_bond_particle_list.append(bond[0])
+            bb_bond_particle_list.append(bond[1])
+            
+    if verbose:        
+        print(f'bb_bond_list: {bb_bond_list}')        
+            
+    # Now determine the ordering. Find an end bead and build from there.
+    tail_found=False
+    bb_sequence = []
+    for bead in bb_bond_particle_list:
+        if bb_bond_particle_list.count(bead) == 1:
+            # End of chain found
+            bb_sequence.append(bead)
+            break
+    
+    # Find which bead is bonded to the chain end, and so on and so forth
+    # We should test this on arbitrary sequences such as:
+    #[6*, 4], [4,2], [2,8*]
+    for i in range(len(bb_bond_list)):
+        for bond in bb_bond_list:
+            if bond[0] == bb_sequence[-1]:
+                # Check if this is a new pair:
+                if bond[1] not in bb_sequence:
+                    bb_sequence.append(bond[1])
+                    break
+            elif bond[1] == bb_sequence[-1]:
+                # Check if this is a new pair:
+                if bond[0] not in bb_sequence:
+                    bb_sequence.append(bond[0])
+                    break
+               
+    if verbose:           
+        print(f'bb sequence: {bb_sequence}')            
+                                
+    # Now compute the relevant distances for (i) to (i+k):
+    ik_pairs = {}
+    ik_dist_arr = {}
+    seq_spacing = [3,4,5,6,7]
+    i_mean_dist_array = np.zeros(5)
+    j = 0
+    
+    for k in seq_spacing:
+        ik_pairs[f'i{k}'] = []
+        for i in range(len(bb_sequence)-k):
+            ik_pairs[f'i{k}'].append([bb_sequence[i],bb_sequence[i+k]])
+        ik_dist_list = distances(ik_pairs[f'i{k}'], native_structure)
+        ik_dist_arr[f'i{k}'] = np.zeros(len(ik_dist_list))
+        for i in range(len(ik_dist_list)):
+            ik_dist_arr[f'i{k}'][i] = ik_dist_list[i].value_in_unit(unit.nanometer)
+        i_mean_dist_array[j] = np.mean(ik_dist_arr[f'i{k}'])
+        j += 1
+    
+    if verbose:
+        print(f"i to i+3: {ik_dist_arr['i3']}")
+        print(f"i to i+4: {ik_dist_arr['i4']}")
+        print(f"i to i+5: {ik_dist_arr['i5']}")
+        print(f"i to i+6: {ik_dist_arr['i6']}")
+        print(f"i to i+7: {ik_dist_arr['i7']}")
+        print(f'i_mean_dist_array: {i_mean_dist_array}')
+    
+    opt_seq_spacing = seq_spacing[np.argmin(i_mean_dist_array)]
+    native_contact_list = ik_pairs[f'i{opt_seq_spacing}']
+    native_contact_distances = ik_dist_arr[f'i{opt_seq_spacing}']*unit.nanometer
+       
+    return native_contact_list, native_contact_distances, opt_seq_spacing
 
 
 def expectations_fraction_contacts(fraction_native_contacts, frame_begin=0, sample_spacing=1, output_data="output/output.nc", num_intermediate_states=0):
@@ -446,13 +562,13 @@ def fraction_native_contacts_preloaded(
     return Q, Q_avg, Q_stderr, decorrelation_spacing
     
     
-    
 def optimize_Q_cut(
     cgmodel, native_structure_file, traj_file_list, output_data="output/output.nc",
     num_intermediate_states=0, frame_begin=0, frame_stride=1,
     plotfile='native_contacts_opt.pdf', verbose=False):
     """
-    Given a coarse grained model and a native structure as input
+    Given a coarse grained model and a native structure as input, optimize the distance cutoff defining
+    the native contact pairs, and the distance tolerance for scanning the trajectory for native contacts.
 
     :param cgmodel: CGModel() class object
     :type cgmodel: class
@@ -474,9 +590,6 @@ def optimize_Q_cut(
 
     :param frame_stride: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData
     :type frame_stride: int 
-    
-    :param opt_method: scipy.optimize.minimize method (default='Nelder-Mead')
-    :type opt_method: str
 
     :returns:
        - native_contact_cutoff ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The ideal distance below which two nonbonded, interacting particles should be defined as a "native contact"
@@ -629,7 +742,179 @@ def optimize_Q_cut(
     
     return native_contact_cutoff, native_contact_tol, opt_results, Q_expect_results, sigmoid_param_opt, sigmoid_param_cov, contact_type_dict
     
+    
+def optimize_Q_tol_helix(
+    cgmodel, native_structure_file, traj_file_list, output_data="output/output.nc",
+    num_intermediate_states=0, frame_begin=0, frame_stride=1, backbone_type_name='bb',
+    plotfile='native_contacts_helix_opt.pdf', verbose=False,brute_step=0.1*unit.angstrom):
+    """
+    Given a coarse grained model and a native structure as input, determine which helical backbone
+    sequences are native contacts, and the optimal distance tolerance for scanning the
+    trajectory for native contacts. Tolerance is determined by brute force scan.
 
+    :param cgmodel: CGModel() class object
+    :type cgmodel: class
+    
+    :param native_structure_file: Path to file ('pdb' or 'dcd') containing particle positions for the native structure.
+    :type native_structure_file: str 
+    
+    :param traj_file_list: A list of replica PDB or DCD trajectory files corresponding to the energies in the .nc file, or a single file name
+    :type traj_file_list: List( str ) or str
+    
+    :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data, default = ("output/output.nc")                                                                                                  
+    :type output_data: str
+
+    :param num_intermediate_states: The number of states to insert between existing states in 'temperature_list'
+    :type num_intermediate_states: int 
+    
+    :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
+    :type frame_begin: int
+
+    :param frame_stride: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData
+    :type frame_stride: int 
+    
+    :param backbone_type_name: type name in cgmodel which corresponds to the particles forming the helical backbone.
+    :type backbone_type_name: str
+    
+    :param brute_step: step size in distance units for brute force tolerance optimization (final optimization searches between intervals)
+    :type brute_step: Quantity ( float )
+
+    :returns:
+       - opt_seq_spacing ( int ) - the (i) to (i+n) number n defining contacting backbone beads
+       - native_contact_tol( Quantity() ) -  tolerance beyond the native distance for determining whether a pair of particles is 'native'
+       - opt_results ( dict ) - results of the native contact tolerance scipy.optimize.minimize optimization
+       - Q_expect_results ( dict ) - results of the native contact fraction expectation calculation containing 'Q' and 'T'
+       - sigmoid_param_opt ( 1D numpy array ) - optimized sigmoid parameters (x0, y0, y1, d) 
+       - sigmoid_param_cov ( 2D numpy array ) - estimated covariance of sigmoid_param_opt
+    """
+
+    # Pre-load the replica trajectories into MDTraj objects, to avoid having to load them
+    # at each iteration (very costly for pdb in particular)
+    
+    traj_dict = {}
+    
+    if type(traj_file_list) == list:
+        n_replicas = len(traj_file_list)
+    elif type(traj_file_list) == str:
+        # Convert to a 1 element list if not one
+        traj_file_list = traj_file_list.split()  
+        n_replicas = 1
+        
+    for rep in range(n_replicas):
+        if traj_file_list[rep][-3:] == 'dcd':
+            traj_dict[rep] = md.load(traj_file_list[rep],top=md.Topology.from_openmm(cgmodel.topology))
+        else:
+            traj_dict[rep] = md.load(traj_file_list[rep])
+            
+    # Determine native contacts:
+    native_contact_list, native_contact_distances, opt_seq_spacing = get_helix_contacts(
+        cgmodel,
+        native_structure_file,
+        backbone_type_name=backbone_type_name,
+        )
+    
+    def minimize_sigmoid_width_1d(x0):
+        # Function to minimize:
+        native_contact_tol = x0
+        
+        if len(native_contact_list) > 0:
+            # Get native contact fraction of all frames
+            # To avoid loading in files each iteration, use alternate version of fraction_native_contacts code
+            Q, Q_avg, Q_stderr, decorrelation_time = fraction_native_contacts_preloaded(
+                cgmodel,
+                traj_dict,
+                native_contact_list,
+                native_contact_distances,
+                frame_begin=frame_begin,
+                native_contact_tol=native_contact_tol*unit.angstrom,
+                subsample=False,
+            )
+            
+            if Q.sum() == 0:
+                # There are no native contacts in the trajectory
+                min_val = 1E9
+                param_opt = None
+                
+            else:    
+                try:
+                    # Get expectations 
+                    results = expectations_fraction_contacts(
+                        Q,
+                        frame_begin=frame_begin,
+                        sample_spacing=frame_stride,
+                        output_data=output_data,
+                        num_intermediate_states=num_intermediate_states,
+                    )
+                    
+                    param_opt, param_cov = fit_sigmoid(results["T"],results["Q"],plotfile=None)
+                    
+                    # This minimizes the width of the sigmoid:
+                    # min_val = param_opt[3]**2
+                    
+                    # Maximum the difference between the max and min Q:
+                    min_val = 1-abs(param_opt[2]-param_opt[1])
+                    if verbose:
+                        print(f'min_val: {min_val}')
+                
+                except:
+                    # Error with computing expectation, likely due to few non-zero Q
+                    min_val = 1E9
+                    param_opt = None
+            
+        else:
+            # There are no native contacts for this iteration
+            min_val = 1E9
+            param_opt = None
+            
+        if verbose:
+            # Print parameters at each iteration:
+            print(f"native_contact_tol: {native_contact_tol}")
+            print(f"number native contacts: {len(native_contact_list)}")
+            print(f"sigmoid params: {param_opt}\n")
+            
+        return min_val
+        
+    bounds = (0,cgmodel.get_particle_sigma(native_contact_list[0][0]).value_in_unit(unit.angstrom))
+    if verbose:
+        print(f'Using bounds based on 1x bb particle sigma: {bounds}')
+    brute_range = [slice(bounds[0],bounds[1],brute_step.value_in_unit(unit.angstrom))]
+
+    opt_results = brute(minimize_sigmoid_width_1d, brute_range)
+    
+    # Repeat for final plotting:
+    native_contact_tol = opt_results[0] * unit.angstrom
+    
+    # Determine native contacts:
+    native_contact_list, native_contact_distances, opt_seq_spacing = get_helix_contacts(
+        cgmodel,
+        native_structure_file,
+        backbone_type_name=backbone_type_name,
+        )
+
+    # Get native contact fraction of all frames
+    Q, Q_avg, Q_stderr, decorrelation_time = fraction_native_contacts_preloaded(
+        cgmodel,
+        traj_dict,
+        native_contact_list,
+        native_contact_distances,
+        frame_begin=frame_begin,
+        native_contact_tol=native_contact_tol
+    )
+
+    # Get expectations 
+    Q_expect_results = expectations_fraction_contacts(
+        Q,
+        frame_begin=frame_begin,
+        sample_spacing=frame_stride,
+        output_data=output_data,
+        num_intermediate_states=num_intermediate_states,
+    )
+
+    sigmoid_param_opt, sigmoid_param_cov = fit_sigmoid(Q_expect_results["T"],Q_expect_results["Q"],plotfile=plotfile)
+    
+    return opt_seq_spacing, native_contact_tol, opt_results, Q_expect_results, sigmoid_param_opt, sigmoid_param_cov 
+
+    
 def plot_native_contact_fraction(temperature_list, Q, Q_uncertainty,plotfile="Q_vs_T.pdf"):
     """
     Given a list of temperatures and corresponding native contact fractions, plot Q vs T.
