@@ -132,6 +132,38 @@ def test_native_contacts_dcd(tmpdir):
     
     assert os.path.isfile(f"{output_directory}/Q_vs_T.pdf")
     
+
+def test_helix_contacts_dcd(tmpdir):
+    """See if we can determine native contacts for helix backbone sequences"""
+    
+    output_directory = tmpdir.mkdir("output")
+    
+    # Replica exchange settings
+    number_replicas = 12
+    min_temp = 200.0 * unit.kelvin
+    max_temp = 300.0 * unit.kelvin
+    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
+    
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+    
+    # Create list of pdb trajectories to analyze
+    # For fraction_native_contacts vs. T, we use state trajectories.
+    # However, we can test with the replica pdbs:
+    dcd_file_list = []
+    for i in range(len(temperature_list)):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+        
+    # Load in native structure file:    
+    native_structure_file=f"{structures_path}/medoid_0.dcd"
+    
+    # Determine native contacts:
+    native_contact_list, native_contact_distances, opt_seq_spacing = get_helix_contacts(
+        cgmodel,
+        native_structure_file,
+        backbone_type_name='bb',
+    )
+    
     
 def test_expectations_fraction_contacts_pdb(tmpdir):
     """See if we can determine native contacts expectations as a function of T"""
@@ -374,6 +406,98 @@ def test_expectations_fraction_contacts_dcd(tmpdir):
     
     assert os.path.isfile(f"{output_directory}/Q_vs_T_fit.pdf")
     
+
+def test_bootstrap_native_contacts_expectation_dcd(tmpdir):
+    """Test bootstrapping of native contacts expectation, based on helix contacts"""
+    
+    output_directory = tmpdir.mkdir("output")
+    output_data = os.path.join(data_path, "output.nc")
+    
+    # Replica exchange settings
+    number_replicas = 12
+    min_temp = 200.0 * unit.kelvin
+    max_temp = 300.0 * unit.kelvin
+    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
+    
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+    
+    # Create list of pdb trajectories to analyze
+    # For fraction_native_contacts vs. T, we use state trajectories.
+    # However, we can test with the replica pdbs:
+    dcd_file_list = []
+    for i in range(len(temperature_list)):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+        
+    # Load in native structure file:    
+    native_structure_file=f"{structures_path}/medoid_0.dcd"
+    
+    # Determine native contacts:
+    native_contact_list, native_contact_distances, opt_seq_spacing = get_helix_contacts(
+        cgmodel,
+        native_structure_file,
+        backbone_type_name='bb',
+    )
+    
+    Q_values, Q_uncertainty, sigmoid_results_boot = bootstrap_native_contacts_expectation(
+        cgmodel,
+        dcd_file_list,
+        native_contact_list,
+        native_contact_distances,
+        output_data=output_data,
+        frame_begin=100,
+        sample_spacing=20,
+        native_contact_tol=0.75*unit.angstrom,
+        num_intermediate_states=1,
+        n_trial_boot=10,
+        conf_percent='sigma',
+        plotfile=f'{output_directory}/native_contacts_boot.pdf',
+        )
+        
+    assert os.path.isfile(f'{output_directory}/native_contacts_boot.pdf')  
+    
+    
+def test_optimize_Q_helix_tol_dcd(tmpdir):
+    """Test the helix native contact tolerance optimization workflow"""
+
+    output_directory = tmpdir.mkdir("output")
+    output_data = os.path.join(data_path, "output.nc")
+
+    # Replica exchange settings
+    number_replicas = 12
+    min_temp = 200.0 * unit.kelvin
+    max_temp = 300.0 * unit.kelvin
+    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
+
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+
+    # Create list of pdb trajectories to analyze
+    # For expectation fraction native contacts, we use replica trajectories: 
+    dcd_file_list = []
+    for i in range(len(temperature_list)):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+        
+    # Load in native structure file:    
+    native_structure_file=f"{structures_path}/medoid_0.dcd"    
+    
+    (opt_seq_spacing, native_contact_tol, opt_results, Q_expect_results,
+    sigmoid_param_opt, sigmoid_param_cov) = optimize_Q_tol_helix(
+        cgmodel,
+        native_structure_file,
+        dcd_file_list,
+        num_intermediate_states=0,
+        output_data=output_data,
+        frame_begin=100,
+        frame_stride=20,
+        verbose=True,
+        plotfile=f'{output_directory}/native_contacts_helix_opt.pdf',
+        backbone_type_name='bb',
+        brute_step=0.2*unit.angstrom,
+        )
+        
+    assert os.path.isfile(f'{output_directory}/native_contacts_helix_opt.pdf')     
+    
     
 def test_optimize_Q_cut_pdb(tmpdir):
     """Test the native contact cutoff optimization workflow"""
@@ -407,7 +531,7 @@ def test_optimize_Q_cut_pdb(tmpdir):
         num_intermediate_states=0,
         output_data=output_data,
         frame_begin=100,
-        frame_stride=20,
+        frame_stride=200,
         verbose=True,
         plotfile=f'{output_directory}/native_contacts_opt.pdf'
         )   
@@ -447,7 +571,7 @@ def test_optimize_Q_cut_dcd(tmpdir):
         num_intermediate_states=0,
         output_data=output_data,
         frame_begin=100,
-        frame_stride=20,
+        frame_stride=200,
         verbose=True,
         plotfile=f'{output_directory}/native_contacts_opt.pdf'
         )
