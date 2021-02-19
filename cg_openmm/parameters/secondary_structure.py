@@ -575,7 +575,7 @@ def fraction_native_contacts_preloaded(
 def optimize_Q_cut(
     cgmodel, native_structure_file, traj_file_list, output_data="output/output.nc",
     num_intermediate_states=0, frame_begin=0, frame_stride=1,
-    plotfile='native_contacts_opt.pdf', verbose=False):
+    plotfile='native_contacts_opt.pdf', verbose=False, minimizer_options=None):
     """
     Given a coarse grained model and a native structure as input, optimize the distance cutoff defining
     the native contact pairs, and the distance tolerance for scanning the trajectory for native contacts.
@@ -599,7 +599,10 @@ def optimize_Q_cut(
     :type frame_begin: int
 
     :param frame_stride: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData
-    :type frame_stride: int 
+    :type frame_stride: int
+
+    :param minimizer_options: dictionary of additional options for scipy.minimize.optimize.differential_evolution (default=None)
+    :type minimizer: dict
 
     :returns:
        - native_contact_cutoff ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The ideal distance below which two nonbonded, interacting particles should be defined as a "native contact"
@@ -700,12 +703,18 @@ def optimize_Q_cut(
             
         return min_val
     
+    # Set bounds
+    # TODO: update to be based on particle sigmas
     bounds = [(2,4),(0,2)]
-     
-    #opt_results = minimize(minimize_sigmoid_width, x0, method=opt_method,
-    #   bounds=bounds)
     
-    opt_results = differential_evolution(minimize_sigmoid_width,bounds,polish=True)
+    if minimizer_options is not None:
+        options_str=""
+        for key,value in minimizer_options.items():
+            options_str += f", {key}={value}"
+        print(options_str)
+        opt_results = eval(f'differential_evolution(minimize_sigmoid_width, bounds, polish=True{options_str})')
+    else:
+        opt_results = differential_evolution(minimize_sigmoid_width, bounds, polish=True)
     
     if opt_results['success'] == True:
         # Repeat for final plotting:
@@ -802,7 +811,7 @@ def bootstrap_native_contacts_expectation(
     
     :param conf_percent: Confidence level in percent for outputting uncertainties (default = 68.27 = 1 sigma)
     :type conf_percent: float
-
+    
     :returns:
        - T_list ( List( float * unit.simtk.temperature ) ) - The temperature list corresponding to the heat capacity values in 'C_v'
        - C_v_values ( List( float * kJ/mol/K ) ) - The heat capacity values for all (including inserted intermediates) states
