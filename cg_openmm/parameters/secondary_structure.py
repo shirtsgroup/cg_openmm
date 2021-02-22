@@ -577,10 +577,26 @@ def optimize_Q_cut(
             
         return min_val
     
-    bounds = [(2,4),(0,2)]
-     
-    #opt_results = minimize(minimize_sigmoid_width, x0, method=opt_method,
-    #   bounds=bounds)
+    # Get bounds from equilibrium LJ distance
+    particle_list = cgmodel.create_particle_list()
+    sigma_bb = None
+    for par in particle_list:
+        if cgmodel.get_particle_type_name(par) == 'bb':
+            sigma_bb = cgmodel.get_particle_sigma(par)
+            break
+        
+    if sigma_bb is None:
+        # bb is not a defined particle type
+        # Use sigma of the first particle type found
+        sigma_bb = cgmodel.get_particle_sigma(1)
+        
+    # Compute equilibrium LJ distance    
+    r_eq = sigma_bb.value_in_unit(unit.angstrom)*np.power(2,(1/6))
+    
+    bounds = [(r_eq*0.75,r_eq*1.25),(0,r_eq/2)]
+    if verbose:
+        print(f'Using bounds based on eq. distance for sigma = {sigma_bb}')
+        print(f'{bounds}')
     
     opt_results = differential_evolution(minimize_sigmoid_width,bounds,polish=True)
     
