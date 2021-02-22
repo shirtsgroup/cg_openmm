@@ -293,18 +293,32 @@ def test_expectations_fraction_contacts_pdb(tmpdir):
         output_data=output_data,
         num_intermediate_states=num_intermediate_states,
         n_trial_boot=10,
+        conf_percent='sigma',
+        plotfile_dir=output_directory,
     )
+
+    assert os.path.isfile(f"{output_directory}/free_energy_boot.pdf")
+    assert os.path.isfile(f"{output_directory}/entropy_boot.pdf")
+    assert os.path.isfile(f"{output_directory}/enthalpy_boot.pdf")
     
-    # Plot entropy/enthalpy results:
-    
-    plot_entropy_enthalpy(
-        full_T_list, S_folding, H_folding, deltaS_uncertainty_boot, deltaH_uncertainty_boot,
-        plotfile_entropy=f"{output_directory}/entropy_folding.pdf",
-        plotfile_enthalpy=f"{output_directory}/enthalpy_folding.pdf",
-        )
-        
-    assert os.path.isfile(f"{output_directory}/entropy_folding.pdf")
-    assert os.path.isfile(f"{output_directory}/enthalpy_folding.pdf")
+    # With specified confidence interval:
+    (full_T_list_boot, deltaF_values_boot, deltaF_uncertainty_boot, \
+        deltaS_values_boot, deltaS_uncertainty_boot, \
+        deltaH_values_boot, deltaH_uncertainty_boot) = bootstrap_free_energy_folding(
+        Q,
+        Q_folded,
+        frame_begin=100,
+        sample_spacing=2,
+        output_data=output_data,
+        num_intermediate_states=num_intermediate_states,
+        n_trial_boot=10,
+        conf_percent=80,
+        plotfile_dir=output_directory,
+    )
+
+    assert os.path.isfile(f"{output_directory}/free_energy_boot.pdf")
+    assert os.path.isfile(f"{output_directory}/entropy_boot.pdf")
+    assert os.path.isfile(f"{output_directory}/enthalpy_boot.pdf")
     
 
 def test_expectations_fraction_contacts_dcd(tmpdir):
@@ -487,44 +501,45 @@ def test_optimize_Q_helix_tol_dcd(tmpdir):
     assert os.path.isfile(f'{output_directory}/native_contacts_helix_opt.pdf')     
     
     
-# def test_optimize_Q_cut_pdb(tmpdir):
-    # """Test the native contact cutoff optimization workflow"""
+def test_optimize_Q_cut_pdb(tmpdir):
+    """Test the native contact cutoff optimization workflow"""
 
-    # output_directory = tmpdir.mkdir("output")
-    # output_data = os.path.join(data_path, "output.nc")
+    output_directory = tmpdir.mkdir("output")
+    output_data = os.path.join(data_path, "output.nc")
 
-    # # Replica exchange settings
-    # number_replicas = 12
-    # min_temp = 200.0 * unit.kelvin
-    # max_temp = 300.0 * unit.kelvin
-    # temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
+    # Replica exchange settings
+    number_replicas = 12
+    min_temp = 200.0 * unit.kelvin
+    max_temp = 300.0 * unit.kelvin
+    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
 
-    # # Load in cgmodel
-    # cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
 
-    # # Create list of pdb trajectories to analyze
-    # # For expectation fraction native contacts, we use replica trajectories: 
-    # pdb_file_list = []
-    # for i in range(len(temperature_list)):
-        # pdb_file_list.append(f"{data_path}/replica_{i+1}.pdb")
+    # Create list of pdb trajectories to analyze
+    # For expectation fraction native contacts, we use replica trajectories: 
+    pdb_file_list = []
+    for i in range(len(temperature_list)):
+        pdb_file_list.append(f"{data_path}/replica_{i+1}.pdb")
         
-    # # Load in native structure file:    
-    # native_structure_file=f"{structures_path}/medoid_0.pdb"    
+    # Load in native structure file:    
+    native_structure_file=f"{structures_path}/medoid_0.pdb"    
     
-    # (native_contact_cutoff, native_contact_tol, opt_results, Q_expect_results, \
-    # sigmoid_param_opt, sigmoid_param_cov, contact_type_dict) = optimize_Q_cut(
-        # cgmodel,
-        # native_structure_file,
-        # pdb_file_list,
-        # num_intermediate_states=0,
-        # output_data=output_data,
-        # frame_begin=100,
-        # frame_stride=200,
-        # verbose=True,
-        # plotfile=f'{output_directory}/native_contacts_opt.pdf'
-        # )   
+    (native_contact_cutoff, native_contact_tol, opt_results, Q_expect_results, \
+    sigmoid_param_opt, sigmoid_param_cov, contact_type_dict) = optimize_Q_cut(
+        cgmodel,
+        native_structure_file,
+        pdb_file_list,
+        num_intermediate_states=0,
+        output_data=output_data,
+        frame_begin=100,
+        frame_stride=200,
+        verbose=True,
+        plotfile=f'{output_directory}/native_contacts_opt.pdf',
+        minimizer_options={'seed':17, 'maxiter':3, 'atol':0.2},
+        )   
         
-    # assert os.path.isfile(f'{output_directory}/native_contacts_opt.pdf')
+    assert os.path.isfile(f'{output_directory}/native_contacts_opt.pdf')
     
     
 def test_optimize_Q_cut_dcd(tmpdir):
