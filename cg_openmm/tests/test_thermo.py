@@ -93,7 +93,7 @@ def test_bootstrap_heat_capacity_conf(tmpdir):
     assert os.path.isfile(f"{plot_directory}/heat_capacity_boot.pdf")
     
     
-def test_bootstrap_heat_capacity_conf(tmpdir):  
+def test_bootstrap_heat_capacity_sigma(tmpdir):  
     """Test heat capacity bootstrapping calculation with analytical standard deviation"""
     
     plot_directory = tmpdir.mkdir("plot_output")
