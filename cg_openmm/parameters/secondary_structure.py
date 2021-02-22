@@ -512,17 +512,13 @@ def fraction_native_contacts_preloaded(
     Q_avg = np.zeros((n_replicas))
     Q_stderr = np.zeros((n_replicas))
       
-    for rep in range(n_replicas):            
+    for rep in range(n_replicas):              
         if rep == 0:
-            nframes = traj_dict[rep].n_frames
+            nframes = traj_dict[rep][frame_begin:].n_frames
             Q = np.zeros((nframes,n_replicas))
         
         traj_distances = md.compute_distances(
             traj_dict[rep][frame_begin:],native_contact_list,periodic=False,opt=True)
-            
-        if rep == 0:
-            nframes = traj_dict[rep][frame_begin:].n_frames
-            Q = np.zeros((nframes,n_replicas))
             
         # This produces a [nframe x len(native_contacts)] array
   
