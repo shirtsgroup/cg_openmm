@@ -495,7 +495,7 @@ def test_optimize_Q_helix_tol_dcd(tmpdir):
         verbose=True,
         plotfile=f'{output_directory}/native_contacts_helix_opt.pdf',
         backbone_type_name='bb',
-        brute_step=0.2*unit.angstrom,
+        brute_step=0.2,
         )
         
     assert os.path.isfile(f'{output_directory}/native_contacts_helix_opt.pdf')     

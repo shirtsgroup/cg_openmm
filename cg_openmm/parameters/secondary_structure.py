@@ -512,13 +512,17 @@ def fraction_native_contacts_preloaded(
     Q_avg = np.zeros((n_replicas))
     Q_stderr = np.zeros((n_replicas))
       
-    for rep in range(n_replicas):              
+    for rep in range(n_replicas):            
         if rep == 0:
-            nframes = traj_dict[rep][frame_begin:].n_frames
+            nframes = traj_dict[rep].n_frames
             Q = np.zeros((nframes,n_replicas))
         
         traj_distances = md.compute_distances(
             traj_dict[rep][frame_begin:],native_contact_list,periodic=False,opt=True)
+            
+        if rep == 0:
+            nframes = traj_dict[rep][frame_begin:].n_frames
+            Q = np.zeros((nframes,n_replicas))
             
         # This produces a [nframe x len(native_contacts)] array
   
@@ -1065,7 +1069,7 @@ def bootstrap_native_contacts_expectation(
 def optimize_Q_tol_helix(
     cgmodel, native_structure_file, traj_file_list, output_data="output/output.nc",
     num_intermediate_states=0, frame_begin=0, frame_stride=1, backbone_type_name='bb',
-    plotfile='native_contacts_helix_opt.pdf', verbose=False, brute_step=0.1*unit.angstrom):
+    plotfile='native_contacts_helix_opt.pdf', verbose=False, brute_step=0.1):
     """
     Given a coarse grained model and a native structure as input, determine which helical backbone
     sequences are native contacts, and the optimal distance tolerance for scanning the
@@ -1096,7 +1100,7 @@ def optimize_Q_tol_helix(
     :type backbone_type_name: str
     
     :param brute_step: step size in distance units for brute force tolerance optimization (final optimization searches between intervals)
-    :type brute_step: Quantity ( float )
+    :type brute_step: float
 
     :returns:
        - opt_seq_spacing ( int ) - the (i) to (i+n) number n defining contacting backbone beads
@@ -1196,7 +1200,7 @@ def optimize_Q_tol_helix(
     bounds = (1,2)
     if verbose:
         print(f'Using the following native_contact_tol bounds:')
-    brute_range = [slice(bounds[0],bounds[1],brute_step.value_in_unit(unit.angstrom))]
+    brute_range = [slice(bounds[0],bounds[1],brute_step)]
 
     opt_results = brute(minimize_sigmoid_width_1d, brute_range)
     
