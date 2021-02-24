@@ -48,7 +48,7 @@ def test_native_contacts_pdb(tmpdir):
     native_contact_cutoff = 3.5* unit.angstrom
 
     # Tolerance for current trajectory distances:
-    native_contact_tol = 0.75 * unit.angstrom
+    native_contact_tol = 1.2
     
     # Determine native contacts:
     native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
@@ -105,7 +105,7 @@ def test_native_contacts_dcd(tmpdir):
     native_contact_cutoff = 3.5* unit.angstrom
 
     # Tolerance for current trajectory distances:
-    native_contact_tol = 0.75 * unit.angstrom
+    native_contact_tol = 1.2
     
     # Determine native contacts:
     native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
@@ -193,7 +193,7 @@ def test_expectations_fraction_contacts_pdb(tmpdir):
     native_contact_cutoff = 3.5* unit.angstrom
 
     # Tolerance for current trajectory distances:
-    native_contact_tol = 0.75 * unit.angstrom
+    native_contact_tol = 1.2
 
     # Get native contacts:
     native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
@@ -349,7 +349,7 @@ def test_expectations_fraction_contacts_dcd(tmpdir):
     native_contact_cutoff = 3.5* unit.angstrom
 
     # Tolerance for current trajectory distances:
-    native_contact_tol = 0.75 * unit.angstrom
+    native_contact_tol = 1.2
 
     # Get native contacts:
     native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
@@ -449,7 +449,7 @@ def test_bootstrap_native_contacts_expectation_dcd(tmpdir):
         output_data=output_data,
         frame_begin=100,
         sample_spacing=20,
-        native_contact_tol=0.75*unit.angstrom,
+        native_contact_tol=1.2,
         num_intermediate_states=1,
         n_trial_boot=10,
         conf_percent='sigma',

@@ -344,7 +344,7 @@ def fraction_native_contacts(
     native_contact_list,
     native_contact_distances,
     frame_begin=0,
-    native_contact_tol=1*unit.angstrom,
+    native_contact_tol=1.1,
     subsample=True,
 ):
     """
@@ -365,7 +365,7 @@ def fraction_native_contacts(
     :param frame_begin: Frame at which to start native contacts analysis (default=0)
     :type frame_begin: int        
     
-    :param native_contact_tol: Tolerance beyond the native distance for determining whether a pair of particles is 'native' (in distance units)
+    :param native_contact_tol: Tolerance factor beyond the native distance for determining whether a pair of particles is 'native' (in multiples of native distance)
     :type native_contact_tol: float
     
     :param subsample: option to use pymbar subsampleCorrelatedData to detect and return the interval between uncorrelated data points (default=True)
@@ -376,7 +376,7 @@ def fraction_native_contacts(
       - Q_avg ( numpy array (float * nreplicas) ) - Mean values of Q for each replica.
       - Q_stderr ( numpy array (float * nreplicas) ) - Standard error of the mean of Q for each replica.
       - decorrelation_spacing ( int ) - Number of frames between uncorrelated native contact fractions
-      
+    
     """
 
     if len(native_contact_list)==0:
@@ -415,7 +415,7 @@ def fraction_native_contacts(
         # This produces a [nframe x len(native_contacts)] array
   
         # Compute Boolean matrix for whether or not a distance is native
-        native_contact_matrix = (traj_distances<(native_contact_tol.value_in_unit(nc_unit)+native_contact_distances.value_in_unit(nc_unit)))
+        native_contact_matrix = (traj_distances<native_contact_tol*(native_contact_distances.value_in_unit(nc_unit)))
 
         number_native_interactions=np.sum(native_contact_matrix,axis=1)
 
@@ -466,7 +466,7 @@ def fraction_native_contacts_preloaded(
     native_contact_list,
     native_contact_distances,
     frame_begin=0,
-    native_contact_tol=1*unit.angstrom,
+    native_contact_tol=1.1,
     subsample=True,
 ):
     """
@@ -487,7 +487,7 @@ def fraction_native_contacts_preloaded(
     :param frame_begin: Frame at which to start native contacts analysis (default=0)
     :type frame_begin: int        
     
-    :param native_contact_tol: Tolerance beyond the native distance for determining whether a pair of particles is 'native' (in distance units)
+    :param native_contact_tol: Tolerance factor beyond the native distance for determining whether a pair of particles is 'native' (in multiples of native distance)
     :type native_contact_tol: float
     
     :param subsample: option to use pymbar subsampleCorrelatedData to detect and return the interval between uncorrelated data points (default=True)
@@ -527,7 +527,7 @@ def fraction_native_contacts_preloaded(
         # This produces a [nframe x len(native_contacts)] array
   
         # Compute Boolean matrix for whether or not a distance is native
-        native_contact_matrix = (traj_distances<(native_contact_tol.value_in_unit(nc_unit)+native_contact_distances.value_in_unit(nc_unit)))
+        native_contact_matrix = (traj_distances<native_contact_tol*(native_contact_distances.value_in_unit(nc_unit)))
 
         number_native_interactions=np.sum(native_contact_matrix,axis=1)
 
@@ -606,7 +606,7 @@ def optimize_Q_cut(
 
     :returns:
        - native_contact_cutoff ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The ideal distance below which two nonbonded, interacting particles should be defined as a "native contact"
-       - native_contact_tol( Quantity() ) -  tolerance beyond the native distance for determining whether a pair of particles is 'native'
+       - native_contact_tol( float ) -  tolerance factor beyond the native distance for determining whether a pair of particles is 'native' (in multiples of native contact distances) 
        - opt_results ( dict ) - results of the native contact cutoff scipy.optimize.minimize optimization
        - Q_expect_results ( dict ) - results of the native contact fraction expectation calculation containing 'Q' and 'T'
        - sigmoid_param_opt ( 1D numpy array ) - optimized sigmoid parameters (x0, y0, y1, d) 
@@ -654,7 +654,7 @@ def optimize_Q_cut(
                 native_contact_list,
                 native_contact_distances,
                 frame_begin=frame_begin,
-                native_contact_tol=native_contact_tol*unit.angstrom,
+                native_contact_tol=native_contact_tol,
                 subsample=False,
             )
             
@@ -719,7 +719,7 @@ def optimize_Q_cut(
     # Compute equilibrium LJ distance    
     r_eq = sigma_bb.value_in_unit(unit.angstrom)*np.power(2,(1/6))
     
-    bounds = [(r_eq*0.75,r_eq*1.25),(0,r_eq/2)]
+    bounds = [(r_eq*0.75,r_eq*1.25),(1,2)]
     if verbose:
         print(f'Using bounds based on eq. distance for sigma = {sigma_bb}')
         print(f'{bounds}')
@@ -736,7 +736,7 @@ def optimize_Q_cut(
     if opt_results['success'] == True:
         # Repeat for final plotting:
         native_contact_cutoff = opt_results.x[0] * unit.angstrom
-        native_contact_tol = opt_results.x[1] * unit.angstrom
+        native_contact_tol = opt_results.x[1]
         
         # Determine native contacts:
         native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
@@ -787,7 +787,7 @@ def bootstrap_native_contacts_expectation(
     output_data='output/output.nc',
     frame_begin=0,
     sample_spacing=1,
-    native_contact_tol=1*unit.angstrom,
+    native_contact_tol=1.1,
     num_intermediate_states=0,
     n_trial_boot=200,
     conf_percent='sigma',
@@ -817,7 +817,7 @@ def bootstrap_native_contacts_expectation(
     :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData
     :type sample_spacing: int
     
-    :param native_contact_tol: Tolerance beyond the native distance for determining whether a pair of particles is 'native' (in distance units)
+    :param native_contact_tol: Tolerance factor beyond the native distance for determining whether a pair of particles is 'native' (in multiples of native distance)
     :type native_contact_tol: float
     
     :param num_intermediate_states: The number of states to insert between existing states in 'temperature_list'
@@ -1104,7 +1104,7 @@ def optimize_Q_tol_helix(
 
     :returns:
        - opt_seq_spacing ( int ) - the (i) to (i+n) number n defining contacting backbone beads
-       - native_contact_tol( Quantity() ) -  tolerance beyond the native distance for determining whether a pair of particles is 'native'
+       - native_contact_tol( float ) -  tolerance factor beyond the native distance for determining whether a pair of particles is 'native' (in multiples of native contact distances) 
        - opt_results ( dict ) - results of the native contact tolerance scipy.optimize.minimize optimization
        - Q_expect_results ( dict ) - results of the native contact fraction expectation calculation containing 'Q' and 'T'
        - sigmoid_param_opt ( 1D numpy array ) - optimized sigmoid parameters (x0, y0, y1, d) 
@@ -1149,7 +1149,7 @@ def optimize_Q_tol_helix(
                 native_contact_list,
                 native_contact_distances,
                 frame_begin=frame_begin,
-                native_contact_tol=native_contact_tol*unit.angstrom,
+                native_contact_tol=native_contact_tol,
                 subsample=False,
             )
             
@@ -1197,15 +1197,15 @@ def optimize_Q_tol_helix(
             
         return min_val
         
-    bounds = (0,cgmodel.get_particle_sigma(native_contact_list[0][0]).value_in_unit(unit.angstrom))
+    bounds = (1,2)
     if verbose:
-        print(f'Using bounds based on 1x bb particle sigma: {bounds}')
+        print(f'Using the following native_contact_tol bounds:')
     brute_range = [slice(bounds[0],bounds[1],brute_step.value_in_unit(unit.angstrom))]
 
     opt_results = brute(minimize_sigmoid_width_1d, brute_range)
     
     # Repeat for final plotting:
-    native_contact_tol = opt_results[0] * unit.angstrom
+    native_contact_tol = opt_results[0]
     
     # Determine native contacts:
     native_contact_list, native_contact_distances, opt_seq_spacing = get_helix_contacts(
