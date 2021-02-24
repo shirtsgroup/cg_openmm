@@ -551,7 +551,7 @@ def plot_entropy_enthalpy(
             if type(deltaS_uncertainty[f"{key}"]) == tuple:
                 # Use separate upper and lower errorbars
                 deltaS_uncertainty_value = np.zeros((2,len(full_T_list)))
-                deltaS_uncertainty_value[0,:] = deltaS_uncertainty[f"{key}"][0].value_in_unit(S_unit) # Lower error
+                deltaS_uncertainty_value[0,:] = -deltaS_uncertainty[f"{key}"][0].value_in_unit(S_unit) # Lower error
                 deltaS_uncertainty_value[1,:] = deltaS_uncertainty[f"{key}"][1].value_in_unit(S_unit) # Upper error
             else:
                 # Use single symmetric errorbar
@@ -595,7 +595,7 @@ def plot_entropy_enthalpy(
             if type(deltaU_uncertainty[f"{key}"]) == tuple:
                 # Use separate upper and lower errorbars
                 deltaU_uncertainty_value = np.zeros((2,len(full_T_list)))
-                deltaU_uncertainty_value[0,:] = deltaU_uncertainty[f"{key}"][0].value_in_unit(U_unit) # Lower error
+                deltaU_uncertainty_value[0,:] = -deltaU_uncertainty[f"{key}"][0].value_in_unit(U_unit) # Lower error
                 deltaU_uncertainty_value[1,:] = deltaU_uncertainty[f"{key}"][1].value_in_unit(U_unit) # Upper error
             else:
                 # Use single symmetric errorbar
@@ -749,7 +749,7 @@ def plot_free_energy_results(full_T_list, deltaF_values, deltaF_uncertainty,plot
         if type(deltaF_uncertainty[f"{key}"]) == tuple:
             # Use separate upper and lower errorbars
             deltaF_uncertainty_value = np.zeros((2,len(full_T_list)))
-            deltaF_uncertainty_value[0,:] = deltaF_uncertainty[f"{key}"][0].value_in_unit(F_unit) # Lower error
+            deltaF_uncertainty_value[0,:] = -deltaF_uncertainty[f"{key}"][0].value_in_unit(F_unit) # Lower error
             deltaF_uncertainty_value[1,:] = deltaF_uncertainty[f"{key}"][1].value_in_unit(F_unit) # Upper error
         else:
             # Use single symmetric errorbar
