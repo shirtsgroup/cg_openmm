@@ -228,6 +228,9 @@ def expectations_fraction_contacts(fraction_native_contacts, frame_begin=0, samp
     :param bootstrap_energies: a custom replica_energies array to be used for bootstrapping calculations. Used instead of the energies in the .nc file.
     :type bootstrap_energies: 2d numpy array (float)
     
+    :returns:
+       - results ( dict ) - dictionary containing complete temperature list("T"), native contact fraction expectation ("Q"), and uncertainty of Q ("dQ")
+    
     """
 
     if bootstrap_energies is not None:
@@ -600,6 +603,9 @@ def optimize_Q_cut(
 
     :param frame_stride: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData
     :type frame_stride: int
+    
+    :param plotfile: Path to output file for plotting results (default='native_contacts_opt.pdf')
+    :type plotfile: str
 
     :param minimizer_options: dictionary of additional options for scipy.minimize.optimize.differential_evolution (default=None)
     :type minimizer: dict
@@ -829,15 +835,14 @@ def bootstrap_native_contacts_expectation(
     :param conf_percent: Confidence level in percent for outputting uncertainties (default = 68.27 = 1 sigma)
     :type conf_percent: float
     
+    :param plotfile: Path to output file for plotting results (default='Q_vs_T_bootstrap.pdf')
+    :type plotfile: str
+    
     :returns:
-       - T_list ( List( float * unit.simtk.temperature ) ) - The temperature list corresponding to the heat capacity values in 'C_v'
-       - C_v_values ( List( float * kJ/mol/K ) ) - The heat capacity values for all (including inserted intermediates) states
-       - C_v_uncertainty ( Tuple ( np.array(float) * kJ/mol/K ) ) - confidence interval for all C_v_values computed from bootstrapping
-       - Tm_value ( float * unit.simtk.temperature ) - Melting point mean value computed from bootstrapping
-       - Tm_uncertainty ( Tuple ( float * unit.simtk.temperature ) ) - confidence interval for melting point computed from bootstrapping
-       - FWHM_value ( float * unit.simtk.temperature ) - C_v full width half maximum mean value computed from bootstrapping
-       - FWHM_uncertainty ( Tuple ( float * unit.simtk.temperature ) ) - confidence interval for C_v full width half maximum computed from bootstrapping
-        
+       - temp_list ( List( float * unit.simtk.temperature ) ) - The temperature list corresponding to the native contact fraction values
+       - Q_values ( List( float ) ) - The native contact fraction values for all (including inserted intermediates) states
+       - Q_uncertainty ( Tuple ( np.array(float) ) - confidence interval for all Q_values computed from bootstrapping
+       - sigmoid_results_boot ( dict ) - dictionary containing the 4 sigmoid parameters and Q_folded (and their confidence interval tuples)
     """
     
     # Pre-load the replica trajectories into MDTraj objects, to avoid having to load them
@@ -1063,7 +1068,7 @@ def bootstrap_native_contacts_expectation(
             )
     # TODO: implement unequal upper and lower error plotting
     
-    return Q_values, Q_uncertainty, sigmoid_results_boot
+    return temp_list, Q_values, Q_uncertainty, sigmoid_results_boot
     
     
 def optimize_Q_tol_helix(

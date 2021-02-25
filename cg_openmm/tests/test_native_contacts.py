@@ -441,7 +441,7 @@ def test_bootstrap_native_contacts_expectation_dcd(tmpdir):
         backbone_type_name='bb',
     )
     
-    Q_values, Q_uncertainty, sigmoid_results_boot = bootstrap_native_contacts_expectation(
+    full_T_list, Q_values, Q_uncertainty, sigmoid_results_boot = bootstrap_native_contacts_expectation(
         cgmodel,
         dcd_file_list,
         native_contact_list,
