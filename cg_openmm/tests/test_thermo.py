@@ -81,10 +81,10 @@ def test_bootstrap_heat_capacity_conf(tmpdir):
     (new_temperature_list, C_v_values, C_v_uncertainty, Tm_value, Tm_uncertainty, 
     Cv_height_value, Cv_height_uncertainty, FWHM_value, FWHM_uncertainty) = bootstrap_heat_capacity(
         output_data=output_data,
-        num_intermediate_states=2,
+        num_intermediate_states=1,
         frame_begin=2,
-        sample_spacing=2,
-        n_trial_boot=100,
+        sample_spacing=4,
+        n_trial_boot=10,
         plot_file=f"{plot_directory}/heat_capacity_boot.pdf",
         conf_percent=80,
         )
@@ -106,10 +106,10 @@ def test_bootstrap_heat_capacity_sigma(tmpdir):
     (new_temperature_list, C_v_values, C_v_uncertainty, Tm_value, Tm_uncertainty, 
     Cv_height_value, Cv_height_uncertainty, FWHM_value, FWHM_uncertainty) = bootstrap_heat_capacity(
         output_data=output_data,
-        num_intermediate_states=2,
+        num_intermediate_states=1,
         frame_begin=2,
-        sample_spacing=2,
-        n_trial_boot=100,
+        sample_spacing=4,
+        n_trial_boot=10,
         plot_file=f"{plot_directory}/heat_capacity_boot.pdf",
         conf_percent='sigma',
         )
