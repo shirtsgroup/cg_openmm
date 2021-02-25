@@ -68,6 +68,54 @@ def test_heat_capacity_calc(tmpdir):
     assert_allclose(deltaS_list.value_in_unit(C_v.unit)/np.max(deltaS_list.value_in_unit(C_v.unit)),np.ones(len(deltaS_list)))
         
     
+def test_bootstrap_heat_capacity_conf(tmpdir):  
+    """Test heat capacity bootstrapping calculation with confidence intervals"""
+    
+    plot_directory = tmpdir.mkdir("plot_output")
+    output_data = os.path.join(data_path, "output.nc")
+    
+    # number_replicas=12
+    # min_temp = 200.0 * unit.kelvin
+    # max_temp = 300.0 * unit.kelvin
+    
+    (new_temperature_list, C_v_values, C_v_uncertainty, Tm_value, Tm_uncertainty, 
+    Cv_height_value, Cv_height_uncertainty, FWHM_value, FWHM_uncertainty) = bootstrap_heat_capacity(
+        output_data=output_data,
+        num_intermediate_states=1,
+        frame_begin=2,
+        sample_spacing=4,
+        n_trial_boot=10,
+        plot_file=f"{plot_directory}/heat_capacity_boot.pdf",
+        conf_percent=80,
+        )
+        
+    assert FWHM_value.value_in_unit(unit.kelvin) > 0.0
+    assert os.path.isfile(f"{plot_directory}/heat_capacity_boot.pdf")
+    
+    
+def test_bootstrap_heat_capacity_sigma(tmpdir):  
+    """Test heat capacity bootstrapping calculation with analytical standard deviation"""
+    
+    plot_directory = tmpdir.mkdir("plot_output")
+    output_data = os.path.join(data_path, "output.nc")
+    
+    # number_replicas=12
+    # min_temp = 200.0 * unit.kelvin
+    # max_temp = 300.0 * unit.kelvin
+    
+    (new_temperature_list, C_v_values, C_v_uncertainty, Tm_value, Tm_uncertainty, 
+    Cv_height_value, Cv_height_uncertainty, FWHM_value, FWHM_uncertainty) = bootstrap_heat_capacity(
+        output_data=output_data,
+        num_intermediate_states=1,
+        frame_begin=2,
+        sample_spacing=4,
+        n_trial_boot=10,
+        plot_file=f"{plot_directory}/heat_capacity_boot.pdf",
+        conf_percent='sigma',
+        )
+        
+    assert FWHM_value.value_in_unit(unit.kelvin) > 0.0
+    assert os.path.isfile(f"{plot_directory}/heat_capacity_boot.pdf")
     
 
 def test_physical_validation(tmpdir):

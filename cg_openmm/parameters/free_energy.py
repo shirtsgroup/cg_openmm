@@ -12,15 +12,41 @@ from sklearn.utils import resample
 kB = unit.MOLAR_GAS_CONSTANT_R # Boltzmann constant
 kB = kB.in_units_of(unit.kilojoule/unit.kelvin/unit.mole)
 
-def expectations_free_energy(array_folded_states, temperature_list, frame_begin=0, sample_spacing=1, output_data="output/output.nc",
+
+def classify_Q_states(Q, Q_folded):
+    """
+    This function determines the conformational state of each element of the native contacts array, given a threshold
+    for being 'folded/unfolded'. ***In the future we can generalize this to n different states.
+    In the outputted array, 1 is 'folded' and 0 is 'unfolded'.
+    
+    :param Q: native contact fraction array of size [n_frames x n_states]
+    :type Q: 2D numpy array ( float )
+    
+    :param Q_folded: threshold for a native contact fraction corresponding to a folded state (Q[i,j] is folded if Q[i,j] >= Q_folded)
+    :type Q_folded: float
+    
+    :returns:
+      - array_folded_states ( 2D numpy array ( float ) ) - conformational state matrix of shape [n_frames x n_replicas]
+    """
+    
+    # TODO: generalize to n conformational states
+    array_folded_states = np.multiply((Q>=Q_folded),1)
+    
+    return array_folded_states 
+
+
+def expectations_free_energy(Q, Q_folded, temperature_list, frame_begin=0, sample_spacing=1, output_data="output/output.nc",
     bootstrap_energies=None, num_intermediate_states=0):
     """
     This function calculates the free energy difference (with uncertainty) between all conformational states as a function of temperature.
 
-    :param array_folded_states: An array specifying the configurational state of each structure (ranging from 1 to n)
-    :type array_folded_states: np.array( int * n_frames*len(temperature_list) ) 
+    :param Q: native contact fraction array of size [n_frames x n_states]
+    :type Q: 2D numpy array ( float )
+    
+    :param Q_folded: threshold for a native contact fraction corresponding to a folded state (Q[i,j] is folded if Q[i,j] >= Q_folded)
+    :type Q_folded: float
 
-    :param temperature_list: List of temperatures for the simulation data.
+    :param temperature_list: List of temperatures for the simulation data (necessary because bootstrap version doesn't read in the file)
     :type temperature_list: List( float * simtk.unit.temperature )
     
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
@@ -43,13 +69,7 @@ def expectations_free_energy(array_folded_states, temperature_list, frame_begin=
       - deltaF_values - A dictionary of the form {"statei_statej": 1D numpy array}, containing free energy change for each T in
                         full_T_list, for each conformational state transition.
       - deltaF uncertainty - A dictionary containing 1D numpy arrays of uncertainties corresponding to deltaF_values
-
     """
-
-
-    # Number of configurational states:
-    n_conf_states = len(np.unique(array_folded_states))
-
     
     if bootstrap_energies is not None:
         # Use a subsampled replica_energy matrix instead of reading from file
@@ -69,18 +89,25 @@ def expectations_free_energy(array_folded_states, temperature_list, frame_begin=
         # Select production frames to analyze
         replica_energies = replica_energies_all[:,:,frame_begin::sample_spacing]
         
-        # Check if array_folded_states needs slicing for production region:
-        # array_folded_states is array of [nframes,nreplicas]
-        if np.shape(replica_energies)[2] != np.shape(array_folded_states)[0]:
-            # Mismatch in the number of frames.
-            if np.shape(replica_energies_all[:,:,frame_begin::sample_spacing])[2] == np.shape(array_folded_states[::sample_spacing,:])[0]:
+        # Check the size of the Q array:
+        if np.shape(replica_energies)[2] != np.shape(Q)[0]:
+            # Mismatch in number of frames.
+            if np.shape(replica_energies_all[:,:,frame_begin::sample_spacing])[2] == np.shape(Q[::sample_spacing,:])[0]:
                 # Correct starting frame, need to apply sampling stride:
-                array_folded_states = array_folded_states[::sample_spacing,:] 
-            elif np.shape(replica_energies_all)[2] == np.shape(array_folded_states)[0]:
-                # This is the full array_folded_states, slice production frames:
-                array_folded_states = array_folded_states[frame_begin::sample_spacing,:]      
-                
-
+                Q = Q[::sample_spacing,:]
+            elif np.shape(replica_energies_all)[2] == np.shape(Q)[0]:
+                # This is the full Q, slice production frames:
+                Q = Q[production_start::sample_spacing,:]
+            else:
+                print(f'Error: Q array of shape {Q.shape} incompatible with energies array of shape{replica_energies.shape}')
+                exit()    
+            
+    # Classify Q into folded/unfolded states
+    array_folded_states = classify_Q_states(Q,Q_folded)
+    
+    # Number of configurational states:
+    n_conf_states = len(np.unique(array_folded_states))
+        
     # convert the energies from replica/evaluated state/sample form to evaluated state/sample form
     replica_energies = pymbar.utils.kln_to_kn(replica_energies)  
     n_samples = len(replica_energies[0,:])
@@ -197,16 +224,16 @@ def expectations_free_energy(array_folded_states, temperature_list, frame_begin=
     return full_T_list, deltaF_values, deltaF_uncertainty
     
 
-def bootstrap_free_energy_folding(array_folded_states, temperature_list, output_data="output/output.nc", frame_begin=0, sample_spacing=1,
-    n_sample_boot=500, n_trial_boot=100, num_intermediate_states=0):
+def bootstrap_free_energy_folding(Q, Q_folded, output_data="output/output.nc", frame_begin=0, sample_spacing=1,
+    n_trial_boot=200, num_intermediate_states=0, conf_percent='sigma', plotfile_dir="output"):
     """
-    Function for computing uncertainty of free energy, entropy, and enthalpy using standard bootstrapping
+    Function for computing uncertainty of free energy, entropy, and enthalpy using bootstrapping with varying starting frames.
 
-    :param array_folded_states: An array specifying the configurational state of each structure (ranging from 1 to n)
-    :type array_folded_states: np.array( int * n_frames*len(temperature_list) ) 
-
-    :param temperature_list: List of temperatures for the simulation data.
-    :type temperature_list: List( float * simtk.unit.temperature )
+    :param Q: native contact fraction array of size [n_frames x n_states] (with equilibration region already trimmed)
+    :type Q: 2D numpy array ( float )
+    
+    :param Q_folded: threshold for a native contact fraction corresponding to a folded state (Q[i,j] is folded if Q[i,j] >= Q_folded)
+    :type Q_folded: float    
     
     :param output_data: Path to the simulation .nc file.
     :type output_data: str    
@@ -216,11 +243,8 @@ def bootstrap_free_energy_folding(array_folded_states, temperature_list, output_
     
     :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData
     :type sample_spacing: int     
-
-    :param n_sample_boot: number of samples (frames) to draw during bootstrapping
-    :type n_sample_boot: int
     
-    :param n_trial_boot: number of trials to run for generating bootstrapping uncertainties
+    :param n_trial_boot: number of trials to run for generating bootstrapping uncertainties (default=200)
     :type n_trial_boot: int
     
     :param num_intermediate_states: Number of unsampled thermodynamic states between sampled states to include in the calculation
@@ -230,14 +254,13 @@ def bootstrap_free_energy_folding(array_folded_states, temperature_list, output_
       - full_T_list - A 1D numpy array listing of all temperatures, including sampled and intermediate unsampled
       - deltaF_values - A dictionary of the form {"statei_statej": 1D numpy array}, containing free energy change for each T in
                         full_T_list, for each conformational state transition.
-      - deltaF uncertainty - A dictionary containing 1D numpy arrays of uncertainties corresponding to deltaF_values  
+      - deltaF uncertainty - A dictionary containing tuple of 1D numpy arrays of lower/upper of uncertainties corresponding to deltaF_values  
       - deltaS_values - A dictionary of the form {"statei_statej": 1D numpy array}, containing entropy change for each T in
                         full_T_list, for each conformational state transition.
-      - deltaS uncertainty - A dictionary containing 1D numpy arrays of uncertainties corresponding to deltaS_values 
+      - deltaS uncertainty - A dictionary containing tuple of 1D numpy arrays of lower/upper uncertainties corresponding to deltaS_values 
       - deltaU_values - A dictionary of the form {"statei_statej": 1D numpy array}, containing enthalpy change for each T in
                         full_T_list, for each conformational state transition.
-      - deltaU uncertainty - A dictionary containing 1D numpy arrays of uncertainties corresponding to deltaU_values        
-
+      - deltaU uncertainty - A dictionary containing tuple of 1D numpy arrays of lower/upper of uncertainties corresponding to deltaU_values
     """
     
     # extract reduced energies and the state indices from the .nc
@@ -250,20 +273,24 @@ def bootstrap_free_energy_folding(array_folded_states, temperature_list, output_
         replica_state_indices,
     ) = analyzer.read_energies()    
     
-    # Select production frames to analyze
-    replica_energies = replica_energies_all[:,:,frame_begin::sample_spacing]
-
-    # Check if array_folded_states needs slicing for production region:
-    # array_folded_states is array of [nframes,nreplicas]
-    if np.shape(replica_energies)[2] != np.shape(array_folded_states)[0]:
-        # Mismatch in the number of frames.
-        if np.shape(replica_energies_all[:,:,frame_begin::sample_spacing])[2] == np.shape(array_folded_states[::sample_spacing,:])[0]:
-            # Correct starting frame, need to apply sampling stride:
-            array_folded_states = array_folded_states[::sample_spacing,:] 
-        elif np.shape(replica_energies_all)[2] == np.shape(array_folded_states)[0]:
-            # This is the full array_folded_states, slice production frames:
-            array_folded_states = array_folded_states[frame_begin::sample_spacing,:]   
+    # Get temperature_list from .nc file:
+    states = reporter.read_thermodynamic_states()[0]
     
+    temperature_list = []
+    for s in states:
+        temperature_list.append(s.temperature)    
+    
+    # Select production frames to analyze
+    replica_energies_prod = replica_energies_all[:,:,frame_begin::]
+    
+    # For shifting reference frame bootstrap, we need the entire Q and energy arrays starting from frame_start
+
+    if np.shape(replica_energies_prod)[2] != np.shape(Q)[0]:
+        print(f'Error: Q array of shape {Q.shape} incompatible with energies array of shape{replica_energies_prod.shape}')
+        exit()
+        
+    Q_all = Q
+
     # Overall results:
     deltaF_values = {}
     deltaF_uncertainty = {}
@@ -288,33 +315,40 @@ def bootstrap_free_energy_folding(array_folded_states, temperature_list, output_
     S_unit = F_unit/T_unit
     U_unit = F_unit
     
-    # Get all possible sample indices
-    sample_indices_all = np.arange(0,len(replica_energies[0,0,:]))
-    
     for i_boot in range(n_trial_boot):
-        sample_indices = resample(sample_indices_all, replace=True, n_samples=n_sample_boot)
+        # Here we can potentially change the reference frame for each bootstrap trial.
+        # This requires the array slicing to be done here, not above.
+        ref_shift = np.random.randint(sample_spacing)
         
-        n_state = len(array_folded_states[0,:])
+        # Replica energies and Q already have equilibration period removed:
+        replica_energies = replica_energies_prod[:,:,ref_shift::sample_spacing]
+        Q = Q_all[ref_shift::sample_spacing,:]
         
-        # array_folded_states is [n_frame x n_state]
-        array_folded_states_resample = np.zeros((n_sample_boot,n_state))
-        replica_energies_resample = np.zeros((n_state,n_state,n_sample_boot))
+        # Get all possible sample indices
+        sample_indices_all = np.arange(0,len(replica_energies[0,0,:]))
+        # n_samples should match the size of the sliced replica energy dataset
+        sample_indices = resample(sample_indices_all, replace=True, n_samples=len(sample_indices_all))
+        
+        n_states = len(Q[0,:])
+        
+        replica_energies_resample = np.zeros_like(replica_energies)
         # replica_energies is [n_states x n_states x n_frame]
+        # Q is [nframes x n_states]
+        Q_resample = np.zeros((len(sample_indices),n_states))
         
-        # Select the sampled frames from array_folded_states and replica_energies:
+        # Select the sampled frames from Q and replica_energies:
         j = 0
         for i in sample_indices:
-            array_folded_states_resample[j,:] = array_folded_states[i,:]
             replica_energies_resample[:,:,j] = replica_energies[:,:,i]
+            Q_resample[j,:] = Q[i,:]
             j += 1
             
         # Run free energy expectation calculation:
         full_T_list, deltaF_values_boot[i_boot], deltaF_uncertainty_boot[i_boot] = expectations_free_energy(
-            array_folded_states_resample,
+            Q_resample,
+            Q_folded,
             temperature_list,
             bootstrap_energies=replica_energies_resample,
-            frame_begin=frame_begin,
-            sample_spacing=sample_spacing,
             num_intermediate_states=num_intermediate_states,
         )
         
@@ -336,40 +370,93 @@ def bootstrap_free_energy_folding(array_folded_states, temperature_list, output_
         arr_deltaS_values_boot[key] = np.zeros((n_trial_boot, len(full_T_list)))
         arr_deltaU_values_boot[key] = np.zeros((n_trial_boot, len(full_T_list)))
         
-    # Compute uncertainty over the n_trial_boot trials performed:
+    # Compute mean values:
     # Free energy:
     for i_boot in range(n_trial_boot):
         for key, value in deltaF_values_boot[i_boot].items():
             arr_deltaF_values_boot[key][i_boot,:] = value.value_in_unit(F_unit)
             
-    deltaF_uncertainty = {}
     deltaF_values = {}
-    
     for key, value in arr_deltaF_values_boot.items():
-        deltaF_uncertainty[key] = np.std(value,axis=0)*F_unit
         deltaF_values[key] = np.mean(value,axis=0)*F_unit
             
     # Entropy:        
     for i_boot in range(n_trial_boot):         
         arr_deltaS_values_boot[key][i_boot,:] = deltaS_values_boot[i_boot][key].value_in_unit(S_unit)
             
-    deltaS_uncertainty = {}
     deltaS_values = {}
     
     for key, value in arr_deltaS_values_boot.items():
-        deltaS_uncertainty[key] = np.std(value,axis=0)*S_unit
         deltaS_values[key] = np.mean(value,axis=0)*S_unit         
             
     # Enthalpy:        
     for i_boot in range(n_trial_boot):
         arr_deltaU_values_boot[key][i_boot,:] = deltaU_values_boot[i_boot][key].value_in_unit(U_unit)
             
-    deltaU_uncertainty = {}
     deltaU_values = {}
     
     for key, value in arr_deltaU_values_boot.items():
-        deltaU_uncertainty[key] = np.std(value,axis=0)*U_unit
         deltaU_values[key] = np.mean(value,axis=0)*U_unit
+           
+    # Compute confidence intervals:
+    deltaF_uncertainty = {} 
+    deltaS_uncertainty = {} 
+    deltaU_uncertainty = {}
+    
+    if conf_percent == 'sigma':
+        # Use analytical standard deviation instead of percentile method:
+        # Free energy:
+        for key, value in arr_deltaF_values_boot.items():
+            F_std = np.std(value,axis=0)*F_unit    
+            deltaF_uncertainty[key] = (-F_std,F_std)
+            
+        # Entropy:    
+        for key, value in arr_deltaS_values_boot.items():
+            S_std = np.std(value,axis=0)*S_unit    
+            deltaS_uncertainty[key] =(-S_std,S_std)
+            
+        # Enthalpy:    
+        for key, value in arr_deltaU_values_boot.items():
+            U_std = np.std(value,axis=0)*U_unit
+            deltaU_uncertainty[key] = (-U_std,U_std)
+    
+    else:
+        # Compute specified confidence interval:
+        p_lo = (100-conf_percent)/2
+        p_hi = 100-p_lo
+    
+        # Free energy:
+        for key, value in arr_deltaF_values_boot.items():
+            F_diff = value-np.mean(value,axis=0)
+            F_conf_lo = np.percentile(F_diff,p_lo,axis=0,interpolation='linear')*F_unit
+            F_conf_hi = np.percentile(F_diff,p_hi,axis=0,interpolation='linear')*F_unit
+            deltaF_uncertainty[key] = (F_conf_lo, F_conf_hi)
+            
+        # Entropy:
+        for key, value in arr_deltaS_values_boot.items():
+            S_diff = value-np.mean(value,axis=0)
+            S_conf_lo = np.percentile(S_diff,p_lo,axis=0,interpolation='linear')*S_unit
+            S_conf_hi = np.percentile(S_diff,p_hi,axis=0,interpolation='linear')*S_unit
+            deltaS_uncertainty[key] = (S_conf_lo, S_conf_hi)
+            
+        # Enthalpy:
+        for key, value in arr_deltaU_values_boot.items():
+            U_diff = value-np.mean(value,axis=0)
+            U_conf_lo = np.percentile(U_diff,p_lo,axis=0,interpolation='linear')*U_unit
+            U_conf_hi = np.percentile(U_diff,p_hi,axis=0,interpolation='linear')*U_unit
+            deltaU_uncertainty[key] = (U_conf_lo, U_conf_hi)
+    
+    # Plot results:
+    
+    # Free energy:
+    plot_free_energy_results(
+        full_T_list, deltaF_values, deltaF_uncertainty, plotfile=f"{plotfile_dir}/free_energy_boot.pdf")
+        
+    # Entropy and enthalpy:
+    plot_entropy_enthalpy(
+        full_T_list, deltaS_values, deltaU_values,
+        deltaS_uncertainty=deltaS_uncertainty, deltaU_uncertainty=deltaU_uncertainty,
+        plotfile_entropy=f"{plotfile_dir}/entropy_boot.pdf", plotfile_enthalpy=f"{plotfile_dir}/enthalpy_boot.pdf")
                     
     return full_T_list, deltaF_values, deltaF_uncertainty, deltaS_values, deltaS_uncertainty, deltaU_values, deltaU_uncertainty
     
@@ -422,7 +509,7 @@ def get_entropy_enthalpy(deltaF, temperature_list):
   
   
 def plot_entropy_enthalpy(
-    full_T_list, deltaS_values, deltaH_values, deltaS_uncertainty=None, deltaH_uncertainty=None,
+    full_T_list, deltaS_values, deltaU_values, deltaS_uncertainty=None, deltaU_uncertainty=None,
     plotfile_entropy='entropy.pdf', plotfile_enthalpy='enthalpy.pdf'):
     """
     Plot entropy and enthalpy difference data for each conformational state transition as a function of temperature.
@@ -433,14 +520,14 @@ def plot_entropy_enthalpy(
     :param deltaS_values: A dictionary containing entropy change for each T in full_T_list, for each conformational state transition.
     :type deltaS_values: dict{"statei_statej":1D numpy array}
     
-    :param deltaH_values: A dictionary containing enthalpy change for each T in full_T_list, for each conformational state transition.
-    :type deltaH_values: dict{"statei_statej":1D numpy array}
+    :param deltaU_values: A dictionary containing enthalpy change for each T in full_T_list, for each conformational state transition.
+    :type deltaU_values: dict{"statei_statej":1D numpy array}
     
     :param deltaS_uncertainty: A dictionary containing uncertainties corresponding to deltaS_values (optional)
-    :type deltaS_uncertainty: dict{"statei_statej":1D numpy array}
+    :type deltaS_uncertainty: dict{"statei_statej": (1D numpy array, 1D numpy array)}
     
-    :param deltaH_uncertainty: A dictionary containing uncertainties corresponding to deltaH_values (optional)
-    :type deltaH_uncertainty: dict{"statei_statej":1D numpy array}
+    :param deltaH_uncertainty: A dictionary containing uncertainties corresponding to deltaU_values (optional)
+    :type deltaH_uncertainty: dict{"statei_statej": (1D numpy array, 1D numpy array)}
     
     :param plotfile_entropy: name of entropy plot file, including pdf extension
     :type plotfile_entropy: str
@@ -451,7 +538,7 @@ def plot_entropy_enthalpy(
 
     T_unit = full_T_list[0].unit
     S_unit = list(deltaS_values.items())[0][1].unit
-    H_unit = list(deltaH_values.items())[0][1].unit
+    U_unit = list(deltaU_values.items())[0][1].unit
     
     xlabel = f'Temperature {T_unit.get_symbol()}'
     
@@ -461,10 +548,19 @@ def plot_entropy_enthalpy(
 
     if deltaS_uncertainty is not None:
         for key,value in deltaS_values.items():
+            if type(deltaS_uncertainty[f"{key}"]) == tuple:
+                # Use separate upper and lower errorbars
+                deltaS_uncertainty_value = np.zeros((2,len(full_T_list)))
+                deltaS_uncertainty_value[0,:] = -deltaS_uncertainty[f"{key}"][0].value_in_unit(S_unit) # Lower error
+                deltaS_uncertainty_value[1,:] = deltaS_uncertainty[f"{key}"][1].value_in_unit(S_unit) # Upper error
+            else:
+                # Use single symmetric errorbar
+                deltaS_uncertainty_value = deltaS_uncertainty[f"{key}"].value_in_unit(S_unit)
+            
             plt.errorbar(
                 full_T_list.value_in_unit(T_unit),
                 deltaS_values[f"{key}"].value_in_unit(S_unit),
-                deltaS_uncertainty[f"{key}"].value_in_unit(S_unit),
+                deltaS_uncertainty_value,
                 linewidth=1,
                 markersize=6,
                 fmt='o-',
@@ -491,15 +587,24 @@ def plot_entropy_enthalpy(
     plt.close()
     
     # Plot enthalpy change as a function of T:
-    ylabel = f'Enthalpy change {H_unit.get_symbol()}'
+    ylabel = f'Enthalpy change {U_unit.get_symbol()}'
     legend_str = []
 
-    if deltaH_uncertainty is not None:
-        for key,value in deltaH_values.items():
+    if deltaU_uncertainty is not None:
+        for key,value in deltaU_values.items():
+            if type(deltaU_uncertainty[f"{key}"]) == tuple:
+                # Use separate upper and lower errorbars
+                deltaU_uncertainty_value = np.zeros((2,len(full_T_list)))
+                deltaU_uncertainty_value[0,:] = -deltaU_uncertainty[f"{key}"][0].value_in_unit(U_unit) # Lower error
+                deltaU_uncertainty_value[1,:] = deltaU_uncertainty[f"{key}"][1].value_in_unit(U_unit) # Upper error
+            else:
+                # Use single symmetric errorbar
+                deltaU_uncertainty_value = deltaU_uncertainty[f"{key}"].value_in_unit(U_unit)
+            
             plt.errorbar(
                 full_T_list.value_in_unit(T_unit),
-                deltaH_values[f"{key}"].value_in_unit(H_unit),
-                deltaH_uncertainty[f"{key}"].value_in_unit(H_unit),
+                deltaU_values[f"{key}"].value_in_unit(U_unit),
+                deltaU_uncertainty_value,
                 linewidth=1,
                 markersize=6,
                 fmt='o-',
@@ -508,10 +613,10 @@ def plot_entropy_enthalpy(
             )
             legend_str.append(key)
     else:
-        for key,value in deltaH_values.items():
+        for key,value in deltaU_values.items():
             plt.plot(
                 full_T_list.value_in_unit(T_unit),
-                deltaH_values[f"{key}"].value_in_unit(H_unit),
+                deltaU_values[f"{key}"].value_in_unit(U_unit),
                 'o-',
                 linewidth=1,
                 markersize=6,
@@ -526,6 +631,7 @@ def plot_entropy_enthalpy(
     plt.close()
     
     return
+    
     
 def get_free_energy_derivative(deltaF, temperature_list, plotfile=None):
     """
@@ -625,7 +731,7 @@ def plot_free_energy_results(full_T_list, deltaF_values, deltaF_uncertainty,plot
     :type deltaF_values: dict{"statei_statej":1D numpy array}
     
     :param deltaF_uncertainty: A dictionary containing uncertainties corresponding to deltaF_values
-    :type deltaF_uncertainty: dict{"statei_statej":1D numpy array}
+    :type deltaF_uncertainty: dict{"statei_statej": (1D numpy array, 1D numpy array)} or dict{"statei_statej": (1D numpy array)}
     
     :param plotfile: name of file, including pdf extension
     :type plotfile: str
@@ -640,10 +746,18 @@ def plot_free_energy_results(full_T_list, deltaF_values, deltaF_uncertainty,plot
     legend_str = []
 
     for key,value in deltaF_values.items():
+        if type(deltaF_uncertainty[f"{key}"]) == tuple:
+            # Use separate upper and lower errorbars
+            deltaF_uncertainty_value = np.zeros((2,len(full_T_list)))
+            deltaF_uncertainty_value[0,:] = -deltaF_uncertainty[f"{key}"][0].value_in_unit(F_unit) # Lower error
+            deltaF_uncertainty_value[1,:] = deltaF_uncertainty[f"{key}"][1].value_in_unit(F_unit) # Upper error
+        else:
+            # Use single symmetric errorbar
+            deltaF_uncertainty_value = deltaF_uncertainty[f"{key}"].value_in_unit(F_unit)
         plt.errorbar(
             full_T_list.value_in_unit(T_unit),
             deltaF_values[f"{key}"].value_in_unit(F_unit),
-            deltaF_uncertainty[f"{key}"].value_in_unit(F_unit),
+            deltaF_uncertainty_value,
             linewidth=1,
             markersize=6,
             fmt='o-',

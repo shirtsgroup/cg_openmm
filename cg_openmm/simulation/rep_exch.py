@@ -1043,15 +1043,14 @@ def plot_replica_state_matrix(
     ax = pyplot.subplot(111)
     
     cmap=pyplot.get_cmap('nipy_spectral') 
-    ax.imshow(hist_norm,cmap=cmap)
+    norm=Normalize(vmin=0,vmax=1) 
     
+    ax.imshow(hist_norm,cmap=cmap,norm=norm)
     ax.set_aspect('equal', 'box')
     
     # Append colorbar axis to right side
     divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right",size="5%",pad=0.20)
-
-    norm=Normalize(vmin=0,vmax=1)   
+    cax = divider.append_axes("right",size="5%",pad=0.20)  
     
     pyplot.colorbar(
         cm.ScalarMappable(cmap=cmap,norm=norm),
