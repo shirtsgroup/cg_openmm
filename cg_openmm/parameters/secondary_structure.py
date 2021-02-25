@@ -251,6 +251,16 @@ def expectations_fraction_contacts(fraction_native_contacts, frame_begin=0, samp
         
         # Select production frames to analyze
         replica_energies = replica_energies_all[:,:,frame_begin::sample_spacing]
+        
+        # Check the size of the fraction_native_contacts array:
+        if np.shape(replica_energies)[2] != np.shape(fraction_native_contacts)[0]:
+            # Mismatch in number of frames.
+            if np.shape(replica_energies_all[:,:,frame_begin::sample_spacing])[2] == np.shape(fraction_native_contacts[::sample_spacing,:])[0]:
+                # Correct starting frame, need to apply sampling stride:
+                fraction_native_contacts = fraction_native_contacts[::sample_spacing,:]
+            elif np.shape(replica_energies_all)[2] == np.shape(fraction_native_contacts)[0]:
+                # This is the full fraction_native_contacts, slice production frames:
+                fraction_native_contacts = fraction_native_contacts[production_start::sample_spacing,:]
     
     # Get the temperature list from .nc file:
     states = reporter.read_thermodynamic_states()[0]
@@ -258,16 +268,6 @@ def expectations_fraction_contacts(fraction_native_contacts, frame_begin=0, samp
     temperature_list = []
     for s in states:
         temperature_list.append(s.temperature)
-    
-    # Check the size of the fraction_native_contacts array:
-    if np.shape(replica_energies)[2] != np.shape(fraction_native_contacts)[0]:
-        # Mismatch in number of frames.
-        if np.shape(replica_energies_all[:,:,frame_begin::sample_spacing])[2] == np.shape(fraction_native_contacts[::sample_spacing,:])[0]:
-            # Correct starting frame, need to apply sampling stride:
-            fraction_native_contacts = fraction_native_contacts[::sample_spacing,:]
-        elif np.shape(replica_energies_all)[2] == np.shape(fraction_native_contacts)[0]:
-            # This is the full fraction_native_contacts, slice production frames:
-            fraction_native_contacts = fraction_native_contacts[production_start::sample_spacing,:]
 
     # determine the numerical values of beta at each state in units consistent with the temperature
     Tunit = temperature_list[0].unit

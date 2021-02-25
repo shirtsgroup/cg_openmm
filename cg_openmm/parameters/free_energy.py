@@ -89,18 +89,18 @@ def expectations_free_energy(Q, Q_folded, temperature_list, frame_begin=0, sampl
         # Select production frames to analyze
         replica_energies = replica_energies_all[:,:,frame_begin::sample_spacing]
         
-    # Check the size of the Q array:
-    if np.shape(replica_energies)[2] != np.shape(Q)[0]:
-        # Mismatch in number of frames.
-        if np.shape(replica_energies_all[:,:,frame_begin::sample_spacing])[2] == np.shape(Q[::sample_spacing,:])[0]:
-            # Correct starting frame, need to apply sampling stride:
-            Q = Q[::sample_spacing,:]
-        elif np.shape(replica_energies_all)[2] == np.shape(Q)[0]:
-            # This is the full Q, slice production frames:
-            Q = Q[production_start::sample_spacing,:]
-        else:
-            print(f'Error: Q array of shape {Q.shape} incompatible with energies array of shape{replica_energies.shape}')
-            exit()    
+        # Check the size of the Q array:
+        if np.shape(replica_energies)[2] != np.shape(Q)[0]:
+            # Mismatch in number of frames.
+            if np.shape(replica_energies_all[:,:,frame_begin::sample_spacing])[2] == np.shape(Q[::sample_spacing,:])[0]:
+                # Correct starting frame, need to apply sampling stride:
+                Q = Q[::sample_spacing,:]
+            elif np.shape(replica_energies_all)[2] == np.shape(Q)[0]:
+                # This is the full Q, slice production frames:
+                Q = Q[production_start::sample_spacing,:]
+            else:
+                print(f'Error: Q array of shape {Q.shape} incompatible with energies array of shape{replica_energies.shape}')
+                exit()    
             
     # Classify Q into folded/unfolded states
     array_folded_states = classify_Q_states(Q,Q_folded)
@@ -286,7 +286,7 @@ def bootstrap_free_energy_folding(Q, Q_folded, output_data="output/output.nc", f
     # For shifting reference frame bootstrap, we need the entire Q and energy arrays starting from frame_start
 
     if np.shape(replica_energies_prod)[2] != np.shape(Q)[0]:
-        print(f'Error: Q array of shape {Q.shape} incompatible with energies array of shape{replica_energies.shape}')
+        print(f'Error: Q array of shape {Q.shape} incompatible with energies array of shape{replica_energies_prod.shape}')
         exit()
         
     Q_all = Q
@@ -370,7 +370,7 @@ def bootstrap_free_energy_folding(Q, Q_folded, output_data="output/output.nc", f
         arr_deltaS_values_boot[key] = np.zeros((n_trial_boot, len(full_T_list)))
         arr_deltaU_values_boot[key] = np.zeros((n_trial_boot, len(full_T_list)))
         
-    # Compute means values:
+    # Compute mean values:
     # Free energy:
     for i_boot in range(n_trial_boot):
         for key, value in deltaF_values_boot[i_boot].items():
