@@ -18,7 +18,7 @@ To use structural analysis features, including native structure determination an
 
 ## Dependencies:
 
-[mdtraj](https://mdtraj.org/1.9.4/index.html) | [mpi4py](https://mpi4py.readthedocs.io/en/stable/) | [numpy](https://numpy.org) | [openmm](http://openmm.org/) | [openmmtools](https://openmmtools.readthedocs.io/en/latest/) | [physical_validation](https://physical-validation.readthedocs.io/en/latest/index.html) | [scikit-learn](https://scikit-learn.org/stable/index.html) | [scipy](scipy.org) 
+[mdtraj](https://mdtraj.org/1.9.4/index.html) | [mpi4py](https://mpi4py.readthedocs.io/en/stable/) | [numpy](https://numpy.org) | [openmm](http://openmm.org/) | [openmmtools](https://openmmtools.readthedocs.io/en/latest/) | [physical_validation](https://physical-validation.readthedocs.io/en/latest/index.html) | [pymbar](https://pymbar.readthedocs.io/en/master/) | [scikit-learn](https://scikit-learn.org/stable/index.html) | [scipy](https://scipy.org) 
 
 ## Testing your installation:
 
