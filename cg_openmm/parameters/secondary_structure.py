@@ -175,8 +175,19 @@ def get_helix_contacts(cgmodel, native_structure_file, backbone_type_name='bb', 
     # Now compute the relevant distances for (i) to (i+k):
     ik_pairs = {}
     ik_dist_arr = {}
-    seq_spacing = [3,4,5,6,7]
-    i_mean_dist_array = np.zeros(5)
+    
+    if len(bb_sequence) > 7:
+        seq_spacing = [3,4,5,6,7]
+    
+    else:
+        # For small chains, compute up to the max possible spacing:
+        max_spacing = len(bb_sequence)-1
+        if max_spacing < 3:
+            print(f'Chain with {len(bb_sequence)} residues is too short to compute helical contacts')
+        else:
+            seq_spacing = range(3,max_spacing+1)
+        
+    i_mean_dist_array = np.zeros(len(seq_spacing))
     j = 0
     
     for k in seq_spacing:
@@ -191,11 +202,8 @@ def get_helix_contacts(cgmodel, native_structure_file, backbone_type_name='bb', 
         j += 1
     
     if verbose:
-        print(f"i to i+3: {ik_dist_arr['i3']}")
-        print(f"i to i+4: {ik_dist_arr['i4']}")
-        print(f"i to i+5: {ik_dist_arr['i5']}")
-        print(f"i to i+6: {ik_dist_arr['i6']}")
-        print(f"i to i+7: {ik_dist_arr['i7']}")
+        for k in seq_spacing:
+            print(f"i to i+{k}: {ik_dist_arr[f'i{k}']}")
         print(f'i_mean_dist_array: {i_mean_dist_array}')
     
     opt_seq_spacing = seq_spacing[np.argmin(i_mean_dist_array)]
