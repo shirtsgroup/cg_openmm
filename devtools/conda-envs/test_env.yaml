@@ -18,7 +18,7 @@ dependencies:
   - python
   - pyyaml
   - scikit-learn=0.23.1
-  - scipy=1.4.1
+  - scipy
   - yaml
 
   # Pip-only installs
