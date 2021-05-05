@@ -4,6 +4,8 @@ import simtk.unit as unit
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from cg_openmm.simulation.tools import get_mm_energy
+from simtk.openmm.app import *
+from simtk.openmm import *
 import pymbar
 import mdtraj as md
 
@@ -40,6 +42,14 @@ def eval_energy(cgmodel, file_list, temperature_list,
     if len(file_list) != len(temperature_list):
         print('Mismatch between number of files and number of temperatures given.')
         exit()
+        
+    # Set up Simulation object beforehand:
+    simulation_time_step = 5.0 * unit.femtosecond
+    friction = 0.0 / unit.picosecond
+    integrator = LangevinIntegrator(
+        0.0 * unit.kelvin, friction, simulation_time_step.in_units_of(unit.picosecond)
+    )
+    simulation = Simulation(cgmodel.topology, cgmodel.system, integrator)
     
     for i in range(len(file_list)):
         # Load in the coordinates as mdtraj object:
@@ -63,7 +73,10 @@ def eval_energy(cgmodel, file_list, temperature_list,
         for j in range(nframes):
             positions = traj[j].xyz[0]*unit.nanometer
             # Compute potential energy for current frame
-            U[j,i] = get_mm_energy(cgmodel.topology, cgmodel.system, positions).value_in_unit(unit.kilojoules_per_mole)
+            
+            simulation.context.setPositions(positions)
+            potential_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()   
+            U[j,i] = potential_energy.value_in_unit(unit.kilojoules_per_mole)
 
             # We can compute the reduced energies here as well.
             
