@@ -742,7 +742,6 @@ def optimize_Q_cut(
         options_str=""
         for key,value in minimizer_options.items():
             options_str += f", {key}={value}"
-        print(options_str)
         opt_results = eval(f'differential_evolution(minimize_sigmoid_width, bounds, polish=True{options_str})')
     else:
         opt_results = differential_evolution(minimize_sigmoid_width, bounds, polish=True)
@@ -1212,7 +1211,7 @@ def optimize_Q_tol_helix(
         
     bounds = (1,2)
     if verbose:
-        print(f'Using the following native_contact_tol bounds:')
+        print(f'Using the following native_contact_tol bounds: {bounds}')
     brute_range = [slice(bounds[0],bounds[1],brute_step)]
 
     opt_results = brute(minimize_sigmoid_width_1d, brute_range)
