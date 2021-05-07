@@ -1,11 +1,8 @@
 import os
-import numpy as np
-import matplotlib.pyplot as pyplot
-from simtk import unit
-from cg_openmm.cg_model.cgmodel import CGModel
-from cg_openmm.thermo.calc import *
 import pickle
 
+from cg_openmm.thermo.calc import *
+from simtk import unit
 
 # This example demonstrates how to calculate heat capacity as a function of temperature from
 # replica exchange energies, with uncertainties calculated from bootstrapping.
@@ -33,15 +30,15 @@ Cv_height_value, Cv_height_uncertainty, FWHM_value, FWHM_uncertainty) = bootstra
     plot_file=f"heat_capacity_boot.pdf",
 )
 
-print(f"T({new_temperature_list[0].unit})  Cv({C_v[0].unit})  dCv({dC_v[0][0].unit})")
+print(f"T({new_temperature_list[0].unit})  Cv({C_v[0].unit})  -dCv({dC_v[0][0].unit}) +dCv({dC_v[0][0].unit})")
 for i, C in enumerate(C_v):
     print(f"{new_temperature_list[i]._value:>8.2f}{C_v[i]._value:>10.4f} {dC_v[0][i]._value:>10.4f} {dC_v[1][i]._value:>10.4f}")
 
-print(f"Tmelt (K)")
+print(f"Tmelt(K) -delta(K) +delta(K)")
 print(f"{Tm_value._value:8.2f} {Tm_uncertainty[0]._value:8.2f} {Tm_uncertainty[1]._value:8.2f}")    
 
-print(f"Cv_height (kJ/mol/K)")
+print(f"Cv_height(kJ/mol/K) -delta(kJ/mol/K) +delta(kJ/mol/K)")
 print(f"{Cv_height_value._value:8.2f} {Cv_height_uncertainty[0]._value:8.2f} {Cv_height_uncertainty[1]._value:8.2f}")   
 
-print(f"FWHM (K)")
+print(f"FWHM(K) -delta(K) +delta(K)")
 print(f"{FWHM_value._value:8.2f} {FWHM_uncertainty[0]._value:8.2f} {FWHM_uncertainty[1]._value:8.2f}")   

@@ -1,13 +1,10 @@
 #!~/anaconda3/bin/python
 
 import os
-import pdb
-from simtk import unit
-from cg_openmm.cg_model.cgmodel import CGModel
-from cg_openmm.parameters.reweight import get_temperature_list
-from cg_openmm.simulation.rep_exch import *
-import numpy as np
 import pickle
+
+from cg_openmm.simulation.rep_exch import *
+from simtk import unit
 
 # This example demonstrates how to post-process OpenMM replica exchange simulation energies,
 # and generate individual dcd trajectories from the .nc output files.
@@ -26,6 +23,7 @@ cgmodel = pickle.load(open("stored_cgmodel.pkl","rb"))
 replica_energies, replica_states, production_start, sample_spacing, n_transit, mixing_stats = process_replica_exchange_data(
     output_data=output_data,
     output_directory=output_directory,
+    frame_begin=20000,
     write_data_file=False,
     print_timing=True,
 )

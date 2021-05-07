@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --nodes=1
-#SBATCH --time=01:00:00
+#SBATCH --time=06:00:00
 #SBATCH --partition=sgpu
 #SBATCH --ntasks=1
 #SBATCH --job-name=cg_openmm

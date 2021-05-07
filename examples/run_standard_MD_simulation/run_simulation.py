@@ -1,49 +1,35 @@
-#!~/anaconda3/bin/python
-
 import os
+import pickle
 import time
 
+import cg_openmm
 import numpy as np
-import simtk.openmm as openmm
 from cg_openmm.cg_model.cgmodel import CGModel
-from cg_openmm.parameters.reweight import get_temperature_list
-from cg_openmm.simulation.rep_exch import *
-from openmmtools.cache import global_context_cache
+from cg_openmm.simulation.tools import run_simulation
 from simtk import unit
+from simtk.openmm.app.pdbfile import PDBFile
 
-# This example demonstrates how to run a OpenMM replica exchange simulation
-# using a CGModel object.
+# This example demonstrates how to run a standard (single temperature) NVT simulation
+# for a coarse-grained model in OpenMM.
 
+sim_begin = time.perf_counter()
 
-rep_exch_begin = time.perf_counter()
-
-#---------------------------------#
-# Replica exchange job parameters #
-#---------------------------------#
+#---------------------------#
+# Simulation job parameters #
+#---------------------------#
 
 # Set output directory:
 output_directory = "output"
 if not os.path.exists(output_directory):
     os.mkdir(output_directory)
-overwrite_files = True  # overwrite files.
-
-# Use CUDA platform for GPU acceleration:
-global_context_cache.platform = openmm.Platform.getPlatformByName("CUDA")
 
 # Replica exchange simulation settings:
-total_simulation_time = 50.0 * unit.nanosecond
+total_simulation_time = 5.0 * unit.nanosecond
 simulation_time_step = 5.0 * unit.femtosecond
 total_steps = int(np.floor(total_simulation_time / simulation_time_step))
-output_data = os.path.join(output_directory, "output.nc")
-
-number_replicas = 12
-min_temp = 200.0 * unit.kelvin
-max_temp = 600.0 * unit.kelvin
-# Use logarithmic temperature spacing:
-temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
-
-exchange_frequency = 200 # Number of steps between exchange attempts
+temperature = 300.0 * unit.kelvin
 collision_frequency = 5 / unit.picosecond
+print_frequency = 5000  # Number of steps to skip when printing output
 
 include_bond_forces = True
 include_bond_angle_forces = True
@@ -112,8 +98,8 @@ equil_bond_angles = {
 
 #-----------------------------#
 # Periodic torsion parameters #
-#-----------------------------#
-
+#-----------------------------#    
+    
 # Torsion angle definitions:
 torsion_force_constants = {
     "default_torsion_force_constant": 0.0 * unit.kilojoule_per_mole,
@@ -156,21 +142,18 @@ cgmodel = CGModel(
 # Store the cg model so that we can do various analyses.
 cgmodel.export("stored_cgmodel.pkl")
 
-if not os.path.exists(output_data) or overwrite_files == True:
-    run_replica_exchange(
-        cgmodel.topology,
-        cgmodel.system,
-        cgmodel.positions,
-        friction=collision_frequency,
-        temperature_list=temperature_list,
-        simulation_time_step=simulation_time_step,
-        total_simulation_time=total_simulation_time,
-        exchange_frequency=exchange_frequency,
-        output_data=output_data,
-    )
-else:
-    print("Replica output files exist")
+# Run the simulation
+run_simulation(
+    cgmodel,
+    total_simulation_time,
+    simulation_time_step,
+    temperature,
+    friction=collision_frequency,
+    print_frequency=print_frequency,
+    output_directory=output_directory,
+)
 
-rep_exch_end = time.perf_counter()
+    
+sim_end = time.perf_counter()
 
-print(f'replica exchange run time: {rep_exch_end-rep_exch_begin}')
+print(f'simulation run time: {sim_end-sim_begin}')

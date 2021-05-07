@@ -1,11 +1,10 @@
+#!~/anaconda3/bin/python
+
 import os
-import numpy as np
-import matplotlib.pyplot as pyplot
-from simtk import unit
-from cg_openmm.cg_model.cgmodel import CGModel
-from cg_openmm.thermo.calc import *
 import pickle
 
+from cg_openmm.thermo.calc import *
+from simtk import unit
 
 # This example demonstrates how to calculate heat capacity as a function of temperature from
 # replica exchange energies, with uncertainties estimated using pyMBAR.
@@ -27,11 +26,9 @@ C_v, dC_v, new_temperature_list = get_heat_capacity(
     frame_begin=analysis_stats["production_start"],
     sample_spacing=analysis_stats["energy_decorrelation"],
     num_intermediate_states=3,
-    plot_file=f"heat_capacity.pdf",
+    plot_file="heat_capacity.pdf",
 )
 
 print(f"T({new_temperature_list[0].unit})  Cv({C_v[0].unit})  dCv({dC_v[0].unit})")
 for i, C in enumerate(C_v):
     print(f"{new_temperature_list[i]._value:>8.2f}{C_v[i]._value:>10.4f} {dC_v[i]._value:>10.4f}")
-
-    
