@@ -3,7 +3,7 @@
 import signac
 from simtk import unit
 
-project = signac.init_project('signac_vary_theta_alpha')
+project = signac.init_project('signac_vary_ka_kt')
 
 # Possible parameters we can vary:
 
@@ -65,7 +65,7 @@ exch_freq = 200
 # Collision frequency (1/ps)
 coll_freq = 5
 
-# For varying alpha and theta angles:
+# For varying angle and torsion force constants:
 for k_theta in k_angle:
     for k_alpha in k_torsion:
         sp = {
@@ -87,5 +87,3 @@ for k_theta in k_angle:
         }
         job = project.open_job(sp)
         job.init()
-            
-            

@@ -7,7 +7,7 @@ from cg_openmm.parameters.secondary_structure import *
 from simtk import unit
 
 # Using a helical backbone native contact scheme with fixed native contact tolerance,
-# and calculate native contact fraction as a function of T
+# calculate native contact fraction and free energy of folding as functions of T.
 
 # Specify location of output .nc files
 data_directory = '../../run_replica_exchange/output'
@@ -18,6 +18,7 @@ cgmodel = pickle.load(open("../../run_replica_exchange/stored_cgmodel.pkl","rb")
 # Load in trajectory stats:
 analysis_stats = pickle.load(open("../../run_replica_exchange/analysis_stats_discard_20ns.pkl","rb"))   
 
+# Specify native structure file:
 native_structure_file = "../native_medoid_min.dcd"
 
 # Create list of replica trajectory files:

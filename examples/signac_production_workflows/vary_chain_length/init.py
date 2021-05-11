@@ -68,7 +68,7 @@ coll_freq = 5
 # Chain length
 chain_length = [6,12,18,24,30,36]
 
-# For varying alpha and theta angles:
+# For varying number of residues:
 for nmono in chain_length:
     sp = {
         'epsilon_bb': epsilon_bb,

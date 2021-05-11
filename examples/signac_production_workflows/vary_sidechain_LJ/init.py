@@ -65,7 +65,7 @@ exch_freq = 200
 # Collision frequency (1/ps)
 coll_freq = 5
 
-# For varying alpha and theta angles:
+# For varying sidechain sigma and epsilon:
 for sig_sc in sigma_sc:
     for eps_sc in epsilon_sc:
         sp = {

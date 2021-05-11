@@ -7,8 +7,8 @@ from cg_openmm.parameters.secondary_structure import *
 from simtk import unit
 
 # Using a helical backbone native contact scheme, determine the tolerance factor which
-# maximizes Q_folded-Q_unfolded, and then calculate native contact fraction as a 
-# function of T.
+# maximizes Q_folded-Q_unfolded, and then calculate native contact fraction and free
+# energy of folding as functions of T.
 
 # Specify location of output .nc files
 data_directory = '../../run_replica_exchange/output'

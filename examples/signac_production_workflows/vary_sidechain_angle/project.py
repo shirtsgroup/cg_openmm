@@ -357,110 +357,14 @@ def signac_run_CEI_replica_exchange(job):
     simulation_time_step = 5.0 * unit.femtosecond
     total_steps = int(np.floor(total_simulation_time / simulation_time_step))
     output_data = os.path.join(output_directory, "output.nc")
-    number_replicas = job.sp.n_replica
-    min_temp = 200.0 * unit.kelvin
-    max_temp = 600.0 * unit.kelvin
+    exchange_frequency = job.sp.exch_freq  # Number of steps between exchange attempts
+    collision_frequency = job.sp.coll_freq/unit.picosecond    
     
     # Load in trajectory stats:
     temperature_list = pickle.load(open(job.fn("opt_T_spacing.pkl"),"rb"))
 
-    exchange_frequency = job.sp.exch_freq  # Number of steps between exchange attempts
-    collision_frequency = job.sp.coll_freq/unit.picosecond
-
-    include_bond_forces = True
-    include_bond_angle_forces = True
-    include_nonbonded_forces = True
-    include_torsion_forces = True
-    constrain_bonds = False    
-    
-    mass = 100.0 * unit.amu
-
-    # mass and charge are defaults.
-    bb = {
-        "particle_type_name": "bb",
-        "sigma": job.sp.sigma_bb * unit.angstrom,
-        "epsilon": job.sp.epsilon_bb * unit.kilojoules_per_mole,
-        "mass": mass
-    }
-        
-    sc = {
-        "particle_type_name": "sc",
-        "sigma": job.sp.sigma_sc * unit.angstrom,
-        "epsilon": job.sp.epsilon_sc * unit.kilojoules_per_mole,
-        "mass": mass
-    }
-
-    # Monomer definition
-    A = {
-        "monomer_name": "A",
-        "particle_sequence": [bb, sc],
-        "bond_list": [[0, 1]],
-        "start": 0,
-        "end": 0,
-    }
-
-    sequence = 24 * [A]
-
-    # Bond definitions
-    bond_lengths = {"default_bond_length": job.sp.equil_bond_length * unit.nanometer}
-
-    bond_force_constants = {
-        "default_bond_force_constant": job.sp.k_bond * unit.kilojoule_per_mole / unit.nanometer / unit.nanometer
-    }
-
-    # Bond angle definitions
-    bond_angle_force_constants = {
-        "default_bond_angle_force_constant": job.sp.k_angle * unit.kilojoule_per_mole / unit.radian / unit.radian
-    }
-
-    equil_bond_angles = {
-        "default_equil_bond_angle": job.sp.equil_bond_angle_bb_bb_sc * unit.degrees,
-        "bb_bb_bb_equil_bond_angle": job.sp.equil_bond_angle_bb_bb_bb * unit.degrees}
-
-    # torsion angle definitions
-    torsion_force_constants = {
-        "default_torsion_force_constant": 0.0 * unit.kilojoule_per_mole,
-        "bb_bb_bb_bb_torsion_force_constant": job.sp.k_torsion * unit.kilojoule_per_mole}
-
-    # Need to substract 180 degrees from specified torsion for mdtraj consistency
-    torsion_phase_angles = {
-        "sc_bb_bb_sc_torsion_phase_angle": 0 * unit.degrees,
-        "bb_bb_bb_bb_torsion_phase_angle": (job.sp.equil_torsion_angle_bb_bb_bb_bb-180) * unit.degrees,
-        "bb_bb_bb_sc_torsion_phase_angle": 0 * unit.degrees,
-    }
-
-    torsion_periodicities = {
-        "sc_bb_bb_sc_torsion_periodicity": job.sp.torsion_periodicity,
-        "bb_bb_bb_bb_torsion_periodicity": job.sp.torsion_periodicity,
-        "bb_bb_bb_sc_torsion_periodicity": job.sp.torsion_periodicity,
-    }
-
-    # Get initial positions from local file
-    pdb_path = os.path.join(proj_directory, f"initial_structure_trial_{job.sp.trial}.pdb")
-    positions = PDBFile(pdb_path).getPositions()
-
-    # Build a coarse grained model
-    cgmodel = CGModel(
-        particle_type_list=[bb, sc],
-        bond_lengths=bond_lengths,
-        bond_force_constants=bond_force_constants,
-        bond_angle_force_constants=bond_angle_force_constants,
-        torsion_force_constants=torsion_force_constants,
-        equil_bond_angles=equil_bond_angles,
-        torsion_phase_angles=torsion_phase_angles,
-        torsion_periodicities=torsion_periodicities,
-        include_nonbonded_forces=include_nonbonded_forces,
-        include_bond_forces=include_bond_forces,
-        include_bond_angle_forces=include_bond_angle_forces,
-        include_torsion_forces=include_torsion_forces,
-        constrain_bonds=constrain_bonds,
-        positions=positions,
-        sequence=sequence,
-        monomer_types=[A],
-    )
-
-    # store the cg model so that we can do various analyses.
-    cgmodel.export(job.fn("stored_cgmodel.pkl"))
+    # Load in cgmodel:
+    cgmodel = pickle.load(open(job.fn("stored_cgmodel.pkl"),"rb")) 
 
     if not os.path.exists(output_data) or overwrite_files == True:
         run_replica_exchange(
@@ -552,7 +456,7 @@ def signac_write_trajectories(job):
 @FlowProject.pre(CEI_replica_exchange_done)
 @FlowProject.post(CEI_heat_capacity_done)
 def signac_calc_CEI_heat_capacity(job):
-    # Calculate heat capacity curve
+    # Calculate heat capacity curve (single reference frame with pymbar uncertainties)
     
     # Job settings
     output_directory = os.path.join(job.workspace(),"output_CEI")
@@ -571,8 +475,8 @@ def signac_calc_CEI_heat_capacity(job):
     )
 
     # Save C_v data to data file:
-    job.data['CEI_C_v_300'] = C_v
-    job.data['CEI_dC_v_300'] = dC_v
+    job.data['CEI_C_v'] = C_v
+    job.data['CEI_dC_v'] = dC_v
     job.data['CEI_T_list_C_v'] = new_temperature_list    
 
     print(f"T({new_temperature_list[0].unit})  Cv({C_v[0].unit})  dCv({dC_v[0].unit})")
@@ -586,7 +490,7 @@ def signac_calc_CEI_heat_capacity(job):
 @FlowProject.pre(CEI_replica_exchange_done)
 @FlowProject.post(boot_CEI_heat_capacity_done)
 def signac_calc_CEI_heat_capacity_boot(job):
-    # Calculate heat capacity curve
+    # Calculate heat capacity curve (multi-reference frame bootstrapping)
     
     # Job settings
     output_directory = os.path.join(job.workspace(),"output_CEI")
@@ -1098,7 +1002,7 @@ def signac_hist2d_angles(job):
 @FlowProject.pre(state_trajectories_created)
 @FlowProject.post(bonded_distributions_done)
 def signac_bonded_distributions(job):
-    # Make alpha-theta ramachandran plots:
+    # Plot bond, angle, torsion distributions for each T:
     
     output_directory = os.path.join(job.workspace(),"output_CEI")
     
@@ -1142,6 +1046,11 @@ def signac_bonded_distributions(job):
     # Save angle hist data to pickle for further analysis/plotting
     pickle_out = open(job.fn("angle_hist_data.pkl"), "wb")
     pickle.dump(angle_hist_data, pickle_out)
+    pickle_out.close()
+    
+    # Save torsion hist data to pickle for further analysis/plotting
+    pickle_out = open(job.fn("torsion_hist_data.pkl"), "wb")
+    pickle.dump(torsion_hist_data, pickle_out)
     pickle_out.close()
 
         

@@ -8,7 +8,7 @@ from simtk import unit
 
 # Using a generalized backbone native contact scheme, determine the native contact pairwise
 # distance cutoff and tolerance factor maximizes Q_folded-Q_unfolded using a 2D optimization
-# scheme. Then, calculate native contact fraction as a function of T.
+# scheme. Then, calculate native contact fraction and free energy of folding as functions of T.
 
 # Specify location of output .nc files
 data_directory = '../../run_replica_exchange/output'
