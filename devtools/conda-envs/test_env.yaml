@@ -6,18 +6,18 @@ channels:
 dependencies:
   - matplotlib-base
   - mdtraj
-  - mpi4py=3.0.3
+  - mpi4py
   - numpy
-  - openmm=7.4.2
+  - openmm
   - openmmtools
   - pickleshare
   - pip
-  - pymbar=3.0.5
+  - pymbar
   - pytest
   - pytest-cov
   - python
   - pyyaml
-  - scikit-learn=0.23.1
+  - scikit-learn
   - scipy
   - yaml
 
