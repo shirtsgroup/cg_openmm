@@ -1,23 +1,61 @@
-API Documentation
-=================
+Build
+-----
 
+.. currentmodule:: cg_openmm.build
 .. autosummary::
-   :toctree: autosummary
+   :toctree: api/generated/
 
-   cg_openmm.build.cg_build
-   cg_openmm.cg_model.cgmodel
-   cg_openmm.ensembles.ens_build
-   cg_openmm.parameters.free_energy
-   cg_openmm.parameters.optimize
-   cg_openmm.parameters.reweight
-   cg_openmm.parameters.secondary_structure
-   cg_openmm.simulation.physical_validation
-   cg_openmm.simulation.rep_exch
-   cg_openmm.simulation.tools
-   cg_openmm.thermo.calc
-   cg_openmm.utilities.iotools
-   cg_openmm.utilities.random_builder
-   cg_openmm.utilities.util
+   cg_build
    
+Ensembles
+---------
+
+.. currentmodule:: cg_openmm.ensembles
+.. autosummary::
+   :toctree: api/generated/
+
+   ens_build
    
+Parameters
+----------
+
+.. currentmodule:: cg_openmm.parameters
+.. autosummary::
+   :toctree: api/generated/
+
+   free_energy
+   optimize
+   reweight
+   secondary_structure
+   
+Simulation
+----------
+
+.. currentmodule:: cg_openmm.simulation
+.. autosummary::
+   :toctree: api/generated/
+
+   physical_validation
+   rep_exch
+   tools
+   
+Thermo
+------
+
+.. currentmodule:: cg_openmm.thermo
+.. autosummary::
+   :toctree: api/generated/
+
+   calc 
+   
+Utilities
+------
+
+.. currentmodule:: cg_openmm.utilities
+.. autosummary::
+   :toctree: api/generated/
+
+   iotools   
+   random_builder
+   util
     
