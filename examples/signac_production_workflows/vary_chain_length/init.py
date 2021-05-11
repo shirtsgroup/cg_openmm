@@ -3,7 +3,7 @@
 import signac
 from simtk import unit
 
-project = signac.init_project('signac_vary_SC_LJ')
+project = signac.init_project('signac_vary_chain_length')
 
 # Possible parameters we can vary:
 
@@ -16,10 +16,10 @@ project = signac.init_project('signac_vary_SC_LJ')
 # sigma_sc - LJ12 sigma parameter (unit.angstrom)
 
 epsilon_bb = 1.5
-epsilon_sc = [1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0]
+epsilon_sc = 5.0
 
 sigma_bb = 2.25
-sigma_sc = [3.0,3.5,4.0]
+sigma_sc = 3.5
 
 #--------------------------#
 # Harmonic bond parameters #
@@ -38,7 +38,7 @@ equil_bond_length = 0.244
 
 k_angle = 150
 equil_bond_angle_bb_bb_bb = 105.5
-equil_bond_angle_bb_bb_sc = (360-equil_bond_angle_bb_bb_bb)/2
+equil_bond_angle_bb_bb_sc = 127.5
 
 #-----------------------------#
 # Periodic torsion parameters #
@@ -49,7 +49,7 @@ equil_bond_angle_bb_bb_sc = (360-equil_bond_angle_bb_bb_bb)/2
 
 # non-backbone torsions will be turned off
 
-k_torsion = 5
+k_torsion = 3
 equil_torsion_angle_bb_bb_bb_bb = 16.7
 torsion_periodicity = 1
 
@@ -65,28 +65,31 @@ exch_freq = 200
 # Collision frequency (1/ps)
 coll_freq = 5
 
-# For varying sidechain sigma and epsilon:
-for sig_sc in sigma_sc:
-    for eps_sc in epsilon_sc:
-        sp = {
-            'epsilon_bb': epsilon_bb,
-            'epsilon_sc': eps_sc,
-            'sigma_bb': sigma_bb,
-            'sigma_sc': sig_sc,
-            'k_bond': k_bond,
-            'equil_bond_length': equil_bond_length,
-            'k_angle': k_angle,
-            'equil_bond_angle_bb_bb_bb': equil_bond_angle_bb_bb_bb,
-            'equil_bond_angle_bb_bb_sc': equil_bond_angle_bb_bb_sc,
-            'k_torsion': k_torsion,
-            'equil_torsion_angle_bb_bb_bb_bb': equil_torsion_angle_bb_bb_bb_bb,
-            'torsion_periodicity': torsion_periodicity,
-            'trial': trial,
-            'n_replica': n_replica,
-            'exch_freq': exch_freq,
-            'coll_freq': coll_freq,
-        }
-        job = project.open_job(sp)
-        job.init()
-            
+# Chain length
+chain_length = [6,12,18,24,30,36]
+
+# For varying number of residues:
+for nmono in chain_length:
+    sp = {
+        'epsilon_bb': epsilon_bb,
+        'epsilon_sc': epsilon_sc,
+        'sigma_bb': sigma_bb,
+        'sigma_sc': sigma_sc,
+        'k_bond': k_bond,
+        'equil_bond_length': equil_bond_length,
+        'k_angle': k_angle,
+        'equil_bond_angle_bb_bb_bb': equil_bond_angle_bb_bb_bb,
+        'equil_bond_angle_bb_bb_sc': equil_bond_angle_bb_bb_sc,
+        'k_torsion': k_torsion,
+        'equil_torsion_angle_bb_bb_bb_bb': equil_torsion_angle_bb_bb_bb_bb,
+        'torsion_periodicity': torsion_periodicity,
+        'trial': trial,
+        'n_replica': n_replica,
+        'exch_freq': exch_freq,
+        'coll_freq': coll_freq,
+        'nmono': nmono,
+    }
+    job = project.open_job(sp)
+    job.init()
+        
             

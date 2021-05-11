@@ -3,7 +3,7 @@
 import signac
 from simtk import unit
 
-project = signac.init_project('signac_vary_SC_LJ')
+project = signac.init_project('signac_vary_ka_kt')
 
 # Possible parameters we can vary:
 
@@ -16,10 +16,10 @@ project = signac.init_project('signac_vary_SC_LJ')
 # sigma_sc - LJ12 sigma parameter (unit.angstrom)
 
 epsilon_bb = 1.5
-epsilon_sc = [1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0]
+epsilon_sc = 5.0
 
 sigma_bb = 2.25
-sigma_sc = [3.0,3.5,4.0]
+sigma_sc = 3.5
 
 #--------------------------#
 # Harmonic bond parameters #
@@ -36,9 +36,9 @@ equil_bond_length = 0.244
 # k_angle - bond angle force constant (unit.kilojoule_per_mole / unit.radian / unit.radian)
 # equil_bond_angle - equilibrium bond angle (unit.degrees)
 
-k_angle = 150
+k_angle = [50, 100, 150, 200, 250]
 equil_bond_angle_bb_bb_bb = 105.5
-equil_bond_angle_bb_bb_sc = (360-equil_bond_angle_bb_bb_bb)/2
+#equil_bond_angle_bb_bb_sc = (360-equil_bond_angle_bb_bb_bb)/2
 
 #-----------------------------#
 # Periodic torsion parameters #
@@ -49,7 +49,7 @@ equil_bond_angle_bb_bb_sc = (360-equil_bond_angle_bb_bb_bb)/2
 
 # non-backbone torsions will be turned off
 
-k_torsion = 5
+k_torsion = [0, 1, 2, 3, 4, 5, 6, 7]
 equil_torsion_angle_bb_bb_bb_bb = 16.7
 torsion_periodicity = 1
 
@@ -65,20 +65,19 @@ exch_freq = 200
 # Collision frequency (1/ps)
 coll_freq = 5
 
-# For varying sidechain sigma and epsilon:
-for sig_sc in sigma_sc:
-    for eps_sc in epsilon_sc:
+# For varying angle and torsion force constants:
+for k_theta in k_angle:
+    for k_alpha in k_torsion:
         sp = {
             'epsilon_bb': epsilon_bb,
-            'epsilon_sc': eps_sc,
+            'epsilon_sc': epsilon_sc,
             'sigma_bb': sigma_bb,
-            'sigma_sc': sig_sc,
+            'sigma_sc': sigma_sc,
             'k_bond': k_bond,
             'equil_bond_length': equil_bond_length,
-            'k_angle': k_angle,
+            'k_angle': k_theta,
             'equil_bond_angle_bb_bb_bb': equil_bond_angle_bb_bb_bb,
-            'equil_bond_angle_bb_bb_sc': equil_bond_angle_bb_bb_sc,
-            'k_torsion': k_torsion,
+            'k_torsion': k_alpha,
             'equil_torsion_angle_bb_bb_bb_bb': equil_torsion_angle_bb_bb_bb_bb,
             'torsion_periodicity': torsion_periodicity,
             'trial': trial,
@@ -88,5 +87,3 @@ for sig_sc in sigma_sc:
         }
         job = project.open_job(sp)
         job.init()
-            
-            

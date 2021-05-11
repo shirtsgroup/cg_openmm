@@ -31,11 +31,11 @@ proj_directory = os.getcwd()
 def run_replica_exchange_done(job):
     output_directory = os.path.join(job.workspace(),"output")
     output_data = os.path.join(output_directory, "output.nc")
-    rep_exch_completed = 0
-    if os.path.isfile(output_data):
-        rep_exch_status = ReplicaExchangeSampler.read_status(output_data)
-        rep_exch_completed = rep_exch_status.is_completed
-    return rep_exch_completed
+    # rep_exch_completed = 0
+    # if os.path.isfile(output_data):
+        # rep_exch_status = ReplicaExchangeSampler.read_status(output_data)
+        # rep_exch_completed = rep_exch_status.is_completed
+    return os.path.isfile(output_data)
     
 @FlowProject.label
 def process_replica_exchange_done(job):
@@ -51,10 +51,10 @@ def CEI_replica_exchange_done(job):
     output_directory = os.path.join(job.workspace(),"output_CEI")
     output_data = os.path.join(output_directory, "output.nc")
     rep_exch_completed = 0
-    if os.path.isfile(output_data):
-        rep_exch_status = ReplicaExchangeSampler.read_status(output_data)
-        rep_exch_completed = rep_exch_status.is_completed
-    return rep_exch_completed
+    # if os.path.isfile(output_data):
+        # rep_exch_status = ReplicaExchangeSampler.read_status(output_data)
+        # rep_exch_completed = rep_exch_status.is_completed
+    return os.path.isfile(output_data)
     
 @FlowProject.label    
 def process_CEI_replica_exchange_done(job):    
@@ -68,7 +68,7 @@ def CEI_heat_capacity_done(job):
 @FlowProject.label
 def boot_CEI_heat_capacity_done(job):
     output_directory = os.path.join(job.workspace(),"output_CEI")
-    return job.isfile(f"{output_directory}/heat_capacity_200ns_boot_500_std_ana.pdf")
+    return job.isfile(f"{output_directory}/heat_capacity_200ns_boot_500_std_ana.pdf")  
     
 @FlowProject.label
 def state_trajectories_created(job):
@@ -78,23 +78,25 @@ def state_trajectories_created(job):
 def clustering_done(job):
     return job.isfile("output_CEI/native_medoid_min.dcd")
     
-@FlowProject.label
-def cluster_frac_done(job):
-    return job.isfile("output_CEI/cluster_by_state/medoid_0_.pdb")
-    
+@FlowProject.label    
 def native_contacts_done(job):
     return job.isfile("output_CEI/native_contacts_boot200.pdf")
     
+@FlowProject.label    
 def native_contacts_fixed_tol_done(job):
-    return job.isfile("output_CEI/native_contacts_boot200_fixed_tol1_3.pdf")    
+    return job.isfile("output_CEI/native_contacts_boot200_fixed_tol1_3.pdf")
     
 @FlowProject.label
 def ramachandran_done(job):
     return job.isfile("output_CEI/ramachandran.pdf")
+ 
+@FlowProject.label
+def hist2d_done(job):
+    return job.isfile("output_CEI/angle_angle_2d_hist.pdf")
     
 @FlowProject.label
 def bonded_distributions_done(job):
-    return job.isfile("output_CEI/bonds_all_states_.pdf")
+    return job.isfile("output_CEI/bonds_all_states.pdf")
     
 @FlowProject.label
 def trajectory_cleanup_done(job):
@@ -356,13 +358,13 @@ def signac_run_CEI_replica_exchange(job):
     total_steps = int(np.floor(total_simulation_time / simulation_time_step))
     output_data = os.path.join(output_directory, "output.nc")
     exchange_frequency = job.sp.exch_freq  # Number of steps between exchange attempts
-    collision_frequency = job.sp.coll_freq/unit.picosecond
+    collision_frequency = job.sp.coll_freq/unit.picosecond    
     
     # Load in trajectory stats:
     temperature_list = pickle.load(open(job.fn("opt_T_spacing.pkl"),"rb"))
 
     # Load in cgmodel:
-    cgmodel = pickle.load(open(job.fn("stored_cgmodel.pkl"),"rb"))    
+    cgmodel = pickle.load(open(job.fn("stored_cgmodel.pkl"),"rb")) 
 
     if not os.path.exists(output_data) or overwrite_files == True:
         run_replica_exchange(
@@ -381,8 +383,7 @@ def signac_run_CEI_replica_exchange(job):
         
     rep_exch_end = time.perf_counter()
 
-    print(f'replica exchange run time: {rep_exch_end-rep_exch_begin}')
-    
+    print(f'replica exchange run time: {rep_exch_end-rep_exch_begin}')     
     
 @replica_exchange_group
 @FlowProject.operation
@@ -425,7 +426,7 @@ def signac_process_CEI_replica_exchange(job):
     
 @replica_exchange_group
 @FlowProject.operation
-@FlowProject.pre(CEI_replica_exchange_done)
+@FlowProject.pre(process_CEI_replica_exchange_done)
 @FlowProject.post(state_trajectories_created)
 def signac_write_trajectories(job):    
     # Job settings
@@ -474,15 +475,15 @@ def signac_calc_CEI_heat_capacity(job):
     )
 
     # Save C_v data to data file:
-    job.data['CEI_C_v_300'] = C_v
-    job.data['CEI_dC_v_300'] = dC_v
+    job.data['CEI_C_v'] = C_v
+    job.data['CEI_dC_v'] = dC_v
     job.data['CEI_T_list_C_v'] = new_temperature_list    
 
     print(f"T({new_temperature_list[0].unit})  Cv({C_v[0].unit})  dCv({dC_v[0].unit})")
     for i, C in enumerate(C_v):
         print(f"{new_temperature_list[i]._value:>8.2f}{C_v[i]._value:>10.4f} {dC_v[i]._value:>10.4f}")
      
-    
+     
 @analysis_group
 @FlowProject.operation
 @FlowProject.pre(process_CEI_replica_exchange_done)
@@ -526,7 +527,7 @@ def signac_calc_CEI_heat_capacity_boot(job):
     job.data['FWHM_uncertainty_lo_boot'] = FWHM_uncertainty[0]
     job.data['FWHM_uncertainty_hi_boot'] = FWHM_uncertainty[1]
 
-    print(f"Using bootstrap parameters: n_trial=500")
+    print(f"Using bootstrap parameters: n_sample=1000, n_trial=500")
     print(f"T({new_temperature_list[0].unit})  Cv({C_v[0].unit})  dCv({dC_v[0][0].unit})")
     for i, C in enumerate(C_v):
         print(f"{new_temperature_list[i]._value:>8.2f}{C_v[i]._value:>10.4f} {dC_v[0][i]._value:>10.4f} {dC_v[1][i]._value:>10.4f}")
@@ -598,111 +599,7 @@ def signac_clustering(job):
         medoid_positions[k_min],
         output_file=f"{output_directory}/native_medoid_min.dcd",
     )
-    
-@analysis_group
-@FlowProject.operation
-@FlowProject.pre(CEI_replica_exchange_done)
-@FlowProject.pre(process_CEI_replica_exchange_done)
-@FlowProject.pre(state_trajectories_created)
-@FlowProject.post(cluster_frac_done)
-def signac_calc_cluster_fraction(job):
-    # Predict native structure from rmsd clustering:
-    print(f'job_parameters:')
-    print(job.sp)
-    output_directory = os.path.join(job.workspace(),"output_CEI")
-    cluster_output = os.path.join(output_directory,"cluster_by_state")
-    
-    # Load in cgmodel:
-    cgmodel = pickle.load(open(job.fn("stored_cgmodel.pkl"),"rb"))
-    
-    # Load in trajectory stats:
-    analysis_stats = pickle.load(open(job.fn("analysis_stats_CEI_200ns.pkl"),"rb"))
-    
-    dcd_file_list_rep = []
-    number_replicas = job.sp.n_replica
-    
-    for rep in range(number_replicas):
-        dcd_file_list_rep.append(f"{output_directory}/state_{rep+1}.dcd")
-    
-    (medoid_positions, cluster_sizes, cluster_rmsd, n_noise,
-    silhouette_avg, labels, original_indices) = get_cluster_medoid_positions_DBSCAN(
-        file_list=dcd_file_list_rep,
-        cgmodel=cgmodel,
-        min_samples=100,
-        eps=0.10,
-        frame_start=analysis_stats["production_start"],
-        frame_stride=200, # This can cause memory issues if too small
-        filter=True,
-        filter_ratio=0.25,
-        output_dir=cluster_output,
-        core_points_only=False,
-    )
-    
-    print(f'cluster_sizes: {cluster_sizes}')
-    print(f'noise_points: {n_noise}')
-    print(f'cluster_rmsd: {cluster_rmsd}')
-    print(f'avg_silhouette: {silhouette_avg}')
-    
-    # These should match exactly with the first clustering pass if there is no noise
-    job.data['cluster_sizes_2'] = cluster_sizes
-    job.data['noise_points_2'] = n_noise
-    job.data['cluster_rmsd_2'] = cluster_rmsd
-    job.data['avg_silhouette_2'] = silhouette_avg
 
-    # Cluster indices:
-    # This applies to the concatenated set of original_indices
-    cluster_indices = np.argwhere(labels==0)
-    noise_indices = np.argwhere(labels==-1) 
-    
-    # We also need the state indices to map replica index to state index
-    # (
-        # replica_energies_all,
-        # unsampled_state_energies,
-        # neighborhoods,
-        # replica_state_indices,
-    # ) = analyzer.read_energies()
-    
-    # Need to convert original indices by replica to original indices by state
-    
-    # Number of frames per temperature
-    n_frame_per_T = 200000
-
-    # Compute cluster fraction:
-    bin_T = np.zeros(number_replicas)
-    
-    # Frames defining temp interval:
-    frame_beg = 0
-    frame_end = frame_beg+n_frame_per_T
-
-    for t in range(number_replicas):
-        for i in range(len(cluster_indices)):
-            if original_indices[cluster_indices[i]] >= frame_beg and original_indices[cluster_indices[i]] < frame_end:
-                bin_T[t] += 1
-        print(frame_beg)
-        print(frame_end)
-        frame_beg += n_frame_per_T
-        frame_end += n_frame_per_T
-
-    fraction_T = bin_T/sum(bin_T)
-    job.data['cluster_fraction'] = fraction_T
-
-    # Compute noise fraction:
-
-    # Frames defining temp interval:
-    # frame_beg = 0
-    # frame_end = frame_beg+n_frame_per_T
-
-    # for t in range(number_replicas):
-        # for i in range(len(noise_indices)):
-            # if original_indices[noise_indices[i]] >= frame_beg and original_indices[noise_indices[i]] < frame_end:
-                # bin_T_noise[t] += 1
-        # print(frame_beg)
-        # print(frame_end)
-        # frame_beg += n_frame_per_T
-        # frame_end += n_frame_per_T
-
-    # fraction_T_noise = bin_T_noise/sum(bin_T_noise)
-    
     
 @analysis_group
 @FlowProject.operation
@@ -1033,8 +930,8 @@ def signac_calc_native_contacts_helix_boot(job):
         print(f"{full_T_list_boot[i].value_in_unit(unit.kelvin):>6.4f}, \
             {deltaU_values_boot[i]:>6.8f}, \
             {deltaU_uncertainty_boot[i]:>6.8f}")
- 
-   
+
+
 @analysis_group
 @FlowProject.operation
 @FlowProject.pre(state_trajectories_created)
@@ -1050,9 +947,6 @@ def signac_ramachandran(job):
     # Load in cgmodel:
     cgmodel = pickle.load(open(job.fn("stored_cgmodel.pkl"),"rb"))    
     
-    # Load in temp list for plot labels:
-    temperature_list = pickle.load(open(job.fn("opt_T_spacing.pkl"),"rb"))    
-    
     traj_file_list = []
     number_replicas = job.sp.n_replica
     
@@ -1064,8 +958,43 @@ def signac_ramachandran(job):
         traj_file_list,
         plotfile=f"{output_directory}/ramachandran.pdf",
         frame_start=analysis_stats["production_start"],
-        temperature_list=temperature_list,
         )
+        
+        
+@analysis_group
+@FlowProject.operation
+@FlowProject.pre(state_trajectories_created)
+@FlowProject.post(hist2d_done)
+def signac_hist2d_angles(job):
+    # Make alpha-theta ramachandran plots:
+    
+    output_directory = os.path.join(job.workspace(),"output_CEI")
+    
+    # Load in trajectory stats:
+    analysis_stats = pickle.load(open(job.fn("analysis_stats_CEI_200ns.pkl"),"rb"))    
+    
+    # Load in cgmodel:
+    cgmodel = pickle.load(open(job.fn("stored_cgmodel.pkl"),"rb"))    
+    
+    # Load in trajectory stats:
+    temperature_list = pickle.load(open(job.fn("opt_T_spacing.pkl"),"rb"))    
+    
+    traj_file_list = []
+    number_replicas = job.sp.n_replica
+    
+    for i in range(number_replicas):
+        traj_file_list.append(f"{output_directory}/state_{i+1}.dcd")
+    
+    hist_data, xedges, yedges = calc_2d_distribution(
+        cgmodel,
+        traj_file_list,
+        plotfile=f"{output_directory}/angle_angle_2d_hist.pdf",
+        frame_start=analysis_stats["production_start"],
+        xvar_name="bb_bb_bb",
+        yvar_name="bb_bb_sc",
+        temperature_list=temperature_list,
+        frame_stride=50,
+    )
         
         
 @analysis_group
@@ -1104,8 +1033,8 @@ def signac_bonded_distributions(job):
     angle_hist_data = calc_bond_angle_distribution(
         cgmodel, traj_file_list,
         frame_start=analysis_stats["production_start"],
-        temperature_list=temperature_list,
         nbins=180,
+        temperature_list=temperature_list,
         plotfile=f"{output_directory}/angles_all_states.pdf")
         
     torsion_hist_data = calc_torsion_distribution(
@@ -1113,7 +1042,7 @@ def signac_bonded_distributions(job):
         frame_start=analysis_stats["production_start"],
         temperature_list=temperature_list,
         plotfile=f"{output_directory}/torsions_all_states.pdf")
-        
+    
     # Save angle hist data to pickle for further analysis/plotting
     pickle_out = open(job.fn("angle_hist_data.pkl"), "wb")
     pickle.dump(angle_hist_data, pickle_out)
@@ -1123,7 +1052,7 @@ def signac_bonded_distributions(job):
     pickle_out = open(job.fn("torsion_hist_data.pkl"), "wb")
     pickle.dump(torsion_hist_data, pickle_out)
     pickle_out.close()
-                
+
         
 @cleanup_group
 @FlowProject.operation

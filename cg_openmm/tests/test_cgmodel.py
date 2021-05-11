@@ -296,7 +296,7 @@ def test_get_particle_epsilon(create_cgmodel):
 def test_get_bond_length(create_cgmodel):
     cgmodel = create_cgmodel
     bond_list = cgmodel.get_bond_list()
-    b0 = cgmodel.get_bond_length(bond_list[0])
+    b0 = cgmodel.get_bond_length([0,1])
     # Particles [0,1], bb-sc
     assert b0 == 1.5 * unit.angstrom
     
@@ -304,7 +304,7 @@ def test_get_bond_length(create_cgmodel):
 def test_get_bond_force_constant(create_cgmodel):
     cgmodel = create_cgmodel
     bond_list = cgmodel.get_bond_list()
-    k0 = cgmodel.get_bond_force_constant(bond_list[0])
+    k0 = cgmodel.get_bond_force_constant([0,1])
     # Particles [0,1], bb-sc
     assert k0 == 1000 * unit.kilojoule_per_mole / unit.nanometer / unit.nanometer
     
@@ -313,7 +313,7 @@ def test_get_equil_bond_angle(create_cgmodel):
     cgmodel = create_cgmodel
     angle_list = cgmodel.get_bond_angle_list()   
     # Particles [1,0,2], sc-bb-bb
-    theta0 = cgmodel.get_equil_bond_angle(angle_list[0])
+    theta0 = cgmodel.get_equil_bond_angle([1,0,2])
     assert theta0 == 120.0 * unit.degrees
     
     
@@ -321,14 +321,14 @@ def test_get_bond_angle_force_constant(create_cgmodel):
     cgmodel = create_cgmodel
     angle_list = cgmodel.get_bond_angle_list()   
     # Particles [1,0,2], sc-bb-bb
-    k0 = cgmodel.get_bond_angle_force_constant(angle_list[0])
+    k0 = cgmodel.get_bond_angle_force_constant([1,0,2])
     assert k0 == 100 * unit.kilojoule_per_mole / unit.radian / unit.radian
     
     
 def test_get_torsion_periodicity(create_cgmodel):
     cgmodel = create_cgmodel
     torsion_list = cgmodel.get_torsion_list()
-    per0 = cgmodel.get_torsion_periodicity(torsion_list[0])
+    per0 = cgmodel.get_torsion_periodicity([11,10,8,9])
     # Particles [11,10,8,9], sc-bb-bb-sc
     assert per0 == 1 # default
     
@@ -336,7 +336,7 @@ def test_get_torsion_periodicity(create_cgmodel):
 def test_get_torsion_force_constant(create_cgmodel):
     cgmodel = create_cgmodel
     torsion_list = cgmodel.get_torsion_list()
-    k0 = cgmodel.get_torsion_force_constant(torsion_list[0])
+    k0 = cgmodel.get_torsion_force_constant([11,10,8,9])
     # Particles [11,10,8,9], sc-bb-bb-sc
     assert k0 == 0 * unit.kilojoule_per_mole # default
     
@@ -344,7 +344,7 @@ def test_get_torsion_force_constant(create_cgmodel):
 def test_get_torsion_phase_angle(create_cgmodel):
     cgmodel = create_cgmodel
     torsion_list = cgmodel.get_torsion_list()
-    phi0 = cgmodel.get_torsion_phase_angle(torsion_list[0])
+    phi0 = cgmodel.get_torsion_phase_angle([11,10,8,9])
     # Particles [11,10,8,9], sc-bb-bb-sc
     assert phi0 == 0 * unit.degrees # default
     
