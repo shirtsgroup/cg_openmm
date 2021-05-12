@@ -3,6 +3,7 @@ import numpy as np
 import mdtraj as md
 from simtk import unit
 from cg_openmm.cg_model.cgmodel import CGModel
+from cg_openmm.parameters.evaluate_energy import eval_energy
 from scipy.optimize import basinhopping, shgo, dual_annealing, differential_evolution, brute
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -48,6 +49,238 @@ def optimize_helix(n_particle_bb, sigma, epsilon, sidechain=True, pdbfile='LJ_he
     bounds = [(0.1,np.pi/2),(sigma/4,2*sigma),(0.01,sigma)]
     
     params = (sigma, epsilon, n_particle_bb, sidechain)
+    
+    opt_sol = differential_evolution(compute_LJ_helix_energy, bounds, args=params, polish=True, popsize=25)
+    
+    t_delta_opt = opt_sol.x[0]
+    r_opt = opt_sol.x[1]
+    c_opt = opt_sol.x[2]
+    
+    t_par = np.zeros(n_particle_bb)
+    for i in range(n_particle_bb):
+        t_par[i] = i*t_delta_opt       
+        
+    # Equilibrium LJ distance    
+    r_eq = sigma*np.power(2,(1/6))  
+    
+    # Get particle positions:
+    xyz_par = get_helix_coordinates(r_opt,c_opt,t_par)
+    
+    if sidechain:
+        # Place sidechain particles normal to helix with same bond length as bb_bb
+        r_bs = dist_unitless(xyz_par[0,:],xyz_par[1,:])
+        side_xyz = np.zeros((n_particle_bb,3))
+
+        side_xyz[:,0] = (1+r_bs/r_opt)*xyz_par[:,0]
+        side_xyz[:,1] = (1+r_bs/r_opt)*xyz_par[:,1]
+        side_xyz[:,2] = xyz_par[:,2]
+
+        xyz_all = np.zeros((2*n_particle_bb,3))
+        xyz_all[:n_particle_bb,:] = xyz_par
+        xyz_all[n_particle_bb:,:] = side_xyz
+
+        xyz_par = xyz_all
+    
+    # Store key geometric parameters
+    geometry = {}
+    
+    geometry['helical_radius'] = (r_opt*unit.angstrom).in_units_of(sigma_unit)
+    geometry['particle_spacing'] = t_delta_opt * unit.radian
+    geometry['pitch'] = (2*np.pi*c_opt*unit.angstrom).in_units_of(sigma_unit)
+    
+    # Write pdb file
+    write_helix_pdbfile(xyz_par, pdbfile, sidechain)
+        
+    # Load pdb file into mdtraj
+    traj = md.load(pdbfile)
+    
+    # Get bb-bb bond distance
+    geometry['bb_bb_distance'] = (dist_unitless(xyz_par[0,:],xyz_par[1,:]) * unit.angstrom).in_units_of(sigma_unit)
+    
+    # Get bb-bb-bb angle
+    angle_indices = np.array([[0,1,2]])
+    dihedral_indices = np.array([[0,1,2,3]])
+    
+    geometry['bb_bb_bb_angle'] = (md.compute_angles(traj,angle_indices)*unit.radians).in_units_of(unit.degrees)
+    
+    # Get bb-bb-bb-bb torsion
+    geometry['bb_bb_bb_bb_angle'] = (md.compute_dihedrals(traj,dihedral_indices)*unit.radians).in_units_of(unit.degrees)
+    
+    if sidechain:
+        # Get bb-bb-sc angle
+        angle_indices = np.array([[0,1,1+int(xyz_par.shape[0]/2)]])
+        geometry['bb_bb_sc_angle'] = (md.compute_angles(traj,angle_indices)*unit.radians).in_units_of(unit.degrees)
+        
+        # Get sc-bb-bb-sc torsion
+        dihedral_indices = np.array([[int(xyz_par.shape[0]/2),0,1,1+int(xyz_par.shape[0]/2)]])
+        geometry['sc_bb_bb_sc_angle'] = (md.compute_dihedrals(traj,dihedral_indices)*unit.radians).in_units_of(unit.degrees)
+        
+        # Get bb-bb-bb-sc torsion
+        dihedral_indices = np.array([[0,1,2,2+int(xyz_par.shape[0]/2)]])
+        geometry['bb_bb_bb_sc_angle'] = (md.compute_dihedrals(traj,dihedral_indices)*unit.radians).in_units_of(unit.degrees)
+    
+    # Plot results:
+    plot_LJ_helix(r_opt,c_opt,t_par,r_eq,plotfile=plotfile)
+    
+    return opt_sol, geometry
+    
+   
+def dist_unitless(positions_1, positions_2):
+    # Distance function:
+    return np.sqrt(np.sum(np.power((positions_1 - positions_2),2)))   
+    
+   
+def compute_LJ_helix_energy(geo, sigma, epsilon, n_particle_bb, sidechain):
+    """
+    Internal function for computing energy of Lennard-Jones 12-6 helix
+    """
+    
+    # Particle spacing (radians)
+    t_delta = geo[0]
+    
+    # Helical radius (units of sigma)
+    r = geo[1]
+    
+    # Vertical rise parameter (units of sigma)
+    c = geo[2]
+    
+    t1 = np.zeros(n_particle_bb)
+    for i in range(n_particle_bb):
+        t1[i] = i*t_delta
+        
+    xyz = get_helix_coordinates(r,c,t1)    
+        
+    # Add any sidechain beads
+    if sidechain:
+        # Place sidechain particles normal to helix with same bond length as bb_bb
+        r_bs = dist_unitless(xyz[0,:],xyz[1,:])
+        side_xyz = np.zeros((n_particle_bb,3))
+        
+        side_xyz[:,0] = (1+r_bs/r)*xyz[:,0]
+        side_xyz[:,1] = (1+r_bs/r)*xyz[:,1]
+        side_xyz[:,2] = xyz[:,2]
+        
+        xyz_all = np.zeros((2*n_particle_bb,3))
+        xyz_all[:n_particle_bb,:] = xyz
+        xyz_all[n_particle_bb:,:] = side_xyz
+        
+        xyz = xyz_all
+    
+        
+    U_helix = 0    
+    for i in range(xyz.shape[0]):
+        for j in range(i+1,xyz.shape[0]):
+            U_helix += 4*epsilon*(np.power((sigma/dist_unitless(xyz[i,:],xyz[j,:])),12) - \
+                np.power((sigma/dist_unitless(xyz[i,:],xyz[j,:])),6)) 
+                
+    return U_helix
+    
+    
+def compute_LJ_helix_openmm_energy(geo, simulation, sigma, epsilon, n_particle_bb, sidechain):
+    """
+    Internal function for computing energy of Lennard-Jones 12-6 helix
+    """
+    
+    # Particle spacing (radians)
+    t_delta = geo[0]
+    
+    # Helical radius (units of sigma)
+    r = geo[1]
+    
+    # Vertical rise parameter (units of sigma)
+    c = geo[2]
+    
+    t1 = np.zeros(n_particle_bb)
+    for i in range(n_particle_bb):
+        t1[i] = i*t_delta
+        
+    xyz = get_helix_coordinates(r,c,t1)
+        
+    # Here we need to set the bond distances in the cgmodel,
+    # possibly using UpdateParameterInContext
+    
+    # Then evaluate the 
+        
+    # Add any sidechain beads
+    if sidechain:
+        # Place sidechain particles normal to helix with same bond length as bb_bb
+        r_bs = dist_unitless(xyz[0,:],xyz[1,:])
+        side_xyz = np.zeros((n_particle_bb,3))
+        
+        side_xyz[:,0] = (1+r_bs/r)*xyz[:,0]
+        side_xyz[:,1] = (1+r_bs/r)*xyz[:,1]
+        side_xyz[:,2] = xyz[:,2]
+        
+        xyz_all = np.zeros((2*n_particle_bb,3))
+        xyz_all[:n_particle_bb,:] = xyz
+        xyz_all[n_particle_bb:,:] = side_xyz
+        
+        xyz = xyz_all
+    
+        
+    U_helix = 0    
+    for i in range(xyz.shape[0]):
+        for j in range(i+1,xyz.shape[0]):
+            U_helix += 4*epsilon*(np.power((sigma/dist_unitless(xyz[i,:],xyz[j,:])),12) - \
+                np.power((sigma/dist_unitless(xyz[i,:],xyz[j,:])),6)) 
+                
+    return U_helix    
+    
+
+def optimize_helix_openmm_energy(n_particle_bb, sigma, epsilon, bond_dist, sidechain=True, pdbfile='LJ_helix.pdb', plotfile='LJ_helix.pdf'):
+    """
+    Optimize backbone particle positions along a helix and helical radius, vertical rise,
+    with equal spacing of particles.
+    
+    :param n_particle_bb: Number of backbone particles to model
+    :type n_particle_bb: int
+    
+    :param sigma: Lennard-Jones 12-6 sigma parameter
+    :type sigma: Quantity
+    
+    :param epsilon: Lennard-Jones 12-6 epsilon parameter
+    :type epsilon: Quantity
+    
+    :param bond_dist: bond distance applied to both bb-bb and bb-sc
+    :type bond_dist: Quantity
+    
+    :param sidechain: Option to include sidechain particles in a 1b1s model (default=True)
+    :type sidechain: bool
+    
+    :param pdbfile: Path to pdb file for saving the helical structure (default='LJ_helix.pdb')
+    :type pdbfile: str
+    
+    :param plotfile: Path to pdf file for plotting the helical equations and particle positions (default='LJ_helix.pdf')
+    :type plotfile: str
+    
+    :returns:
+      - opt_sol - Results from scipy.optimize (dict)
+      - geometry - Dictionary containing key geometric parameters of the optimized helix
+    """
+    
+    sigma_unit = sigma.unit
+    # Use angstrom for writing pdb file:
+    sigma = sigma.value_in_unit(unit.angstrom)
+    
+    eps_unit = epsilon.unit
+    epsilon = epsilon.value_in_unit(unit.kilojoule_per_mole)
+    
+    # t_delta is related to the specified bond distance - this must be computed at each iteration
+    
+    # Set optimization bounds [r, c]:
+    bounds = [(0.1,np.pi/2),(sigma/4,2*sigma),(0.01,sigma)]
+    
+    # Here we need to create a cgmodel
+    
+    # Set up Simulation object beforehand:
+    simulation_time_step = 5.0 * unit.femtosecond
+    friction = 0.0 / unit.picosecond
+    integrator = LangevinIntegrator(
+        0.0 * unit.kelvin, friction, simulation_time_step.in_units_of(unit.picosecond)
+    )
+    simulation = Simulation(cgmodel.topology, cgmodel.system, integrator)    
+    
+    params = (simulation, sigma, epsilon, n_particle_bb, sidechain)
     
     opt_sol = differential_evolution(compute_LJ_helix_energy, bounds, args=params, polish=True, popsize=25)
     
@@ -122,60 +355,9 @@ def optimize_helix(n_particle_bb, sigma, epsilon, sidechain=True, pdbfile='LJ_he
     
     plot_LJ_helix(r_opt,c_opt,t_par,r_eq,plotfile=plotfile)
     
-    return opt_sol, geometry
+    return opt_sol, geometry    
+
     
-   
-def dist_unitless(positions_1, positions_2):
-    # Distance function:
-    return np.sqrt(np.sum(np.power((positions_1 - positions_2),2)))   
-    
-   
-def compute_LJ_helix_energy(geo, sigma, epsilon, n_particle_bb, sidechain):
-    """
-    Internal function for computing energy of Lennard-Jones 12-6 helix
-    """
-    
-    # Particle spacing (radians)
-    t_delta = geo[0]
-    
-    # Helical radius (units of sigma)
-    r = geo[1]
-    
-    # Vertical rise parameter (units of sigma)
-    c = geo[2]
-    
-    t1 = np.zeros(n_particle_bb)
-    for i in range(n_particle_bb):
-        t1[i] = i*t_delta
-        
-    xyz = get_helix_coordinates(r,c,t1)    
-        
-    # Add any sidechain beads
-    if sidechain:
-        # Place sidechain particles normal to helix with same bond length as bb_bb
-        r_bs = dist_unitless(xyz[0,:],xyz[1,:])
-        side_xyz = np.zeros((n_particle_bb,3))
-        
-        side_xyz[:,0] = (1+r_bs/r)*xyz[:,0]
-        side_xyz[:,1] = (1+r_bs/r)*xyz[:,1]
-        side_xyz[:,2] = xyz[:,2]
-        
-        xyz_all = np.zeros((2*n_particle_bb,3))
-        xyz_all[:n_particle_bb,:] = xyz
-        xyz_all[n_particle_bb:,:] = side_xyz
-        
-        xyz = xyz_all
-    
-        
-    U_helix = 0    
-    for i in range(xyz.shape[0]):
-        for j in range(i+1,xyz.shape[0]):
-            U_helix += 4*epsilon*(np.power((sigma/dist_unitless(xyz[i,:],xyz[j,:])),12) - \
-                np.power((sigma/dist_unitless(xyz[i,:],xyz[j,:])),6)) 
-                
-    return U_helix
-    
-     
 def get_helix_coordinates(r,c,t):
     """
     Internal functon for getting the coordinates of particles along a helix,
