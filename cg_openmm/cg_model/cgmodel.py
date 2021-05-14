@@ -110,6 +110,7 @@ class CGModel(object):
         include_bond_forces=True,
         include_bond_angle_forces=True,
         include_torsion_forces=True,
+        restricted_angle_potential=False,
         exclusions=True,
         rosetta_functional_form=False,
         check_energy_conservation=True,
@@ -233,6 +234,7 @@ class CGModel(object):
         self.include_nonbonded_forces = include_nonbonded_forces
         self.exclusions = exclusions
         self.include_torsion_forces = include_torsion_forces
+        self.restricted_angle_potential = restricted_angle_potential
         self.check_energy_conservation = check_energy_conservation
         self.monomer_types = monomer_types
         self.bond_lengths = bond_lengths
