@@ -2,7 +2,8 @@ import os
 import numpy as np
 from cg_openmm.utilities.helix_modeling import *
 
-# Optimize positions of equally spaced particles along a helix 
+# Optimize positions of equally spaced particles along a helix, with 1-2 and 1-3
+# nonbonded interactions used instead of bonded terms.
 
 # Particle LJ 12-6 parameters:
 sigma = 1.0 * unit.angstrom
