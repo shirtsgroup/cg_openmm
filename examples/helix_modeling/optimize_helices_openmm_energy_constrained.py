@@ -2,7 +2,8 @@ import os
 import numpy as np
 from cg_openmm.utilities.helix_modeling import *
 
-# Optimize positions of equally spaced particles along a helix 
+# Optimize positions of equally spaced particles along a helix, with constraints
+# on bb-bb and bb-sc bond lengths.
 
 # Particle LJ 12-6 parameters:
 sigma_bb = 1.0 * unit.angstrom

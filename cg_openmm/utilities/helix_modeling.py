@@ -339,8 +339,14 @@ def optimize_helix_openmm_energy(n_particle_bb, sigma_bb, sigma_sc, epsilon_bb, 
     # Get particle positions:
     xyz_par = get_helix_coordinates(r_opt,c_opt,t_par)
     
-    # Place sidechain particles normal to helix with same bond length as bb_bb
-    r_bs = dist_unitless(xyz_par[0,:],xyz_par[1,:])
+    # Place sidechain particles normal to helix
+    if bond_dist_sc == None:
+        # Use optimized bond length from first two backbone beads:
+        r_bs = dist_unitless(xyz_par[0,:],xyz_par[1,:])
+    else:
+        # Use specified bb-sc bond distance:
+        r_bs = bond_dist_sc
+    
     side_xyz = np.zeros((n_particle_bb,3))
 
     side_xyz[:,0] = (1+r_bs/r_opt)*xyz_par[:,0]
@@ -437,7 +443,6 @@ def compute_LJ_helix_energy(geo, sigma, epsilon, n_particle_bb, sidechain):
         xyz_all[n_particle_bb:,:] = side_xyz
         
         xyz = xyz_all
-    
         
     U_helix = 0    
     for i in range(xyz.shape[0]):
@@ -496,7 +501,8 @@ def compute_LJ_helix_openmm_energy(geo, simulation, bb_array, sc_array, n_partic
     return U_helix    
 
 
-def compute_LJ_helix_openmm_energy_constrained(geo, simulation, bb_array, sc_array, n_particle_bb, bond_dist_bb, bond_dist_sc):
+def compute_LJ_helix_openmm_energy_constrained(
+    geo, simulation, bb_array, sc_array, n_particle_bb, bond_dist_bb, bond_dist_sc):
     """
     Internal function for computing openmm energy of Lennard-Jones 12-6 helix
     """
