@@ -13,7 +13,8 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.colors import LightSource
 
 
-def optimize_helix(n_particle_bb, sigma, epsilon, sidechain=True, pdbfile='LJ_helix.pdb', plotfile='LJ_helix.pdf'):
+def optimize_helix(n_particle_bb, sigma, epsilon, sidechain=True, DE_popsize=50,
+    pdbfile='LJ_helix.pdb', plotfile='LJ_helix.pdf'):
     """
     Optimize backbone particle positions along a helix and helical radius, vertical rise,
     with equal spacing of particles.
@@ -29,6 +30,9 @@ def optimize_helix(n_particle_bb, sigma, epsilon, sidechain=True, pdbfile='LJ_he
     
     :param sidechain: Option to include sidechain particles in a 1b1s model (default=True)
     :type sidechain: bool
+    
+    :param DE_popsize: population size to use in SciPy differential_evolution solver (default=50)
+    :type DE_popsize: int    
     
     :param pdbfile: Path to pdb file for saving the helical structure (default='LJ_helix.pdb')
     :type pdbfile: str
@@ -53,7 +57,8 @@ def optimize_helix(n_particle_bb, sigma, epsilon, sidechain=True, pdbfile='LJ_he
     
     params = (sigma, epsilon, n_particle_bb, sidechain)
     
-    opt_sol = differential_evolution(compute_LJ_helix_energy, bounds, args=params, polish=True, popsize=25)
+    opt_sol = differential_evolution(
+        compute_LJ_helix_energy, bounds, args=params, polish=True, popsize=DE_popsize)
     
     t_delta_opt = opt_sol.x[0]
     r_opt = opt_sol.x[1]
@@ -129,7 +134,7 @@ def optimize_helix(n_particle_bb, sigma, epsilon, sidechain=True, pdbfile='LJ_he
     
    
 def optimize_helix_openmm_energy(n_particle_bb, sigma_bb, sigma_sc, epsilon_bb, epsilon_sc,
-    bond_dist_bb=None, bond_dist_sc=None,DE_popsize=25,
+    bond_dist_bb=None, bond_dist_sc=None,DE_popsize=50,
     pdbfile='LJ_helix_openmm_energy.pdb', plotfile='LJ_helix_openmm_energy.pdf'):
     """
     Optimize backbone particle positions along a helix and helical radius, vertical rise,
@@ -153,10 +158,11 @@ def optimize_helix_openmm_energy(n_particle_bb, sigma_bb, sigma_sc, epsilon_bb, 
     :param bond_dist_bb: bond distance for bb-bb bonds. If None, bond distance will also be optimized.
     :type bond_dist_bb: Quantity
     
-    :param bond_dist_sc: bond distance for bb-bb bonds. If None, bond distance will also be optimized.
+    :param bond_dist_sc: bond distance for bb-sc bonds. If None, bond distance will also be optimized.
     :type bond_dist_sc: Quantity
 
-    :param DE_popsize: population size to use in SciPy differential_evolution solver (default=25)
+    :param DE_popsize: population size to use in SciPy differential_evolution solver (default=50)
+    :type DE_popsize: int
 
     :param pdbfile: Path to pdb file for saving the helical structure (default='LJ_helix.pdb')
     :type pdbfile: str
