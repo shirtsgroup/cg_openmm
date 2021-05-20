@@ -1,9 +1,9 @@
 import os
 import numpy as np
-from cg_openmm.utilities.helix_modeling import *
+from cg_openmm.utilities.helix_optimize_geometry import *
 
-# Optimize positions of equally spaced particles along a helix, with no constraints
-# on bond lengths.
+# Optimize radius, pitch, and positions of equally spaced particles along a helix,
+# with no constraints on bond lengths.
 
 # Particle LJ 12-6 parameters:
 sigma_bb = 1.0 * unit.angstrom
@@ -17,8 +17,9 @@ n_particle_bb = 24
 
 opt_solution, geometry = optimize_helix_openmm_energy(
     n_particle_bb, sigma_bb, sigma_sc, epsilon_bb, epsilon_sc,
-    pdbfile='LJ_helix_openmm_energy.pdb', plotfile='LJ_helix_openmm_energy.pdf',
-    DE_popsize=100)
+    pdbfile='LJ_helix_openmm_energy_unconstrained.pdb',
+    plotfile='LJ_helix_openmm_energy_unconstrained.pdf',
+    DE_popsize=50)
 
 print(opt_solution)
 print(geometry)
