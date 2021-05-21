@@ -185,6 +185,14 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
     cgmodel.positions = positions * unit.angstrom
     write_pdbfile_without_topology(cgmodel, pdbfile)    
     
+    # Also write dcd file (better precision)
+    dcdfile = pdbfile[:-3]+'dcd'
+    dcdtraj = md.Trajectory(
+        xyz=positions,
+        topology=md.Topology.from_openmm(cgmodel.topology),
+    )
+    md.Trajectory.save_dcd(dcdtraj,dcdfile)    
+    
     # Store key geometric parameters
     geometry = {}
     
@@ -195,8 +203,8 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
     geometry['particle_spacing'] = t_delta_opt * unit.radian
     geometry['pitch'] = (2*np.pi*c*unit.angstrom).in_units_of(r_unit)
         
-    # Load pdb file into mdtraj
-    traj = md.load(pdbfile)
+    # Load dcd file into mdtraj
+    traj = md.load(dcdfile,top=md.Topology.from_openmm(cgmodel.topology))
     
     # Get bb-bb bond distance
     geometry['bb_bb_distance'] = (dist_unitless(positions[bb_bond_list[0][0],:],positions[bb_bond_list[0][1],:]) * unit.angstrom).in_units_of(r_unit)
@@ -204,25 +212,27 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
     
     # Get bb-bb-bb angle
     angle_indices = np.array([[b_angle_list[0][0], b_angle_list[0][1], b_angle_list[0][2]]])
-    geometry['bb_bb_bb_angle'] = (md.compute_angles(traj,angle_indices)*unit.radians).in_units_of(unit.degrees)
+    geometry['bb_bb_bb_angle'] = (md.compute_angles(traj,angle_indices)*unit.radians).in_units_of(unit.degrees)[0][0]
     
     # Get bb-bb-sc angle
     angle_indices = np.array([[s_angle_list[0][0], s_angle_list[0][1], s_angle_list[0][2]]])
-    geometry['bb_bb_sc_angle'] = (md.compute_angles(traj,angle_indices)*unit.radians).in_units_of(unit.degrees)    
+    geometry['bb_bb_sc_angle'] = (md.compute_angles(traj,angle_indices)*unit.radians).in_units_of(unit.degrees)[0][0]
     
     # Get bb-bb-bb-bb torsion
     dihedral_indices = np.array([[bbbb_torsion_list[0][0], bbbb_torsion_list[0][1], bbbb_torsion_list[0][2], bbbb_torsion_list[0][3]]])
-    geometry['bb_bb_bb_bb_angle'] = (md.compute_dihedrals(traj,dihedral_indices)*unit.radians).in_units_of(unit.degrees)
+    geometry['bb_bb_bb_bb_angle'] = (md.compute_dihedrals(traj,dihedral_indices)*unit.radians).in_units_of(unit.degrees)[0][0]
     
     # Get sc-bb-bb-sc torsion
     dihedral_indices = np.array([[sbbs_torsion_list[0][0], sbbs_torsion_list[0][1], sbbs_torsion_list[0][2], sbbs_torsion_list[0][3]]])
-    geometry['sc_bb_bb_sc_angle'] = (md.compute_dihedrals(traj,dihedral_indices)*unit.radians).in_units_of(unit.degrees)
+    geometry['sc_bb_bb_sc_angle'] = (md.compute_dihedrals(traj,dihedral_indices)*unit.radians).in_units_of(unit.degrees)[0][0]
     
     # Get bb-bb-bb-sc torsion
     dihedral_indices = np.array([[bbbs_torsion_list[0][0], bbbs_torsion_list[0][1], bbbs_torsion_list[0][2], bbbs_torsion_list[0][3]]])
-    geometry['bb_bb_bb_sc_angle'] = (md.compute_dihedrals(traj,dihedral_indices)*unit.radians).in_units_of(unit.degrees)
+    geometry['bb_bb_bb_sc_angle'] = (md.compute_dihedrals(traj,dihedral_indices)*unit.radians).in_units_of(unit.degrees)[0][0]
 
-    plot_LJ_helix(r,c,t_par,r_eq_bb,r_eq_sc=r_eq_sc,plotfile=plotfile)
+    # Plot helix:
+    if plotfile is not None:
+        plot_LJ_helix(r,c,t_par,r_eq_bb,r_eq_sc=r_eq_sc,plotfile=plotfile)
     
     return opt_sol, geometry
 
