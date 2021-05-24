@@ -22,5 +22,16 @@ you will also need to install ``analyze_foldamers``, available through GitHub:
 
 In the base directory of ``analyze_foldamers``, install using:
 
-``python setup.py install``
+``python setup.py install
+
+Conda environment
+-----------------
+
+``cg_openmm`` is currently tested and maintained on python 3.6, 3.7, and 3.8.
+
+Create an anaconda environment for running cg_openmm by specifying the following dependencies:
+``conda create -n cg_openmm_env python=3.X mdtraj mpi4py numpy openmm openmmtools physical_validation pymbar
+scikit-learn scipy``
+
+Alternatively, an environment can be created from one of the .yml files provided with ``cg_openmm``.
 

@@ -8,7 +8,7 @@ cg_openmm
 
 ``cg_openmm`` is a Python package for setup and thermodynamic analysis of coarse-grained
 oligomer replica exchange molecular dynamics (REMD) simulations, with a focus on identifying
-and analyzing cooperative folding transitions. 
+and analyzing cooperative folding transitions.
 
  - Build coarse-grained hetero-oligomer topology and force field definitions using the highly customizable
    potentials in OpenMM
@@ -23,14 +23,19 @@ and analyzing cooperative folding transitions.
    :caption: User Guide
 
    installation
-   cgmodel class
    examples
    
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: API documentation:
    
-   api
+   build
+   cgmodel
+   ensembles
+   parameters
+   simulation
+   thermo
+   utilities
     
 Indices and tables
 ==================
