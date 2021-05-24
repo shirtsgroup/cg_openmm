@@ -18,7 +18,7 @@ class CGModel(object):
         - nonbonded force field parameters
         - initial particle positions
     
-    :Example::
+    :Example:
     .. code-block:: python
     
         from simtk import unit
