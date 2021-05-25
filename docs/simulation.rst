@@ -1,9 +1,11 @@
 Simulation module
 =================
 
-.. autosummary::
-    :toctree: api/generated/
+.. currentmodule:: cg_openmm.simulation
 
-    cg_openmm.simulation.physical_validation
-    cg_openmm.simulation.rep_exch
-    cg_openmm.simulation.tools
+.. autosummary::
+   :toctree: api/generated/
+
+   physical_validation
+   rep_exch
+   tools

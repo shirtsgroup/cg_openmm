@@ -1,7 +1,9 @@
 Thermo module
 =============
 
-.. autosummary::
-    :toctree: api/generated/
+.. currentmodule:: cg_openmm.thermo
 
-    cg_openmm.thermo.calc
+.. autosummary::
+   :toctree: api/generated/
+
+   calc

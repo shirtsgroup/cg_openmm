@@ -1,7 +1,9 @@
 Ensembles module
 ================
 
-.. autosummary::
-    :toctree: api/generated/
+.. currentmodule:: cg_openmm.ensembles
 
-    cg_openmm.ensembles.ens_build
+.. autosummary::
+   :toctree: api/generated/
+
+   ens_build
