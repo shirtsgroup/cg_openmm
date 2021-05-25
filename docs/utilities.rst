@@ -1,9 +1,11 @@
 Utilities module
 ================
 
-.. autosummary::
-    :toctree: api/generated/
+.. currentmodule:: cg_openmm.utilities
 
-    cg_openmm.utilities.iotools
-    cg_openmm.utilities.random_builder
-    cg_openmm.utilities.util
+.. autosummary::
+   :toctree: api/generated/
+
+   iotools
+   random_builder
+   util

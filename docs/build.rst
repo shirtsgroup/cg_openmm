@@ -1,7 +1,9 @@
 Build module
 ============
 
-.. autosummary::
-    :toctree: api/generated/
+.. currentmodule:: cg_openmm.build
 
-    cg_openmm.build.cg_build
+.. autosummary::
+   :toctree: api/generated/
+   
+   cg_build
