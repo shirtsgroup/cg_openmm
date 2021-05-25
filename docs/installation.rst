@@ -30,9 +30,11 @@ Conda environment
 ``cg_openmm`` is currently tested and maintained on python 3.6, 3.7, and 3.8.
 
 Create an anaconda environment for running cg_openmm by specifying the following dependencies:
+
 .. code-block:: bash
-    conda create -n cg_openmm_env python=3.X mdtraj mpi4py numpy openmm openmmtools physical_validation pymbar
-    scikit-learn scipy``
+    
+   conda create -n cg_openmm_env python=3.X mdtraj mpi4py numpy openmm openmmtools physical_validation
+   pymbar scikit-learn scipy
 
 Alternatively, an environment can be created from one of the .yml files provided with ``cg_openmm``.
 
