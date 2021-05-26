@@ -94,7 +94,7 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
         params = (simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb)
     
         # Set optimization bounds [t, sigma_bb, sigma_sc]:
-        bounds = [(0.1,np.pi/2),(r/50,5*r),(r/50,5*r)]
+        bounds = [(0.01,np.pi),(r/50,15*r),(r/50,15*r)]
 
         opt_sol = differential_evolution(
             compute_helix_openmm_energy_vary_LJ,
@@ -127,9 +127,9 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
     
         # Set optimization bounds [sigma_bb, sigma_sc]:
         if sigma_bb > sigma_sc:
-            bounds = [(r/50,5*r),(r/50,5*r)]
+            bounds = [(r/50,15*r),(r/50,15*r)]
         else:
-            bounds = [(r/50,5*r),(r/50,5*r)]    
+            bounds = [(r/50,15*r),(r/50,15*r)]    
         
         opt_sol = differential_evolution(
             compute_helix_openmm_energy_vary_LJ_constrained,

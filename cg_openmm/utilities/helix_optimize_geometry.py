@@ -51,7 +51,7 @@ def optimize_helix_simple(n_particle_bb, sigma, epsilon, sidechain=True, DE_pops
     epsilon = epsilon.value_in_unit(unit.kilojoule_per_mole)
     
     # Set optimization bounds [t_delta, r, c]:
-    bounds = [(0.1,np.pi/2),(sigma/4,2*sigma),(0.01,sigma)]
+    bounds = [(0.01,np.pi),(sigma/50,15*sigma),(sigma/50,2*sigma)]
     
     params = (sigma, epsilon, n_particle_bb, sidechain)
     
@@ -211,9 +211,9 @@ def optimize_helix_openmm_energy(n_particle_bb, sigma_bb, sigma_sc, epsilon_bb, 
     
         # Set optimization bounds [t, r, c]:
         if sigma_bb > sigma_sc:
-            bounds = [(0.1,np.pi/2),(sigma_bb/4,2*sigma_bb),(0.01,sigma_bb)]
+            bounds = [(0.01,np.pi),(sigma_bb/50,15*sigma_bb),(sigma_bb/50,2*sigma_bb)]
         else:
-            bounds = [(0.1,np.pi/2),(sigma_sc/4,2*sigma_sc),(0.01,sigma_sc)]    
+            bounds = [(0.01,np.pi),(sigma_sc/50,15*sigma_sc),(sigma_sc/50,2*sigma_sc)]
         
         opt_sol = differential_evolution(
             compute_LJ_helix_openmm_energy,
@@ -246,9 +246,9 @@ def optimize_helix_openmm_energy(n_particle_bb, sigma_bb, sigma_sc, epsilon_bb, 
     
         # Set optimization bounds [r, c]:
         if sigma_bb > sigma_sc:
-            bounds = [(sigma_bb/4,2*sigma_bb),(0.01,sigma_bb)]
+            bounds = [(sigma_bb/50,15*sigma_bb),(sigma_bb/50,2*sigma_bb)]
         else:
-            bounds = [(sigma_sc/4,2*sigma_sc),(0.01,sigma_sc)]    
+            bounds = [(sigma_sc/50,15*sigma_sc),(sigma_sc/50,2*sigma_sc)]    
         
         opt_sol = differential_evolution(
             compute_LJ_helix_openmm_energy_constrained,
