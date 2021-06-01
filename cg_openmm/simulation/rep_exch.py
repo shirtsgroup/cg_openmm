@@ -42,8 +42,8 @@ def make_replica_dcd_files(
     :param time_interval: frequency, in number of time steps, at which positions were recorded (default=200)
     :type time_interval: int
     
-    :param output_directory: path to which we will write the output (default='output')
-    :type output_directory: str
+    :param output_dir: path to which we will write the output (default='output')
+    :type output_dir: str
     
     :param output_data: name of output .nc data file (default='output.nc')
     :type output_data: str    
@@ -78,7 +78,7 @@ def make_replica_dcd_files(
         n_frames_tot = replica_positions.shape[0]
             
         # Determine simulation time (in ps) for each frame:
-        time_delta_ps = (timestep*time_interval).value_in_unit(unit.picosecond)
+        time_delta_ps = (timestep*time_interval*frame_stride).value_in_unit(unit.picosecond)
         traj_times = np.arange(frame_begin*time_delta_ps,n_frames_tot*time_delta_ps,time_delta_ps)
     
         file_name = f"{output_dir}/replica_{replica_index+1}.dcd"
@@ -208,7 +208,7 @@ def make_state_dcd_files(
         n_frames_tot = state_positions.shape[0]
             
         # Determine simulation time (in ps) for each frame:
-        time_delta_ps = (timestep*time_interval).value_in_unit(unit.picosecond)
+        time_delta_ps = (timestep*time_interval*frame_stride).value_in_unit(unit.picosecond)
         traj_times = np.arange(frame_begin*time_delta_ps,n_frames_tot*time_delta_ps,time_delta_ps)
     
         file_name = f"{output_dir}/state_{state_index+1}.dcd"
@@ -220,9 +220,10 @@ def make_state_dcd_files(
             time=traj_times,
         )
         
-        ref_traj = state_traj[0]
-        state_traj.superpose(ref_traj)
-        # This rewrites to state_traj
+        if center:
+            ref_traj = state_traj[0]
+            state_traj.superpose(ref_traj)
+            # This rewrites to state_traj
             
         Trajectory.save_dcd(state_traj,file_name)
         
@@ -284,9 +285,10 @@ def make_state_pdb_files(
             Topology.from_openmm(topology),
         )
         
-        ref_traj = state_traj[0]
-        state_traj.superpose(ref_traj)
-        # This rewrites to state_traj
+        if center:
+            ref_traj = state_traj[0]
+            state_traj.superpose(ref_traj)
+            # This rewrites to state_traj
             
         Trajectory.save_pdb(state_traj,file_name)
         
