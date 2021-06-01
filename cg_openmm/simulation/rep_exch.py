@@ -78,8 +78,12 @@ def make_replica_dcd_files(
         n_frames_tot = replica_positions.shape[0]
             
         # Determine simulation time (in ps) for each frame:
-        time_delta_ps = (timestep*time_interval*frame_stride).value_in_unit(unit.picosecond)
-        traj_times = np.arange(frame_begin*time_delta_ps,n_frames_tot*time_delta_ps,time_delta_ps)
+        time_delta_ps = (timestep*time_interval).value_in_unit(unit.picosecond)
+        traj_times = np.linspace(
+            frame_begin*time_delta_ps,
+            (frame_begin+frame_stride*(n_frames_tot-1))*time_delta_ps,
+            num=n_frames_tot,
+        )
     
         file_name = f"{output_dir}/replica_{replica_index+1}.dcd"
 
@@ -208,9 +212,13 @@ def make_state_dcd_files(
         n_frames_tot = state_positions.shape[0]
             
         # Determine simulation time (in ps) for each frame:
-        time_delta_ps = (timestep*time_interval*frame_stride).value_in_unit(unit.picosecond)
-        traj_times = np.arange(frame_begin*time_delta_ps,n_frames_tot*time_delta_ps,time_delta_ps)
-    
+        time_delta_ps = (timestep*time_interval).value_in_unit(unit.picosecond)
+        traj_times = np.linspace(
+            frame_begin*time_delta_ps,
+            (frame_begin+frame_stride*(n_frames_tot-1))*time_delta_ps,
+            num=n_frames_tot,
+        )
+
         file_name = f"{output_dir}/state_{state_index+1}.dcd"
 
         # Trajectories are written in nanometers:
