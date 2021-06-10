@@ -137,13 +137,22 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                             particle_index, q, param_dict[sigma_str], eps
                         )
                         force.updateParametersInContext(simulation.context)
-                    elif epsilon_str in param_dict:
+                        print(f'Updating parameter {sigma_str}:')
+                        print(f'cgmodel particle: {particle_index}')
+                        print(f'Old value: {sigma_old}')
+                        print(f'New value: {param_dict[sigma_str]}')
+                        
+                    if epsilon_str in param_dict:
                         # Update the epsilon parameter for this particle:
                         (q,sigma,eps_old) = force.getParticleParameters(particle_index)
                         force.setParticleParameters(
                             particle_index,q,sigma,param_dict[epsilon_str]
                         )
                         force.updateParametersInContext(simulation.context)
+                        print(f'Updating parameter {epsilon_str}:')
+                        print(f'cgmodel particle: {particle_index}')
+                        print(f'Old value: {eps_old}')
+                        print(f'New value: {param_dict[epsilon_str]}')
 
         elif force_name == 'HarmonicBondForce':
             if bond_eq or bond_k:
@@ -322,6 +331,8 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         )
                         force.updateParametersInContext(simulation.context)
                         print(f'Updating parameter {str_name}:')
+                        print(f'OpenMM Particles: {par1} {par2} {par3} {par4}')
+                        print(f'cgmodel particles: {par1} {par2} {par3} {par4}')
                         print(f'Old value: {k_old}')
                         print(f'New value: {param_dict[str_name]}')
 
@@ -420,18 +431,15 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
         for k in range(nframes):
             positions = traj[k].xyz[0]*unit.nanometer
             # Compute potential energy for current frame, evaluating at all states
-            
             simulation.context.setPositions(positions)
             potential_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()   
             
-            # Reduce the potential energy:
-            beta_i = 1 / (kB.value_in_unit(unit.kilojoule_per_mole/Tunit) * temperature_list[i].value_in_unit(Tunit))
-            potential_energy *= beta_i
+            # Boltzmann factor for reduce the potential energy:
+            beta_all = 1/(kB*temperature_list)
             
-            # Evaluate this energy at all thermodynamic states:
+            # Evaluate this reduced energy at all thermodynamic states:
             for j in range(len(temperature_list)):
-                T_scale = temperature_list[i]/temperature_list[j]
-                U[i,j,k] = T_scale*potential_energy.value_in_unit(unit.kilojoules_per_mole)
+                U[i,j,k] = (potential_energy*beta_all[j])
             
             # This can be converted to the 2d array for MBAR with kln_to_kn utility
             # The 3d array is equivalent to replica_energies extracted from the .nc
