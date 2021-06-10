@@ -2,6 +2,6 @@ CGModel class
 =========================================================
 
 .. autoclass:: cg_openmm.cg_model.cgmodel.CGModel
-    :members:
+   :members:
     
-    .. automethod:: __init__
+   .. automethod:: __init__

@@ -12,7 +12,7 @@ from cg_openmm.utilities.util import set_box_vectors, get_box_vectors
 from simtk.openmm.app.pdbfile import PDBFile
 from simtk.openmm.app.dcdfile import DCDFile
 from mdtraj.formats import PDBTrajectoryFile
-from mdtraj import Topology
+from mdtraj import Topology, Trajectory
 from pymbar import timeseries
 from scipy.special import erf
 from scipy.optimize import minimize_scalar
@@ -42,8 +42,8 @@ def make_replica_dcd_files(
     :param time_interval: frequency, in number of time steps, at which positions were recorded (default=200)
     :type time_interval: int
     
-    :param output_directory: path to which we will write the output (default='output')
-    :type output_directory: str
+    :param output_dir: path to which we will write the output (default='output')
+    :type output_dir: str
     
     :param output_data: name of output .nc data file (default='output.nc')
     :type output_data: str    
@@ -71,21 +71,30 @@ def make_replica_dcd_files(
     xunit = sampler_states[0].positions[0].unit
         
     for replica_index in range(n_replicas):
-        replica_trajectory = extract_trajectory(topology, replica_index=replica_index,
+        replica_positions = extract_trajectory(topology, replica_index=replica_index,
             output_data=output_data_path, checkpoint_data=checkpoint_data,
             frame_begin=frame_begin, frame_stride=frame_stride)
     
-        file_name = f"{output_dir}/replica_{replica_index+1}.dcd"
-        file = open(file_name, "wb")
-        dcd_file = DCDFile(file, topology, timestep, firstStep=frame_begin, interval=time_interval)
-        
-        for positions in replica_trajectory:
-            # Add the units consistent with replica_energies
-            positions *= xunit
-            DCDFile.writeModel(dcd_file, positions)
+        n_frames_tot = replica_positions.shape[0]
             
-        file.close()
-        file_list.append(file_name)
+        # Determine simulation time (in ps) for each frame:
+        time_delta_ps = (timestep*time_interval).value_in_unit(unit.picosecond)
+        traj_times = np.linspace(
+            frame_begin*time_delta_ps,
+            (frame_begin+frame_stride*(n_frames_tot-1))*time_delta_ps,
+            num=n_frames_tot,
+        )
+    
+        file_name = f"{output_dir}/replica_{replica_index+1}.dcd"
+
+        # Trajectories are written in nanometers:
+        replica_traj = Trajectory(
+            replica_positions,
+            Topology.from_openmm(topology),
+            time=traj_times,
+        )
+            
+        Trajectory.save_dcd(replica_traj,file_name)
         
     return file_list
     
@@ -99,8 +108,8 @@ def make_replica_pdb_files(
     :param topology: OpenMM Topology
     :type topology: `Topology() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1topology_1_1Topology.html>`_
     
-    :param output_directory: path to which we will write the output (default='output')
-    :type output_directory: str
+    :param output_dir: path to which we will write the output (default='output')
+    :type output_dir: str
     
     :param output_data: name of output .nc data file (default='output.nc')
     :type output_data: str    
@@ -113,9 +122,6 @@ def make_replica_pdb_files(
     
     :param frame_stride: advance by this many frames when writing pdb trajectories (default=1)
     :type frame_stride: int   
-
-    :param center: align the center of mass of each structure in the discontinuous state trajectory (default=True)
-    :type center: Boolean
     
     :returns:
         - file_list ( List( str ) ) - A list of names for the files that were written
@@ -133,25 +139,19 @@ def make_replica_pdb_files(
     xunit = sampler_states[0].positions[0].unit
     
     for replica_index in range(n_replicas):
-        replica_trajectory = extract_trajectory(topology, replica_index=replica_index, 
+        replica_positions = extract_trajectory(topology, replica_index=replica_index, 
             output_data=output_data_path, checkpoint_data=checkpoint_data,
             frame_begin=frame_begin, frame_stride=frame_stride)
     
         file_name = f"{output_dir}/replica_{replica_index+1}.pdb"
-        file = open(file_name, "w")
 
-        PDBFile.writeHeader(topology, file=file)
-        modelIndex = 1
-        
-        for positions in replica_trajectory:    
-            # Add the units consistent with replica_energies
-            positions *= xunit
-            PDBFile.writeModel(topology, positions, file=file, modelIndex=modelIndex)
+        # Trajectories are written in nanometers:
+        replica_traj = Trajectory(
+            replica_positions,
+            Topology.from_openmm(topology),
+        )
             
-        PDBFile.writeFooter(topology, file=file)
-        
-        file.close()
-        file_list.append(file_name)
+        Trajectory.save_pdb(replica_traj,file_name)
         
     return file_list
     
@@ -173,8 +173,8 @@ def make_state_dcd_files(
     :param time_interval: frequency, in number of time steps, at which positions were recorded (default=200)
     :type time_interval: int
     
-    :param output_directory: path to which we will write the output (default='output')
-    :type output_directory: str
+    :param output_dir: path to which we will write the output (default='output')
+    :type output_dir: str
     
     :param output_data: name of output .nc data file (default='output.nc')
     :type output_data: str    
@@ -205,32 +205,35 @@ def make_state_dcd_files(
     xunit = sampler_states[0].positions[0].unit
         
     for state_index in range(len(states)):
-        state_trajectory = extract_trajectory(topology, state_index=state_index,
+        state_positions = extract_trajectory(topology, state_index=state_index,
             output_data=output_data_path, checkpoint_data=checkpoint_data,
             frame_begin=frame_begin, frame_stride=frame_stride)
-    
-        file_name = f"{output_dir}/state_{state_index+1}.dcd"
-        file = open(file_name, "wb")
-        dcd_file = DCDFile(file, topology, timestep, firstStep=frame_begin, interval=time_interval)
-        
-        # TODO: replace this with MDTraj alignment tool
-        if center==True:
-            center_x = np.mean(state_trajectory[0,:,0])
-            center_y = np.mean(state_trajectory[0,:,1])
-            center_z = np.mean(state_trajectory[0,:,2])
-        
-        for positions in state_trajectory:
-            if center==True:
-                positions[:,0] += (center_x - np.mean(positions[:,0]))
-                positions[:,1] += (center_y - np.mean(positions[:,1]))
-                positions[:,2] += (center_z - np.mean(positions[:,2]))
-                
-            # Add the units consistent with replica_energies
-            positions *= xunit
-            DCDFile.writeModel(dcd_file, positions)
             
-        file.close()
-        file_list.append(file_name)
+        n_frames_tot = state_positions.shape[0]
+            
+        # Determine simulation time (in ps) for each frame:
+        time_delta_ps = (timestep*time_interval).value_in_unit(unit.picosecond)
+        traj_times = np.linspace(
+            frame_begin*time_delta_ps,
+            (frame_begin+frame_stride*(n_frames_tot-1))*time_delta_ps,
+            num=n_frames_tot,
+        )
+
+        file_name = f"{output_dir}/state_{state_index+1}.dcd"
+
+        # Trajectories are written in nanometers:
+        state_traj = Trajectory(
+            state_positions,
+            Topology.from_openmm(topology),
+            time=traj_times,
+        )
+        
+        if center:
+            ref_traj = state_traj[0]
+            state_traj.superpose(ref_traj)
+            # This rewrites to state_traj
+            
+        Trajectory.save_dcd(state_traj,file_name)
         
     return file_list
     
@@ -245,8 +248,8 @@ def make_state_pdb_files(
     :param topology: OpenMM Topology
     :type topology: `Topology() <https://simtk.org/api_docs/openmm/api4_1/python/classsimtk_1_1openmm_1_1app_1_1topology_1_1Topology.html>`_
     
-    :param output_directory: path to which we will write the output (default='output')
-    :type output_directory: str
+    :param output_dir: path to which we will write the output (default='output')
+    :type output_dir: str
     
     :param output_data: name of output .nc data file (default='output.nc')
     :type output_data: str    
@@ -278,37 +281,24 @@ def make_state_pdb_files(
     xunit = sampler_states[0].positions[0].unit
     
     for state_index in range(len(states)):
-        state_trajectory = extract_trajectory(topology, state_index=state_index, 
+        state_positions = extract_trajectory(topology, state_index=state_index, 
             output_data=output_data_path, checkpoint_data=checkpoint_data,
             frame_begin=frame_begin, frame_stride=frame_stride)
     
         file_name = f"{output_dir}/state_{state_index+1}.pdb"
-        file = open(file_name, "w")
-
-        PDBFile.writeHeader(topology, file=file)
-        modelIndex = 1
         
-        # TODO: replace this with MDTraj alignment tool
-        if center==True:
-            center_x = np.mean(state_trajectory[0,:,0])
-            center_y = np.mean(state_trajectory[0,:,1])
-            center_z = np.mean(state_trajectory[0,:,2])
+        # Trajectories are written in nanometers:
+        state_traj = Trajectory(
+            state_positions,
+            Topology.from_openmm(topology),
+        )
         
-        for positions in state_trajectory:
-            if center==True:
-                positions[:,0] += (center_x - np.mean(positions[:,0]))
-                positions[:,1] += (center_y - np.mean(positions[:,1]))
-                positions[:,2] += (center_z - np.mean(positions[:,2]))
-                
-            # Add the units consistent with replica_energies
-            positions *= xunit
+        if center:
+            ref_traj = state_traj[0]
+            state_traj.superpose(ref_traj)
+            # This rewrites to state_traj
             
-            PDBFile.writeModel(topology, positions, file=file, modelIndex=modelIndex)
-            
-        PDBFile.writeFooter(topology, file=file)
-        
-        file.close()
-        file_list.append(file_name)
+        Trajectory.save_pdb(state_traj,file_name)
         
     return file_list
     
