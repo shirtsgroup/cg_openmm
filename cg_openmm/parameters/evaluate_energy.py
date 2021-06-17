@@ -90,7 +90,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
         if param_name.find('torsion_force_constant'):
             torsion_k = True
 
-        if param_name.find('equil_torsion_angle'):
+        if param_name.find('torsion_phase_angle'):
             torsion_eq = True
 
         if param_name.find('torsion_periodicity'):
@@ -138,7 +138,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         # Update the sigma parameter for this particle:
                         (q,sigma_old,eps) = force.getParticleParameters(particle_index)
                         force.setParticleParameters(
-                            particle_index, q, param_dict[sigma_str], eps
+                            particle_index, q, param_dict[sigma_str].value_in_unit(unit.nanometer), eps
                         )
                         force.updateParametersInContext(simulation.context)
                         if verbose:
@@ -151,7 +151,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         # Update the epsilon parameter for this particle:
                         (q,sigma,eps_old) = force.getParticleParameters(particle_index)
                         force.setParticleParameters(
-                            particle_index,q,sigma,param_dict[epsilon_str]
+                            particle_index,q,sigma,param_dict[epsilon_str].value_in_unit(unit.kilojoule_per_mole)
                         )
                         force.updateParametersInContext(simulation.context)
                         if verbose:
@@ -185,7 +185,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         (par1, par2, length, k_old) = force.getBondParameters(bond_index)
                         force.setBondParameters(
                             bond_index, par1, par2,
-                            length, param_dict[str_name],
+                            length, param_dict[str_name].value_in_unit(unit.kilojoule_per_mole / unit.nanometer**2),
                         )
                         force.updateParametersInContext(simulation.context)
                         if verbose:
@@ -199,7 +199,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         (par1, par2, length, k_old) = force.getBondParameters(bond_index)
                         force.setBondParameters(
                             bond_index, par1, par2,
-                            length, param_dict[rev_str_name],
+                            length, param_dict[rev_str_name].value_in_unit(unit.kilojoule_per_mole / unit.nanometer**2),
                         )
                         force.updateParametersInContext(simulation.context)
                         if verbose:
@@ -221,7 +221,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         (par1, par2, length_old, k) = force.getBondParameters(bond_index)
                         force.setBondParameters(
                             bond_index, par1, par2,
-                            param_dict[str_name], k,
+                            param_dict[str_name].value_in_unit(unit.nanometer), k,
                         )
                         force.updateParametersInContext(simulation.context)
                         if verbose:
@@ -235,7 +235,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         (par1, par2, length_old, k) = force.getBondParameters(bond_index)
                         force.setBondParameters(
                             bond_index, par1, par2,
-                            param_dict[rev_str_name], k,
+                            param_dict[rev_str_name].value_in_unit(unit.nanometer), k,
                         )
                         force.updateParametersInContext(simulation.context)
                         if verbose:
@@ -272,7 +272,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         (par1, par2, par3, theta0, k_old) = force.getAngleParameters(angle_index)
                         force.setAngleParameters(
                             angle_index, par1, par2, par3,
-                            theta0, param_dict[str_name],
+                            theta0, param_dict[str_name].value_in_unit(unit.kilojoule_per_mole / unit.radian**2),
                         )
                         force.updateParametersInContext(simulation.context)
                         if verbose:
@@ -286,7 +286,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         (par1, par2, par3, theta0, k_old) = force.getAngleParameters(angle_index)
                         force.setAngleParameters(
                             angle_index, par1, par2, par3,
-                            theta0, param_dict[rev_str_name],
+                            theta0, param_dict[rev_str_name].value_in_unit(unit.kilojoule_per_mole / unit.radian**2),
                         )
                         force.updateParametersInContext(simulation.context)
                         if verbose:
@@ -308,7 +308,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         (par1, par2, par3, theta0_old, k) = force.getAngleParameters(angle_index)
                         force.setAngleParameters(
                             angle_index, par1, par2, par3,
-                            param_dict[str_name], k,
+                            param_dict[str_name].value_in_unit(unit.radian), k,
                         )
                         force.updateParametersInContext(simulation.context)
                         if verbose:
@@ -322,7 +322,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         (par1, par2, par3, theta0_old, k) = force.getAngleParameters(angle_index)
                         force.setAngleParameters(
                             angle_index, par1, par2, par3,
-                            param_dict[rev_str_name], k,
+                            param_dict[rev_str_name].value_in_unit(unit.radian), k,
                         )
                         force.updateParametersInContext(simulation.context)
                         if verbose:
@@ -373,7 +373,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
 
                         force.setTorsionParameters(
                             torsion_index, par1, par2, par3, par4,
-                            periodicity, phase, param_dict[str_name],
+                            periodicity, phase, param_dict[str_name].value_in_unit(unit.kilojoule_per_mole),
                         )
                         force.updateParametersInContext(simulation.context)
                         if verbose:
@@ -390,7 +390,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
 
                         force.setTorsionParameters(
                             torsion_index, par1, par2, par3, par4,
-                            periodicity, phase, param_dict[rev_str_name],
+                            periodicity, phase, param_dict[rev_str_name].value_in_unit(unit.kilojoule_per_mole),
                         )
                         force.updateParametersInContext(simulation.context)
                         if verbose:
@@ -416,7 +416,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
 
                         force.setTorsionParameters(
                             torsion_index, par1, par2, par3, par4,
-                            periodicity, param_dict[str_name], k,
+                            periodicity, param_dict[str_name].value_in_unit(unit.radian), k,
                         )
                         force.updateParametersInContext(simulation.context)
                         if verbose:
@@ -433,7 +433,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
 
                         force.setTorsionParameters(
                             torsion_index, par1, par2, par3, par4,
-                            periodicity, param_dict[rev_str_name], k,
+                            periodicity, param_dict[rev_str_name].value_in_unit(unit.radian), k,
                         )
                         force.updateParametersInContext(simulation.context)
                         if verbose:
@@ -446,6 +446,9 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                     #--------------------------------------------------#
                     # Check for updated torsion_periodicity parameters #
                     #--------------------------------------------------#
+                    
+                    # TODO: make this work for sums of periodic torsions
+                    
                     suffix = 'torsion_periodicity'
 
                     str_name = f'{name_1}_{name_2}_{name_3}_{name_4}_{suffix}'
