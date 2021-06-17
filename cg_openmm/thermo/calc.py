@@ -319,18 +319,21 @@ def get_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, output_data
 
     
 def get_heat_capacity_reeval(
-    U_kln, temperature_list,
+    U_kln, temperature_list, output_data="output/output.nc",
     frame_begin=0, sample_spacing=1, frame_end=-1,
     num_intermediate_states=0,frac_dT=0.05, plot_file=None):
     """
     Given an array of re-evaluated energies at a non-simulated set of force field parameters, 
     and a corresponding temperature list, compute heat capacity as a function of temperature.
     
-    :param U_kln: state energies array to be used for the MBAR calculation
+    :param U_kln: re-evaluated state energies array to be used for the MBAR calculation
     :type U_kln: 3d numpy array (float) with dimensions [state, evaluated_state, frame]
     
-    :param temperature_list: List of temperatures associated with sampled states in U_kln
+    :param temperature_list: List of temperatures associated with re-evaluated states in U_kln
     :type temperature_list: List( float * simtk.unit.temperature )
+    
+    :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data (default = "output/output.nc")                                                                                          
+    :type output_data: str 
     
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
     :type frame_begin: int
@@ -357,15 +360,39 @@ def get_heat_capacity_reeval(
 
     """    
     
+    # Get the original energies that were actually simulated:
+    
+    # extract reduced energies and the state indices from the .nc
+    reporter = MultiStateReporter(output_data, open_mode="r")
+    analyzer = ReplicaExchangeAnalyzer(reporter)
+    (
+        replica_energies_all,
+        unsampled_state_energies,
+        neighborhoods,
+        replica_state_indices,
+    ) = analyzer.read_energies()
+    
+    # Select production frames to analyze
+    if frame_end > 0:
+        replica_energies_sampled = replica_energies_all[:,:,frame_begin:frame_end:sample_spacing]
+    else:
+        replica_energies_sampled = replica_energies_all[:,:,frame_begin::sample_spacing]
+    
     # determine the numerical values of beta at each state in units consistent with the temperature
     Tunit = temperature_list[0].unit
     temps = np.array([temp.value_in_unit(Tunit)  for temp in temperature_list])  # should this just be array to begin with
     beta_k = 1 / (kB.value_in_unit(unit.kilojoule_per_mole/Tunit) * temps)
-
-    # convert the energies from replica/evaluated state/sample form to evaluated state/sample form
-    state_energies = pymbar.utils.kln_to_kn(U_kln)
     
-    n_samples = len(state_energies[0,:])
+    # convert the sampled energies from replica/evaluated state/sample form to evaluated state/sample form
+    replica_energies_sampled = pymbar.utils.kln_to_kn(replica_energies_sampled)
+    
+    # convert the re-evaluated energies from state/evaluated state/sample form to evaluated state/sampled form
+    state_energies_reeval = pymbar.utils.kln_to_kn(U_kln)
+    
+    print(f'sampled_energies_sum: {np.sum(replica_energies_sampled)}')
+    print(f'reevaluated_energies_sum: {np.sum(state_energies_reeval)}')
+    
+    n_samples = len(state_energies_reeval[0,:])
     
     # calculate the number of states we need expectations at.  We want it at all of the original
     # temperatures, each intermediate temperature, and then temperatures +/- from the original
@@ -375,7 +402,9 @@ def get_heat_capacity_reeval(
     # finite different state.
     num_sampled_T = len(temps)
     n_unsampled_states = 3*(num_sampled_T + (num_sampled_T-1)*num_intermediate_states)
-    unsampled_state_energies = np.zeros([n_unsampled_states,n_samples])
+    
+    # The first block of unsampled_state_energies is the simulated part, second block is the reevaluated part
+    unsampled_state_energies = np.zeros([2*n_unsampled_states,n_samples])
     full_T_list = np.zeros(n_unsampled_states)
 
     # delta is the spacing between temperatures.
@@ -401,28 +430,43 @@ def get_heat_capacity_reeval(
         full_T_list[i + 2*n_T_vals] = full_T_list[i] + delta[ii]*frac_dT
     full_T_list[2*n_T_vals-1] = full_T_list[n_T_vals-1] - delta[-1]*frac_dT
     full_T_list[3*n_T_vals-1] = full_T_list[n_T_vals-1] + delta[-1]*frac_dT        
-
+    
     # calculate betas of all of these temperatures
     beta_full_k = 1 / (kB.value_in_unit(unit.kilojoule_per_mole/Tunit) * full_T_list)
     
     ti = 0
-    N_k = np.zeros(n_unsampled_states)
+    N_k = np.zeros(2*n_unsampled_states)
     for k in range(n_unsampled_states):
         # Calculate the reduced energies at all temperatures, sampled and unsample.
-        unsampled_state_energies[k, :] = state_energies[0,:]*(beta_full_k[k]/beta_k[0])
+        unsampled_state_energies[k,:] = replica_energies_sampled[0,:]*(beta_full_k[k]/beta_k[0])
         if ti < len(temps):
             # store in N_k which states do and don't have samples.
             if full_T_list[k] == temps[ti]:
                 ti += 1
                 N_k[k] = n_samples//len(temps)  # these are the states that have samples
-
+ 
+    # Now, repeat for the reevaluated states:
+    for k in range(n_unsampled_states):
+        unsampled_state_energies[k+n_unsampled_states,:] = state_energies_reeval[0,:]*(beta_full_k[k]/beta_k[0])
+        N_k[k+n_unsampled_states] = 0 # None of these were actually sampled
+       
+    print(f'sampled_energies_sum: {np.sum(unsampled_state_energies[0:n_unsampled_states,:])}')
+    print(f'reevaluated_energies_sum: {np.sum(unsampled_state_energies[n_unsampled_states:2*n_unsampled_states,:])}')
+    
+       
     # call MBAR to find weights at all states, sampled and unsampled
-    mbarT = pymbar.MBAR(unsampled_state_energies,N_k,verbose=False, relative_tolerance=1e-12);
+    mbarT = pymbar.MBAR(
+        unsampled_state_energies,
+        N_k,
+        verbose=False,
+        relative_tolerance=1e-12
+    )
 
     for k in range(n_unsampled_states):
         # get the 'unreduced' potential -- we can't take differences of reduced potentials
         # because the beta is different; math is much more confusing with derivatives of the reduced potentials.
-        unsampled_state_energies[k, :] /= beta_full_k[k]
+        unsampled_state_energies[k,:] /= beta_full_k[k]
+        unsampled_state_energies[k+n_unsampled_states,:] /= beta_full_k[k]        
 
     # we don't actually need these expectations, but this code can be used to validate
     #results = mbarT.computeExpectations(unsampled_state_energies, state_dependent=True)
@@ -430,31 +474,55 @@ def get_heat_capacity_reeval(
     #dE_expect = results[1]
     
     # expectations for the differences between states, which we need for numerical derivatives                                               
-    results = mbarT.computeExpectations(unsampled_state_energies, output="differences", state_dependent=True)
+    results = mbarT.computeExpectations(
+        unsampled_state_energies,
+        output="differences",
+        state_dependent=True
+    )
     DeltaE_expect = results[0]
     dDeltaE_expect = results[1]
 
     N_eff = mbarT.computeEffectiveSampleNumber()
-    print(f'Number of effective samples: {np.mean(N_eff)}')
+    print(f'Number of effective samples: {N_eff}')
     
     # Now calculate heat capacity (with uncertainties) using the finite difference approach. 
-    Cv = np.zeros(n_T_vals)
-    dCv = np.zeros(n_T_vals)
+    
+    # First, for the simulated energies:
+    Cv_sim = np.zeros(n_T_vals)
+    dCv_sim = np.zeros(n_T_vals)
     for k in range(n_T_vals):
         im = k+n_T_vals  # +/- delta up and down.
         ip = k+2*n_T_vals
-        Cv[k] = (DeltaE_expect[im, ip]) / (full_T_list[ip] - full_T_list[im])
-        dCv[k] = (dDeltaE_expect[im, ip]) / (full_T_list[ip] - full_T_list[im])
+        Cv_sim[k] = (DeltaE_expect[im, ip]) / (full_T_list[ip] - full_T_list[im])
+        dCv_sim[k] = (dDeltaE_expect[im, ip]) / (full_T_list[ip] - full_T_list[im])
 
-    # add units so the plot has the right units.  
-    Cv *= unit.kilojoule_per_mole / Tunit # always kJ/mol, since the OpenMM output is in kJ/mol.
-    dCv *= unit.kilojoule_per_mole / Tunit
+        
+    # expectations for the differences between states, which we need for numerical derivatives         
+    print(f'n_unsampled_states: {n_unsampled_states}') 
+        
+    # Next, for the re-evaluated energies:    
+    Cv_reeval = np.zeros(n_T_vals)
+    dCv_reeval = np.zeros(n_T_vals)
+    for k in range(n_T_vals):
+        im = k+n_T_vals  # +/- delta up and down.
+        ip = k+2*n_T_vals
+        Cv_reeval[k] = (DeltaE_expect[n_unsampled_states+im,n_unsampled_states+ip]) / (full_T_list[ip] - full_T_list[im])
+        dCv_reeval[k] = (dDeltaE_expect[n_unsampled_states+im,n_unsampled_states+ip]) / (full_T_list[ip] - full_T_list[im])
+        
+    # add units so the plot has the right units.
+    Cv_sim *= unit.kilojoule_per_mole / Tunit # always kJ/mol, since the OpenMM output is in kJ/mol.
+    dCv_sim *= unit.kilojoule_per_mole / Tunit
     full_T_list *= Tunit
+    
+    Cv_reeval *= unit.kilojoule_per_mole / Tunit # always kJ/mol, since the OpenMM output is in kJ/mol.
+    dCv_reeval *= unit.kilojoule_per_mole / Tunit
 
     # plot and return the heat capacity (with units)
     if plot_file is not None:
-        plot_heat_capacity(Cv, dCv, full_T_list[0:n_T_vals],file_name=plot_file)
-    return (Cv, dCv, full_T_list[0:n_T_vals])    
+        plot_heat_capacity(Cv_reeval, dCv_reeval, full_T_list[0:n_T_vals],file_name='heat_capacity_reeval.pdf')
+        plot_heat_capacity(Cv_sim, dCv_sim, full_T_list[0:n_T_vals],file_name='heat_capacity_sim.pdf')
+        
+    return (Cv_sim, dCv_sim, Cv_reeval, dCv_reeval, full_T_list[0:n_T_vals], N_eff)
     
 
 def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_file='heat_capacity_boot.pdf',
