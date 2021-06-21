@@ -72,7 +72,7 @@ def test_minimize_structure_dcd():
         positions,
         output_file=f"{structures_path}/medoid_min.dcd",
     )
-    
+
     assert PE_end < PE_start
     assert os.path.isfile(f"{structures_path}/medoid_min.dcd")    
     
@@ -94,6 +94,7 @@ def test_set_binary_interaction():
         torsion_force_constants=cgmodel.torsion_force_constants,
         equil_bond_angles=cgmodel.equil_bond_angles,
         torsion_periodicities=cgmodel.torsion_periodicities,
+        torsion_phase_angles=cgmodel.torsion_phase_angles,
         binary_interaction_parameters=binary_interaction_parameters,
         include_nonbonded_forces=cgmodel.include_nonbonded_forces,
         include_bond_forces=cgmodel.include_bond_forces,
@@ -118,15 +119,15 @@ def test_set_binary_interaction():
         output_file=f"{structures_path}/medoid_min.dcd",
     )
     
-    # These should be equal to ~3 decimal places (1 Joule/mol)
-    PE_start_kappa_off = -47.523193359375
-    PE_end_kappa_off = -73.21410369873047
+    # These should be equal to ~4 decimal places (1 Joule/mol)
+    PE_start_kappa_off = -382.19839163767057
+    PE_end_kappa_off = -500.99943208890255
     
     PE_start_kappa_on = PE_start.value_in_unit(unit.kilojoule_per_mole)
     PE_end_kappa_on = PE_end.value_in_unit(unit.kilojoule_per_mole)
     
-    assert_almost_equal(PE_start_kappa_on,PE_start_kappa_off,decimal=3)
-    assert_almost_equal(PE_end_kappa_on,PE_end_kappa_off,decimal=3)
+    assert_almost_equal(PE_start_kappa_on,PE_start_kappa_off,decimal=4)
+    assert_almost_equal(PE_end_kappa_on,PE_end_kappa_off,decimal=4)
     
     
 def test_run_simulation(tmpdir):
