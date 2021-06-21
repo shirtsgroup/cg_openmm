@@ -27,7 +27,7 @@ def test_native_contacts_pdb(tmpdir):
     # Replica exchange settings
     number_replicas = 12
     min_temp = 200.0 * unit.kelvin
-    max_temp = 300.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
     temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
     
     # Load in cgmodel
@@ -84,7 +84,7 @@ def test_native_contacts_dcd(tmpdir):
     # Replica exchange settings
     number_replicas = 12
     min_temp = 200.0 * unit.kelvin
-    max_temp = 300.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
     temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
     
     # Load in cgmodel
@@ -173,7 +173,7 @@ def test_expectations_fraction_contacts_pdb(tmpdir):
     # Replica exchange settings
     number_replicas = 12
     min_temp = 200.0 * unit.kelvin
-    max_temp = 300.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
     temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
 
     # Load in cgmodel
@@ -190,10 +190,10 @@ def test_expectations_fraction_contacts_pdb(tmpdir):
 
     # Set cutoff parameters:
     # Cutoff for native structure pairwise distances:
-    native_contact_cutoff = 3.5* unit.angstrom
+    native_contact_cutoff = 5.0* unit.angstrom
 
     # Tolerance for current trajectory distances:
-    native_contact_tol = 1.2
+    native_contact_tol = 1.3
 
     # Get native contacts:
     native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
@@ -329,7 +329,7 @@ def test_expectations_fraction_contacts_dcd(tmpdir):
     # Replica exchange settings
     number_replicas = 12
     min_temp = 200.0 * unit.kelvin
-    max_temp = 300.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
     temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
 
     # Load in cgmodel
@@ -346,10 +346,10 @@ def test_expectations_fraction_contacts_dcd(tmpdir):
 
     # Set cutoff parameters:
     # Cutoff for native structure pairwise distances:
-    native_contact_cutoff = 3.5* unit.angstrom
+    native_contact_cutoff = 5.0* unit.angstrom
 
     # Tolerance for current trajectory distances:
-    native_contact_tol = 1.2
+    native_contact_tol = 1.3
 
     # Get native contacts:
     native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
@@ -418,7 +418,7 @@ def test_bootstrap_native_contacts_expectation_dcd(tmpdir):
     # Replica exchange settings
     number_replicas = 12
     min_temp = 200.0 * unit.kelvin
-    max_temp = 300.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
     temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
     
     # Load in cgmodel

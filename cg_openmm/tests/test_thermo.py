@@ -24,7 +24,7 @@ def test_heat_capacity_calc(tmpdir):
     
     # number_replicas=12
     # min_temp = 200.0 * unit.kelvin
-    # max_temp = 300.0 * unit.kelvin
+    # max_temp = 600.0 * unit.kelvin
     
     # 1) With default starting frame (0)
     C_v, dC_v, new_temperature_list = get_heat_capacity(
@@ -74,10 +74,6 @@ def test_bootstrap_heat_capacity_conf(tmpdir):
     plot_directory = tmpdir.mkdir("plot_output")
     output_data = os.path.join(data_path, "output.nc")
     
-    # number_replicas=12
-    # min_temp = 200.0 * unit.kelvin
-    # max_temp = 300.0 * unit.kelvin
-    
     (new_temperature_list, C_v_values, C_v_uncertainty, Tm_value, Tm_uncertainty, 
     Cv_height_value, Cv_height_uncertainty, FWHM_value, FWHM_uncertainty) = bootstrap_heat_capacity(
         output_data=output_data,
@@ -98,10 +94,6 @@ def test_bootstrap_heat_capacity_sigma(tmpdir):
     
     plot_directory = tmpdir.mkdir("plot_output")
     output_data = os.path.join(data_path, "output.nc")
-    
-    # number_replicas=12
-    # min_temp = 200.0 * unit.kelvin
-    # max_temp = 300.0 * unit.kelvin
     
     (new_temperature_list, C_v_values, C_v_uncertainty, Tm_value, Tm_uncertainty, 
     Cv_height_value, Cv_height_uncertainty, FWHM_value, FWHM_uncertainty) = bootstrap_heat_capacity(
