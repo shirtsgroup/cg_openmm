@@ -15,7 +15,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
     frame_begin=0, frame_end=-1, frame_stride=1, verbose=False):
     """
     Given a cgmodel with a topology and system, evaluate the energy at all structures in each
-    trajectory files specified.
+    trajectory files specified with updated force field parameters specified in param_dict.
 
     :param cgmodel: CGModel() class object to evaluate energy with
     :type cgmodel: class
@@ -506,7 +506,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
 
         if i == 0:
             nframes = traj.n_frames
-            print(f'n_frames: {nframes}')
+            print(f'Evaluating {nframes} frames')
             U_eval = np.zeros((len(file_list),len(file_list),nframes))
 
         for k in range(nframes):

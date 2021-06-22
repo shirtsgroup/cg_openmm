@@ -839,7 +839,7 @@ def test_eval_energy_all_parameters(tmpdir):
     # Check updated torsion parameters: 
     assert sc_bb_bb_sc_angle_updated == param_dict['sc_bb_bb_sc_torsion_phase_angle']
     assert bb_bb_bb_bb_angle_updated == param_dict['bb_bb_bb_bb_torsion_phase_angle']
-    assert bb_bb_bb_sc_angle_updated == param_dict['bb_bb_bb_sc_torsion_phase_angle']     
+    assert bb_bb_bb_sc_angle_updated == param_dict['bb_bb_bb_sc_torsion_phase_angle']
      
     assert sc_bb_bb_sc_k_updated == param_dict['sc_bb_bb_sc_torsion_force_constant']
     assert bb_bb_bb_bb_k_updated == param_dict['bb_bb_bb_bb_torsion_force_constant']
@@ -848,3 +848,244 @@ def test_eval_energy_all_parameters(tmpdir):
     assert sc_bb_bb_sc_per_updated == param_dict['sc_bb_bb_sc_torsion_periodicity']
     assert bb_bb_bb_bb_per_updated == param_dict['bb_bb_bb_bb_torsion_periodicity']
     assert bb_bb_bb_sc_per_updated == param_dict['bb_bb_bb_sc_torsion_periodicity']
+      
+ 
+def test_reeval_heat_capacity(tmpdir):
+    """
+    Test heat capacity calculation for non-simulated force field parameters (bootstrapping version)
+    """
+    output_directory = tmpdir.mkdir("output")
+    
+    # Replica exchange settings
+    number_replicas = 12
+    min_temp = 200.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
+    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
+    
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+    
+    # Data file with simulated energies:
+    output_data = os.path.join(data_path, "output.nc")
+    
+    # Create list of replica trajectories to analyze
+    dcd_file_list = []
+    for i in range(len(temperature_list)):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+    
+    # Set up dictionary of parameter change instructions:
+    param_dict = {}
+
+    param_dict['bb_sigma'] = 2.50 * unit.angstrom
+    
+    # Re-evaluate OpenMM energies:
+    U_eval, simulation = eval_energy(
+        cgmodel,
+        dcd_file_list,
+        temperature_list,
+        param_dict,
+        frame_begin=10,
+        frame_end=-1,
+        frame_stride=5,
+        verbose=False,
+    )
+    
+    # Evaluate heat capacities at simulated and non-simulated force field parameters:
+    (Cv_sim, dCv_sim,
+    Cv_reeval, dCv_reeval,
+    T_list, N_eff) = get_heat_capacity_reeval(
+        U_kln=U_eval,
+        output_data=output_data,
+        frame_begin=10,
+        frame_end=-1,
+        sample_spacing=5,
+        num_intermediate_states=1,
+        frac_dT=0.05,
+        plot_file_sim=f"{output_directory}/heat_capacity_sim.pdf",
+        plot_file_reeval=f"{output_directory}/heat_capacity_reeval.pdf",
+    )
+    
+    assert os.path.isfile(f"{output_directory}/heat_capacity_reeval.pdf")
+    assert os.path.isfile(f"{output_directory}/heat_capacity_sim.pdf")
+    
+    
+def test_reeval_heat_capacity_end_frame(tmpdir):
+    """
+    Test heat capacity calculation for non-simulated force field parameters (bootstrapping version)
+    """
+    output_directory = tmpdir.mkdir("output")
+    
+    # Replica exchange settings
+    number_replicas = 12
+    min_temp = 200.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
+    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
+    
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+    
+    # Data file with simulated energies:
+    output_data = os.path.join(data_path, "output.nc")
+    
+    # Create list of replica trajectories to analyze
+    dcd_file_list = []
+    for i in range(len(temperature_list)):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+    
+    # Set up dictionary of parameter change instructions:
+    param_dict = {}
+
+    param_dict['bb_sigma'] = 2.50 * unit.angstrom
+    
+    # Re-evaluate OpenMM energies:
+    U_eval, simulation = eval_energy(
+        cgmodel,
+        dcd_file_list,
+        temperature_list,
+        param_dict,
+        frame_begin=10,
+        frame_end=150,
+        frame_stride=5,
+        verbose=False,
+    )
+    
+    # Evaluate heat capacities at simulated and non-simulated force field parameters:
+    (Cv_sim, dCv_sim,
+    Cv_reeval, dCv_reeval,
+    T_list, N_eff) = get_heat_capacity_reeval(
+        U_kln=U_eval,
+        output_data=output_data,
+        frame_begin=10,
+        frame_end=150,
+        sample_spacing=5,
+        num_intermediate_states=1,
+        frac_dT=0.05,
+        plot_file_sim=f"{output_directory}/heat_capacity_sim.pdf",
+        plot_file_reeval=f"{output_directory}/heat_capacity_reeval.pdf",
+    )
+    
+    assert os.path.isfile(f"{output_directory}/heat_capacity_reeval.pdf")
+    assert os.path.isfile(f"{output_directory}/heat_capacity_sim.pdf")
+    
+    
+def test_reeval_heat_capacity_boot(tmpdir):
+    """
+    Test heat capacity calculation for non-simulated force field parameters (bootstrapping version)
+    """
+    output_directory = tmpdir.mkdir("output")
+    
+    # Replica exchange settings
+    number_replicas = 12
+    min_temp = 200.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
+    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
+    
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+    
+    # Data file with simulated energies:
+    output_data = os.path.join(data_path, "output.nc")
+    
+    # Create list of replica trajectories to analyze
+    dcd_file_list = []
+    for i in range(len(temperature_list)):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+    
+    # Set up dictionary of parameter change instructions:
+    param_dict = {}
+
+    param_dict['bb_sigma'] = 2.50 * unit.angstrom
+    
+    # Re-evaluate OpenMM energies:
+    U_eval, simulation = eval_energy(
+        cgmodel,
+        dcd_file_list,
+        temperature_list,
+        param_dict,
+        frame_begin=10,
+        frame_end=-1,
+        frame_stride=1,
+        verbose=False,
+    )
+    
+    # Evaluate heat capacities at simulated and non-simulated force field parameters:
+    (new_temperature_list,
+    C_v_values, C_v_uncertainty,
+    Tm_value, Tm_uncertainty, 
+    Cv_height_value, Cv_height_uncertainty,
+    FWHM_value, FWHM_uncertainty) = bootstrap_heat_capacity(
+        U_kln=U_eval,
+        output_data=output_data,
+        frame_begin=10,
+        frame_end=-1,
+        sample_spacing=5,
+        num_intermediate_states=1,
+        n_trial_boot=10,
+        plot_file=f"{output_directory}/heat_capacity_reeval_boot.pdf",
+    )
+    
+    assert os.path.isfile(f"{output_directory}/heat_capacity_reeval_boot.pdf")
+    
+   
+def test_reeval_heat_capacity_boot_end_frame(tmpdir):
+    """
+    Test heat capacity calculation for non-simulated force field parameters,
+    with an end frame specified (bootstrapping version)
+    """
+    output_directory = tmpdir.mkdir("output")
+    
+    # Replica exchange settings
+    number_replicas = 12
+    min_temp = 200.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
+    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
+    
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+    
+    # Data file with simulated energies:
+    output_data = os.path.join(data_path, "output.nc")
+    
+    # Create list of replica trajectories to analyze
+    dcd_file_list = []
+    for i in range(len(temperature_list)):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+    
+    # Set up dictionary of parameter change instructions:
+    param_dict = {}
+
+    param_dict['bb_sigma'] = 2.50 * unit.angstrom
+    
+    # Re-evaluate OpenMM energies:
+    U_eval, simulation = eval_energy(
+        cgmodel,
+        dcd_file_list,
+        temperature_list,
+        param_dict,
+        frame_begin=0,
+        frame_end=150,
+        frame_stride=1,
+        verbose=False,
+    )
+    
+    # Evaluate heat capacities at simulated and non-simulated force field parameters:
+    (new_temperature_list,
+    C_v_values, C_v_uncertainty,
+    Tm_value, Tm_uncertainty, 
+    Cv_height_value, Cv_height_uncertainty,
+    FWHM_value, FWHM_uncertainty) = bootstrap_heat_capacity(
+        U_kln=U_eval,
+        output_data=output_data,
+        frame_begin=0,
+        frame_end=150,
+        sample_spacing=5,
+        num_intermediate_states=1,
+        n_trial_boot=10,
+        plot_file=f"{output_directory}/heat_capacity_reeval_boot.pdf",
+    )
+    
+    assert os.path.isfile(f"{output_directory}/heat_capacity_reeval_boot.pdf")
+    
+    
+    
+    

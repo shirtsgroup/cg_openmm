@@ -184,7 +184,7 @@ def get_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, output_data
     :type plotfile: str
     
     :param bootstrap_energies: a custom replica_energies array to be used for bootstrapping calculations. Used instead of the energies in the .nc file.
-    :type bootstrap_energies: 2d numpy array (float)
+    :type bootstrap_energies: 3d numpy array (float)
 
     :returns:
           - C_v ( List( float ) ) - The heat capacity values for all (including inserted intermediates) states
@@ -319,18 +319,18 @@ def get_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, output_data
 
     
 def get_heat_capacity_reeval(
-    U_kln, temperature_list, output_data="output/output.nc",
+    U_kln, output_data="output/output.nc",
     frame_begin=0, sample_spacing=1, frame_end=-1,
-    num_intermediate_states=0,frac_dT=0.05, plot_file=None):
+    num_intermediate_states=0,frac_dT=0.05,
+    plot_file_sim=None, plot_file_reeval=None,
+    boot_frame_shift=None,
+    ):
     """
     Given an array of re-evaluated energies at a non-simulated set of force field parameters, 
-    and a corresponding temperature list, compute heat capacity as a function of temperature.
+    and a corresponding temperature list, compute heat capacity as a function of temperature. 
     
-    :param U_kln: re-evaluated state energies array to be used for the MBAR calculation
-    :type U_kln: 3d numpy array (float) with dimensions [state, evaluated_state, frame]
-    
-    :param temperature_list: List of temperatures associated with re-evaluated states in U_kln
-    :type temperature_list: List( float * simtk.unit.temperature )
+    :param U_kln: re-evaluated state energies array to be used for the MBAR calculation (first frame is frame_begin)
+    :type U_kln: 3d numpy array (float) with dimensions [replica, evaluated_state, frame]
     
     :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data (default = "output/output.nc")                                                                                          
     :type output_data: str 
@@ -342,7 +342,7 @@ def get_heat_capacity_reeval(
     :type sample_spacing: int
     
     :param frame_end: index of last frame to include in heat capacity calculation (default=-1)
-    :type frame_end: int  
+    :type frame_end: int
     
     :param num_intermediate_states: The number of states to insert between existing states in 'temperature_list' (default=0)
     :type num_intermediate_states: int
@@ -350,8 +350,14 @@ def get_heat_capacity_reeval(
     :param frac_dT: The fraction difference between temperatures points used to calculate finite difference derivatives (default=0.05)
     :type num_intermediate_states: float
     
-    :param plotfile: path to filename to output plot
-    :type plotfile: str
+    :param plot_file_sim: path to filename to output plot for simulated heat capacity (default=None)
+    :type plot_file_sim: str
+    
+    :param plot_file_reeval: path to filename to output plot for reevaluated heat capacity (default=None)
+    :type plot_file_reeval: str
+    
+    :param boot_frame_shift: reference frame shift from bootstrapping scheme (default=None)
+    :type boot_frame_shift: int
 
     :returns:
           - C_v ( List( float ) ) - The heat capacity values for all (including inserted intermediates) states
@@ -361,10 +367,11 @@ def get_heat_capacity_reeval(
     """    
     
     # Get the original energies that were actually simulated:
-    
+
     # extract reduced energies and the state indices from the .nc
     reporter = MultiStateReporter(output_data, open_mode="r")
     analyzer = ReplicaExchangeAnalyzer(reporter)
+    
     (
         replica_energies_all,
         unsampled_state_energies,
@@ -373,10 +380,35 @@ def get_heat_capacity_reeval(
     ) = analyzer.read_energies()
     
     # Select production frames to analyze
-    if frame_end > 0:
-        replica_energies_sampled = replica_energies_all[:,:,frame_begin:frame_end:sample_spacing]
+    if boot_frame_shift is not None:
+        # Bootstrapping frame configuration:
+        # U_kln contains all frames from frame_begin onward
+        if frame_end > 0:
+            replica_energies_sampled = replica_energies_all[:,:,(frame_begin+boot_frame_shift):frame_end:sample_spacing]
+            U_kln = U_kln[:,:,boot_frame_shift:frame_end:sample_spacing]
+        else:
+            replica_energies_sampled = replica_energies_all[:,:,(frame_begin+boot_frame_shift)::sample_spacing]
+            U_kln = U_kln[:,:,boot_frame_shift::sample_spacing]
     else:
-        replica_energies_sampled = replica_energies_all[:,:,frame_begin::sample_spacing]
+        # Standard frame configuration:
+        # U_kln contains only the decorrelated frames ranging from frame_begin to frame_end
+        if frame_end > 0:
+            replica_energies_sampled = replica_energies_all[:,:,frame_begin:frame_end:sample_spacing]
+        else:
+            replica_energies_sampled = replica_energies_all[:,:,frame_begin::sample_spacing]
+        
+    # Check number of samples:
+    if replica_energies_sampled.shape[2] != U_kln.shape[2]:    
+        print(f'Error: mismatch in number of frames in simulated ({replica_energies_sampled.shape[2]})\
+        and re-evaluated ({U_kln.shape[2]}) energy arrays')
+        exit()
+    
+    # Get the temperature list from .nc file:
+    states = reporter.read_thermodynamic_states()[0]
+    
+    temperature_list = []
+    for s in states:
+        temperature_list.append(s.temperature)    
     
     # determine the numerical values of beta at each state in units consistent with the temperature
     Tunit = temperature_list[0].unit
@@ -388,10 +420,7 @@ def get_heat_capacity_reeval(
     
     # convert the re-evaluated energies from state/evaluated state/sample form to evaluated state/sampled form
     state_energies_reeval = pymbar.utils.kln_to_kn(U_kln)
-    
-    print(f'sampled_energies_sum: {np.sum(replica_energies_sampled)}')
-    print(f'reevaluated_energies_sum: {np.sum(state_energies_reeval)}')
-    
+
     n_samples = len(state_energies_reeval[0,:])
     
     # calculate the number of states we need expectations at.  We want it at all of the original
@@ -450,10 +479,6 @@ def get_heat_capacity_reeval(
         unsampled_state_energies[k+n_unsampled_states,:] = state_energies_reeval[0,:]*(beta_full_k[k]/beta_k[0])
         N_k[k+n_unsampled_states] = 0 # None of these were actually sampled
        
-    print(f'sampled_energies_sum: {np.sum(unsampled_state_energies[0:n_unsampled_states,:])}')
-    print(f'reevaluated_energies_sum: {np.sum(unsampled_state_energies[n_unsampled_states:2*n_unsampled_states,:])}')
-    
-       
     # call MBAR to find weights at all states, sampled and unsampled
     mbarT = pymbar.MBAR(
         unsampled_state_energies,
@@ -483,7 +508,6 @@ def get_heat_capacity_reeval(
     dDeltaE_expect = results[1]
 
     N_eff = mbarT.computeEffectiveSampleNumber()
-    print(f'Number of effective samples: {N_eff}')
     
     # Now calculate heat capacity (with uncertainties) using the finite difference approach. 
     
@@ -498,7 +522,6 @@ def get_heat_capacity_reeval(
 
         
     # expectations for the differences between states, which we need for numerical derivatives         
-    print(f'n_unsampled_states: {n_unsampled_states}') 
         
     # Next, for the re-evaluated energies:    
     Cv_reeval = np.zeros(n_T_vals)
@@ -518,20 +541,26 @@ def get_heat_capacity_reeval(
     dCv_reeval *= unit.kilojoule_per_mole / Tunit
 
     # plot and return the heat capacity (with units)
-    if plot_file is not None:
-        plot_heat_capacity(Cv_reeval, dCv_reeval, full_T_list[0:n_T_vals],file_name='heat_capacity_reeval.pdf')
-        plot_heat_capacity(Cv_sim, dCv_sim, full_T_list[0:n_T_vals],file_name='heat_capacity_sim.pdf')
-        
+    if plot_file_reeval is not None:
+        plot_heat_capacity(Cv_reeval, dCv_reeval, full_T_list[0:n_T_vals],file_name=plot_file_reeval)
+    if plot_file_sim is not None:
+        plot_heat_capacity(Cv_sim, dCv_sim, full_T_list[0:n_T_vals],file_name=plot_file_sim)
+
     return (Cv_sim, dCv_sim, Cv_reeval, dCv_reeval, full_T_list[0:n_T_vals], N_eff)
     
 
 def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_file='heat_capacity_boot.pdf',
     output_data="output/output.nc", num_intermediate_states=0,frac_dT=0.05,conf_percent='sigma',
-    n_trial_boot=200):
+    n_trial_boot=200, U_kln=None):
     """
     Calculate and plot the heat capacity curve, with uncertainty determined using bootstrapping.
     Uncorrelated datasets are selected using a random starting frame, repeated n_trial_boot 
     times. Uncertainty in melting point and full-width half maximum of the C_v curve are also returned.
+    If a re-evaluated energy array is specified, the heat capacity of the re-evaluated system is
+    calculated using MBAR reweighting, based on the original energies in the output.nc file.
+    
+    .. note::
+       If using a re-evaluated energy matrix, U_kln should include all frames after frame_begin
     
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
     :type frame_begin: int
@@ -556,6 +585,9 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
     
     :param n_trial_boot: number of trials to run for generating bootstrapping uncertainties
     :type n_trial_boot: int
+    
+    :param U_kln: re-evaluated state energies array to be used for the MBAR calculation
+    :type U_kln: 3d numpy array (float) with dimensions [replica, evaluated_state, frame]
     
     :returns:
        - T_list ( List( float * unit.simtk.temperature ) ) - The temperature list corresponding to the heat capacity values in 'C_v'
@@ -593,7 +625,10 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
         ref_shift = np.random.randint(sample_spacing)
         # ***We should check if these energies arrays will be the same size for
         # different reference frames
-        replica_energies = replica_energies_all[:,:,(frame_begin+ref_shift)::sample_spacing]
+        if frame_end > 0:
+            replica_energies = replica_energies_all[:,:,(frame_begin+ref_shift):frame_end:sample_spacing]
+        else:
+            replica_energies = replica_energies_all[:,:,(frame_begin+ref_shift)::sample_spacing]
     
         # Get all possible sample indices
         sample_indices_all = np.arange(0,len(replica_energies[0,0,:]))
@@ -611,14 +646,30 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
             replica_energies_resample[:,:,j] = replica_energies[:,:,i]
             j += 1
             
-        # Run heat capacity expectation calculation:
-        C_v_values_boot[i_boot], C_v_uncertainty_boot[i_boot], T_list = get_heat_capacity(
-            output_data=output_data,
-            num_intermediate_states=num_intermediate_states,
-            frac_dT=frac_dT,
-            plot_file=None,
-            bootstrap_energies=replica_energies_resample,
-            )
+        if U_kln is not None:
+            # Run heat capacity calculation for re-evaluated system:
+            (Cv_sim, dCv_sim, C_v_values_boot[i_boot], C_v_uncertainty_boot[i_boot],
+            T_list, N_eff) = get_heat_capacity_reeval(
+                U_kln,
+                output_data=output_data,
+                frame_begin=frame_begin, # Energies read from file start from (frame_begin+ref_shift)
+                boot_frame_shift=ref_shift, # Re-evaluated energies start from ref_shift (no equil period)
+                frame_end=frame_end,
+                sample_spacing=sample_spacing,
+                num_intermediate_states=num_intermediate_states,
+                frac_dT=frac_dT,
+                plot_file_sim=None,
+                plot_file_reeval=None,
+                )
+        else:    
+            # Run standard heat capacity expectation calculation:
+            C_v_values_boot[i_boot], C_v_uncertainty_boot[i_boot], T_list = get_heat_capacity(
+                output_data=output_data,
+                num_intermediate_states=num_intermediate_states,
+                frac_dT=frac_dT,
+                plot_file=None,
+                bootstrap_energies=replica_energies_resample,
+                )
             
         if i_boot == 0:
             # Get units:
