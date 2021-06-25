@@ -27,7 +27,7 @@ def test_heat_capacity_calc(tmpdir):
     # max_temp = 600.0 * unit.kelvin
     
     # 1) With default starting frame (0)
-    C_v, dC_v, new_temperature_list = get_heat_capacity(
+    C_v, dC_v, new_temperature_list, N_eff = get_heat_capacity(
         output_data=output_data,
         num_intermediate_states=2,
         plot_file=f"{plot_directory}/heat_capacity.pdf"
@@ -36,7 +36,7 @@ def test_heat_capacity_calc(tmpdir):
     assert os.path.isfile(f"{plot_directory}/heat_capacity.pdf")
     
     # 2) With a non-default starting frame:
-    C_v, dC_v, new_temperature_list = get_heat_capacity(
+    C_v, dC_v, new_temperature_list, N_eff = get_heat_capacity(
         frame_begin=2,
         output_data=output_data,
         num_intermediate_states=2,
@@ -75,7 +75,7 @@ def test_bootstrap_heat_capacity_conf(tmpdir):
     output_data = os.path.join(data_path, "output.nc")
     
     (new_temperature_list, C_v_values, C_v_uncertainty, Tm_value, Tm_uncertainty, 
-    Cv_height_value, Cv_height_uncertainty, FWHM_value, FWHM_uncertainty) = bootstrap_heat_capacity(
+    Cv_height_value, Cv_height_uncertainty, FWHM_value, FWHM_uncertainty, N_eff) = bootstrap_heat_capacity(
         output_data=output_data,
         num_intermediate_states=1,
         frame_begin=2,
@@ -96,7 +96,7 @@ def test_bootstrap_heat_capacity_sigma(tmpdir):
     output_data = os.path.join(data_path, "output.nc")
     
     (new_temperature_list, C_v_values, C_v_uncertainty, Tm_value, Tm_uncertainty, 
-    Cv_height_value, Cv_height_uncertainty, FWHM_value, FWHM_uncertainty) = bootstrap_heat_capacity(
+    Cv_height_value, Cv_height_uncertainty, FWHM_value, FWHM_uncertainty, N_eff) = bootstrap_heat_capacity(
         output_data=output_data,
         num_intermediate_states=1,
         frame_begin=2,

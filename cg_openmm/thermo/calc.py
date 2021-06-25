@@ -178,7 +178,7 @@ def get_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, output_data
     :type num_intermediate_states: int
 
     :param frac_dT: The fraction difference between temperatures points used to calculate finite difference derivatives (default=0.05)
-    :type num_intermediate_states: float
+    :type frac_dT: float
     
     :param plotfile: path to filename to output plot
     :type plotfile: str
@@ -190,7 +190,8 @@ def get_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, output_data
           - C_v ( List( float ) ) - The heat capacity values for all (including inserted intermediates) states
           - dC_v ( List( float ) ) - The uncertainty in the heat capacity values for intermediate states
           - new_temp_list ( List( float * unit.simtk.temperature ) ) - The temperature list corresponding to the heat capacity values in 'C_v'
-    """
+          - N_eff( np.array( float ) ) - The number of effective samples at all (including inserted intermediates) states
+    """    
 
     if bootstrap_energies is not None:
         # Use a subsampled replica_energy matrix instead of reading from file
@@ -297,6 +298,8 @@ def get_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, output_data
     results = mbarT.computeExpectations(unsampled_state_energies, output="differences", state_dependent=True)
     DeltaE_expect = results[0]
     dDeltaE_expect = results[1]
+    
+    N_eff = mbarT.computeEffectiveSampleNumber()
 
     # Now calculate heat capacity (with uncertainties) using the finite difference approach. 
     Cv = np.zeros(n_T_vals)
@@ -315,7 +318,7 @@ def get_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, output_data
     # plot and return the heat capacity (with units)
     if plot_file is not None:
         plot_heat_capacity(Cv, dCv, full_T_list[0:n_T_vals],file_name=plot_file)
-    return (Cv, dCv, full_T_list[0:n_T_vals])
+    return (Cv, dCv, full_T_list[0:n_T_vals], N_eff)
 
     
 def get_heat_capacity_reeval(
@@ -323,7 +326,7 @@ def get_heat_capacity_reeval(
     frame_begin=0, sample_spacing=1, frame_end=-1,
     num_intermediate_states=0,frac_dT=0.05,
     plot_file_sim=None, plot_file_reeval=None,
-    boot_frame_shift=None,
+    bootstrap_energies=None,
     ):
     """
     Given an array of re-evaluated energies at a non-simulated set of force field parameters, 
@@ -356,42 +359,38 @@ def get_heat_capacity_reeval(
     :param plot_file_reeval: path to filename to output plot for reevaluated heat capacity (default=None)
     :type plot_file_reeval: str
     
-    :param boot_frame_shift: reference frame shift from bootstrapping scheme (default=None)
-    :type boot_frame_shift: int
+    :param bootstrap_energies: a custom replica_energies array to be used for bootstrapping calculations. Used instead of the energies in the .nc file. (default=None)
+    :type bootstrap_energies: 3d numpy array (float)
 
     :returns:
-          - C_v ( List( float ) ) - The heat capacity values for all (including inserted intermediates) states
-          - dC_v ( List( float ) ) - The uncertainty in the heat capacity values for intermediate states
-          - new_temp_list ( List( float * unit.simtk.temperature ) ) - The temperature list corresponding to the heat capacity values in 'C_v'
-
+          - Cv_sim ( np.array( float ) ) - The heat capacity values for all simulated (including inserted intermediates) states
+          - dCv_sim ( np.array( float ) ) - The uncertainty of Cv_sim values
+          - Cv_reeval ( np.array( float ) ) - The heat capacity values for all reevaluated (including inserted intermediates) states
+          - dCv_reeval ( np.array( float ) ) - The uncertainty of Cv_reeval values
+          - full_T_list ( np.array( float * unit.simtk.temperature ) ) - The temperature list corresponding to the heat capacity values in 'C_v'
+          - N_eff( np.array( float ) ) - The number of effective samples at all (including inserted intermediates) states
     """    
     
     # Get the original energies that were actually simulated:
 
-    # extract reduced energies and the state indices from the .nc
-    reporter = MultiStateReporter(output_data, open_mode="r")
-    analyzer = ReplicaExchangeAnalyzer(reporter)
-    
-    (
-        replica_energies_all,
-        unsampled_state_energies,
-        neighborhoods,
-        replica_state_indices,
-    ) = analyzer.read_energies()
-    
-    # Select production frames to analyze
-    if boot_frame_shift is not None:
-        # Bootstrapping frame configuration:
-        # U_kln contains all frames from frame_begin onward
-        if frame_end > 0:
-            replica_energies_sampled = replica_energies_all[:,:,(frame_begin+boot_frame_shift):frame_end:sample_spacing]
-            U_kln = U_kln[:,:,boot_frame_shift:frame_end:sample_spacing]
-        else:
-            replica_energies_sampled = replica_energies_all[:,:,(frame_begin+boot_frame_shift)::sample_spacing]
-            U_kln = U_kln[:,:,boot_frame_shift::sample_spacing]
+    if bootstrap_energies is not None:
+        # Use a subsampled replica_energy matrix instead of reading from file
+        replica_energies_sampled = bootstrap_energies    
+        # Still need to get the thermodynamic states
+        reporter = MultiStateReporter(output_data, open_mode="r")
     else:
-        # Standard frame configuration:
-        # U_kln contains only the decorrelated frames ranging from frame_begin to frame_end
+        # Extract reduced energies and the state indices from the .nc file
+        # This is an expensive step for large files
+        reporter = MultiStateReporter(output_data, open_mode="r")
+        analyzer = ReplicaExchangeAnalyzer(reporter)
+        (
+            replica_energies_all,
+            unsampled_state_energies,
+            neighborhoods,
+            replica_state_indices,
+        ) = analyzer.read_energies()
+    
+        # Select frames to analyze:
         if frame_end > 0:
             replica_energies_sampled = replica_energies_all[:,:,frame_begin:frame_end:sample_spacing]
         else:
@@ -399,8 +398,7 @@ def get_heat_capacity_reeval(
         
     # Check number of samples:
     if replica_energies_sampled.shape[2] != U_kln.shape[2]:    
-        print(f'Error: mismatch in number of frames in simulated ({replica_energies_sampled.shape[2]})\
-        and re-evaluated ({U_kln.shape[2]}) energy arrays')
+        print(f'Error: mismatch in number of frames in simulated ({replica_energies_sampled.shape[2]}) and re-evaluated ({U_kln.shape[2]}) energy arrays')
         exit()
     
     # Get the temperature list from .nc file:
@@ -583,10 +581,10 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
     :param conf_percent: Confidence level in percent for outputting uncertainties (default = 68.27 = 1 sigma)
     :type conf_percent: float
     
-    :param n_trial_boot: number of trials to run for generating bootstrapping uncertainties
+    :param n_trial_boot: number of trials to run for generating bootstrapping uncertainties (default=200)
     :type n_trial_boot: int
     
-    :param U_kln: re-evaluated state energies array to be used for the MBAR calculation
+    :param U_kln: re-evaluated state energies array to be used for the MBAR calculation (starts at frame_begin)
     :type U_kln: 3d numpy array (float) with dimensions [replica, evaluated_state, frame]
     
     :returns:
@@ -597,6 +595,7 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
        - Tm_uncertainty ( Tuple ( float * unit.simtk.temperature ) ) - confidence interval for melting point computed from bootstrapping
        - FWHM_value ( float * unit.simtk.temperature ) - C_v full width half maximum mean value computed from bootstrapping
        - FWHM_uncertainty ( Tuple ( float * unit.simtk.temperature ) ) - confidence interval for C_v full width half maximum computed from bootstrapping
+       - N_eff_values ( np.array( float ) ) -  The bootstrap mean number of effective samples at all simulated and non-simulated (including inserted intermediates) states
     
     """
     
@@ -613,11 +612,15 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
     # Store data for each sampling trial:
     C_v_values_boot = {}
     C_v_uncertainty_boot = {}
+    N_eff_boot = {}
     
     Tm_boot = np.zeros(n_trial_boot)
     Cv_height = np.zeros(n_trial_boot)
     FWHM = np.zeros(n_trial_boot)
 
+    # Save the full re-evaluated energy array
+    U_kln_all = U_kln
+    
     for i_boot in range(n_trial_boot):
     
         # Select production frames to analyze
@@ -637,33 +640,44 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
         
         n_state = replica_energies.shape[0]
         
+        # replica_energies is [n_states x n_states x n_frame]        
         replica_energies_resample = np.zeros_like(replica_energies)
-        # replica_energies is [n_states x n_states x n_frame]
+        
+        if U_kln is not None:
+            if frame_end > 0:
+                # U_kln should not include the equilibration region
+                U_kln = U_kln_all[:,:,ref_shift:frame_end:sample_spacing]
+            else:
+                U_kln = U_kln_all[:,:,ref_shift::sample_spacing]
+            U_kln_resample = np.zeros_like(U_kln)      
         
         # Select the sampled frames from array_folded_states and replica_energies:
         j = 0
         for i in sample_indices:
             replica_energies_resample[:,:,j] = replica_energies[:,:,i]
+            if U_kln is not None:
+                U_kln_resample[:,:,j] = U_kln[:,:,i]
             j += 1
             
         if U_kln is not None:
             # Run heat capacity calculation for re-evaluated system:
             (Cv_sim, dCv_sim, C_v_values_boot[i_boot], C_v_uncertainty_boot[i_boot],
-            T_list, N_eff) = get_heat_capacity_reeval(
-                U_kln,
+            T_list, N_eff_boot[i_boot]) = get_heat_capacity_reeval(
+                U_kln_resample,
                 output_data=output_data,
-                frame_begin=frame_begin, # Energies read from file start from (frame_begin+ref_shift)
-                boot_frame_shift=ref_shift, # Re-evaluated energies start from ref_shift (no equil period)
+                frame_begin=frame_begin,
                 frame_end=frame_end,
                 sample_spacing=sample_spacing,
                 num_intermediate_states=num_intermediate_states,
                 frac_dT=frac_dT,
                 plot_file_sim=None,
                 plot_file_reeval=None,
+                bootstrap_energies=replica_energies_resample,
                 )
         else:    
             # Run standard heat capacity expectation calculation:
-            C_v_values_boot[i_boot], C_v_uncertainty_boot[i_boot], T_list = get_heat_capacity(
+            (C_v_values_boot[i_boot], C_v_uncertainty_boot[i_boot], T_list,
+            N_eff_boot[i_boot]) = get_heat_capacity(
                 output_data=output_data,
                 num_intermediate_states=num_intermediate_states,
                 frac_dT=frac_dT,
@@ -745,15 +759,18 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
     
     # Convert dicts to array
     arr_C_v_values_boot = np.zeros((n_trial_boot, len(T_list)))
+    arr_N_eff_boot = np.zeros((n_trial_boot, len(N_eff_boot[0])))
     
     for i_boot in range(n_trial_boot):
         arr_C_v_values_boot[i_boot,:] = C_v_values_boot[i_boot].value_in_unit(C_v_unit)
+        arr_N_eff_boot[i_boot,:] = N_eff_boot[i_boot]
             
     # Compute mean values:        
     C_v_values = np.mean(arr_C_v_values_boot,axis=0)*C_v_unit      
     Cv_height_value = np.mean(Cv_height)*C_v_unit      
     Tm_value = np.mean(Tm_boot)*T_unit
-    FWHM_value = np.mean(FWHM)*T_unit    
+    FWHM_value = np.mean(FWHM)*T_unit
+    N_eff_values = np.mean(arr_N_eff_boot)
     
     # Compute confidence intervals:
     if conf_percent == 'sigma':
@@ -812,6 +829,6 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
     if plot_file is not None:
         plot_heat_capacity(C_v_values, C_v_uncertainty, T_list, file_name=plot_file)
                     
-    return T_list, C_v_values, C_v_uncertainty, Tm_value, Tm_uncertainty, Cv_height_value, Cv_height_uncertainty, FWHM_value, FWHM_uncertainty
+    return T_list, C_v_values, C_v_uncertainty, Tm_value, Tm_uncertainty, Cv_height_value, Cv_height_uncertainty, FWHM_value, FWHM_uncertainty, N_eff_values
         
     

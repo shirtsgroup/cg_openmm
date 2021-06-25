@@ -20,7 +20,7 @@ analysis_stats = pickle.load(open("../run_replica_exchange/analysis_stats_discar
 
 # Read the simulation coordinates for individual temperature replicas                                                                     
 (new_temperature_list, C_v, dC_v, Tm_value, Tm_uncertainty, 
-Cv_height_value, Cv_height_uncertainty, FWHM_value, FWHM_uncertainty) = bootstrap_heat_capacity(
+Cv_height_value, Cv_height_uncertainty, FWHM_value, FWHM_uncertainty, N_eff_values) = bootstrap_heat_capacity(
     output_data=output_data,
     frame_begin=analysis_stats["production_start"],
     sample_spacing=analysis_stats["energy_decorrelation"],

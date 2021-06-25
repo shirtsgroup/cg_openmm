@@ -1013,7 +1013,8 @@ def test_reeval_heat_capacity_boot(tmpdir):
     C_v_values, C_v_uncertainty,
     Tm_value, Tm_uncertainty, 
     Cv_height_value, Cv_height_uncertainty,
-    FWHM_value, FWHM_uncertainty) = bootstrap_heat_capacity(
+    FWHM_value, FWHM_uncertainty,
+    N_eff_values) = bootstrap_heat_capacity(
         U_kln=U_eval,
         output_data=output_data,
         frame_begin=10,
@@ -1073,7 +1074,8 @@ def test_reeval_heat_capacity_boot_end_frame(tmpdir):
     C_v_values, C_v_uncertainty,
     Tm_value, Tm_uncertainty, 
     Cv_height_value, Cv_height_uncertainty,
-    FWHM_value, FWHM_uncertainty) = bootstrap_heat_capacity(
+    FWHM_value, FWHM_uncertainty,
+    N_eff_values) = bootstrap_heat_capacity(
         U_kln=U_eval,
         output_data=output_data,
         frame_begin=0,

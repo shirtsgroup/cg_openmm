@@ -21,7 +21,7 @@ output_data = os.path.join(output_directory, "output.nc")
 analysis_stats = pickle.load(open("../run_replica_exchange/analysis_stats_discard_20ns.pkl","rb"))
 
 # Read the simulation coordinates for individual temperature replicas                                                                     
-C_v, dC_v, new_temperature_list = get_heat_capacity(
+C_v, dC_v, new_temperature_list, N_eff = get_heat_capacity(
     output_data=output_data,
     frame_begin=analysis_stats["production_start"],
     sample_spacing=analysis_stats["energy_decorrelation"],
