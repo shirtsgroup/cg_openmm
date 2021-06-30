@@ -28,14 +28,13 @@ max_temp = 600.0 * unit.kelvin
 temperature_list = get_temperature_list(min_temp, max_temp, n_replicas)
 
 # Create list of trajectory files to use for evaluating energies
-state_traj_file_list = []
+rep_traj_file_list = []
 
 for i in range(n_replicas):
-    state_traj_file_list.append(f'{output_directory}/state_{i+1}.dcd')
+    rep_traj_file_list.append(f'{output_directory}/replica_{i+1}.dcd')
     
 # Specify force field parameters to change
 param_dict = {}
-#param_dict['bb_bb_bb_bb_torsion_force_constant'] = 3 * unit.kilojoule_per_mole
 param_dict['sc_sigma'] = 2.5 * unit.angstrom # Was 3.5
 
 frame_begin = 20000 #analysis_stats["production_start"]
@@ -43,16 +42,16 @@ frame_stride = 10 # To get the best mean values for Cv curve
                   # This is not valid for getting the uncertainty right
                    
 # Reevaluate energies at new force field parameters:
-U_eval = eval_energy(
+U_eval, simulation = eval_energy(
     cgmodel,
-    state_traj_file_list,
+    rep_traj_file_list,
     temperature_list,
     param_dict,
     frame_begin=frame_begin,
     frame_stride=frame_stride,
 )
 
-# U_eval is a 3d energy array organized by state/evaluated_state/frame
+# U_eval is a 3d energy array organized by replica/evaluated_state/frame
 
 # Now, calculate the heat capacity for the new force field parameters:
 C_v, dC_v, new_temperature_list = get_heat_capacity_reeval(

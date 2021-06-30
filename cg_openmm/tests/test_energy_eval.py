@@ -73,6 +73,61 @@ def test_eval_energy_no_change(tmpdir):
     assert_allclose(U_eval,replica_energies,atol=1E-3)
     
     
+def test_eval_energy_no_change_parallel(tmpdir):  
+    """
+    Make sure the reevaluated energies are the same as those in the .nc file,
+    when no parameters are changed (running energy evaluations in parallel).
+    """
+    
+    output_directory = tmpdir.mkdir("output")
+    
+    # Replica exchange settings
+    number_replicas = 12
+    min_temp = 200.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
+    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
+    
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+    
+    # Create list of replica trajectories to analyze
+    dcd_file_list = []
+    for i in range(len(temperature_list)):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+    
+    # Set up dictionary of parameter change instructions:
+    param_dict = {}
+    param_dict['bb_epsilon'] = 1.5 * unit.kilojoule_per_mole # Was 1.5 kJ/mol previously
+    
+    # Re-evaluate OpenMM energies:
+    U_eval, simulation = eval_energy(
+        cgmodel,
+        dcd_file_list,
+        temperature_list,
+        param_dict,
+        frame_begin=0,
+        frame_end=-1,
+        frame_stride=1,
+        verbose=True,
+        n_cpu=2,
+    )
+    
+    # Read in original simulated energies:
+    output_data = os.path.join(data_path, "output.nc")
+    
+    reporter = MultiStateReporter(output_data, open_mode="r")
+    analyzer = ReplicaExchangeAnalyzer(reporter)
+    (
+        replica_energies,
+        unsampled_state_energies,
+        neighborhoods,
+        replica_state_indices,
+    ) = analyzer.read_energies()    
+    
+    # Rounding error with stored positions and/or energies is on the order of 1E-4
+    assert_allclose(U_eval,replica_energies,atol=1E-3)
+    
+    
 def test_eval_energy_new_sigma(tmpdir):  
     """
     Test simulation parameter update for varying LJ sigma.

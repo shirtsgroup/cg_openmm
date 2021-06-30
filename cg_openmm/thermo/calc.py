@@ -626,8 +626,7 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
         # Select production frames to analyze
         # Here we can potentially change the reference frame for each bootstrap trial.
         ref_shift = np.random.randint(sample_spacing)
-        # ***We should check if these energies arrays will be the same size for
-        # different reference frames
+        # Depending on the reference frame, there may be small differences in numbers of samples per bootstrap trial
         if frame_end > 0:
             replica_energies = replica_energies_all[:,:,(frame_begin+ref_shift):frame_end:sample_spacing]
         else:

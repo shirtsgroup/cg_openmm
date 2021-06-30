@@ -8,11 +8,14 @@ from simtk.openmm.app import *
 from simtk.openmm import *
 import pymbar
 import mdtraj as md
+import multiprocessing as mp
+import pickle
+
 
 kB = unit.MOLAR_GAS_CONSTANT_R # Boltzmann constant
 
 def eval_energy(cgmodel, file_list, temperature_list, param_dict,
-    frame_begin=0, frame_end=-1, frame_stride=1, verbose=False):
+    frame_begin=0, frame_end=-1, frame_stride=1, verbose=False, n_cpu=1):
     """
     Given a cgmodel with a topology and system, evaluate the energy at all structures in each
     trajectory files specified with updated force field parameters specified in param_dict.
@@ -40,9 +43,12 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
 
     :param verbose: option to print out detailed per-particle parameter changes (default=False)
     :type verbose: Boolean
+    
+    :param n_cpu: number of cpus for running parallel energy evaluations (default=1)
+    :type n_cpu: int
 
     :returns:
-        - U_eval - A numpy array of energies evaluated with the given cgmodel [n_replicas x n_states x frames]
+        - U_eval - A numpy array of energies evaluated with the updated force field parameters [n_replicas x n_states x frames]
         - simulation - OpenMM Simulation object containing the updated force field parameters
     """
 
@@ -143,7 +149,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         force.updateParametersInContext(simulation.context)
                         if verbose:
                             print(f'Updating parameter {sigma_str}:')
-                            print(f'cgmodel particle: {particle_index}')
+                            print(f'Particle: {particle_index}')
                             print(f'Old value: {sigma_old}')
                             print(f'New value: {param_dict[sigma_str]}\n')
 
@@ -156,7 +162,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         force.updateParametersInContext(simulation.context)
                         if verbose:
                             print(f'Updating parameter {epsilon_str}:')
-                            print(f'cgmodel particle: {particle_index}')
+                            print(f'Particle: {particle_index}')
                             print(f'Old value: {eps_old}')
                             print(f'New value: {param_dict[epsilon_str]}\n')
 
@@ -190,7 +196,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         force.updateParametersInContext(simulation.context)
                         if verbose:
                             print(f'Updating parameter {str_name}:')
-                            print(f'cgmodel particles: {par1} {par2}')
+                            print(f'Particles: {par1} {par2}')
                             print(f'Old value: {k_old}')
                             print(f'New value: {param_dict[str_name]}\n')
 
@@ -204,7 +210,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         force.updateParametersInContext(simulation.context)
                         if verbose:
                             print(f'Updating parameter {rev_str_name}:')
-                            print(f'cgmodel particles: {par1} {par2}')
+                            print(f'Particles: {par1} {par2}')
                             print(f'Old value: {k_old}')
                             print(f'New value: {param_dict[rev_str_name]}\n')
 
@@ -226,7 +232,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         force.updateParametersInContext(simulation.context)
                         if verbose:
                             print(f'Updating parameter {str_name}:')
-                            print(f'cgmodel particles: {par1} {par2}')
+                            print(f'Particles: {par1} {par2}')
                             print(f'Old value: {length_old}')
                             print(f'New value: {param_dict[str_name]}\n')
 
@@ -240,7 +246,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         force.updateParametersInContext(simulation.context)
                         if verbose:
                             print(f'Updating parameter {rev_str_name}:')
-                            print(f'cgmodel particles: {par1} {par2}')
+                            print(f'Particles: {par1} {par2}')
                             print(f'Old value: {length_old}')
                             print(f'New value: {param_dict[rev_str_name]}\n')
 
@@ -277,7 +283,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         force.updateParametersInContext(simulation.context)
                         if verbose:
                             print(f'Updating parameter {str_name}:')
-                            print(f'cgmodel particles: {par1} {par2} {par3}')
+                            print(f'Particles: {par1} {par2} {par3}')
                             print(f'Old value: {k_old}')
                             print(f'New value: {param_dict[str_name]}\n')
 
@@ -291,7 +297,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         force.updateParametersInContext(simulation.context)
                         if verbose:
                             print(f'Updating parameter {rev_str_name}:')
-                            print(f'cgmodel particles: {par1} {par2} {par3}')
+                            print(f'Particles: {par1} {par2} {par3}')
                             print(f'Old value: {k_old}')
                             print(f'New value: {param_dict[rev_str_name]}\n')
 
@@ -313,7 +319,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         force.updateParametersInContext(simulation.context)
                         if verbose:
                             print(f'Updating parameter {str_name}:')
-                            print(f'cgmodel particles: {par1} {par2} {par3}')
+                            print(f'Particles: {par1} {par2} {par3}')
                             print(f'Old value: {theta0_old}')
                             print(f'New value: {param_dict[str_name]}\n')
 
@@ -327,7 +333,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         force.updateParametersInContext(simulation.context)
                         if verbose:
                             print(f'Updating parameter {rev_str_name}:')
-                            print(f'cgmodel particles: {par1} {par2} {par3}')
+                            print(f'Particles: {par1} {par2} {par3}')
                             print(f'Old value: {theta0_old}')
                             print(f'New value: {param_dict[rev_str_name]}\n')
 
@@ -378,8 +384,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         force.updateParametersInContext(simulation.context)
                         if verbose:
                             print(f'Updating parameter {str_name}:')
-                            print(f'OpenMM Particles: {par1} {par2} {par3} {par4}')
-                            print(f'cgmodel particles: {torsion_list[torsion_index]}')
+                            print(f'Particles: {par1} {par2} {par3} {par4}')
                             print(f'Old value: {k_old}')
                             print(f'New value: {param_dict[str_name]}\n')
 
@@ -395,8 +400,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         force.updateParametersInContext(simulation.context)
                         if verbose:
                             print(f'Updating parameter {rev_str_name}:')
-                            print(f'OpenMM Particles: {par1} {par2} {par3} {par4}')
-                            print(f'cgmodel particles: {torsion_list[torsion_index]}')
+                            print(f'Particles: {par1} {par2} {par3} {par4}')
                             print(f'Old value: {k_old}')
                             print(f'New value: {param_dict[rev_str_name]}\n')
 
@@ -421,8 +425,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         force.updateParametersInContext(simulation.context)
                         if verbose:
                             print(f'Updating parameter {str_name}:')
-                            print(f'OpenMM Particles: {par1} {par2} {par3} {par4}')
-                            print(f'cgmodel particles: {torsion_list[torsion_index]}')
+                            print(f'Particles: {par1} {par2} {par3} {par4}')
                             print(f'Old value: {phase_old}')
                             print(f'New value: {param_dict[str_name]}\n')
 
@@ -438,8 +441,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         force.updateParametersInContext(simulation.context)
                         if verbose:
                             print(f'Updating parameter {rev_str_name}:')
-                            print(f'OpenMM Particles: {par1} {par2} {par3} {par4}')
-                            print(f'cgmodel particles: {torsion_list[torsion_index]}')
+                            print(f'Particles: {par1} {par2} {par3} {par4}')
                             print(f'Old value: {phase_old}')
                             print(f'New value: {param_dict[rev_str_name]}\n')
 
@@ -466,8 +468,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         force.updateParametersInContext(simulation.context)
                         if verbose:
                             print(f'Updating parameter {str_name}:')
-                            print(f'OpenMM Particles: {par1} {par2} {par3} {par4}')
-                            print(f'cgmodel particles: {torsion_list[torsion_index]}')
+                            print(f'Particles: {par1} {par2} {par3} {par4}')
                             print(f'Old value: {periodicity_old}')
                             print(f'New value: {param_dict[str_name]}\n')
 
@@ -483,48 +484,85 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         force.updateParametersInContext(simulation.context)
                         if verbose:
                             print(f'Updating parameter {rev_str_name}:')
-                            print(f'OpenMM Particles: {par1} {par2} {par3} {par4}')
-                            print(f'cgmodel particles: {torsion_list[torsion_index]}')
+                            print(f'Particles: {par1} {par2} {par3} {par4}')
                             print(f'Old value: {periodicity_old}')
                             print(f'New value: {param_dict[rev_str_name]}\n')
 
                     torsion_index += 1
 
-    # Update the positions:
+    # Update the positions and evaluate all specified frames:
+    # Run with multiple processors and gather data from all replicas:        
+    pool = mp.Pool(n_cpu)
+    print(f'Using {n_cpu} CPU out of total available {mp.cpu_count()}')
+    
+    results = pool.starmap(get_replica_reeval_energies, 
+        [(replica, temperature_list, file_list, cgmodel.topology, simulation.system,
+        frame_begin, frame_stride, frame_end) for replica in range(len(file_list))])
+    pool.close()
+    
+    # results is a list of tuples, each containing (U_kln_replica, replica_ID)
+    # Actually, the replicas are ordered correctly within results regardless of the order in which they
+    # are executed, but we can add a check to be sure.
+    
+    # Overall energy matrix (all replicas)                 
+    U_eval = np.zeros((len(file_list),len(file_list),results[0][0].shape[1]))
+             
+    # This can be converted to the 2d array for MBAR with kln_to_kn utility
+    # The 3d array is organized in the same way as replica_energies extracted from
+    # the .nc file.          
+    
+    # Assign replica energies:
     for i in range(len(file_list)):
-        # Load in the coordinates as mdtraj object:
-        if file_list[i][-3:] == 'dcd':
-            traj = md.load(file_list[i],top=md.Topology.from_openmm(cgmodel.topology))
-        else:
-            traj = md.load(file_list[i])
+        rep_id = results[i][1]
+        U_eval[rep_id,:,:] = results[i][0]
+    
+    return U_eval, simulation   
 
-        # Select frames to analyze:
-        if frame_end < 0:
-            traj = traj[frame_begin::frame_stride]
-        else:
-            traj = traj[frame_begin:frame_end:frame_stride]
 
-        if i == 0:
-            nframes = traj.n_frames
-            print(f'Evaluating {nframes} frames')
-            U_eval = np.zeros((len(file_list),len(file_list),nframes))
+def get_replica_reeval_energies(replica, temperature_list, file_list, topology, system,
+    frame_begin, frame_stride, frame_end):
+    """
+    Internal function for evaluating energies for all specified frames in a replica trajectory.
+    We can't use an inner nested function to do multiprocessor parallelization, since it needs to be pickled.
+    """
+    
+    # Need to recreate Simulation object here:
+    simulation_time_step = 5.0 * unit.femtosecond
+    friction = 0.0 / unit.picosecond
+    integrator = LangevinIntegrator(
+        0.0 * unit.kelvin, friction, simulation_time_step.in_units_of(unit.picosecond)
+    )
+    simulation = Simulation(topology, system, integrator)
+    
+    # Load in the coordinates as mdtraj object:
+    if file_list[replica][-3:] == 'dcd':
+        traj = md.load(file_list[replica],top=md.Topology.from_openmm(topology))
+    else:
+        traj = md.load(file_list[replica])
+        
+    # Select frames to analyze:
+    if frame_end < 0:
+        traj = traj[frame_begin::frame_stride]
+    else:
+        traj = traj[frame_begin:frame_end:frame_stride]
+        
+    nframes = traj.n_frames
+    print(f'Evaluating {nframes} frames (replica {replica})')
 
-        for k in range(nframes):
-            positions = traj[k].xyz[0]*unit.nanometer
-            # Compute potential energy for current frame, evaluating at all states
-            simulation.context.setPositions(positions)
-            potential_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
+    # Local variable for replica energies:
+    U_eval_rep = np.zeros((len(file_list),nframes))
+    
+    for k in range(nframes):
+        positions = traj[k].xyz[0]*unit.nanometer
+        # Compute potential energy for current frame, evaluating at all states
+        simulation.context.setPositions(positions)
+        potential_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
 
-            # Boltzmann factor for reduce the potential energy:
-            beta_all = 1/(kB*temperature_list)
+        # Boltzmann factor for reduce the potential energy:
+        beta_all = 1/(kB*temperature_list)
 
-            # Evaluate this reduced energy at all thermodynamic states:
-            for j in range(len(temperature_list)):
-                U_eval[i,j,k] = (potential_energy*beta_all[j])
-
-            # This can be converted to the 2d array for MBAR with kln_to_kn utility
-            # The 3d array is organized in the same way as replica_energies extracted from
-            # the .nc file.
-
-    return U_eval, simulation
-
+        # Evaluate this reduced energy at all thermodynamic states:
+        for j in range(len(temperature_list)):
+            U_eval_rep[j,k] = (potential_energy*beta_all[j])
+    
+    return U_eval_rep, replica 
