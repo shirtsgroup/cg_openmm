@@ -14,69 +14,9 @@ from simtk.openmm.app.pdbfile import PDBFile
 from cg_openmm.cg_model.cgmodel import CGModel
 from cg_openmm.utilities.iotools import write_pdbfile_without_topology
 from cg_openmm.utilities import random_builder
-from cg_openmm.utilities.helix_modeling import *
 from cg_openmm.build.cg_build import build_topology
 import numpy as np
 
-def test_optimize_helix(tmpdir):
-    """Test the LJ helix optimization function and pdb helix generation"""
-    
-    # Particle LJ 12-6 parameters:
-    sigma = 1.0 * unit.angstrom
-    epsilon = 1.0 * unit.kilojoule_per_mole
-
-    # Number of backbone particles:
-    n_particle_bb = 12
-
-    # Option to add sidechain particles normal to helix (equal bond length to bb-bb)
-    sidechain=False
-
-    output_directory = tmpdir.mkdir("output")
-    pdbfile = f"{output_directory}/LJ_helix_test.pdb"
-    plotfile = f"{output_directory}/LJ_helix.pdf"
-    
-    opt_solution, geometry = optimize_helix(
-        n_particle_bb,sigma,epsilon,sidechain,
-        pdbfile=pdbfile, plotfile=plotfile)
-           
-    assert opt_solution.success == True
-    assert os.path.isfile(pdbfile)
-    assert os.path.isfile(plotfile)
-    
-    # Check that we can load the pdb file
-    pdb_loaded = md.load(pdbfile)
-    assert pdb_loaded.n_atoms == 12
-        
-        
-def test_optimize_helix_sidechain(tmpdir):
-    """Test the LJ helix optimization function and pdb helix generation"""
-    
-    # Particle LJ 12-6 parameters:
-    sigma = 2.0 * unit.angstrom
-    epsilon = 2.0 * unit.kilojoule_per_mole
-
-    # Number of backbone particles:
-    n_particle_bb = 12
-
-    # Option to add sidechain particles normal to helix (equal bond length to bb-bb)
-    sidechain=True
-
-    output_directory = tmpdir.mkdir("output")
-    pdbfile = f"{output_directory}/LJ_helix_sidechain_test.pdb"
-    plotfile = f"{output_directory}/LJ_helix_sidechain.pdf"
-    
-    opt_solution, geometry = optimize_helix(
-        n_particle_bb,sigma,epsilon,sidechain,
-        pdbfile=pdbfile, plotfile=plotfile)
-           
-    assert opt_solution.success == True
-    assert os.path.isfile(pdbfile)
-    assert os.path.isfile(plotfile)
-    
-    # Check that we can load the pdb file
-    pdb_loaded = md.load(pdbfile)
-    assert pdb_loaded.n_atoms == 24
-    
         
 def test_random_builder(tmpdir):
     """See if the random builder can build a simple 1b1s model"""
