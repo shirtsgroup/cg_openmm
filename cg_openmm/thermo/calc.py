@@ -568,6 +568,9 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
     
     :param frame_end: index of last frame to include in heat capacity calculation (default=-1)
     :type frame_end: int
+    
+    :param plot_file: path to filename to output plot (default='heat_capacity_boot.pdf')
+    :type plot_file: str
 
     :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data (default = "output/output.nc")                                                                                          
     :type output_data: str    
