@@ -163,10 +163,10 @@ def optimize_helix_openmm_energy(n_particle_bb, sigma_bb, sigma_sc, epsilon_bb, 
     :param DE_popsize: population size to use in SciPy differential_evolution solver (default=50)
     :type DE_popsize: int
 
-    :param pdbfile: Path to pdb file for saving the helical structure (default='LJ_helix.pdb')
+    :param pdbfile: Path to pdb file for saving the helical structure (default='LJ_helix_openmm_energy.pdb')
     :type pdbfile: str
     
-    :param plotfile: Path to pdf file for plotting the helical equations and particle positions (default='LJ_helix.pdf')
+    :param plotfile: Path to pdf file for plotting the helical equations and particle positions (default='LJ_helix_openmm_energy.pdf')
     :type plotfile: str
     
     :returns:
@@ -346,7 +346,8 @@ def optimize_helix_openmm_energy(n_particle_bb, sigma_bb, sigma_sc, epsilon_bb, 
     dihedral_indices = np.array([[bbbs_torsion_list[0][0], bbbs_torsion_list[0][1], bbbs_torsion_list[0][2], bbbs_torsion_list[0][3]]])
     geometry['bb_bb_bb_sc_angle'] = (md.compute_dihedrals(traj,dihedral_indices)*unit.radians).in_units_of(unit.degrees)[0][0]
 
-    plot_LJ_helix(r_opt,c_opt,t_par,r_eq_bb,r_eq_sc=r_eq_sc,plotfile=plotfile)
+    if plotfile is not None:
+        plot_LJ_helix(r_opt,c_opt,t_par,r_eq_bb,r_eq_sc=r_eq_sc,plotfile=plotfile)
     
     return opt_sol, geometry       
     

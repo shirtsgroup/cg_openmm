@@ -36,10 +36,10 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
     :param DE_popsize: population size to use in SciPy differential_evolution solver (default=50)
     :type DE_popsize: int
 
-    :param pdbfile: Path to pdb file for saving the helical structure (default='LJ_helix.pdb')
+    :param pdbfile: Path to pdb file for saving the helical structure (default='LJ_helix_openmm_energy.pdb')
     :type pdbfile: str
     
-    :param plotfile: Path to pdf file for plotting the helical equations and particle positions (default='LJ_helix.pdf')
+    :param plotfile: Path to pdf file for plotting the helical equations and particle positions (default='LJ_helix_openmm_energy.pdf')
     :type plotfile: str
     
     :returns:
@@ -126,10 +126,7 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
         params = (simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, bond_dist_bb, bond_dist_sc)
     
         # Set optimization bounds [sigma_bb, sigma_sc]:
-        if sigma_bb > sigma_sc:
-            bounds = [(r/50,15*r),(r/50,15*r)]
-        else:
-            bounds = [(r/50,15*r),(r/50,15*r)]    
+        bounds = [(r/50,15*r),(r/50,15*r)]   
         
         opt_sol = differential_evolution(
             compute_helix_openmm_energy_vary_LJ_constrained,
