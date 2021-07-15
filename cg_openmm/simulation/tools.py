@@ -126,7 +126,7 @@ def build_mm_simulation(
     friction=1.0 / unit.picosecond,
     simulation_time_step=None,
     total_simulation_time=1.0 * unit.picosecond,
-    output_pdb=None,
+    output_traj=None,
     output_data=None,
     print_frequency=100,
 ):
@@ -154,8 +154,8 @@ def build_mm_simulation(
     :param total_simulation_time: Total run time for individual simulations
     :type total_simulation_time: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
 
-    :param output_pdb: Output destination for PDB coordinates, Default = None
-    :type output_pdb: str
+    :param output_traj: Output destination for trajectory coordinates (.pdb or .dcd), Default = None
+    :type output_traj: str
 
     :param output_data: Output destination for non-coordinate simulation data, Default = None
     :type output_data: str
@@ -178,10 +178,10 @@ def build_mm_simulation(
     >>> friction = 1.0 / unit.picosecond
     >>> simulation_time_step = 5.0 * unit.femtosecond
     >>> total_simulation_time= 1.0 * unit.picosecond
-    >>> output_pdb = "output.pdb"
+    >>> output_traj = "output.pdb"
     >>> output_data = "output.dat"
     >>> print_frequency = 20
-    >>> openmm_simulation = build_mm_simulation(topology,system,positions,temperature=temperature,friction=friction,simulation_time_step=simulation_time_step,total_simulation_time=total_simulation_time,output_pdb=output_pdb,output_data=output_data,print_frequency=print_frequency)
+    >>> openmm_simulation = build_mm_simulation(topology,system,positions,temperature=temperature,friction=friction,simulation_time_step=simulation_time_step,total_simulation_time=total_simulation_time,output_traj=output_traj,output_data=output_data,print_frequency=print_frequency)
 
     """
 
@@ -192,8 +192,11 @@ def build_mm_simulation(
     simulation = Simulation(topology, system, integrator)
     simulation.context.setPositions(positions)
 
-    if output_pdb is not None:
-        simulation.reporters.append(PDBReporter(output_pdb, print_frequency))
+    if output_traj is not None:
+        if output_traj[-3:] == 'pdb':
+            simulation.reporters.append(PDBReporter(output_traj, print_frequency))
+        elif output_traj[-3:] == 'dcd':
+            simulation.reporters.append(DCDReporter(output_traj, print_frequency))
     if output_data is not None:
         simulation.reporters.append(
             StateDataReporter(
@@ -238,7 +241,7 @@ def run_simulation(
     print_frequency=1000,
     minimize=True,
     output_directory="output",
-    output_pdb="simulation.pdb",
+    output_traj="simulation.pdb",
     output_data="simulation.dat",
 ):
     """
@@ -269,10 +272,10 @@ def run_simulation(
     :param output_directory: Output directory for simulation data
     :type output_directory: str
 
-    :param output_pdb: file to put the output pdb
-    :type output_pdb: str
+    :param output_traj: file to write the trajectory to (with .pdb or .dcd extension)
+    :type output_traj: str
 
-    :param output_data: file to put the output data as a function of time.
+    :param output_data: file to write the output data as a function of time.
     :type output_data: str
 
     :Example:
@@ -289,10 +292,10 @@ def run_simulation(
     >>> simulation_time_step = 5.0 * unit.femtosecond
     >>> total_simulation_time= 1.0 * unit.picosecond
     >>> output_directory = os.getcwd()
-    >>> output_pdb = "output.pdb"
+    >>> output_traj = "output.pdb"
     >>> output_data = "output.dat"
     >>> print_frequency = 20
-    >>> run_simulation(cgmodel,total_simulation_time,simulation_time_step,temperature,friction,print_frequency,output_directory=output_directory,minimize=True,output_pdb=output_pdb,output_data=output_data)
+    >>> run_simulation(cgmodel,total_simulation_time,simulation_time_step,temperature,friction,print_frequency,output_directory=output_directory,minimize=True,output_traj=output_traj,output_data=output_data)
 
     .. warning:: When run with default options this subroutine is capable of producing a large number of output files.  For example, by default this subroutine will plot the simulation data that is written to an output file.
 
@@ -300,7 +303,7 @@ def run_simulation(
     total_steps = int(np.floor(total_simulation_time / simulation_time_step))
     if not os.path.exists(output_directory):
         os.mkdir(output_directory)
-    output_pdb = os.path.join(output_directory, output_pdb)
+    output_traj = os.path.join(output_directory, output_traj)
     output_data = os.path.join(output_directory, output_data)
 
     simulation = build_mm_simulation(
@@ -311,7 +314,7 @@ def run_simulation(
         simulation_time_step=simulation_time_step,
         temperature=temperature,
         friction=friction,
-        output_pdb=output_pdb,
+        output_traj=output_traj,
         output_data=output_data,
         print_frequency=print_frequency,
     )
@@ -333,12 +336,12 @@ def run_simulation(
         print("   input set of model parameters.")
         exit()
 
-    if not cgmodel.include_bond_forces and cgmodel.constrain_bonds:
-        file = open(output_pdb, "r")
+    if not cgmodel.include_bond_forces and cgmodel.constrain_bonds and output_traj[-3:] == 'pdb':
+        file = open(output_traj, "r")
         lines = file.readlines()
         file.close()
-        os.remove(output_pdb)
-        file = open(output_pdb, "w")
+        os.remove(output_traj)
+        file = open(output_traj, "w")
         for line in lines[:-1]:
             file.write(line)
         write_bonds(cgmodel, file)
