@@ -756,7 +756,217 @@ def test_eval_energy_new_torsion_periodicity(tmpdir):
         frame_stride=5,
         verbose=True,
     )
+    
+    for force_index, force in enumerate(simulation.system.getForces()):
+        force_name = force.__class__.__name__
+        if force_name == 'PeriodicTorsionForce':
+            (par1, par2, par3, par4, sc_bb_bb_bb_per_updated, angle, k) = force.getTorsionParameters(5)
+            
+    assert sc_bb_bb_bb_per_updated == param_dict_rev['sc_bb_bb_bb_torsion_periodicity']    
 
+    
+def test_eval_energy_sums_periodic_torsion_1(tmpdir):  
+    """
+    Test simulation parameter update for varying multiple torsion periodicity terms.
+    Multiple periodicity terms specified as list of quantities.
+    """
+    
+    output_directory = tmpdir.mkdir("output")
+    
+    # Replica exchange settings
+    number_replicas = 12
+    min_temp = 200.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
+    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
+    
+    # Load in cgmodel with 2 periodic torsion terms
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel_per1_3.pkl", "rb" ))
+    
+    # Get original torsion list:
+    torsion_list = cgmodel.get_torsion_list()
+    
+    # Create list of replica trajectories to analyze
+    dcd_file_list = []
+    for i in range(len(temperature_list)):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+    
+    # Set up dictionary of parameter change instructions:
+    param_dict = {}
+    param_dict['bb_bb_bb_bb_torsion_periodicity'] = [1,3]
+    param_dict['bb_bb_bb_bb_torsion_force_constant'] = [6.0*unit.kilojoule_per_mole, 2.0*unit.kilojoule_per_mole]
+    param_dict['bb_bb_bb_bb_torsion_phase_angle'] = [15*unit.degrees, 5*unit.degrees]
+    
+    # Also modify some single periodicity sidechain torsions:
+    # This cgmodel had one term originally for sidechain types,
+    # so can't add more periodicity terms
+    param_dict['bb_bb_bb_sc_torsion_periodicity'] = 3
+    param_dict['bb_bb_bb_sc_torsion_force_constant'] = 1.5*unit.kilojoule_per_mole
+    param_dict['bb_bb_bb_sc_torsion_phase_angle'] = 5*unit.degrees
+    
+    param_dict['sc_bb_bb_sc_torsion_periodicity'] = 3
+    param_dict['sc_bb_bb_sc_torsion_force_constant'] = 2.5*unit.kilojoule_per_mole
+    param_dict['sc_bb_bb_sc_torsion_phase_angle'] = 10*unit.degrees    
+    
+    # Re-evaluate OpenMM energies:
+    U_eval, simulation = eval_energy(
+        cgmodel,
+        dcd_file_list,
+        temperature_list,
+        param_dict,
+        frame_begin=0,
+        frame_end=-1,
+        frame_stride=5,
+        verbose=True,
+    )
+
+    # for force_index, force in enumerate(simulation.system.getForces()):
+        # force_name = force.__class__.__name__
+        # if force_name == 'PeriodicTorsionForce':
+            # torsion_index = 0
+            # for torsion in torsion_list:
+                
+            # (par1, par2, par3, par4, sc_bb_bb_sc_per_updated, angle, k) = force.getTorsionParameters(1)
+            # (par1, par2, par3, par4, bb_bb_bb_bb_per_updated, angle, k) = force.getTorsionParameters(0)
+            # (par1, par2, par3, par4, bb_bb_bb_sc_per_updated, angle, k) = force.getTorsionParameters(5)
+            
+    # assert sc_bb_bb_sc_per_updated == param_dict['sc_bb_bb_sc_torsion_periodicity']
+    # assert bb_bb_bb_bb_per_updated == param_dict['bb_bb_bb_bb_torsion_periodicity']
+    # assert bb_bb_bb_sc_per_updated == param_dict['bb_bb_bb_sc_torsion_periodicity']
+    
+    # # Now, try the reverse names:
+    # # Set up dictionary of parameter change instructions:
+    # param_dict_rev = {}
+    # param_dict_rev['sc_bb_bb_bb_torsion_periodicity'] = 5
+    
+    # # Re-evaluate OpenMM energies:
+    # U_eval, simulation = eval_energy(
+        # cgmodel,
+        # dcd_file_list,
+        # temperature_list,
+        # param_dict_rev,
+        # frame_begin=0,
+        # frame_end=-1,
+        # frame_stride=5,
+        # verbose=True,
+    # )
+    
+    # for force_index, force in enumerate(simulation.system.getForces()):
+        # force_name = force.__class__.__name__
+        # if force_name == 'PeriodicTorsionForce':
+            # (par1, par2, par3, par4, sc_bb_bb_bb_per_updated, angle, k) = force.getTorsionParameters(5)
+            
+    # assert sc_bb_bb_bb_per_updated == param_dict_rev['sc_bb_bb_bb_torsion_periodicity']   
+
+
+def test_eval_energy_sums_periodic_torsion_2(tmpdir):  
+    """
+    Test simulation parameter update for varying multiple torsion periodicity terms.
+    Multiple periodicity terms specified as quantities with list values.
+    """
+    
+    output_directory = tmpdir.mkdir("output")
+    
+    # Replica exchange settings
+    number_replicas = 12
+    min_temp = 200.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
+    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
+    
+    # Load in cgmodel with 2 periodic torsion terms
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel_per1_3.pkl", "rb" ))
+    
+    # Get original torsion list:
+    torsion_list = cgmodel.get_torsion_list()
+    
+    # Create list of replica trajectories to analyze
+    dcd_file_list = []
+    for i in range(len(temperature_list)):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+    
+    # Set up dictionary of parameter change instructions:
+    param_dict = {}
+    param_dict['bb_bb_bb_bb_torsion_periodicity'] = [1,3]
+    param_dict['bb_bb_bb_bb_torsion_force_constant'] = [6.0,2.0] * unit.kilojoule_per_mole
+    param_dict['bb_bb_bb_bb_torsion_phase_angle'] = [15,5] * unit.degrees
+    
+    # Also modify some single periodicity sidechain torsions:
+    # This cgmodel had one term originally for sidechain types,
+    # so can't add more periodicity terms
+    param_dict['bb_bb_bb_sc_torsion_periodicity'] = 3
+    param_dict['bb_bb_bb_sc_torsion_force_constant'] = 1.5*unit.kilojoule_per_mole
+    param_dict['bb_bb_bb_sc_torsion_phase_angle'] = 5*unit.degrees
+    
+    param_dict['sc_bb_bb_sc_torsion_periodicity'] = 3
+    param_dict['sc_bb_bb_sc_torsion_force_constant'] = 2.5*unit.kilojoule_per_mole
+    param_dict['sc_bb_bb_sc_torsion_phase_angle'] = 10*unit.degrees    
+    
+    # Re-evaluate OpenMM energies:
+    U_eval, simulation = eval_energy(
+        cgmodel,
+        dcd_file_list,
+        temperature_list,
+        param_dict,
+        frame_begin=0,
+        frame_end=-1,
+        frame_stride=5,
+        verbose=True,
+    )
+    
+    
+def test_eval_energy_sums_periodic_torsion_3(tmpdir):  
+    """
+    Test simulation parameter update for varying multiple torsion periodicity terms.
+    Multiple periodicity terms specified with mixed input types
+    """
+    
+    output_directory = tmpdir.mkdir("output")
+    
+    # Replica exchange settings
+    number_replicas = 12
+    min_temp = 200.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
+    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
+    
+    # Load in cgmodel with 2 periodic torsion terms
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel_per1_3.pkl", "rb" ))
+    
+    # Get original torsion list:
+    torsion_list = cgmodel.get_torsion_list()
+    
+    # Create list of replica trajectories to analyze
+    dcd_file_list = []
+    for i in range(len(temperature_list)):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+    
+    # Set up dictionary of parameter change instructions:
+    param_dict = {}
+    param_dict['bb_bb_bb_bb_torsion_periodicity'] = [1,3]
+    param_dict['bb_bb_bb_bb_torsion_force_constant'] = [6.0*unit.kilojoule_per_mole, 2.0*unit.kilojoule_per_mole]
+    param_dict['bb_bb_bb_bb_torsion_phase_angle'] = [15,5] * unit.degrees
+    
+    # Also modify some single periodicity sidechain torsions:
+    # This cgmodel had one term originally for sidechain types,
+    # so can't add more periodicity terms
+    param_dict['bb_bb_bb_sc_torsion_periodicity'] = 3
+    param_dict['bb_bb_bb_sc_torsion_force_constant'] = 1.5*unit.kilojoule_per_mole
+    param_dict['bb_bb_bb_sc_torsion_phase_angle'] = 5*unit.degrees
+    
+    param_dict['sc_bb_bb_sc_torsion_periodicity'] = 3
+    param_dict['sc_bb_bb_sc_torsion_force_constant'] = 2.5*unit.kilojoule_per_mole
+    param_dict['sc_bb_bb_sc_torsion_phase_angle'] = 10*unit.degrees    
+    
+    # Re-evaluate OpenMM energies:
+    U_eval, simulation = eval_energy(
+        cgmodel,
+        dcd_file_list,
+        temperature_list,
+        param_dict,
+        frame_begin=0,
+        frame_end=-1,
+        frame_stride=5,
+        verbose=True,
+    )
+    
     
 def test_eval_energy_all_parameters(tmpdir):  
     """

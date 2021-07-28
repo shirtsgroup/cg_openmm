@@ -88,7 +88,7 @@ def optimize_force_field_parameters_Cv_FWHM(cgmodel, file_list, temperature_list
 
         # Construct dictionary of parameter update instructions:
         param_dict = {}
-        print(f'Current parameter value: {param_values})
+        print(f'Current parameter value: {param_values}')
         for i in range(len(param_names)):
             param_dict[param_names[i]] = param_values * units[i]
 

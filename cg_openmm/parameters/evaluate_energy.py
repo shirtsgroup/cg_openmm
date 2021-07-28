@@ -72,6 +72,12 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
     torsion_k = False
     torsion_eq = False
     torsion_per = False
+    
+    # Is a single periodicity being turned into sums of multiple periodicities:
+    sums_per_torsion = False
+    # Multiple torsion parameters can be set as either a list of quantities, or a
+    # quantity with a list as its value.
+    # Multiple periodicities must be defined as a list however.
 
     for param_name, val in param_dict.items():
         # Search which parameters are being changed:
@@ -151,7 +157,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                             print(f'Updating parameter {sigma_str}:')
                             print(f'Particle: {particle_index}')
                             print(f'Old value: {sigma_old}')
-                            print(f'New value: {param_dict[sigma_str]}\n')
+                            print(f'New value: {param_dict[sigma_str].in_units_of(sigma_old.unit)}\n')
 
                     if epsilon_str in param_dict:
                         # Update the epsilon parameter for this particle:
@@ -164,7 +170,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                             print(f'Updating parameter {epsilon_str}:')
                             print(f'Particle: {particle_index}')
                             print(f'Old value: {eps_old}')
-                            print(f'New value: {param_dict[epsilon_str]}\n')
+                            print(f'New value: {param_dict[epsilon_str].in_units_of(eps_old.unit)}\n')
 
         elif force_name == 'HarmonicBondForce':
             if bond_eq or bond_k:
@@ -198,7 +204,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                             print(f'Updating parameter {str_name}:')
                             print(f'Particles: {par1} {par2}')
                             print(f'Old value: {k_old}')
-                            print(f'New value: {param_dict[str_name]}\n')
+                            print(f'New value: {param_dict[str_name].in_units_of(k_old.unit)}\n')
 
                     elif rev_str_name in param_dict:
                         # Update this parameter:
@@ -212,7 +218,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                             print(f'Updating parameter {rev_str_name}:')
                             print(f'Particles: {par1} {par2}')
                             print(f'Old value: {k_old}')
-                            print(f'New value: {param_dict[rev_str_name]}\n')
+                            print(f'New value: {param_dict[rev_str_name].in_units_of(k_old.unit)}\n')
 
                     #------------------------------------------#
                     # Check for updated bond_length parameters #
@@ -234,7 +240,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                             print(f'Updating parameter {str_name}:')
                             print(f'Particles: {par1} {par2}')
                             print(f'Old value: {length_old}')
-                            print(f'New value: {param_dict[str_name]}\n')
+                            print(f'New value: {param_dict[str_name].in_units_of(length_old.unit)}\n')
 
                     elif rev_str_name in param_dict:
                         # Update this parameter:
@@ -248,7 +254,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                             print(f'Updating parameter {rev_str_name}:')
                             print(f'Particles: {par1} {par2}')
                             print(f'Old value: {length_old}')
-                            print(f'New value: {param_dict[rev_str_name]}\n')
+                            print(f'New value: {param_dict[rev_str_name].in_units_of(length_old.unit)}\n')
 
                     bond_index += 1
 
@@ -285,7 +291,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                             print(f'Updating parameter {str_name}:')
                             print(f'Particles: {par1} {par2} {par3}')
                             print(f'Old value: {k_old}')
-                            print(f'New value: {param_dict[str_name]}\n')
+                            print(f'New value: {param_dict[str_name].in_units(k_old.unit)}\n')
 
                     elif rev_str_name in param_dict:
                         # Update this parameter:
@@ -299,7 +305,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                             print(f'Updating parameter {rev_str_name}:')
                             print(f'Particles: {par1} {par2} {par3}')
                             print(f'Old value: {k_old}')
-                            print(f'New value: {param_dict[rev_str_name]}\n')
+                            print(f'New value: {param_dict[rev_str_name].in_units_of(k_old.unit)}\n')
 
                     #-----------------------------------------------#
                     # Check for updated equil_bond_angle parameters #
@@ -321,7 +327,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                             print(f'Updating parameter {str_name}:')
                             print(f'Particles: {par1} {par2} {par3}')
                             print(f'Old value: {theta0_old}')
-                            print(f'New value: {param_dict[str_name]}\n')
+                            print(f'New value: {param_dict[str_name].in_units_of(theta0_old.unit)}\n')
 
                     elif rev_str_name in param_dict:
                         # Update this parameter:
@@ -335,160 +341,232 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                             print(f'Updating parameter {rev_str_name}:')
                             print(f'Particles: {par1} {par2} {par3}')
                             print(f'Old value: {theta0_old}')
-                            print(f'New value: {param_dict[rev_str_name]}\n')
+                            print(f'New value: {param_dict[rev_str_name].in_units_of(theta0_old.unit)}\n')
 
                     angle_index += 1
 
         elif force_name == 'PeriodicTorsionForce':
             # Update the periodic torsion parameters:
-            if torsion_eq or torsion_k or torsion_per:
-
-                # OpenMM seems to index the torsions differently than in the cgmodel.
-                # Need to create a new list of torsions with the OpenMM indexing.
-
+            if torsion_eq or torsion_k or torsion_per:                  
+                # cgmodel torsion_list is based only on the topology, not the forces.
+                # So for each torsion in torsion_list, we can loop over the different
+                # periodicities.
+                
+                # There are three possible scenarios:
+                # 1) Going from m --> n periodicities, where n > m
+                # 2) No change in number of periodicities, but new parameters (n = m)
+                # 3) Going from m --> n periodicities, where n < m.
+                
+                # We cannot add new torsions when doing updateParametersInContext
+                # Hence, we need to create a new torsion force object
+                
+                # For now, only option 2 is supported. A fairly easy workaround
+                # for n != m is to create a new cgmodel with the same topology,
+                # but with the desired amount of periodic torsion terms.
+                
+                # Get the number of torsion forces in the original model:
+                n_torsion_forces = force.getNumTorsions()
+                
+                # Store the original periodicities and openmm indices found for each particle sequence:
+                periodicity_map = {}
+                torsion_index_map = {}
+                for torsion in torsion_list:
+                    periodicity_map[f'{torsion}'] = []
+                    torsion_index_map[f'{torsion}'] = []
+                
+                # Get the torsion list as ordered in OpenMM:
+                # The order of particles within each torsion can be reversed in OpenMM vs cgmodel
                 torsion_list_openmm = []
-                for i_tor in range(len(torsion_list)):
+                for i_tor in range(n_torsion_forces):
                     (par1, par2, par3, par4, periodicity, phase, k) = \
                         force.getTorsionParameters(i_tor)
-                    torsion_list_openmm.append([par1, par2, par3, par4])
-
+                    if [par1, par2, par3, par4] in torsion_list:
+                        torsion_list_openmm.append([par1, par2, par3, par4])
+                    else:
+                        torsion_list_openmm.append([par4, par3, par2, par1])
+                        
+                    periodicity_map[f'{torsion_list_openmm[-1]}'].append(periodicity)
+                    torsion_index_map[f'{torsion_list_openmm[-1]}'].append(i_tor)
+            
                 torsion_index = 0
-                for torsion in torsion_list_openmm:
+                
+                # Here we loop over the particle sequences, not the torsion forces:
+                for torsion in torsion_list:
                     # These are indices of the 4 particles
                     # Force field parameter names are of the form:
                     # 'bb_bb_bb_bb_torsion_phase_angle'
                     # 'bb_bb_bb_bb_torsion_force_constant'
                     # 'bb_bb_bb_bb_torsion_periodicity'
 
-                    #-----------------------------------------------------#
-                    # Check for updated torsion_force_constant parameters #
-                    #-----------------------------------------------------#
-                    suffix = 'torsion_force_constant'
+                    #--------------------------------------------------#
+                    # Check for updated torsion_periodicity parameters #
+                    #--------------------------------------------------#
+                    
                     name_1 = particle_type_list[torsion[0]]
                     name_2 = particle_type_list[torsion[1]]
                     name_3 = particle_type_list[torsion[2]]
                     name_4 = particle_type_list[torsion[3]]
 
-                    str_name = f'{name_1}_{name_2}_{name_3}_{name_4}_{suffix}'
-                    rev_str_name = f'{name_4}_{name_3}_{name_2}_{name_1}_{suffix}'
-
-                    if str_name in param_dict:
-                        # Update this parameter:
-                        (par1, par2, par3, par4, periodicity, phase, k_old) = \
-                            force.getTorsionParameters(torsion_index)
-
-                        force.setTorsionParameters(
-                            torsion_index, par1, par2, par3, par4,
-                            periodicity, phase, param_dict[str_name].value_in_unit(unit.kilojoule_per_mole),
-                        )
-                        force.updateParametersInContext(simulation.context)
-                        if verbose:
-                            print(f'Updating parameter {str_name}:')
-                            print(f'Particles: {par1} {par2} {par3} {par4}')
-                            print(f'Old value: {k_old}')
-                            print(f'New value: {param_dict[str_name]}\n')
-
-                    elif rev_str_name in param_dict:
-                        # Update this parameter:
-                        (par1, par2, par3, par4, periodicity, phase, k_old) = \
-                            force.getTorsionParameters(torsion_index)
-
-                        force.setTorsionParameters(
-                            torsion_index, par1, par2, par3, par4,
-                            periodicity, phase, param_dict[rev_str_name].value_in_unit(unit.kilojoule_per_mole),
-                        )
-                        force.updateParametersInContext(simulation.context)
-                        if verbose:
-                            print(f'Updating parameter {rev_str_name}:')
-                            print(f'Particles: {par1} {par2} {par3} {par4}')
-                            print(f'Old value: {k_old}')
-                            print(f'New value: {param_dict[rev_str_name]}\n')
-
-
-                    #--------------------------------------------------#
-                    # Check for updated torsion_phase_angle parameters #
-                    #--------------------------------------------------#
-                    suffix = 'torsion_phase_angle'
-
-                    str_name = f'{name_1}_{name_2}_{name_3}_{name_4}_{suffix}'
-                    rev_str_name = f'{name_4}_{name_3}_{name_2}_{name_1}_{suffix}'
-
-                    if str_name in param_dict:
-                        # Update this parameter:
-                        (par1, par2, par3, par4, periodicity, phase_old, k) = \
-                            force.getTorsionParameters(torsion_index)
-
-                        force.setTorsionParameters(
-                            torsion_index, par1, par2, par3, par4,
-                            periodicity, param_dict[str_name].value_in_unit(unit.radian), k,
-                        )
-                        force.updateParametersInContext(simulation.context)
-                        if verbose:
-                            print(f'Updating parameter {str_name}:')
-                            print(f'Particles: {par1} {par2} {par3} {par4}')
-                            print(f'Old value: {phase_old}')
-                            print(f'New value: {param_dict[str_name]}\n')
-
-                    elif rev_str_name in param_dict:
-                        # Update this parameter:
-                        (par1, par2, par3, par4, periodicity, phase_old, k) = \
-                            force.getTorsionParameters(torsion_index)
-
-                        force.setTorsionParameters(
-                            torsion_index, par1, par2, par3, par4,
-                            periodicity, param_dict[rev_str_name].value_in_unit(unit.radian), k,
-                        )
-                        force.updateParametersInContext(simulation.context)
-                        if verbose:
-                            print(f'Updating parameter {rev_str_name}:')
-                            print(f'Particles: {par1} {par2} {par3} {par4}')
-                            print(f'Old value: {phase_old}')
-                            print(f'New value: {param_dict[rev_str_name]}\n')
-
-                    #--------------------------------------------------#
-                    # Check for updated torsion_periodicity parameters #
-                    #--------------------------------------------------#
-                    
-                    # TODO: make this work for sums of periodic torsions
-                    
                     suffix = 'torsion_periodicity'
+                    str_name_per = f'{name_1}_{name_2}_{name_3}_{name_4}_{suffix}'
+                    rev_str_name_per = f'{name_4}_{name_3}_{name_2}_{name_1}_{suffix}'
+                    
+                    suffix = 'torsion_force_constant'
+                    str_name_kt = f'{name_1}_{name_2}_{name_3}_{name_4}_{suffix}'
+                    rev_str_name_kt = f'{name_4}_{name_3}_{name_2}_{name_1}_{suffix}'
+                    
+                    suffix = 'torsion_phase_angle'
+                    str_name_phi = f'{name_1}_{name_2}_{name_3}_{name_4}_{suffix}'
+                    rev_str_name_phi = f'{name_4}_{name_3}_{name_2}_{name_1}_{suffix}'
 
-                    str_name = f'{name_1}_{name_2}_{name_3}_{name_4}_{suffix}'
-                    rev_str_name = f'{name_4}_{name_3}_{name_2}_{name_1}_{suffix}'
+                    # Check if this torsion needs updating:
+                    if ((str_name_per in param_dict) or (rev_str_name_per in param_dict) or
+                        (str_name_phi in param_dict) or (rev_str_name_phi in param_dict) or
+                        (str_name_kt in param_dict) or (rev_str_name_kt in param_dict)):
+                    
+                        # Check number of new periodic torsion terms:
+                        n_per_old = len(periodicity_map[f'{torsion}'])
+                        if str_name_per in param_dict:
+                            if type(param_dict[str_name_per]) == list:
+                                n_per_new = len(param_dict[str_name_per]) # Multiple periodicity always given as list
+                            else:
+                                n_per_new = 1
+                        elif rev_str_name_per in param_dict:
+                            if type(param_dict[rev_str_name_per]) == list:
+                                n_per_new = len(param_dict[rev_str_name_per])
+                            else:
+                                n_per_new = 1
+                        else:
+                            n_per_new = n_per_old
+                            
+                        if n_per_new > n_per_old:
+                            # Increasing the number of periodic torsion terms, which is not yet supported:
+                            print('Invalid sums of periodic torsion parameter update:')
+                            print('Increasing the number of periodic torsion terms is not yet supported')
+                            print(f'Original number of terms: {n_per_old}')
+                            print(f'New number of terms: {n_per_new}')
+                            exit()
+                            
+                        elif n_per_new < n_per_old:
+                            # Reducing the number of periodic torsion terms, with non-supported input:
+                            print('Invalid sums of periodic torsion parameter update:')
+                            print('When reducing number of periodic torsion terms, set the deleted term')
+                            print('to have zero force constant.')
+                            print(f'Original number of terms: {n_per_old}')
+                            print(f'New number of terms: {n_per_new}')
+                            exit()
+                            
+                        elif n_per_new == n_per_old:
+                            # Update each of the existing periodic torsion forces:
+                            for i_per in range(n_per_old):
+                                (par1, par2, par3, par4, periodicity_old, phase_old, k_old) = \
+                                    force.getTorsionParameters(torsion_index_map[f'{torsion}'][i_per])
 
-                    if str_name in param_dict:
-                        # Update this parameter:
-                        (par1, par2, par3, par4, periodicity_old, phase, k) = \
-                            force.getTorsionParameters(torsion_index)
+                                # Check the input style of phase angle and force constant:
+                                # Each can independently be a list of quantities,
+                                # or a quantity with list value.
+                                
+                                #--------------------------------------------------#
+                                # Check for updated torsion_phase_angle parameters #
+                                #--------------------------------------------------#
+                                if str_name_phi in param_dict:
+                                    if type(param_dict[str_name_phi]) == list:
+                                        param_phi_curr = param_dict[str_name_phi][i_per]
+                                        
+                                    elif type(param_dict[str_name_phi]) == unit.quantity.Quantity:
+                                        phi_unit = param_dict[str_name_phi].unit
+                                        if type(param_dict[str_name_phi].value_in_unit(phi_unit)) == list:
+                                            param_phi_curr = param_dict[str_name_phi].value_in_unit(phi_unit)[i_per] * phi_unit
+                                        else:
+                                            param_phi_curr = param_dict[str_name_phi]
+                                
+                                elif rev_str_name_phi in param_dict:
+                                    if type(param_dict[rev_str_name_phi]) == list:
+                                        param_phi_curr = param_dict[rev_str_name_phi][i_per]
+                                        
+                                    elif type(param_dict[rev_str_name_phi]) == unit.quantity.Quantity:
+                                        phi_unit = param_dict[rev_str_name_phi].unit
+                                        if type(param_dict[rev_str_name_phi].value_in_unit(phi_unit)) == list:
+                                            param_phi_curr = param_dict[rev_str_name_phi].value_in_unit(phi_unit)[i_per] * phi_unit
+                                        else:
+                                            param_phi_curr = param_dict[rev_str_name_phi]
 
-                        force.setTorsionParameters(
-                            torsion_index, par1, par2, par3, par4,
-                            param_dict[str_name], phase, k,
-                        )
-                        force.updateParametersInContext(simulation.context)
-                        if verbose:
-                            print(f'Updating parameter {str_name}:')
-                            print(f'Particles: {par1} {par2} {par3} {par4}')
-                            print(f'Old value: {periodicity_old}')
-                            print(f'New value: {param_dict[str_name]}\n')
-
-                    elif rev_str_name in param_dict:
-                        # Update this parameter:
-                        (par1, par2, par3, par4, periodicity_old, phase, k) = \
-                            force.getTorsionParameters(torsion_index)
-
-                        force.setTorsionParameters(
-                            torsion_index, par1, par2, par3, par4,
-                            param_dict[rev_str_name], phase, k,
-                        )
-                        force.updateParametersInContext(simulation.context)
-                        if verbose:
-                            print(f'Updating parameter {rev_str_name}:')
-                            print(f'Particles: {par1} {par2} {par3} {par4}')
-                            print(f'Old value: {periodicity_old}')
-                            print(f'New value: {param_dict[rev_str_name]}\n')
+                                else:
+                                    # Not updating this parameter, since it was not specified in parameter dictionary:
+                                    param_phi_curr = phase_old
+                                 
+                                #-----------------------------------------------------#
+                                # Check for updated torsion_force_constant parameters #
+                                #-----------------------------------------------------#
+                                if str_name_kt in param_dict:
+                                    if type(param_dict[str_name_kt]) == list:
+                                        param_kt_curr = param_dict[str_name_kt][i_per]
+                                        
+                                    elif type(param_dict[str_name_kt]) == unit.quantity.Quantity:
+                                        # The value of this can be a list, or a single float
+                                        kt_unit = param_dict[str_name_kt].unit
+                                        if type(param_dict[str_name_kt].value_in_unit(kt_unit)) == list:
+                                            param_kt_curr = param_dict[str_name_kt].value_in_unit(kt_unit)[i_per] * kt_unit
+                                        else:
+                                            param_kt_curr = param_dict[str_name_kt]
+                                        
+                                elif rev_str_name_kt in param_dict:
+                                    if type(param_dict[rev_str_name_kt]) == list:
+                                        param_kt_curr = param_dict[rev_str_name_kt][i_per]
+                                        
+                                    elif type(param_dict[rev_str_name_kt]) == unit.quantity.Quantity:
+                                        # The value of this can be a list, or a single float
+                                        kt_unit = param_dict[rev_str_name_kt].unit
+                                        if type(param_dict[rev_str_name_kt].value_in_unit(kt_unit)) == list:
+                                            param_kt_curr = param_dict[rev_str_name_kt].value_in_unit(kt_unit)[i_per]
+                                        else:
+                                            param_kt_curr = param_dict[rev_str_name_kt]
+                                else:
+                                    # Not updating this parameter, since it was not specified in parameter dictionary:
+                                    param_kt_curr = k_old
+                                  
+                                #--------------------------------------------------#
+                                # Check for updated torsion_periodicity parameters #
+                                #--------------------------------------------------# 
+                                if str_name_per in param_dict:
+                                    if type(param_dict[str_name_per]) == list:
+                                        param_per_curr = param_dict[str_name_per][i_per]
+                                    else:
+                                        param_per_curr = param_dict[str_name_per]
+                                
+                                elif rev_str_name_per in param_dict:
+                                    if type(param_dict[rev_str_name_per]) == list:
+                                        param_per_curr = param_dict[rev_str_name_per][i_per]
+                                    else:
+                                        param_per_curr = param_dict[rev_str_name_per]
+                                
+                                else:
+                                    # Not updating this parameter, since it was not specified in parameter dictionary:
+                                    param_per_curr = periodicity_old
+                                
+                                # Update the periodic torsion parameters:
+                                force.setTorsionParameters(
+                                    torsion_index_map[f'{torsion}'][i_per],
+                                    par1, par2, par3, par4,
+                                    param_per_curr,
+                                    param_phi_curr,
+                                    param_kt_curr,
+                                ) 
+                                
+                                force.updateParametersInContext(simulation.context)
+                                if verbose:
+                                    print(f'\nUpdating sums of periodic torsions, type {name_1}_{name_2}_{name_3}_{name_4}:')
+                                    print(f'Particles: {par1} {par2} {par3} {par4}')
+                                    print(f'Periodicity: {periodicity_old} --> {param_per_curr}')
+                                    print(f'Phase angle: {phase_old} --> {param_phi_curr.in_units_of(phase_old.unit)}')
+                                    print(f'Force constant: {k_old} --> {param_kt_curr.in_units_of(k_old.unit)}')
 
                     torsion_index += 1
+                    
+                n_torsion_forces_new = force.getNumTorsions()
+                if verbose:
+                    print(f'\nOld total number of torsion force terms: {n_torsion_forces}')
+                    print(f'New total number of torsion force terms: {n_torsion_forces_new}')
 
     # Update the positions and evaluate all specified frames:
     # Run with multiple processors and gather data from all replicas:        
