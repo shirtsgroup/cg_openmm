@@ -786,8 +786,9 @@ def run_replica_exchange(
     if minimize:
         simulation.minimize()
 
-    print("Running replica exchange simulations with OpenMM...")
-    print(f"Using a time step of {simulation_time_step}")
+    print("Running OpenMM replica exchange simulation...")
+    print(f"Time step: {simulation_time_step}")
+    print(f"Iterations: {exchange_attempts}")
     try:
         simulation.run()
     except BaseException:

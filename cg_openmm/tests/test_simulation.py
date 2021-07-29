@@ -656,6 +656,8 @@ def test_restart_replica_exchange(tmpdir):
     temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
     exchange_frequency = 10  # Number of steps between exchange attempts
     
+    exchange_attempts = int(np.floor(total_steps/exchange_frequency))
+    
     # Coarse grained model settings
     include_bond_forces = True
     include_bond_angle_forces = True
@@ -780,5 +782,5 @@ def test_restart_replica_exchange(tmpdir):
         output_directory=output_directory,
     )
     
-    assert replica_energies.shape[1] == (total_steps*2 + 1) 
-        
+    assert replica_energies.shape[2] == (exchange_attempts*2 + 1)
+    
