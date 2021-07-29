@@ -291,7 +291,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                             print(f'Updating parameter {str_name}:')
                             print(f'Particles: {par1} {par2} {par3}')
                             print(f'Old value: {k_old}')
-                            print(f'New value: {param_dict[str_name].in_units(k_old.unit)}\n')
+                            print(f'New value: {param_dict[str_name].in_units_of(k_old.unit)}\n')
 
                     elif rev_str_name in param_dict:
                         # Update this parameter:

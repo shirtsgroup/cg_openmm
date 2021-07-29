@@ -819,44 +819,6 @@ def test_eval_energy_sums_periodic_torsion_1(tmpdir):
         verbose=True,
     )
 
-    # for force_index, force in enumerate(simulation.system.getForces()):
-        # force_name = force.__class__.__name__
-        # if force_name == 'PeriodicTorsionForce':
-            # torsion_index = 0
-            # for torsion in torsion_list:
-                
-            # (par1, par2, par3, par4, sc_bb_bb_sc_per_updated, angle, k) = force.getTorsionParameters(1)
-            # (par1, par2, par3, par4, bb_bb_bb_bb_per_updated, angle, k) = force.getTorsionParameters(0)
-            # (par1, par2, par3, par4, bb_bb_bb_sc_per_updated, angle, k) = force.getTorsionParameters(5)
-            
-    # assert sc_bb_bb_sc_per_updated == param_dict['sc_bb_bb_sc_torsion_periodicity']
-    # assert bb_bb_bb_bb_per_updated == param_dict['bb_bb_bb_bb_torsion_periodicity']
-    # assert bb_bb_bb_sc_per_updated == param_dict['bb_bb_bb_sc_torsion_periodicity']
-    
-    # # Now, try the reverse names:
-    # # Set up dictionary of parameter change instructions:
-    # param_dict_rev = {}
-    # param_dict_rev['sc_bb_bb_bb_torsion_periodicity'] = 5
-    
-    # # Re-evaluate OpenMM energies:
-    # U_eval, simulation = eval_energy(
-        # cgmodel,
-        # dcd_file_list,
-        # temperature_list,
-        # param_dict_rev,
-        # frame_begin=0,
-        # frame_end=-1,
-        # frame_stride=5,
-        # verbose=True,
-    # )
-    
-    # for force_index, force in enumerate(simulation.system.getForces()):
-        # force_name = force.__class__.__name__
-        # if force_name == 'PeriodicTorsionForce':
-            # (par1, par2, par3, par4, sc_bb_bb_bb_per_updated, angle, k) = force.getTorsionParameters(5)
-            
-    # assert sc_bb_bb_bb_per_updated == param_dict_rev['sc_bb_bb_bb_torsion_periodicity']   
-
 
 def test_eval_energy_sums_periodic_torsion_2(tmpdir):  
     """
