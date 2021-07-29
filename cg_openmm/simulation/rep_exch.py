@@ -688,7 +688,7 @@ def run_replica_exchange(
     minimize=True,
     exchange_frequency=1000,
     output_data="output/output.nc",
-):
+    ):
 
     """
     Run a OpenMMTools replica exchange simulation using an OpenMM coarse grained model.
@@ -793,6 +793,48 @@ def run_replica_exchange(
     except BaseException:
         print("Replica exchange simulation failed, try verifying your model/simulation settings.")
         exit()
+        
+    return
+        
+        
+def restart_replica_exchange(
+    total_simulation_time=1*unit.nanosecond,
+    simulation_time_step=5*unit.picosecond,
+    exchange_frequency=200,
+    output_data="output/output.nc",
+    ):
+
+    """
+    Restart an OpenMMTools replica exchange simulation using an OpenMM coarse grained model and
+    output .nc files from the previous segment of the simulation. 
+
+    :param total_simulation_time: Total run time to add to the original simulation (default=1*unit.nanosecond)
+    :type total_simulation_time: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
+
+    :param simulation_time_step: Simulation integration time step (default=5*unit.picosecond)
+    :type simulation_time_step: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
+
+    :param exchange_frequency: Number of time steps between replica exchange attempts (default=200)
+    :type exchange_frequency: int
+
+    :param output_data: Path to the NETCDF file for previous segment of simulation - this will be appended to (default="output/output.nc")
+    :type output_data: str
+    """
+
+    simulation_steps = int(np.floor(total_simulation_time / simulation_time_step))
+    exchange_attempts = int(np.floor(simulation_steps / exchange_frequency))
+
+    # Load in the reporter from the original simulation:
+    reporter = MultiStateReporter(output_data, open_mode="r")
+    simulation = ReplicaExchangeSampler.from_storage(reporter)
+
+    print("Running OpenMM replica exchange simulation...")
+    print(f"Time step: {simulation_time_step}")
+    print(f"Iterations: {exchange_attempts}")
+
+    simulation.extend(n_iterations=exchange_attempts)
+
+    return
    
         
 def get_minimum_energy_ensemble(
