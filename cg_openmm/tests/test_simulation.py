@@ -19,7 +19,6 @@ from cg_openmm.utilities import random_builder
 from cg_openmm.build.cg_build import build_topology
 import numpy as np
 from numpy.testing import assert_almost_equal
-from openmmtools.cache import global_context_cache
 import pickle
 
 def test_cg_openmm_imported():
@@ -397,8 +396,6 @@ def test_run_replica_exchange(tmpdir):
     Test replica exchange processing (write pdb files)
     """
 
-    global_context_cache.platform = openmm.Platform.getPlatformByName("CPU")
-    
     # Set output directory
     # In pytest we need to use a temp directory
     # tmpdir is a fixture - hence we need to pass it into test function, not import it
@@ -641,8 +638,6 @@ def test_restart_replica_exchange(tmpdir):
     Test heat capacity analysis code
     Test physical validation code
     """
-
-    global_context_cache.platform = openmm.Platform.getPlatformByName("CPU")
     
     # Set output directory
     # In pytest we need to use a temp directory
