@@ -744,8 +744,8 @@ def optimize_Q_cut(
         bounds_nc_cut = (r_eq*0.75,r_eq*1.25)
         
         if verbose:
-            print(f'Using bounds based on eq. distance for sigma = {sigma_bb}')
-            print(f'{bounds}')
+            print(f'Using native contact cutoff bounds based on eq. distance for sigma = {sigma_bb}')
+            print(f'{bounds_nc_cut}')
         
     else:
         # If bounds specified, strip any units
