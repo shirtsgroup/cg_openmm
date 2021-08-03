@@ -826,7 +826,7 @@ def restart_replica_exchange(
     exchange_attempts = int(np.floor(simulation_steps / exchange_frequency))
 
     # Load in the reporter from the original simulation:
-    reporter = MultiStateReporter(output_data, open_mode="r")
+    reporter = MultiStateReporter(output_data, open_mode="r+")
     simulation = ReplicaExchangeSampler.from_storage(reporter)
 
     print("Running OpenMM replica exchange simulation...")

@@ -355,7 +355,7 @@ def fraction_native_contacts(
     native_contact_list,
     native_contact_distances,
     frame_begin=0,
-    native_contact_tol=1.1,
+    native_contact_tol=1.3,
     subsample=True,
 ):
     """
@@ -376,7 +376,7 @@ def fraction_native_contacts(
     :param frame_begin: Frame at which to start native contacts analysis (default=0)
     :type frame_begin: int        
     
-    :param native_contact_tol: Tolerance factor beyond the native distance for determining whether a pair of particles is 'native' (in multiples of native distance)
+    :param native_contact_tol: Tolerance factor beyond the native distance for determining whether a pair of particles is 'native' (in multiples of native distance) (default=1.3)
     :type native_contact_tol: float
     
     :param subsample: option to use pymbar subsampleCorrelatedData to detect and return the interval between uncorrelated data points (default=True)
@@ -477,7 +477,7 @@ def fraction_native_contacts_preloaded(
     native_contact_list,
     native_contact_distances,
     frame_begin=0,
-    native_contact_tol=1.1,
+    native_contact_tol=1.3,
     subsample=True,
 ):
     """
@@ -498,7 +498,7 @@ def fraction_native_contacts_preloaded(
     :param frame_begin: Frame at which to start native contacts analysis (default=0)
     :type frame_begin: int        
     
-    :param native_contact_tol: Tolerance factor beyond the native distance for determining whether a pair of particles is 'native' (in multiples of native distance)
+    :param native_contact_tol: Tolerance factor beyond the native distance for determining whether a pair of particles is 'native' (in multiples of native distance) (default=1.3)
     :type native_contact_tol: float
     
     :param subsample: option to use pymbar subsampleCorrelatedData to detect and return the interval between uncorrelated data points (default=True)
@@ -792,6 +792,212 @@ def optimize_Q_cut(
     return native_contact_cutoff, native_contact_tol, opt_results, Q_expect_results, sigmoid_param_opt, sigmoid_param_cov, contact_type_dict
     
     
+def optimize_Q_cut_1d(
+    cgmodel, native_structure_file, traj_file_list, output_data="output/output.nc",
+    num_intermediate_states=0, frame_begin=0, frame_stride=1, native_contact_tol = 1.3,
+    plotfile='native_contacts_opt_1d.pdf', verbose=False, brute_step=0.1,
+    bounds=None):
+    """
+    Given a coarse grained model and a native structure as input, optimize the distance cutoff defining
+    the native contact pairs, with a fixed distance tolerance factor for scanning the trajectory.
+
+    :param cgmodel: CGModel() class object
+    :type cgmodel: class
+    
+    :param native_structure_file: Path to file ('pdb' or 'dcd') containing particle positions for the native structure.
+    :type native_structure_file: str 
+    
+    :param traj_file_list: A list of replica PDB or DCD trajectory files corresponding to the energies in the .nc file, or a single file name
+    :type traj_file_list: List( str ) or str
+    
+    :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data, default = ("output/output.nc")                                                                                                  
+    :type output_data: str
+
+    :param num_intermediate_states: The number of states to insert between existing states in 'temperature_list'
+    :type num_intermediate_states: int 
+    
+    :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
+    :type frame_begin: int
+
+    :param frame_stride: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData
+    :type frame_stride: int
+    
+    :param native_contact_tol: Tolerance factor beyond the native distance for determining whether a pair of particles is 'native' (in multiples of native distance) (default=1.3)
+    :type native_contact_tol: float
+    
+    :param plotfile: Path to output file for plotting results (default='native_contacts_opt_1d.pdf')
+    :type plotfile: str
+    
+    :param brute_step: step size in distance units for brute force tolerance optimization (final optimization searches between intervals) (default=0.1)
+    :type brute_step: float
+    
+    :param bounds: bounds in distance units for brute force optimization - if None, will determine bounds based on backbone sigma parameter
+    :type bounds: tuple
+
+    :returns:
+       - native_contact_cutoff ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The ideal distance below which two nonbonded, interacting particles should be defined as a "native contact"
+       - opt_results ( dict ) - results of the native contact cutoff scipy.optimize.minimize optimization
+       - Q_expect_results ( dict ) - results of the native contact fraction expectation calculation containing 'Q' and 'T'
+       - sigmoid_param_opt ( 1D numpy array ) - optimized sigmoid parameters (x0, y0, y1, d) 
+       - sigmoid_param_cov ( 2D numpy array ) - estimated covariance of sigmoid_param_opt
+       - contact_type_dict ( dict ) - a dictionary of {native contact particle type pair: counts}
+    """
+
+    # Pre-load the replica trajectories into MDTraj objects, to avoid having to load them
+    # at each iteration (very costly for pdb in particular)
+    
+    traj_dict = {}
+    
+    if type(traj_file_list) == list:
+        n_replicas = len(traj_file_list)
+    elif type(traj_file_list) == str:
+        # Convert to a 1 element list if not one
+        traj_file_list = traj_file_list.split()  
+        n_replicas = 1
+        
+    for rep in range(n_replicas):
+        if traj_file_list[rep][-3:] == 'dcd':
+            traj_dict[rep] = md.load(traj_file_list[rep],top=md.Topology.from_openmm(cgmodel.topology))
+        else:
+            traj_dict[rep] = md.load(traj_file_list[rep])
+    
+    def minimize_sigmoid_width_1d_cut(x0):
+        # Function to minimize:
+   
+        native_contact_cutoff = x0
+        
+        # Determine native contacts:
+        native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
+            cgmodel,
+            native_structure_file,
+            native_contact_cutoff*unit.angstrom,
+        )
+        
+        if len(native_contact_list) > 0:
+            # Get native contact fraction of all frames
+            # To avoid loading in files each iteration, use alternate version of fraction_native_contacts code
+            Q, Q_avg, Q_stderr, decorrelation_time = fraction_native_contacts_preloaded(
+                cgmodel,
+                traj_dict,
+                native_contact_list,
+                native_contact_distances,
+                frame_begin=frame_begin,
+                native_contact_tol=native_contact_tol,
+                subsample=False,
+            )
+            
+            if Q.sum() == 0:
+                # There are no native contacts in the trajectory
+                min_val = 1E9
+                param_opt = None
+                
+            else:    
+                try:
+                    # Get expectations 
+                    results = expectations_fraction_contacts(
+                        Q,
+                        frame_begin=frame_begin,
+                        sample_spacing=frame_stride,
+                        output_data=output_data,
+                        num_intermediate_states=num_intermediate_states,
+                    )
+                    
+                    param_opt, param_cov = fit_sigmoid(results["T"],results["Q"],plotfile=None)
+                    
+                    # This minimizes the width of the sigmoid:
+                    # min_val = param_opt[3]**2
+                    
+                    # Maximum the difference between the max and min Q:
+                    min_val = 1-abs(param_opt[2]-param_opt[1])
+                    if verbose:
+                        print(f'min_val: {min_val}')
+                
+                except:
+                    # Error with computing expectation, likely due to few non-zero Q
+                    min_val = 1E9
+                    param_opt = None
+            
+        else:
+            # There are no native contacts for this iteration
+            min_val = 1E9
+            param_opt = None
+            
+        if verbose:
+            # Print parameters at each iteration:
+            print(f"native_contact_cutoff: {native_contact_cutoff}")
+            print(f"number native contacts: {len(native_contact_list)}")
+            print(f"sigmoid params: {param_opt}\n")
+            
+        return min_val
+    
+    
+    if bounds is None:
+        # Get bounds from equilibrium LJ distance
+        particle_list = cgmodel.create_particle_list()
+        sigma_bb = None
+        for par in particle_list:
+            if cgmodel.get_particle_type_name(par) == 'bb':
+                sigma_bb = cgmodel.get_particle_sigma(par)
+                break
+            
+        if sigma_bb is None:
+            # bb is not a defined particle type
+            # Use sigma of the first particle type found
+            sigma_bb = cgmodel.get_particle_sigma(1)
+            
+        # Compute equilibrium LJ distance    
+        r_eq = sigma_bb.value_in_unit(unit.angstrom)*np.power(2,(1/6))
+        
+        bounds = (r_eq*0.75,r_eq*1.25)
+        if verbose:
+            print(f'Using bounds based on eq. distance for sigma = {sigma_bb}')
+            print(f'{bounds}')
+    else:
+        # If bounds specified, strip any units
+        if type(bounds) == unit.quantity.Quantity:
+            bounds = bounds.value_in_unit(unit.angstrom)
+        if type(bounds) == tuple or type(bounds) == list:
+            if type(bounds[0]) == unit.quantity.Quantity:
+                bounds = (bounds[0].value_in_unit(unit.angstrom),bounds[1].value_in_unit(unit.angstrom))
+    
+    brute_range = [slice(bounds[0],bounds[1],brute_step)]
+
+    opt_results = brute(minimize_sigmoid_width_1d_cut, brute_range)
+
+    # Repeat for final plotting:
+    native_contact_cutoff = opt_results[0] * unit.angstrom
+    
+    # Determine native contacts:
+    native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
+        cgmodel,
+        native_structure_file,
+        native_contact_cutoff,
+    )
+
+    # Get native contact fraction of all frames
+    Q, Q_avg, Q_stderr, decorrelation_time = fraction_native_contacts_preloaded(
+        cgmodel,
+        traj_dict,
+        native_contact_list,
+        native_contact_distances,
+        frame_begin=frame_begin,
+        native_contact_tol=native_contact_tol
+    )
+
+    # Get expectations 
+    Q_expect_results = expectations_fraction_contacts(
+        Q,
+        frame_begin=frame_begin,
+        sample_spacing=frame_stride,
+        output_data=output_data,
+        num_intermediate_states=num_intermediate_states,
+    )
+
+    sigmoid_param_opt, sigmoid_param_cov = fit_sigmoid(Q_expect_results["T"],Q_expect_results["Q"],plotfile=plotfile)
+    
+    return native_contact_cutoff, opt_results, Q_expect_results, sigmoid_param_opt, sigmoid_param_cov, contact_type_dict
+
+    
 def bootstrap_native_contacts_expectation(
     cgmodel,
     traj_file_list,
@@ -800,7 +1006,7 @@ def bootstrap_native_contacts_expectation(
     output_data='output/output.nc',
     frame_begin=0,
     sample_spacing=1,
-    native_contact_tol=1.1,
+    native_contact_tol=1.3,
     num_intermediate_states=0,
     n_trial_boot=200,
     conf_percent='sigma',
@@ -830,7 +1036,7 @@ def bootstrap_native_contacts_expectation(
     :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData
     :type sample_spacing: int
     
-    :param native_contact_tol: Tolerance factor beyond the native distance for determining whether a pair of particles is 'native' (in multiples of native distance)
+    :param native_contact_tol: Tolerance factor beyond the native distance for determining whether a pair of particles is 'native' (in multiples of native distance) (default=1.3)
     :type native_contact_tol: float
     
     :param num_intermediate_states: The number of states to insert between existing states in 'temperature_list'
