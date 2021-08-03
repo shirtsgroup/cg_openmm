@@ -586,7 +586,8 @@ def fraction_native_contacts_preloaded(
 def optimize_Q_cut(
     cgmodel, native_structure_file, traj_file_list, output_data="output/output.nc",
     num_intermediate_states=0, frame_begin=0, frame_stride=1,
-    plotfile='native_contacts_opt.pdf', verbose=False, minimizer_options=None):
+    plotfile='native_contacts_opt.pdf', verbose=False, minimizer_options=None,
+    bounds_nc_cut=None, bounds_nc_tol=(1,2)):
     """
     Given a coarse grained model and a native structure as input, optimize the distance cutoff defining
     the native contact pairs, and the distance tolerance for scanning the trajectory for native contacts.
@@ -617,6 +618,12 @@ def optimize_Q_cut(
 
     :param minimizer_options: dictionary of additional options for scipy.minimize.optimize.differential_evolution (default=None)
     :type minimizer: dict
+    
+    :param bounds_nc_cut: native contact cutoff bounds in distance units - if None, will determine bounds based on backbone sigma parameter
+    :type bounds_nc_cut: tuple
+    
+    :param bounds_nc_tol: native contact tolerance factor bounds (default = (1,2))
+    :type bounds_nc_tol: tuple    
 
     :returns:
        - native_contact_cutoff ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The ideal distance below which two nonbonded, interacting particles should be defined as a "native contact"
@@ -717,26 +724,39 @@ def optimize_Q_cut(
             
         return min_val
     
-    # Get bounds from equilibrium LJ distance
-    particle_list = cgmodel.create_particle_list()
-    sigma_bb = None
-    for par in particle_list:
-        if cgmodel.get_particle_type_name(par) == 'bb':
-            sigma_bb = cgmodel.get_particle_sigma(par)
-            break
+    if bounds_nc_cut is None:  
+        # Get bounds from equilibrium LJ distance
+        particle_list = cgmodel.create_particle_list()
+        sigma_bb = None
+        for par in particle_list:
+            if cgmodel.get_particle_type_name(par) == 'bb':
+                sigma_bb = cgmodel.get_particle_sigma(par)
+                break
+              
+        if sigma_bb is None:
+            # bb is not a defined particle type
+            # Use sigma of the first particle type found
+            sigma_bb = cgmodel.get_particle_sigma(1)
+            
+        # Compute equilibrium LJ distance    
+        r_eq = sigma_bb.value_in_unit(unit.angstrom)*np.power(2,(1/6))
         
-    if sigma_bb is None:
-        # bb is not a defined particle type
-        # Use sigma of the first particle type found
-        sigma_bb = cgmodel.get_particle_sigma(1)
+        bounds_nc_cut = (r_eq*0.75,r_eq*1.25)
         
-    # Compute equilibrium LJ distance    
-    r_eq = sigma_bb.value_in_unit(unit.angstrom)*np.power(2,(1/6))
+        if verbose:
+            print(f'Using bounds based on eq. distance for sigma = {sigma_bb}')
+            print(f'{bounds}')
+        
+    else:
+        # If bounds specified, strip any units
+        if type(bounds_nc_cut) == unit.quantity.Quantity:
+            bounds_nc_cut = bounds_nc_cut.value_in_unit(unit.angstrom)
+        if type(bounds_nc_cut) == tuple or type(bounds_nc_cut) == list:
+            if type(bounds_nc_cut[0]) == unit.quantity.Quantity:
+                bounds_nc_cut = (bounds_nc_cut[0].value_in_unit(unit.angstrom),bounds_nc_cut[1].value_in_unit(unit.angstrom))
     
-    bounds = [(r_eq*0.75,r_eq*1.25),(1,2)]
-    if verbose:
-        print(f'Using bounds based on eq. distance for sigma = {sigma_bb}')
-        print(f'{bounds}')
+    
+    bounds = [(bounds_nc_cut[0],bounds_nc_cut[1]),(bounds_nc_tol[0],bounds_nc_tol[1])]
     
     if minimizer_options is not None:
         options_str=""
