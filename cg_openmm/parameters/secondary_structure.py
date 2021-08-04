@@ -31,11 +31,11 @@ def get_native_contacts(cgmodel, native_structure_file, native_contact_distance_
     :param native_structure_file: Path to file ('pdb' or 'dcd') containing particle positions for the native structure.
     :type native_structure_file: str
 
-    :param native_contact_distance_cutoff: The maximum distance for two nonbonded particles that are defined as "native",default=None
+    :param native_contact_distance_cutoff: The maximum distance for two nonbonded particles that are defined as native
     :type native_contact_distance_cutoff: `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
 
     :returns:
-       - native_contact_list - A list of the nonbonded interactions whose inter-particle distances are less than the 'native_contact_cutoff_distance'.
+       - native_contact_list - A list of the nonbonded interactions whose inter-particle distances are less than the native_contact_distance_cutoff.
        - native_contact_distances - A Quantity numpy array of the native pairwise distances corresponding to native_contact_list
        - contact_type_dict - A dictionary of {native contact particle type pair: counts}
     """
@@ -103,8 +103,11 @@ def get_helix_contacts(cgmodel, native_structure_file, backbone_type_name='bb', 
     :param native_structure_file: Path to file ('pdb' or 'dcd') containing particle positions for the native structure.
     :type native_structure_file: str
 
-    :param backbone_type_name: type name in cgmodel which corresponds to the particles forming the helical backbone.
+    :param backbone_type_name: type name in cgmodel which corresponds to the particles forming the helical backbone (default='bb')
     :type backbone_type_name: str
+    
+    :param verbose: Option to print detailed statistics for each helical backbone sequence considered
+    :type verbose: bool
     
     :returns:
        - native_contact_list - A list of the nonbonded interactions whose inter-particle distances are less than the 'native_contact_cutoff_distance'.
@@ -216,7 +219,7 @@ def get_helix_contacts(cgmodel, native_structure_file, backbone_type_name='bb', 
 def expectations_fraction_contacts(fraction_native_contacts, frame_begin=0, sample_spacing=1,
     output_data="output/output.nc", num_intermediate_states=0, bootstrap_energies=None):
     """
-    Given a .nc output, a temperature list, and a number of intermediate states to insert for the temperature list, this function calculates the native contacts expectation.   
+    Given a .nc output file, temperature list, and number of intermediate states to insert for the temperature list, this function calculates the native contact fraction expectation.   
     
     :param fraction_native_contacts: The fraction of native contacts for all selected frames in the trajectories.
     :type fraction_native_contacts: numpy array (float * nframes x nreplicas)
@@ -224,16 +227,16 @@ def expectations_fraction_contacts(fraction_native_contacts, frame_begin=0, samp
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
     :type frame_begin: int
 
-    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData
+    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData (default=1)
     :type sample_spacing: int       
     
-    :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data, default = None                                                                                                  
+    :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data (default="output/output.nc")                                                                                                  
     :type output_data: str
     
-    :param num_intermediate_states: The number of states to insert between existing states in 'temperature_list'
+    :param num_intermediate_states: The number of states to insert between existing simulated temperature states (default=0)
     :type num_intermediate_states: int    
     
-    :param bootstrap_energies: a custom replica_energies array to be used for bootstrapping calculations. Used instead of the energies in the .nc file.
+    :param bootstrap_energies: a custom replica_energies array to be used for bootstrapping calculations. Used instead of the energies in the .nc file. (default=None)
     :type bootstrap_energies: 2d numpy array (float)
     
     :returns:
@@ -367,14 +370,14 @@ def fraction_native_contacts(
     :param file_list: A list of replica PDB or DCD trajectory files corresponding to the energies in the .nc file, or a single file name
     :type file_list: List( str ) or str
 
-    :param native_contact_list: A list of the nonbonded interactions whose inter-particle distances are less than the 'native_contact_cutoff_distance'.
+    :param native_contact_list: A list of the nonbonded interactions whose inter-particle distances are less than the 'native_contact_distance_cutoff'.
     :type native_contact_list: List
     
     :param native_contact_distances: A numpy array of the native pairwise distances corresponding to native_contact_list
     :type native_contact_distances: Quantity
 
     :param frame_begin: Frame at which to start native contacts analysis (default=0)
-    :type frame_begin: int        
+    :type frame_begin: int
     
     :param native_contact_tol: Tolerance factor beyond the native distance for determining whether a pair of particles is 'native' (in multiples of native distance) (default=1.3)
     :type native_contact_tol: float
@@ -486,10 +489,10 @@ def fraction_native_contacts_preloaded(
     :param cgmodel: CGModel() class object
     :type cgmodel: class
         
-    :param traj_data: A dictionary of preloaded MDTraj trajectory objects
-    :type traj_data: dict{replica: MDTraj trajectory object}
+    :param traj_dict: A dictionary of preloaded MDTraj trajectory objects
+    :type traj_dict: dict{replica: MDTraj trajectory object}
 
-    :param native_contact_list: A list of the nonbonded interactions whose inter-particle distances are less than the 'native_contact_cutoff_distance'.
+    :param native_contact_list: A list of the nonbonded interactions whose inter-particle distances are less than the 'native_contact_distance_cutoff'.
     :type native_contact_list: List
     
     :param native_contact_distances: A numpy array of the native pairwise distances corresponding to native_contact_list
@@ -586,11 +589,11 @@ def fraction_native_contacts_preloaded(
 def optimize_Q_cut(
     cgmodel, native_structure_file, traj_file_list, output_data="output/output.nc",
     num_intermediate_states=0, frame_begin=0, frame_stride=1,
-    plotfile='native_contacts_opt.pdf', verbose=False, minimizer_options=None,
+    plotfile='native_contacts_opt_2d.pdf', verbose=False, minimizer_options=None,
     bounds_nc_cut=None, bounds_nc_tol=(1,2)):
     """
-    Given a coarse grained model and a native structure as input, optimize the distance cutoff defining
-    the native contact pairs, and the distance tolerance for scanning the trajectory for native contacts.
+    Given a coarse grained model and a native structure as input, optimize both the distance cutoff defining
+    the native contact pairs and the distance tolerance for scanning the trajectory for native contacts.
 
     :param cgmodel: CGModel() class object
     :type cgmodel: class
@@ -601,29 +604,32 @@ def optimize_Q_cut(
     :param traj_file_list: A list of replica PDB or DCD trajectory files corresponding to the energies in the .nc file, or a single file name
     :type traj_file_list: List( str ) or str
     
-    :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data, default = ("output/output.nc")                                                                                                  
+    :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data (default="output/output.nc")                                                                                                  
     :type output_data: str
 
-    :param num_intermediate_states: The number of states to insert between existing states in 'temperature_list'
-    :type num_intermediate_states: int 
+    :param num_intermediate_states: The number of states to insert between existing simulated temperature states (default=0)
+    :type num_intermediate_states: int
     
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
     :type frame_begin: int
 
-    :param frame_stride: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData
+    :param frame_stride: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData (default=1)
     :type frame_stride: int
     
-    :param plotfile: Path to output file for plotting results (default='native_contacts_opt.pdf')
+    :param plotfile: Path to output file for plotting results (default='native_contacts_opt_2d.pdf')
     :type plotfile: str
+    
+    :param verbose: Option to print detailed native contacts information at each iteration (default=false)
+    :type verbose: bool
 
     :param minimizer_options: dictionary of additional options for scipy.minimize.optimize.differential_evolution (default=None)
-    :type minimizer: dict
+    :type minimizer_options: dict
     
-    :param bounds_nc_cut: native contact cutoff bounds in distance units - if None, will determine bounds based on backbone sigma parameter
+    :param bounds_nc_cut: native contact distance cutoff bounds in distance units - if None, will determine bounds based on backbone sigma parameter (default=None)
     :type bounds_nc_cut: tuple
     
-    :param bounds_nc_tol: native contact tolerance factor bounds (default = (1,2))
-    :type bounds_nc_tol: tuple    
+    :param bounds_nc_tol: native contact tolerance factor bounds (default=(1,2))
+    :type bounds_nc_tol: tuple
 
     :returns:
        - native_contact_cutoff ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The ideal distance below which two nonbonded, interacting particles should be defined as a "native contact"
@@ -751,7 +757,7 @@ def optimize_Q_cut(
         # If bounds specified, strip any units
         if type(bounds_nc_cut) == unit.quantity.Quantity:
             bounds_nc_cut = bounds_nc_cut.value_in_unit(unit.angstrom)
-        if type(bounds_nc_cut) == tuple or type(bounds_nc_cut) == list:
+        elif type(bounds_nc_cut) == tuple or type(bounds_nc_cut) == list:
             if type(bounds_nc_cut[0]) == unit.quantity.Quantity:
                 bounds_nc_cut = (bounds_nc_cut[0].value_in_unit(unit.angstrom),bounds_nc_cut[1].value_in_unit(unit.angstrom))
     
@@ -825,21 +831,21 @@ def optimize_Q_cut_1d(
     :type cgmodel: class
     
     :param native_structure_file: Path to file ('pdb' or 'dcd') containing particle positions for the native structure.
-    :type native_structure_file: str 
+    :type native_structure_file: str
     
     :param traj_file_list: A list of replica PDB or DCD trajectory files corresponding to the energies in the .nc file, or a single file name
     :type traj_file_list: List( str ) or str
     
-    :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data, default = ("output/output.nc")                                                                                                  
+    :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data (default="output/output.nc")                                                                                                  
     :type output_data: str
 
-    :param num_intermediate_states: The number of states to insert between existing states in 'temperature_list'
-    :type num_intermediate_states: int 
+    :param num_intermediate_states: The number of states to insert between existing simulated temperature states (default=0)
+    :type num_intermediate_states: int
     
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
     :type frame_begin: int
 
-    :param frame_stride: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData
+    :param frame_stride: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData (default=1)
     :type frame_stride: int
     
     :param native_contact_tol: Tolerance factor beyond the native distance for determining whether a pair of particles is 'native' (in multiples of native distance) (default=1.3)
@@ -848,10 +854,13 @@ def optimize_Q_cut_1d(
     :param plotfile: Path to output file for plotting results (default='native_contacts_opt_1d.pdf')
     :type plotfile: str
     
-    :param brute_step: step size in distance units for brute force tolerance optimization (final optimization searches between intervals) (default=0.1)
+    :param verbose: Option to print detailed native contacts information at each iteration (default=false)
+    :type verbose: bool
+    
+    :param brute_step: step size in distance units for brute force native contact cutoff optimization (final optimization searches between intervals) (default=0.1)
     :type brute_step: float
     
-    :param bounds: bounds in distance units for brute force optimization - if None, will determine bounds based on backbone sigma parameter
+    :param bounds: bounds in distance units for brute force optimization - if None, will determine bounds based on backbone sigma parameter (default=None)
     :type bounds: tuple
 
     :returns:
@@ -976,7 +985,7 @@ def optimize_Q_cut_1d(
         # If bounds specified, strip any units
         if type(bounds) == unit.quantity.Quantity:
             bounds = bounds.value_in_unit(unit.angstrom)
-        if type(bounds) == tuple or type(bounds) == list:
+        elif type(bounds) == tuple or type(bounds) == list:
             if type(bounds[0]) == unit.quantity.Quantity:
                 bounds = (bounds[0].value_in_unit(unit.angstrom),bounds[1].value_in_unit(unit.angstrom))
     
@@ -1044,7 +1053,7 @@ def bootstrap_native_contacts_expectation(
     :param traj_file_list: A list of replica PDB or DCD trajectory files corresponding to the energies in the .nc file, or a single file name
     :type traj_file_list: List( str ) or str
 
-    :param native_contact_list: A list of the nonbonded interactions whose inter-particle distances are less than the 'native_contact_cutoff_distance'.
+    :param native_contact_list: A list of the nonbonded interactions whose inter-particle distances are less than the 'native_contact_distance_cutoff'.
     :type native_contact_list: List
     
     :param native_contact_distances: A numpy array of the native pairwise distances corresponding to native_contact_list
@@ -1053,19 +1062,19 @@ def bootstrap_native_contacts_expectation(
     :param frame_begin: Frame at which to start native contacts analysis (default=0)
     :type frame_begin: int
     
-    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData
+    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData (default=1)
     :type sample_spacing: int
     
     :param native_contact_tol: Tolerance factor beyond the native distance for determining whether a pair of particles is 'native' (in multiples of native distance) (default=1.3)
     :type native_contact_tol: float
     
-    :param num_intermediate_states: The number of states to insert between existing states in 'temperature_list'
+    :param num_intermediate_states: The number of states to insert between existing simulated temperature states (default=0)
     :type num_intermediate_states: int
     
     :param n_trial_boot: number of trials to run for generating bootstrapping uncertainties (default=200)
     :type n_trial_boot: int
     
-    :param conf_percent: Confidence level in percent for outputting uncertainties (default = 68.27 = 1 sigma)
+    :param conf_percent: Confidence level in percent for outputting uncertainties (default='sigma'=68.27)
     :type conf_percent: float
     
     :param plotfile: Path to output file for plotting results (default='Q_vs_T_bootstrap.pdf')
@@ -1317,27 +1326,33 @@ def optimize_Q_tol_helix(
     :type cgmodel: class
     
     :param native_structure_file: Path to file ('pdb' or 'dcd') containing particle positions for the native structure.
-    :type native_structure_file: str 
+    :type native_structure_file: str
     
     :param traj_file_list: A list of replica PDB or DCD trajectory files corresponding to the energies in the .nc file, or a single file name
     :type traj_file_list: List( str ) or str
     
-    :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data, default = ("output/output.nc")                                                                                                  
+    :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data (default="output/output.nc")                                                                                                  
     :type output_data: str
 
-    :param num_intermediate_states: The number of states to insert between existing states in 'temperature_list'
-    :type num_intermediate_states: int 
+    :param num_intermediate_states: The number of states to insert between existing simulated temperature states (default=0)
+    :type num_intermediate_states: int
     
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
     :type frame_begin: int
 
-    :param frame_stride: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData
+    :param frame_stride: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData (default=1)
     :type frame_stride: int 
     
-    :param backbone_type_name: type name in cgmodel which corresponds to the particles forming the helical backbone.
+    :param backbone_type_name: type name in cgmodel which corresponds to the particles forming the helical backbone (default='bb')
     :type backbone_type_name: str
     
-    :param brute_step: step size in distance units for brute force tolerance optimization (final optimization searches between intervals)
+    :param plotfile: Path to output file for plotting results (default='native_contacts_helix_opt.pdf')
+    :type plotfile: str
+    
+    :param verbose: Option to print detailed native contacts information at each iteration (default=false)
+    :type verbose: bool
+    
+    :param brute_step: step size in native distance multiples for brute force tolerance optimization (final optimization searches between intervals) (default=0.1)
     :type brute_step: float
 
     :returns:
@@ -1483,10 +1498,10 @@ def plot_native_contact_fraction(temperature_list, Q, Q_uncertainty, plotfile="Q
     Note that this sigmoid curve is generated by using the mean values of the 4 hyperbolic fitting parameters
     taken over all bootstrap trials, not a direct fit to the Q vs T data. 
 
-    :param temperature_list: List of temperatures that will be used to define different replicas (thermodynamics states), default = None
+    :param temperature_list: List of temperatures that will be used to define different replicas (thermodynamics states)
     :type temperature_list: List( `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_ * number_replicas )
 
-    :param Q: native contact fraction for a given temperature
+    :param Q: native contact fraction array for all temperatures in temperature_list
     :type Q: np.array(float * len(temperature_list))
     
     :param Q_uncertainty: uncertainty associated with Q
@@ -1497,8 +1512,8 @@ def plot_native_contact_fraction(temperature_list, Q, Q_uncertainty, plotfile="Q
     
     :param sigmoid_dict: dictionary containing sigmoid parameter mean values and uncertainties (default=None)
     :type sigmoid_dict: dict
-    
     """
+
     temperature_array = np.zeros((len(temperature_list)))
     for i in range(len(temperature_list)):
         temperature_array[i] = temperature_list[i].value_in_unit(unit.kelvin)
@@ -1600,10 +1615,10 @@ def plot_native_contact_timeseries(
     """
     Given average native contact fractions timeseries for each replica or state, plot Q vs time.
 
-    :param Q: native contact fraction for a given temperature
+    :param Q: native contact fraction array for all replicas or states
     :type Q: np.array(float * nframes x len(temperature_list))
     
-    :param time_interval: interval between energy exchanges.
+    :param time_interval: interval between energy exchanges (default=1.0*unit.picosecond)
     :type time_interval: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
 
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
@@ -1615,9 +1630,8 @@ def plot_native_contact_timeseries(
     :param plotfile: Path to output file for plotting results (default='Q_vs_time.pdf')
     :type plotfile: str
     
-    :param figure_title: title of overall plot
+    :param figure_title: title of overall plot (default=None)
     :type figure_title: str
-    
     """
         
     time_shift=frame_begin*time_interval    
