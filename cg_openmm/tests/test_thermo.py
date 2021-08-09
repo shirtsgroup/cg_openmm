@@ -27,7 +27,7 @@ def test_heat_capacity_calc(tmpdir):
     # max_temp = 600.0 * unit.kelvin
     
     # 1) With default starting frame (0)
-    C_v, dC_v, new_temperature_list, N_eff = get_heat_capacity(
+    C_v, dC_v, new_temperature_list, FWHM, Tm, Cv_height, N_eff = get_heat_capacity(
         output_data=output_data,
         num_intermediate_states=2,
         plot_file=f"{plot_directory}/heat_capacity.pdf"
@@ -36,7 +36,7 @@ def test_heat_capacity_calc(tmpdir):
     assert os.path.isfile(f"{plot_directory}/heat_capacity.pdf")
     
     # 2) With a non-default starting frame:
-    C_v, dC_v, new_temperature_list, N_eff = get_heat_capacity(
+    C_v, dC_v, new_temperature_list, FWHM, Tm, Cv_height, N_eff = get_heat_capacity(
         frame_begin=2,
         output_data=output_data,
         num_intermediate_states=2,

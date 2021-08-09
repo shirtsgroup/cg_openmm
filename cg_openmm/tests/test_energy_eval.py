@@ -1118,9 +1118,8 @@ def test_reeval_heat_capacity(tmpdir):
     )
     
     # Evaluate heat capacities at simulated and non-simulated force field parameters:
-    (Cv_sim, dCv_sim,
-    Cv_reeval, dCv_reeval,
-    T_list, N_eff) = get_heat_capacity_reeval(
+    (Cv_sim, dCv_sim, Cv_reeval, dCv_reeval,
+    T_list, FWHM, Tm, Cv_height, N_eff) = get_heat_capacity_reeval(
         U_kln=U_eval,
         output_data=output_data,
         frame_begin=10,
@@ -1177,9 +1176,8 @@ def test_reeval_heat_capacity_end_frame(tmpdir):
     )
     
     # Evaluate heat capacities at simulated and non-simulated force field parameters:
-    (Cv_sim, dCv_sim,
-    Cv_reeval, dCv_reeval,
-    T_list, N_eff) = get_heat_capacity_reeval(
+    (Cv_sim, dCv_sim, Cv_reeval, dCv_reeval,
+    T_list, FWHM, Tm, Cv_height, N_eff) = get_heat_capacity_reeval(
         U_kln=U_eval,
         output_data=output_data,
         frame_begin=10,
@@ -1254,6 +1252,71 @@ def test_reeval_heat_capacity_boot(tmpdir):
     
     assert os.path.isfile(f"{output_directory}/heat_capacity_reeval_boot.pdf")
     
+ 
+def test_reeval_heat_capacity_boot_sparse(tmpdir):
+    """
+    Test heat capacity calculation for non-simulated force field parameters (bootstrapping version),
+    with a sparsifying stride applied to the energy evaluation step.
+    """
+    output_directory = tmpdir.mkdir("output")
+    
+    # Replica exchange settings
+    number_replicas = 12
+    min_temp = 200.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
+    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
+    
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+    
+    # Data file with simulated energies:
+    output_data = os.path.join(data_path, "output.nc")
+    
+    # Create list of replica trajectories to analyze
+    dcd_file_list = []
+    for i in range(len(temperature_list)):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+    
+    # Set up dictionary of parameter change instructions:
+    param_dict = {}
+
+    param_dict['bb_sigma'] = 2.50 * unit.angstrom
+    
+    # Skip every other frame to speed up energy eval
+    sparsify_stride = 2 
+    
+    # Re-evaluate OpenMM energies:
+    U_eval, simulation = eval_energy(
+        cgmodel,
+        dcd_file_list,
+        temperature_list,
+        param_dict,
+        frame_begin=10,
+        frame_end=-1,
+        frame_stride=sparsify_stride,
+        verbose=False,
+    )
+    
+    # Evaluate heat capacities at simulated and non-simulated force field parameters:
+    (new_temperature_list,
+    C_v_values, C_v_uncertainty,
+    Tm_value, Tm_uncertainty, 
+    Cv_height_value, Cv_height_uncertainty,
+    FWHM_value, FWHM_uncertainty,
+    N_eff_values) = bootstrap_heat_capacity(
+        U_kln=U_eval,
+        output_data=output_data,
+        frame_begin=10,
+        frame_end=-1,
+        sparsify_stride=sparsify_stride,
+        sample_spacing=5,
+        num_intermediate_states=1,
+        n_trial_boot=10,
+        plot_file=f"{output_directory}/heat_capacity_reeval_boot.pdf",
+    )
+    
+    assert os.path.isfile(f"{output_directory}/heat_capacity_reeval_boot.pdf") 
+   
    
 def test_reeval_heat_capacity_boot_end_frame(tmpdir):
     """

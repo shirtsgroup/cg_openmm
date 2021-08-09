@@ -190,6 +190,9 @@ def get_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, output_data
           - C_v ( List( float ) ) - The heat capacity values for all (including inserted intermediates) states
           - dC_v ( List( float ) ) - The uncertainty in the heat capacity values for intermediate states
           - new_temp_list ( List( float * unit.simtk.temperature ) ) - The temperature list corresponding to the heat capacity values in 'C_v'
+          - FWHM ( float ) - Full width half maximum from heat capacity vs T
+          - Tm ( float ) - Melting point from heat capacity vs T
+          - Cv_height ( float ) - Relative height of heat capacity peak
           - N_eff( np.array( float ) ) - The number of effective samples at all (including inserted intermediates) states
     """    
 
@@ -310,15 +313,21 @@ def get_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, output_data
         Cv[k] = (DeltaE_expect[im, ip]) / (full_T_list[ip] - full_T_list[im])
         dCv[k] = (dDeltaE_expect[im, ip]) / (full_T_list[ip] - full_T_list[im])
 
+    # Now get the full-width half-maximum, melting point, and Cv peak height.
+    (FWHM, Tm, Cv_height) = get_cv_FWHM(Cv, full_T_list[0:n_T_vals])
+
     # add units so the plot has the right units.  
     Cv *= unit.kilojoule_per_mole / Tunit # always kJ/mol, since the OpenMM output is in kJ/mol.
     dCv *= unit.kilojoule_per_mole / Tunit
     full_T_list *= Tunit
+    FWHM *= Tunit
+    Tm *= Tunit
+    Cv_height *= unit.kilojoule_per_mole / Tunit
 
     # plot and return the heat capacity (with units)
     if plot_file is not None:
         plot_heat_capacity(Cv, dCv, full_T_list[0:n_T_vals],file_name=plot_file)
-    return (Cv, dCv, full_T_list[0:n_T_vals], N_eff)
+    return (Cv, dCv, full_T_list[0:n_T_vals], FWHM, Tm, Cv_height, N_eff)
 
     
 def get_heat_capacity_reeval(
@@ -368,6 +377,9 @@ def get_heat_capacity_reeval(
           - Cv_reeval ( np.array( float ) ) - The heat capacity values for all reevaluated (including inserted intermediates) states
           - dCv_reeval ( np.array( float ) ) - The uncertainty of Cv_reeval values
           - full_T_list ( np.array( float * unit.simtk.temperature ) ) - The temperature list corresponding to the heat capacity values in 'C_v'
+          - FWHM ( float ) - Full width half maximum from heat capacity vs T
+          - Tm ( float ) - Melting point from heat capacity vs T
+          - Cv_height ( float ) - Relative height of heat capacity peak
           - N_eff( np.array( float ) ) - The number of effective samples at all (including inserted intermediates) states
     """    
     
@@ -529,14 +541,21 @@ def get_heat_capacity_reeval(
         ip = k+2*n_T_vals
         Cv_reeval[k] = (DeltaE_expect[n_unsampled_states+im,n_unsampled_states+ip]) / (full_T_list[ip] - full_T_list[im])
         dCv_reeval[k] = (dDeltaE_expect[n_unsampled_states+im,n_unsampled_states+ip]) / (full_T_list[ip] - full_T_list[im])
+          
+    # Now get the full-width half-maximum, melting point, and Cv peak height.
+    (FWHM, Tm, Cv_height) = get_cv_FWHM(Cv_reeval, full_T_list[0:n_T_vals])
         
     # add units so the plot has the right units.
     Cv_sim *= unit.kilojoule_per_mole / Tunit # always kJ/mol, since the OpenMM output is in kJ/mol.
     dCv_sim *= unit.kilojoule_per_mole / Tunit
     full_T_list *= Tunit
     
-    Cv_reeval *= unit.kilojoule_per_mole / Tunit # always kJ/mol, since the OpenMM output is in kJ/mol.
+    Cv_reeval *= unit.kilojoule_per_mole / Tunit
     dCv_reeval *= unit.kilojoule_per_mole / Tunit
+    
+    FWHM *= Tunit
+    Tm *= Tunit
+    Cv_height *= unit.kilojoule_per_mole / Tunit
 
     # plot and return the heat capacity (with units)
     if plot_file_reeval is not None:
@@ -544,12 +563,12 @@ def get_heat_capacity_reeval(
     if plot_file_sim is not None:
         plot_heat_capacity(Cv_sim, dCv_sim, full_T_list[0:n_T_vals],file_name=plot_file_sim)
 
-    return (Cv_sim, dCv_sim, Cv_reeval, dCv_reeval, full_T_list[0:n_T_vals], N_eff)
+    return (Cv_sim, dCv_sim, Cv_reeval, dCv_reeval, full_T_list[0:n_T_vals], FWHM, Tm, Cv_height, N_eff)
     
 
 def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_file='heat_capacity_boot.pdf',
     output_data="output/output.nc", num_intermediate_states=0,frac_dT=0.05,conf_percent='sigma',
-    n_trial_boot=200, U_kln=None):
+    n_trial_boot=200, U_kln=None, sparsify_stride=1):
     """
     Calculate and plot the heat capacity curve, with uncertainty determined using bootstrapping.
     Uncorrelated datasets are selected using a random starting frame, repeated n_trial_boot 
@@ -590,12 +609,17 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
     :param U_kln: re-evaluated state energies array to be used for the MBAR calculation (starts at frame_begin)
     :type U_kln: 3d numpy array (float) with dimensions [replica, evaluated_state, frame]
     
+    :param sparsify_stride: apply this stride to the replica energies from file, to match sparsified reevaluated energies (default=1)
+    :type sparsify_stride: int
+    
     :returns:
        - T_list ( List( float * unit.simtk.temperature ) ) - The temperature list corresponding to the heat capacity values in 'C_v'
        - C_v_values ( List( float * kJ/mol/K ) ) - The heat capacity values for all (including inserted intermediates) states
        - C_v_uncertainty ( Tuple ( np.array(float) * kJ/mol/K ) ) - confidence interval for all C_v_values computed from bootstrapping
        - Tm_value ( float * unit.simtk.temperature ) - Melting point mean value computed from bootstrapping
        - Tm_uncertainty ( Tuple ( float * unit.simtk.temperature ) ) - confidence interval for melting point computed from bootstrapping
+       - Cv_height_value ( float * kJ/mol/K ) - Height of the C_v peak relative to the lowest value over the temperature range used.
+       - Cv_height_uncertainty ( Tuple ( np.array(float) * kJ/mol/K ) ) - confidence interval for all C_v_height_value computed from bootstrapping
        - FWHM_value ( float * unit.simtk.temperature ) - C_v full width half maximum mean value computed from bootstrapping
        - FWHM_uncertainty ( Tuple ( float * unit.simtk.temperature ) ) - confidence interval for C_v full width half maximum computed from bootstrapping
        - N_eff_values ( np.array( float ) ) -  The bootstrap mean number of effective samples at all simulated and non-simulated (including inserted intermediates) states
@@ -612,14 +636,20 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
         replica_state_indices,
     ) = analyzer.read_energies()    
     
+    # If we sparsified replica energies when reevaluating energies, need to apply it here:
+    if frame_end > 0:
+        replica_energies_all = replica_energies_all[:,:,frame_begin:frame_end:sparsify_stride]
+    else:
+        replica_energies_all = replica_energies_all[:,:,frame_begin::sparsify_stride]
+    
     # Store data for each sampling trial:
     C_v_values_boot = {}
     C_v_uncertainty_boot = {}
     N_eff_boot = {}
     
     Tm_boot = np.zeros(n_trial_boot)
-    Cv_height = np.zeros(n_trial_boot)
-    FWHM = np.zeros(n_trial_boot)
+    Cv_height_boot = np.zeros(n_trial_boot)
+    FWHM_boot = np.zeros(n_trial_boot)
 
     # Save the full re-evaluated energy array
     U_kln_all = U_kln
@@ -628,13 +658,10 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
     
         # Select production frames to analyze
         # Here we can potentially change the reference frame for each bootstrap trial.
-        ref_shift = np.random.randint(sample_spacing)
+        ref_shift = np.random.randint(int(sample_spacing/sparsify_stride))
         # Depending on the reference frame, there may be small differences in numbers of samples per bootstrap trial
-        if frame_end > 0:
-            replica_energies = replica_energies_all[:,:,(frame_begin+ref_shift):frame_end:sample_spacing]
-        else:
-            replica_energies = replica_energies_all[:,:,(frame_begin+ref_shift)::sample_spacing]
-    
+        replica_energies = replica_energies_all[:,:,ref_shift::int(sample_spacing/sparsify_stride)]
+
         # Get all possible sample indices
         sample_indices_all = np.arange(0,len(replica_energies[0,0,:]))
         # n_samples should match the size of the sliced replica energy dataset
@@ -648,10 +675,11 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
         if U_kln is not None:
             if frame_end > 0:
                 # U_kln should not include the equilibration region
-                U_kln = U_kln_all[:,:,ref_shift:frame_end:sample_spacing]
+                # U_kln may be a sparsified energy array 
+                U_kln = U_kln_all[:,:,ref_shift:frame_end:int(sample_spacing/sparsify_stride)]
             else:
-                U_kln = U_kln_all[:,:,ref_shift::sample_spacing]
-            U_kln_resample = np.zeros_like(U_kln)      
+                U_kln = U_kln_all[:,:,ref_shift::int(sample_spacing/sparsify_stride)]
+            U_kln_resample = np.zeros_like(U_kln)
         
         # Select the sampled frames from array_folded_states and replica_energies:
         j = 0
@@ -664,21 +692,24 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
         if U_kln is not None:
             # Run heat capacity calculation for re-evaluated system:
             (Cv_sim, dCv_sim, C_v_values_boot[i_boot], C_v_uncertainty_boot[i_boot],
-            T_list, N_eff_boot[i_boot]) = get_heat_capacity_reeval(
+            T_list, FWHM_curr, Tm_curr, Cv_height_curr,
+            N_eff_boot[i_boot]) = get_heat_capacity_reeval(
                 U_kln_resample,
                 output_data=output_data,
                 frame_begin=frame_begin,
                 frame_end=frame_end,
-                sample_spacing=sample_spacing,
+                sample_spacing=int(sample_spacing/sparsify_stride),
                 num_intermediate_states=num_intermediate_states,
                 frac_dT=frac_dT,
                 plot_file_sim=None,
                 plot_file_reeval=None,
                 bootstrap_energies=replica_energies_resample,
                 )
+            
         else:    
             # Run standard heat capacity expectation calculation:
             (C_v_values_boot[i_boot], C_v_uncertainty_boot[i_boot], T_list,
+            FWHM_curr, Tm_curr, Cv_height_curr,
             N_eff_boot[i_boot]) = get_heat_capacity(
                 output_data=output_data,
                 num_intermediate_states=num_intermediate_states,
@@ -690,74 +721,12 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
         if i_boot == 0:
             # Get units:
             C_v_unit = C_v_values_boot[0][0].unit
-            T_unit = T_list[0].unit    
+            T_unit = T_list[0].unit
             
-        # Compute the melting point:
-        max_index = np.argmax(C_v_values_boot[i_boot])
-        Tm_boot[i_boot] = T_list[max_index].value_in_unit(T_unit)
-        
-        # Compute the peak height, relative to lowest C_v value in the temp range:
-        Cv_height[i_boot] = (np.max(C_v_values_boot[i_boot])-np.min(C_v_values_boot[i_boot])).value_in_unit(C_v_unit)
-        
-        # Compute the FWHM:
-        # C_v value at half-maximum:
-        mid_val = np.min(C_v_values_boot[i_boot]).value_in_unit(C_v_unit) + Cv_height[i_boot]/2
-        
-        #***Note: this assumes that there is only a single heat capacity peak, with
-        # monotonic behavior on each side of the peak.
-        
-        half_lo_found = False
-        half_hi_found = False
-        
-        T_half_lo = None
-        T_half_hi = None
-        
-        # Reverse scan for lower half:
-        k = 1
-        while half_lo_found == False:
-            index = max_index-k
-            if index < 0:
-                # The lower range does not contain the lower midpoint
-                break
-            else:    
-                curr_val = C_v_values_boot[i_boot][index].value_in_unit(C_v_unit)
-                prev_val = C_v_values_boot[i_boot][index+1].value_in_unit(C_v_unit)
-                
-            if curr_val <= mid_val:
-                # The lower midpoint lies within T[index] and T[index+1]
-                # Interpolate solution:
-                T_half_lo = T_list[index]+(mid_val-curr_val)*(T_list[index+1]-T_list[index])/(prev_val-curr_val)
-                half_lo_found = True
-            else:
-                k += 1
-                
-        # Forward scan for upper half:
-        m = 1
-
-        while half_hi_found == False:
-            index = max_index+m
-            if index == len(T_list):
-                # The upper range does not contain the upper midpoint
-                break
-            else:
-                curr_val = C_v_values_boot[i_boot][index].value_in_unit(C_v_unit)
-                prev_val = C_v_values_boot[i_boot][index-1].value_in_unit(C_v_unit)
-            if curr_val <= mid_val:
-                # The upper midpoint lies within T[index] and T[index-1]
-                # Interpolate solution:
-                T_half_hi = T_list[index]+(mid_val-curr_val)*(T_list[index-1]-T_list[index])/(prev_val-curr_val)
-                half_hi_found = True
-            else:
-                m += 1
-        
-        if half_lo_found and half_hi_found:
-            FWHM[i_boot] = (T_half_hi-T_half_lo).value_in_unit(T_unit)
-        elif half_lo_found == True and half_hi_found == False:
-            FWHM[i_boot] = 2*(Tm_boot[i_boot]-T_half_lo.value_in_unit(T_unit))
-        elif half_lo_found == False and half_hi_found == True:
-            FWHM[i_boot] = 2*(T_half_hi.value_in_unit(T_unit)-Tm_boot[i_boot])
-        
-    # Compute uncertainty at all temps in T_list over the n_trial_boot trials performed:
+        # To assign to array elements, need to strip units:    
+        FWHM_boot[i_boot] = FWHM_curr.value_in_unit(T_unit)
+        Tm_boot[i_boot] = Tm_curr.value_in_unit(T_unit)
+        Cv_height_boot[i_boot] = Cv_height_curr.value_in_unit(C_v_unit)
     
     # Convert dicts to array
     arr_C_v_values_boot = np.zeros((n_trial_boot, len(T_list)))
@@ -769,9 +738,9 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
             
     # Compute mean values:        
     C_v_values = np.mean(arr_C_v_values_boot,axis=0)*C_v_unit      
-    Cv_height_value = np.mean(Cv_height)*C_v_unit      
+    Cv_height_value = np.mean(Cv_height_boot)*C_v_unit
     Tm_value = np.mean(Tm_boot)*T_unit
-    FWHM_value = np.mean(FWHM)*T_unit
+    FWHM_value = np.mean(FWHM_boot)*T_unit
     N_eff_values = np.mean(arr_N_eff_boot)
     
     # Compute confidence intervals:
@@ -783,7 +752,7 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
         C_v_uncertainty = (-C_v_std*C_v_unit, C_v_std*C_v_unit)
         
         # C_v peak height:
-        Cv_height_std = np.std(Cv_height)
+        Cv_height_std = np.std(Cv_height_boot)
         Cv_height_uncertainty = (-Cv_height_std*C_v_unit, Cv_height_std*C_v_unit)   
         
         # Melting point:
@@ -791,7 +760,7 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
         Tm_uncertainty = (-Tm_std*T_unit, Tm_std*T_unit)
         
         # Full width half maximum:
-        FWHM_std = np.std(FWHM)
+        FWHM_std = np.std(FWHM_boot)
         FWHM_uncertainty = (-FWHM_std*T_unit, FWHM_std*T_unit)
         
     else:
@@ -807,7 +776,7 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
         C_v_uncertainty = (C_v_conf_lo*C_v_unit, C_v_conf_hi*C_v_unit) 
                     
         # C_v peak height:                
-        Cv_height_diff = Cv_height-np.mean(Cv_height)
+        Cv_height_diff = Cv_height_boot-np.mean(Cv_height_boot)
         Cv_height_conf_lo = np.percentile(Cv_height_diff,p_lo,interpolation='linear')
         Cv_height_conf_hi = np.percentile(Cv_height_diff,p_hi,interpolation='linear')
         
@@ -821,7 +790,7 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
         Tm_uncertainty = (Tm_conf_lo*T_unit, Tm_conf_hi*T_unit)  
         
         # Full width half maximum:
-        FWHM_diff = FWHM-np.mean(FWHM)
+        FWHM_diff = FWHM_boot-np.mean(FWHM_boot)
         FWHM_conf_lo = np.percentile(FWHM_diff,p_lo,interpolation='linear')
         FWHM_conf_hi = np.percentile(FWHM_diff,p_hi,interpolation='linear')
         
@@ -834,3 +803,85 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
     return T_list, C_v_values, C_v_uncertainty, Tm_value, Tm_uncertainty, Cv_height_value, Cv_height_uncertainty, FWHM_value, FWHM_uncertainty, N_eff_values
         
     
+def get_cv_FWHM(Cv_values, T_list):
+    """
+    Internal function for getting the full-width half-maximum, melting point, and peak height from a heat capacity vs T dataset.
+    
+    :param Cv_values: heat capacity data series (unitless)
+    :type Cv_values: float * 1D np.array
+    
+    :param T_list: temperature data series (unitless)
+    :type T_list: float * 1D np.array
+    
+    :returns:
+       - FWHM ( float ) - Full width half maximum from heat capacity vs T
+       - Tm ( float ) - Melting point from heat capacity vs T
+       - Cv_height ( float ) - Relative height of heat capacity peak
+    """
+    
+    # Compute the melting point:
+    max_index = np.argmax(Cv_values)
+    Tm = T_list[max_index]
+    
+    # Compute the peak height, relative to lowest C_v value in the temp range:
+    Cv_height = (np.max(Cv_values)-np.min(Cv_values))
+    
+    # Compute the FWHM:
+    # C_v value at half-maximum:
+    mid_val = np.min(Cv_values) + Cv_height/2
+    
+    #***Note: this assumes that there is only a single heat capacity peak, with
+    # monotonic behavior on each side of the peak.
+    
+    half_lo_found = False
+    half_hi_found = False
+    
+    T_half_lo = None
+    T_half_hi = None
+    
+    # Reverse scan for lower half:
+    k = 1
+    while half_lo_found == False:
+        index = max_index-k
+        if index < 0:
+            # The lower range does not contain the lower midpoint
+            break
+        else:    
+            curr_val = Cv_values[index]
+            prev_val = Cv_values[index+1]
+            
+        if curr_val <= mid_val:
+            # The lower midpoint lies within T[index] and T[index+1]
+            # Interpolate solution:
+            T_half_lo = T_list[index]+(mid_val-curr_val)*(T_list[index+1]-T_list[index])/(prev_val-curr_val)
+            half_lo_found = True
+        else:
+            k += 1
+            
+    # Forward scan for upper half:
+    m = 1
+
+    while half_hi_found == False:
+        index = max_index+m
+        if index == len(T_list):
+            # The upper range does not contain the upper midpoint
+            break
+        else:
+            curr_val = Cv_values[index]
+            prev_val = Cv_values[index-1]
+        if curr_val <= mid_val:
+            # The upper midpoint lies within T[index] and T[index-1]
+            # Interpolate solution:
+            T_half_hi = T_list[index]+(mid_val-curr_val)*(T_list[index-1]-T_list[index])/(prev_val-curr_val)
+            half_hi_found = True
+        else:
+            m += 1
+    
+    if half_lo_found and half_hi_found:
+        FWHM = (T_half_hi-T_half_lo)
+    elif half_lo_found == True and half_hi_found == False:
+        FWHM = 2*(Tm-T_half_lo)
+    elif half_lo_found == False and half_hi_found == True:
+        FWHM = 2*(T_half_hi-Tm)
+        
+    return FWHM, Tm, Cv_height
