@@ -771,7 +771,7 @@ def test_restart_replica_exchange(tmpdir):
     # Now, restart the simulation to double the total duration:
     
     restart_replica_exchange(
-        total_simulation_time=total_simulation_time,
+        2*total_simulation_time,
         simulation_time_step=simulation_time_step,
         exchange_frequency=exchange_frequency,
         output_data=output_data,
