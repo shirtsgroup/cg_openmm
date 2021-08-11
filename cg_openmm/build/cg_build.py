@@ -719,28 +719,8 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
         force = nonbonded_force
 
     if force_type == "Angle":
-    
-        if cgmodel.restricted_angle_potential:
-            # Using restricted angle bending potential as CustomAngleForce
-            angle_force = mm.CustomAngleForce("0.5*k*(cos(theta)-cos(theta_0))^2/(sin(theta)^2)")
-            angle_force.addPerAngleParameter("k")
-            angle_force.addPerAngleParameter("theta_0")
-            
-            for angle in cgmodel.bond_angle_list:
-                bond_angle_force_constant = cgmodel.get_bond_angle_force_constant(angle)
-                equil_bond_angle = cgmodel.get_equil_bond_angle(angle)
-                angle_force.addAngle(
-                    angle[0],
-                    angle[1],
-                    angle[2],
-                    [bond_angle_force_constant.value_in_unit(unit.kilojoule_per_mole),
-                    equil_bond_angle.value_in_unit(unit.radian)],
-                )
-            cgmodel.system.addForce(angle_force)
-            force = angle_force
 
-            
-        else:
+        if cgmodel.angle_style == 'harmonic':
             # Use standard harmonic angle potential
             angle_force = mm.HarmonicAngleForce()
             for angle in cgmodel.bond_angle_list:
@@ -757,6 +737,49 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
                 )
             cgmodel.system.addForce(angle_force)
             force = angle_force
+
+        elif cgmodel.angle_style == 'restricted':
+            # Use restricted angle bending potential as CustomAngleForce
+            angle_force = mm.CustomAngleForce("0.5*k*(cos(theta)-cos(theta_0))^2/(sin(theta)^2)")
+            angle_force.addPerAngleParameter("k")
+            angle_force.addPerAngleParameter("theta_0")
+            
+            for angle in cgmodel.bond_angle_list:
+                bond_angle_force_constant = cgmodel.get_bond_angle_force_constant(angle)
+                equil_bond_angle = cgmodel.get_equil_bond_angle(angle)
+                angle_force.addAngle(
+                    angle[0],
+                    angle[1],
+                    angle[2],
+                    [bond_angle_force_constant.value_in_unit(unit.kilojoule_per_mole),
+                    equil_bond_angle.value_in_unit(unit.radian)],
+                )
+            cgmodel.system.addForce(angle_force)
+            force = angle_force
+            
+        elif cgmodel.angle_style == 'cosine':
+            # Use cosine angle bending potential as CustomAngleForce
+            angle_force = mm.CustomAngleForce("0.5*k*(1-(cos(theta)-cos(theta_0)))")
+            angle_force.addPerAngleParameter("k")
+            angle_force.addPerAngleParameter("theta_0")
+            
+            for angle in cgmodel.bond_angle_list:
+                bond_angle_force_constant = cgmodel.get_bond_angle_force_constant(angle)
+                equil_bond_angle = cgmodel.get_equil_bond_angle(angle)
+                angle_force.addAngle(
+                    angle[0],
+                    angle[1],
+                    angle[2],
+                    [bond_angle_force_constant.value_in_unit(unit.kilojoule_per_mole),
+                    equil_bond_angle.value_in_unit(unit.radian)],
+                )
+            cgmodel.system.addForce(angle_force)
+            force = angle_force
+            
+        else:
+            print(f'Error: unknown angle style {cgmodel.angle_style}')
+            exit()
+
 
     if force_type == "Torsion":
         torsion_force = mm.PeriodicTorsionForce()
