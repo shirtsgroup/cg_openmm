@@ -759,7 +759,7 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
             
         elif cgmodel.angle_style == 'cosine':
             # Use cosine angle bending potential as CustomAngleForce
-            angle_force = mm.CustomAngleForce("0.5*k*(1-(cos(theta)-cos(theta_0)))")
+            angle_force = mm.CustomAngleForce("0.5*k*(1-cos(theta-theta_0))")
             angle_force.addPerAngleParameter("k")
             angle_force.addPerAngleParameter("theta_0")
             
