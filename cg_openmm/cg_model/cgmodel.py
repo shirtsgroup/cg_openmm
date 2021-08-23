@@ -110,6 +110,7 @@ class CGModel(object):
         include_bond_forces=True,
         include_bond_angle_forces=True,
         include_torsion_forces=True,
+        angle_style='harmonic',
         exclusions=True,
         rosetta_functional_form=False,
         check_energy_conservation=True,
@@ -173,6 +174,9 @@ class CGModel(object):
         :param include_torsion_forces: Include contributions from torsions when calculating the potential energy (default = True)
         :type include_torsion_forces: Bool
         
+        :param angle_style: Functional form to use for bond-bending angle potential ('harmonic', 'restricted', or 'cosine') (default='harmonic')
+        :type angle_style: str        
+        
         :param exclusions: ???
         :type exclusions: Bool
         
@@ -233,6 +237,7 @@ class CGModel(object):
         self.include_nonbonded_forces = include_nonbonded_forces
         self.exclusions = exclusions
         self.include_torsion_forces = include_torsion_forces
+        self.angle_style = angle_style
         self.check_energy_conservation = check_energy_conservation
         self.monomer_types = monomer_types
         self.bond_lengths = bond_lengths
