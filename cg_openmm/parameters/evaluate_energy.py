@@ -135,6 +135,11 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
 
     # Get torsion list:
     torsion_list = cgmodel.get_torsion_list()
+    
+    # 1-4 interactions are nonbonded exceptions, and must be updated separately
+    torsion_ends_list = []
+    for torsion in torsion_list:
+        torsion_ends_list.append([torsion[0],torsion[3]])
 
     for force_index, force in enumerate(simulation.system.getForces()):
         # These are the overall classes of forces, not the particle-specific forces
@@ -155,6 +160,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         force.setParticleParameters(
                             particle_index, q, param_dict[sigma_str].value_in_unit(unit.nanometer), eps
                         )
+                        
                         force.updateParametersInContext(simulation.context)
                         if verbose:
                             print(f'Updating parameter {sigma_str}:')
@@ -174,6 +180,54 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                             print(f'Particle: {particle_index}')
                             print(f'Old value: {eps_old}')
                             print(f'New value: {param_dict[epsilon_str].in_units_of(eps_old.unit)}\n')
+
+                # Update the sigma and epsilon parameters in relevant exceptions:
+                n_nonbond_exceptions = force.getNumExceptions()
+                n_exceptions_removed = 0
+                for x in range(n_nonbond_exceptions):
+                    (par1, par2, chargeProd, sigma_old, epsilon_old) = force.getExceptionParameters(x)
+                    
+                    # Only update the 1-4 exceptions. The 1-2 and 1-3 should retain a 0 epsilon value.
+                    if [par1, par2] in torsion_ends_list or [par2, par1] in torsion_ends_list:
+                        
+                        name1 = particle_type_list[par1]
+                        sigma_str1 = f'{name1}_sigma'
+                        epsilon_str1 = f'{name1}_epsilon'
+                        
+                        name2 = particle_type_list[par2]
+                        sigma_str2 = f'{name2}_sigma'
+                        epsilon_str2 = f'{name2}_epsilon'
+                        
+                        if (sigma_str1 in param_dict or sigma_str2 in param_dict or 
+                            epsilon_str1 in param_dict or epsilon_str2 in param_dict):
+                            # Update this exception:
+                            (q1,sigma1,eps1) = force.getParticleParameters(par1)
+                            (q2,sigma2,eps2) = force.getParticleParameters(par2)
+                        
+                            sigma_ij = (sigma1+sigma2)/2
+                            epsilon_ij = np.sqrt(eps1*eps2)
+                            
+                            # ***TODO: also update the charge product here
+                            force.setExceptionParameters(x,par1,par2,0,sigma_ij,epsilon_ij)
+                            if verbose:
+                                print(f'Updating nonbonded exception {x}:')
+                                print(f'Particles: {par1}, {par2}')
+                                print(f'Old epsilon_ij: {epsilon_old}')
+                                print(f'New epsilon_ij: {epsilon_ij}')
+                                print(f'Old sigma_ij: {sigma_old}')
+                                print(f'New sigma_ij: {sigma_ij}\n')
+                                
+                            # If epsilon_ij = 0, this will fail to update context since the interaction will be omitted
+                            if epsilon_ij.value_in_unit(unit.kilojoule_per_mole) != 0:
+                                force.updateParametersInContext(simulation.context)
+                            else:
+                                n_exceptions_removed += 1
+                                
+                if n_exceptions_removed > 0:
+                    # Reinitialize context to include updates to the number of exceptions:
+                    simulation.context.reinitialize()
+                    if verbose:
+                        print(f'Reinitializing context ({n_exceptions_removed} exceptions removed)')
 
         elif force_name == 'HarmonicBondForce':
             if bond_eq or bond_k:
@@ -622,6 +676,15 @@ def eval_energy_binary_sequences(cgmodel, file_list, temperature_list, monomer_l
     :param sequence: list of sequences to evaluate. If None, all possible combinations will be attempted. (default=None)
     :type sequence: list(int) or list(list(int), list(int)...)
 
+    :param output_data: Path to NetCDF-formatted file containing the reference simulation data (default = "output/output.nc")                                                                                          
+    :type output_data: str  
+
+    :param num_intermediate_states: The number of states to insert between existing states in 'temperature_list' (default=3)
+    :type num_intermediate_states: int
+
+    :param n_trial_boot: number of trials to run for generating bootstrapping uncertainties. If None, a single heat capacity calculation will be performed. (default=200)
+    :type n_trial_boot: int
+
     :param frame_begin: analyze starting from this frame, discarding all prior as equilibration period (default=0)
     :type frame_begin: int
 
@@ -650,7 +713,25 @@ def eval_energy_binary_sequences(cgmodel, file_list, temperature_list, monomer_l
 
     # Compute distance matrix for all nonbonded pairs with MDTraj
     nonbonded_list = cgmodel.get_nonbonded_interaction_list()
-    nonbonded_arr = np.asarray(nonbonded_list) # Rows are each pair
+    # ***Note: this nonbonded list excludes bond pairs, but NOT angle pairs.
+    
+    # Get the nonbonded exclusion list
+    nonbonded_exclusion_list = cgmodel.get_nonbonded_exclusion_list()
+    
+    # Determine the true nonbonded inclusion list
+    nonbonded_inclusion_list = []
+    
+    for i in range(len(nonbonded_list)):
+        par1 = nonbonded_list[i][0]
+        par2 = nonbonded_list[i][1]
+        
+        if [par1,par2] not in nonbonded_exclusion_list and [par2,par1] not in nonbonded_exclusion_list:
+            if par1 < par2:
+                nonbonded_inclusion_list.append([par1,par2])
+            else:
+                nonbonded_inclusion_list.append([par2,par1])
+    
+    nonbonded_arr = np.asarray(nonbonded_inclusion_list) # Rows are each pair
     
     nonbond_power12_array = {} # r_ij^12
     nonbond_power6_array = {}  # r_ij^6   
@@ -675,7 +756,7 @@ def eval_energy_binary_sequences(cgmodel, file_list, temperature_list, monomer_l
             nframes = rep_traj.n_frames      
        
         # This array assigned to dict is [n_frames x n_pairs]
-        nonbond_dist_array = md.compute_distances(rep_traj,nonbonded_list)
+        nonbond_dist_array = md.compute_distances(rep_traj,nonbonded_inclusion_list)
         
         # Now do element wise powers for the 2 LJ terms:
         nonbond_power12_array[i] = np.power(nonbond_dist_array,12)
@@ -849,21 +930,49 @@ def eval_energy_binary_sequences(cgmodel, file_list, temperature_list, monomer_l
         seq_print = seq_print.replace('1',monomer_list[1]["monomer_name"])
         
         # Now, evaluate the FWHM
-        (T_list, C_v_values, C_v_uncertainty,
-        Tm_value, Tm_uncertainty,
-        Cv_height_value, Cv_height_uncertainty,
-        FWHM_value, FWHM_uncertainty,
-        N_eff_values) = bootstrap_heat_capacity(
-            U_kln=U_eval,
-            output_data=output_data,
-            frame_begin=frame_begin,
-            frame_end=frame_end,
-            sample_spacing=sample_spacing,
-            sparsify_stride=sparsify_stride,
-            n_trial_boot=n_trial_boot,
-            num_intermediate_states=num_intermediate_states,
-            plot_file=f"heat_capacity_{seq_print}.pdf",
-        )
+        if n_trial_boot is None:
+            # Single heat capacity calculation
+            (Cv_sim, dCv_sim,
+            C_v_values, C_v_uncertainty,
+            T_list, FWHM_value,
+            Tm_value, Cv_height_value,
+            N_eff_values) = get_heat_capacity_reeval(
+                U_eval,
+                output_data=output_data,
+                frame_begin=frame_begin,
+                frame_end=frame_end,
+                sample_spacing=sample_spacing,
+                num_intermediate_states=num_intermediate_states,
+                plot_file_reeval=f"heat_capacity_{seq_print}.pdf",
+                plot_file_sim=f"heat_capacity_ref_sim.pdf",
+            )
+            
+            Tm_uncertainty = None
+            Cv_height_uncertainty = None
+            FWHM_uncertainty = None
+            
+            #***TODO: figure out how the sparsify_stride should be implemented
+            # for the single Cv evaluation.
+            # U_eval has sparsify_stride applied.
+            # For the energies from file, sample_spacing is applied.
+            
+        else:
+            # Use bootstrapping version of heat capacity calculation
+            (T_list, C_v_values, C_v_uncertainty,
+            Tm_value, Tm_uncertainty,
+            Cv_height_value, Cv_height_uncertainty,
+            FWHM_value, FWHM_uncertainty,
+            N_eff_values) = bootstrap_heat_capacity(
+                U_kln=U_eval,
+                output_data=output_data,
+                frame_begin=frame_begin,
+                frame_end=frame_end,
+                sample_spacing=sample_spacing,
+                sparsify_stride=sparsify_stride,
+                n_trial_boot=n_trial_boot,
+                num_intermediate_states=num_intermediate_states,
+                plot_file=f"heat_capacity_{seq_print}.pdf",
+            )
         
         seq_time_cv_done = time.perf_counter()
         if verbose:
@@ -917,21 +1026,12 @@ def get_replica_reeval_energies(replica, temperature_list, file_list, topology, 
         simulation.context.setPositions(positions)
         potential_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
 
-        if k == 0:
-            print(potential_energy)
         # Boltzmann factor for reduce the potential energy:
         beta_all = 1/(kB*temperature_list)
-        if k == 0:
-            print(f'beta_all: {beta_all}')
-            print(f'kB: {kB}')
-            print(f'temp list: {temperature_list}')
 
         # Evaluate this reduced energy at all thermodynamic states:
         for j in range(len(temperature_list)):
             # This reducing step gets rid of the simtk units
             U_eval_rep[j,k] = (potential_energy*beta_all[j])
-            
-        if k == 0:
-            print(f'U_eval: {(potential_energy*beta_all[j])}')
     
     return U_eval_rep, replica 
