@@ -654,7 +654,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
     return U_eval, simulation   
 
 
-def eval_energy_binary_sequences(cgmodel, file_list, temperature_list, monomer_list, sequence=None,
+def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, sequence=None,
     output_data='output/output.nc', num_intermediate_states=3, n_trial_boot=200,
     frame_begin=0, frame_end=-1, sample_spacing=1, sparsify_stride=1, verbose=False, n_cpu=1):
     """
@@ -746,10 +746,18 @@ def eval_energy_binary_sequences(cgmodel, file_list, temperature_list, monomer_l
             rep_traj = md.load(file_list[i])
             
         # Select frames:
-        if frame_end > 0:
-            rep_traj = rep_traj[frame_begin:frame_end:sparsify_stride]
+        if n_trial_boot is None:
+            # Evaluate only decorrelated frames, with optional sparsifying stride:
+            if frame_end > 0:
+                rep_traj = rep_traj[frame_begin:frame_end:int(sample_spacing*sparsify_stride)]
+            else:
+                rep_traj = rep_traj[frame_begin::sample_spacing*sparsify_stride]
         else:
-            rep_traj = rep_traj[frame_begin::sparsify_stride]
+            # Evaluate all production frames with optional sparsifying stride:
+            if frame_end > 0:
+                rep_traj = rep_traj[frame_begin:frame_end:sparsify_stride]
+            else:
+                rep_traj = rep_traj[frame_begin::sparsify_stride]
             
         # Get the number of frames remaining:    
         if i == 0:
@@ -776,6 +784,34 @@ def eval_energy_binary_sequences(cgmodel, file_list, temperature_list, monomer_l
     res_type_list = []
     param_dict_ref = {} # Use this to evaluate energies without nonbonded terms
     
+    # Check that the new monomer topologies are compatible with the reference cgmodel:
+    cgmodel_mono0 = cgmodel.monomer_types[0]
+    n_particle_per_mono_ref = len(cgmodel_mono0["particle_sequence"])
+    bond_list_per_mono_ref = cgmodel_mono0["bond_list"]
+    bond_start_mono_ref = cgmodel_mono0["start"]
+    bond_end_mono_ref = cgmodel_mono0["end"]
+    
+    # Check topological consistency within the cgmodel:
+    if len(cgmodel.monomer_types) > 1:
+        for mono in cgmodel.monomer_types[1:]:
+            if ((len(mono["particle_sequence"]) != n_particle_per_mono_ref) or
+                (mono["bond_list"] != bond_list_per_mono_ref) or
+                (mono["start"] != bond_start_mono_ref) or
+                (mono["end"] != bond_end_mono_ref)):
+                
+                print('Error: residue types in the cgmodel must have the same topology for sequence scan')
+                exit()
+            
+    # Check topological consistency in the new monomer types:
+    for mono in monomer_list:
+        if ((len(mono["particle_sequence"]) != n_particle_per_mono_ref) or
+            (mono["bond_list"] != bond_list_per_mono_ref) or
+            (mono["start"] != bond_start_mono_ref) or
+            (mono["end"] != bond_end_mono_ref)):
+            
+            print('Error: new residue types must have the same topology as those in the reference cgmodel')
+            exit()
+    
     for mono in monomer_list:
         for particle in mono["particle_sequence"]:
             res_type_list.append(mono["monomer_name"])
@@ -791,27 +827,39 @@ def eval_energy_binary_sequences(cgmodel, file_list, temperature_list, monomer_l
     bonded_eval_start = time.perf_counter()
     
     # Get the bonded energies:
-    U_bonded, simulation = eval_energy(cgmodel, file_list, temperature_list, param_dict_ref,
-        frame_begin=frame_begin, frame_end=frame_end, frame_stride=sparsify_stride, verbose=verbose, n_cpu=n_cpu)
-    
+    if n_trial_boot is None:
+        U_bonded, simulation = eval_energy(cgmodel, file_list, temperature_list, param_dict_ref,
+            frame_begin=frame_begin, frame_end=frame_end, frame_stride=int(sample_spacing*sparsify_stride), verbose=verbose, n_cpu=n_cpu)
+    else:
+        U_bonded, simulation = eval_energy(cgmodel, file_list, temperature_list, param_dict_ref,
+            frame_begin=frame_begin, frame_end=frame_end, frame_stride=sparsify_stride, verbose=verbose, n_cpu=n_cpu)
+        
     bonded_eval_end = time.perf_counter()
     if verbose:
         print(f'bonded energies done ({bonded_eval_end-bonded_eval_start:.4f} s)')
     
-    # Scan all possible combinations.
-    # This assumes binary sequences, with all possible compositions
-    # To enforce equal amounts, extra filtering step would go here
-    
     seq_unique = []
-    num_monomers = int(cgmodel.get_num_beads()/2)
+    num_monomers = int(cgmodel.get_num_beads()/n_particle_per_mono_ref)
     
     if sequence is None:
-        # Do all possible combinations
+        # Attempt to scan all possible combinations.
+        # This assumes binary sequences, with all possible compositions
+        # To enforce equal amounts, extra filtering step would go here
         # This can easily run out of memory - use only for small systems
-        for seq in list(product([0,1],repeat=num_monomers)):
-            if seq not in seq_unique and tuple(reversed(seq)) not in seq_unique: # No reverse duplicates
-                # Compute new nonbonded energies
-                seq_unique.append(seq)
+        if len(mono_list) > 2:
+            print('Error: full sequence scan only supported for binary sequences')
+            exit()
+        
+        elif len(mono_list) == 2:
+            for seq in list(product([0,1],repeat=num_monomers)):
+                if seq not in seq_unique and tuple(reversed(seq)) not in seq_unique: # No reverse duplicates
+                    # Compute new nonbonded energies
+                    seq_unique.append(seq)
+        else:
+            # Homopolymer:
+            seq = list(np.zeros(num_monomers))
+            seq_unique.append(seq)
+                    
     else:
         # Use a user-specified sequence or list of sequences
         if type(sequence[0]) == list:
@@ -850,18 +898,8 @@ def eval_energy_binary_sequences(cgmodel, file_list, temperature_list, monomer_l
     # Now evaluate energies at each sequence:
     # We need to apply the new interaction types to the original nonbonded pair list
     
-    # In the LJ matrices:
-    # Monomer 0, backbone is particle type 0
-    # Monomer 0, sidechain is particle type 1
-    # Monomer 1, backbone is particle type 2
-    # Monomer 1, sidechain is particle type 3
-    
-    # ***TODO: make the input of the monomer dicts more general - for now, we must specify [bb,sc] types in that order
-    # for each monomer.
-    
-    # ***This assumes 2 particles per residue
-    res_id_pairs, particle_type_pairs = np.divmod(nonbonded_arr,2)
-    # In particle_type_pairs, 0 is backbone, 1 is sidechain
+    # Get the residue index and intra-residue particle index for all nonbonded pairs (constant for all sequences): 
+    res_id_pairs, particle_type_pairs = np.divmod(nonbonded_arr,n_particle_per_mono_ref)
     
     # Boltzmann factor for reduce the potential energy:
     beta_all_kJ_mol = 1/(kB.in_units_of(unit.kilojoule_per_mole/unit.kelvin)*temperature_list)    
@@ -876,7 +914,7 @@ def eval_energy_binary_sequences(cgmodel, file_list, temperature_list, monomer_l
     for seq in seq_unique:
         seq_time_start = time.perf_counter()
         if verbose:
-            print(f'seq: {seq}')
+            print(f'seq: {seq}')  
         
         # Get residue types of nonbonded pairs:
         res_types = np.zeros((len(res_id_pairs),2))
@@ -885,7 +923,7 @@ def eval_energy_binary_sequences(cgmodel, file_list, temperature_list, monomer_l
             res_types[i,:] = np.array([seq[pair[0]],seq[pair[1]]])
             i += 1
             
-        nonbond_types = particle_type_pairs + 2*res_types
+        nonbond_types = particle_type_pairs + n_particle_per_mono_ref*res_types
 
         LJ_12_vec = np.zeros(len(nonbond_types))
         LJ_6_vec = np.zeros_like(LJ_12_vec)
@@ -926,8 +964,8 @@ def eval_energy_binary_sequences(cgmodel, file_list, temperature_list, monomer_l
         seq_print = seq_print.replace(' ','')
         seq_print = seq_print.replace('[','')
         seq_print = seq_print.replace(']','')
-        seq_print = seq_print.replace('0',monomer_list[0]["monomer_name"])
-        seq_print = seq_print.replace('1',monomer_list[1]["monomer_name"])
+        for s in range(len(monomer_list)):
+            seq_print = seq_print.replace(str(s),monomer_list[s]["monomer_name"])
         
         # Now, evaluate the FWHM
         if n_trial_boot is None:
@@ -941,7 +979,7 @@ def eval_energy_binary_sequences(cgmodel, file_list, temperature_list, monomer_l
                 output_data=output_data,
                 frame_begin=frame_begin,
                 frame_end=frame_end,
-                sample_spacing=sample_spacing,
+                sample_spacing=int(sample_spacing*sparsify_stride),
                 num_intermediate_states=num_intermediate_states,
                 plot_file_reeval=f"heat_capacity_{seq_print}.pdf",
                 plot_file_sim=f"heat_capacity_ref_sim.pdf",
@@ -950,11 +988,6 @@ def eval_energy_binary_sequences(cgmodel, file_list, temperature_list, monomer_l
             Tm_uncertainty = None
             Cv_height_uncertainty = None
             FWHM_uncertainty = None
-            
-            #***TODO: figure out how the sparsify_stride should be implemented
-            # for the single Cv evaluation.
-            # U_eval has sparsify_stride applied.
-            # For the energies from file, sample_spacing is applied.
             
         else:
             # Use bootstrapping version of heat capacity calculation
