@@ -658,8 +658,7 @@ class CGModel(object):
                 for exclusion in exclusion_list:
                     if exclusion in interaction_list:
                         interaction_list.remove(exclusion)
-                    if [exclusion[1], exclusion[0]] in exclusion_list:
-                        print([exclusion[1], exclusion[0]])
+                    if [exclusion[1], exclusion[0]] in interaction_list:
                         interaction_list.remove([exclusion[1], exclusion[0]])
         else:
             for particle_1 in range(self.num_beads):
