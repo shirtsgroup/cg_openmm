@@ -655,7 +655,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
 
 
 def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, sequence=None,
-    output_data='output/output.nc', num_intermediate_states=3, n_trial_boot=200,
+    output_data='output/output.nc', num_intermediate_states=3, n_trial_boot=200, plot_dir='output',
     frame_begin=0, frame_end=-1, sample_spacing=1, sparsify_stride=1, verbose=False, n_cpu=1):
     """
     Given a cgmodel with a topology and system, evaluate the energy at all structures in each
@@ -673,8 +673,8 @@ def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, se
     :param monomer_list: list of monomer type dicts (for formatting, see CGModel input)
     :type monomer_list: list ( dict {} )
 
-    :param sequence: list of sequences to evaluate. If None, all possible combinations will be attempted. (default=None)
-    :type sequence: list(int) or list(list(int), list(int)...)
+    :param sequence: list of sequences to evaluate. Can be integer or monomer dict (0=monomer_list[0], 1=monomer_list[1],... If None, all possible combinations will be attempted. (default=None)
+    :type sequence: list(int) or list(list(int), list(int)...) or list(dict) or list(list(dict), list(dict)...)
 
     :param output_data: Path to NetCDF-formatted file containing the reference simulation data (default = "output/output.nc")                                                                                          
     :type output_data: str  
@@ -684,6 +684,9 @@ def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, se
 
     :param n_trial_boot: number of trials to run for generating bootstrapping uncertainties. If None, a single heat capacity calculation will be performed. (default=200)
     :type n_trial_boot: int
+    
+    :param plot_dir: path to directory to which plot files will be saved
+    type plot_dir: str
 
     :param frame_begin: analyze starting from this frame, discarding all prior as equilibration period (default=0)
     :type frame_begin: int
@@ -846,12 +849,13 @@ def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, se
         # This assumes binary sequences, with all possible compositions
         # To enforce equal amounts, extra filtering step would go here
         # This can easily run out of memory - use only for small systems
-        if len(mono_list) > 2:
+        if len(monomer_list) > 2:
             print('Error: full sequence scan only supported for binary sequences')
             exit()
         
-        elif len(mono_list) == 2:
+        elif len(monomer_list) == 2:
             for seq in list(product([0,1],repeat=num_monomers)):
+                #***reversed(seq) returns a reverse iterator object here. Does this work?
                 if seq not in seq_unique and tuple(reversed(seq)) not in seq_unique: # No reverse duplicates
                     # Compute new nonbonded energies
                     seq_unique.append(seq)
@@ -865,10 +869,43 @@ def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, se
         if type(sequence[0]) == list:
             # Multiple sequences specified as list of lists
             for seq in sequence:
-                seq_unique.append(sequence)
-        else:
-            # Single sequence:
+                if type(seq[0]) == dict:
+                    seq_int = []
+                    # Convert monomer dict to integers
+                    for elem in seq:
+                        i = 0
+                        for mono in monomer_list:
+                            if elem == mono:
+                                seq_int.append(i)
+                                break
+                            else:
+                                i += 1
+                    print(seq_int)
+                    seq_unique.append(seq_int)
+                else:
+                    # Use integer sequence
+                    seq_unique.append(sequence)
+        elif type(sequence[0]) == dict:
+            seq_int = []
+            # Convert monomer dict to integers
+            for elem in sequence:
+                i = 0
+                for mono in monomer_list:
+                    if elem == mono:
+                        seq_int.append(i)
+                        break
+                    else:
+                        i += 1
+            print(seq_int)
+            seq_unique.append(seq_int)
+        
+        elif type(sequence[0]) == int:
+            # Sequence is list of integers,
             seq_unique.append(sequence)
+            
+        else:
+            print(f'Invalid sequence input of type {type(sequence)} ({type(sequence[0])})')
+            exit()
         
     if verbose:
         print(f'Evaluating {len(seq_unique)} sequences')
@@ -981,8 +1018,8 @@ def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, se
                 frame_end=frame_end,
                 sample_spacing=int(sample_spacing*sparsify_stride),
                 num_intermediate_states=num_intermediate_states,
-                plot_file_reeval=f"heat_capacity_{seq_print}.pdf",
-                plot_file_sim=f"heat_capacity_ref_sim.pdf",
+                plot_file_reeval=f"{plot_dir}/heat_capacity_{seq_print}.pdf",
+                plot_file_sim=None,
             )
             
             Tm_uncertainty = None
@@ -1004,7 +1041,7 @@ def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, se
                 sparsify_stride=sparsify_stride,
                 n_trial_boot=n_trial_boot,
                 num_intermediate_states=num_intermediate_states,
-                plot_file=f"heat_capacity_{seq_print}.pdf",
+                plot_file=f"{plot_dir}/heat_capacity_{seq_print}.pdf",
             )
         
         seq_time_cv_done = time.perf_counter()
