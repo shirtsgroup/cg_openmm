@@ -5,9 +5,10 @@ Unit and regression test for the cg_openmm package.
 # Import package, test suite, and other packages as needed  
   
 import os
+import copy
 from simtk import unit
 from cg_openmm.cg_model.cgmodel import CGModel
-from cg_openmm.parameters.evaluate_energy import eval_energy
+from cg_openmm.parameters.evaluate_energy import *
 from cg_openmm.thermo.calc import *
 from cg_openmm.parameters.reweight import get_temperature_list, get_opt_temperature_list
 from openmmtools.multistate import MultiStateReporter
@@ -1378,6 +1379,187 @@ def test_reeval_heat_capacity_boot_end_frame(tmpdir):
     
     assert os.path.isfile(f"{output_directory}/heat_capacity_reeval_boot.pdf")
     
+
+def test_eval_FWHM_sequences_no_change_1(tmpdir):
+    """
+    Test sequence energy/heat capacity evaluation code, with no changes made to the sequence,
+    checking that heat capacity curve matches the original reference simulation.
+    Sequence is single list of monomer dicts.
+    Single heat capacity calculation (no bootstrapping)
+    """
+    output_directory = tmpdir.mkdir("output")    
+    
+    # Replica exchange settings
+    number_replicas = 12
+    min_temp = 200.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
+    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
+    
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+    
+    # Data file with simulated energies:
+    output_data = os.path.join(data_path, "output.nc")
+    
+    # Create list of replica trajectories to analyze
+    dcd_file_list = []
+    for i in range(len(temperature_list)):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+    
+    # Set up monomer dictionaries:
+    A = cgmodel.monomer_types[0]
+    # sigma_bb = 2.25 A
+    # epsilon_bb = 1.5 kJ/mol
+    # sigma_sc = 3.5 A
+    # epsilon_sc = 5.0 kJ/mol
+    
+    B = copy.deepcopy(A)
+    # A and B need separate names:
+    B["monomer_name"] = "B"
+
+    monomer_list = [A,B]
+    
+    nmono = len(cgmodel.sequence)
+    
+    sequence = []
+    for i in range(int(nmono/2)):
+        sequence.append(A)
+        sequence.append(B)
+
+    frame_begin = 100
+    frame_end = 150
+    sample_spacing = 1
+    sparsify_stride = 1
+    num_intermediate_states = 1
+
+    # Re-evaluate OpenMM energies:
+    (seq_FWHM, seq_FWHM_uncertainty,
+    seq_Cv, seq_Cv_uncertainty, seq_N_eff) = eval_energy_sequences(
+        cgmodel,
+        dcd_file_list,
+        temperature_list,
+        monomer_list=monomer_list,
+        sequence=sequence,
+        num_intermediate_states=num_intermediate_states,
+        n_trial_boot=None,
+        plot_dir=output_directory,
+        output_data=output_data,
+        frame_begin=frame_begin,
+        frame_end=frame_end,
+        sample_spacing=sample_spacing,
+        sparsify_stride=sparsify_stride,
+        verbose=True,
+        n_cpu=1,
+    )
+    for key, value in seq_Cv.items():
+        seq_Cv_array = value
+    
+    # Get heat capacity from original dataset:
+    (Cv_ref, dCv_ref, temperature_list_ref,
+    FWHM_ref, Tm_ref, Cv_height_ref, N_eff_ref) = get_heat_capacity(
+        frame_begin=frame_begin,
+        frame_end=frame_end,
+        sample_spacing=int(sample_spacing*sparsify_stride),
+        output_data=output_data,
+        num_intermediate_states=num_intermediate_states,
+        plot_file=f"{output_directory}/heat_capacity_ref.pdf"
+    )
+    
+    seq_Cv_array = seq_Cv_array.value_in_unit(unit.kilojoule_per_mole/unit.kelvin)
+    Cv_ref = Cv_ref.value_in_unit(unit.kilojoule_per_mole/unit.kelvin)
+    
+    assert_allclose(seq_Cv_array, Cv_ref,atol=1E-4)
     
     
+def test_eval_FWHM_sequences_no_change_2(tmpdir):
+    """
+    Test sequence energy/heat capacity evaluation code, with no changes made to the sequence,
+    checking that heat capacity curve matches the original reference simulation.
+    Sequence is single list of integers corresponding to indices in monomer_list.
+    Single heat capacity calculation (no bootstrapping)
+    Sparsify stride is applied to evaluate energies of fewer frames.
+    """
+    output_directory = tmpdir.mkdir("output")    
+    
+    # Replica exchange settings
+    number_replicas = 12
+    min_temp = 200.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
+    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
+    
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+    
+    # Data file with simulated energies:
+    output_data = os.path.join(data_path, "output.nc")
+    
+    # Create list of replica trajectories to analyze
+    dcd_file_list = []
+    for i in range(len(temperature_list)):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+    
+    # Set up monomer dictionaries:
+    A = cgmodel.monomer_types[0]
+    # sigma_bb = 2.25 A
+    # epsilon_bb = 1.5 kJ/mol
+    # sigma_sc = 3.5 A
+    # epsilon_sc = 5.0 kJ/mol
+    
+    B = copy.deepcopy(A)
+    # A and B need separate names:
+    B["monomer_name"] = "B"
+
+    monomer_list = [A,B]
+    
+    nmono = len(cgmodel.sequence)
+    
+    sequence = []
+    for i in range(int(nmono/2)):
+        sequence.append(0)
+        sequence.append(1)
+
+    frame_begin = 100
+    frame_end = 150
+    sample_spacing = 1
+    sparsify_stride = 3
+    num_intermediate_states = 1
+
+    # Re-evaluate OpenMM energies:
+    (seq_FWHM, seq_FWHM_uncertainty,
+    seq_Cv, seq_Cv_uncertainty, seq_N_eff) = eval_energy_sequences(
+        cgmodel,
+        dcd_file_list,
+        temperature_list,
+        monomer_list=monomer_list,
+        sequence=sequence,
+        num_intermediate_states=num_intermediate_states,
+        n_trial_boot=None,
+        plot_dir=output_directory,
+        output_data=output_data,
+        frame_begin=frame_begin,
+        frame_end=frame_end,
+        sample_spacing=sample_spacing,
+        sparsify_stride=sparsify_stride,
+        verbose=True,
+        n_cpu=1,
+    )
+    for key, value in seq_Cv.items():
+        seq_Cv_array = value
+    
+    # Get heat capacity from original dataset:
+    (Cv_ref, dCv_ref, temperature_list_ref,
+    FWHM_ref, Tm_ref, Cv_height_ref, N_eff_ref) = get_heat_capacity(
+        frame_begin=frame_begin,
+        frame_end=frame_end,
+        sample_spacing=int(sample_spacing*sparsify_stride),
+        output_data=output_data,
+        num_intermediate_states=num_intermediate_states,
+        plot_file=f"{output_directory}/heat_capacity_ref.pdf"
+    )
+    
+    seq_Cv_array = seq_Cv_array.value_in_unit(unit.kilojoule_per_mole/unit.kelvin)
+    Cv_ref = Cv_ref.value_in_unit(unit.kilojoule_per_mole/unit.kelvin)
+    
+    assert_allclose(seq_Cv_array, Cv_ref,atol=1E-4)
+        
     
