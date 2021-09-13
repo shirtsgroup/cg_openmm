@@ -626,30 +626,46 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                     # print(f'New total number of torsion force terms: {n_torsion_forces_new}')
 
     # Update the positions and evaluate all specified frames:
-    # Run with multiple processors and gather data from all replicas:        
-    pool = mp.Pool(n_cpu)
-    print(f'Using {n_cpu} CPU out of total available {mp.cpu_count()}')
-    
-    results = pool.starmap(get_replica_reeval_energies, 
-        [(replica, temperature_list, file_list, cgmodel.topology, simulation.system,
-        frame_begin, frame_stride, frame_end) for replica in range(len(file_list))])
-    pool.close()
-    
-    # results is a list of tuples, each containing (U_kln_replica, replica_ID)
-    # Actually, the replicas are ordered correctly within results regardless of the order in which they
-    # are executed, but we can add a check to be sure.
-    
-    # Overall energy matrix (all replicas)                 
-    U_eval = np.zeros((len(file_list),len(file_list),results[0][0].shape[1]))
+    # Run with multiple processors and gather data from all replicas:       
+
+    if n_cpu > 1:
+        pool = mp.Pool(n_cpu)
+        print(f'Using {n_cpu} CPU out of total available {mp.cpu_count()}')
+        
+        results = pool.starmap(get_replica_reeval_energies, 
+            [(replica, temperature_list, file_list, cgmodel.topology, simulation.system,
+            frame_begin, frame_stride, frame_end) for replica in range(len(file_list))])
+        pool.close()
+            
+        # results is a list of tuples, each containing (U_kln_replica, replica_ID)
+        # Actually, the replicas are ordered correctly within results regardless of the order in which they
+        # are executed, but we can add a check to be sure.    
              
-    # This can be converted to the 2d array for MBAR with kln_to_kn utility
-    # The 3d array is organized in the same way as replica_energies extracted from
-    # the .nc file.          
-    
-    # Assign replica energies:
-    for i in range(len(file_list)):
-        rep_id = results[i][1]
-        U_eval[rep_id,:,:] = results[i][0]
+        # This can be converted to the 2d array for MBAR with kln_to_kn utility
+        # The 3d array is organized in the same way as replica_energies extracted from
+        # the .nc file.    
+
+        # Overall energy matrix (all replicas)                 
+        U_eval = np.zeros((len(file_list),len(file_list),results[0][0].shape[1]))
+
+        # Assign replica energies:
+        for i in range(len(file_list)):
+            rep_id = results[i][1]
+            U_eval[rep_id,:,:] = results[i][0]        
+            
+    else:
+        # Use the non-multiprocessor version to avoid potential issues:
+        for replica in range(len(file_list)):
+            U_eval_rep, rep_id = get_replica_reeval_energies(
+                replica, temperature_list, file_list, cgmodel.topology, simulation.system,
+                frame_begin, frame_stride, frame_end
+                )
+              
+            if replica == 0:              
+                # Overall energy matrix (all replicas)                 
+                U_eval = np.zeros((len(file_list),len(file_list),U_eval_rep.shape[1]))
+            
+            U_eval[replica,:,:] = U_eval_rep          
     
     return U_eval, simulation   
 
@@ -713,6 +729,11 @@ def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, se
         - seq_Cv_uncertainty - dictionary mapping sequences to uncertainty in Cv
         - seq_N_eff - dictionary mapping sequences to MBAR number of effective samples for all states
     """
+
+    # Check that sparsify_stride is not greater than sample_spacing
+    if sparsify_stride > sample_spacing:
+        print(f'Error: sparsify_stride ({sparsify_stride}) cannot be greater than sample_spacing ({sample_spacing})')
+        exit()
 
     # Compute distance matrix for all nonbonded pairs with MDTraj
     nonbonded_list = cgmodel.get_nonbonded_interaction_list()
