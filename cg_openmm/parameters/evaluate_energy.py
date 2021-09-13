@@ -619,11 +619,6 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                                     print(f'Force constant: {k_old} --> {param_kt_curr.in_units_of(k_old.unit)}')
 
                     torsion_index += 1
-                    
-                # n_torsion_forces_new = force.getNumTorsions()
-                # if verbose:
-                    # print(f'\nOld total number of torsion force terms: {n_torsion_forces}')
-                    # print(f'New total number of torsion force terms: {n_torsion_forces_new}')
 
     # Update the positions and evaluate all specified frames:
     # Run with multiple processors and gather data from all replicas:       
@@ -876,7 +871,6 @@ def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, se
         
         elif len(monomer_list) == 2:
             for seq in list(product([0,1],repeat=num_monomers)):
-                #***reversed(seq) returns a reverse iterator object here. Does this work?
                 if seq not in seq_unique and tuple(reversed(seq)) not in seq_unique: # No reverse duplicates
                     # Compute new nonbonded energies
                     seq_unique.append(seq)
@@ -901,7 +895,6 @@ def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, se
                                 break
                             else:
                                 i += 1
-                    print(seq_int)
                     seq_unique.append(seq_int)
                 else:
                     # Use integer sequence
@@ -917,7 +910,6 @@ def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, se
                         break
                     else:
                         i += 1
-            print(seq_int)
             seq_unique.append(seq_int)
         
         elif type(sequence[0]) == int:
@@ -971,8 +963,17 @@ def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, se
     
     for seq in seq_unique:
         seq_time_start = time.perf_counter()
+        
+        # Format the sequence for printing:
+        seq_print = str(seq).replace(',','')
+        seq_print = seq_print.replace(' ','')
+        seq_print = seq_print.replace('[','')
+        seq_print = seq_print.replace(']','')
+        for s in range(len(monomer_list)):
+            seq_print = seq_print.replace(str(s),monomer_list[s]["monomer_name"])
+            
         if verbose:
-            print(f'seq: {seq}')  
+            print(f'Evaluating sequence: {seq_print}')  
         
         # Get residue types of nonbonded pairs:
         res_types = np.zeros((len(res_id_pairs),2))
@@ -1016,14 +1017,6 @@ def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, se
         seq_time_energies_done = time.perf_counter()
         if verbose:
             print(f'nonbonded eval done ({seq_time_energies_done-seq_time_start:.4f} s)')
-
-        # Format the sequence for printing:
-        seq_print = str(seq).replace(',','')
-        seq_print = seq_print.replace(' ','')
-        seq_print = seq_print.replace('[','')
-        seq_print = seq_print.replace(']','')
-        for s in range(len(monomer_list)):
-            seq_print = seq_print.replace(str(s),monomer_list[s]["monomer_name"])
         
         # Now, evaluate the FWHM
         if n_trial_boot is None:
