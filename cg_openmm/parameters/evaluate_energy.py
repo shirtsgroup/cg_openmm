@@ -670,7 +670,9 @@ def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, se
     frame_begin=0, frame_end=-1, sample_spacing=1, sparsify_stride=1, verbose=False, n_cpu=1):
     """
     Given a cgmodel with a topology and system, evaluate the energy at all structures in each
-    trajectory files specified with updated force field parameters specified in param_dict.
+    trajectory file specified, with new monomer parameters and oligomer sequence(s) specified in monomer_list
+    and sequence, respectively. Then, the new heat capacity curve and FWHM are calculated
+    using MBAR reweighting.
 
     :param cgmodel: CGModel() class object to evaluate energy with
     :type cgmodel: class
@@ -684,7 +686,7 @@ def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, se
     :param monomer_list: list of monomer type dicts (for formatting, see CGModel input)
     :type monomer_list: list ( dict {} )
 
-    :param sequence: list of sequences to evaluate. Can be integer or monomer dict (0=monomer_list[0], 1=monomer_list[1],... If None, all possible combinations will be attempted. (default=None)
+    :param sequence: list of sequences to evaluate. Can be integer or monomer dict (0=monomer_list[0], 1=monomer_list[1],...) If None, all possible combinations will be attempted. (default=None)
     :type sequence: list(int) or list(list(int), list(int)...) or list(dict) or list(list(dict), list(dict)...)
 
     :param output_data: Path to NetCDF-formatted file containing the reference simulation data (default = "output/output.nc")                                                                                          
@@ -725,6 +727,34 @@ def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, se
         - seq_N_eff - dictionary mapping sequences to MBAR number of effective samples for all states
     """
 
+    # Check that the new monomer topologies are compatible with the reference cgmodel:
+    cgmodel_mono0 = cgmodel.monomer_types[0]
+    n_particle_per_mono_ref = len(cgmodel_mono0["particle_sequence"])
+    bond_list_per_mono_ref = cgmodel_mono0["bond_list"]
+    bond_start_mono_ref = cgmodel_mono0["start"]
+    bond_end_mono_ref = cgmodel_mono0["end"]
+    
+    # Check topological consistency within the cgmodel:
+    if len(cgmodel.monomer_types) > 1:
+        for mono in cgmodel.monomer_types[1:]:
+            if ((len(mono["particle_sequence"]) != n_particle_per_mono_ref) or
+                (mono["bond_list"] != bond_list_per_mono_ref) or
+                (mono["start"] != bond_start_mono_ref) or
+                (mono["end"] != bond_end_mono_ref)):
+                
+                print('Error: residue types in the cgmodel must have the same topology for sequence scan')
+                exit()
+            
+    # Check topological consistency in the new monomer types:
+    for mono in monomer_list:
+        if ((len(mono["particle_sequence"]) != n_particle_per_mono_ref) or
+            (mono["bond_list"] != bond_list_per_mono_ref) or
+            (mono["start"] != bond_start_mono_ref) or
+            (mono["end"] != bond_end_mono_ref)):
+            
+            print('Error: new residue types must have the same topology as those in the reference cgmodel')
+            exit()    
+    
     # Check that sparsify_stride is not greater than sample_spacing
     if sparsify_stride > sample_spacing:
         print(f'Error: sparsify_stride ({sparsify_stride}) cannot be greater than sample_spacing ({sample_spacing})')
@@ -732,7 +762,6 @@ def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, se
 
     # Compute distance matrix for all nonbonded pairs with MDTraj
     nonbonded_list = cgmodel.get_nonbonded_interaction_list()
-    # ***Note: this nonbonded list excludes bond pairs, but NOT angle pairs.
     
     # Get the nonbonded exclusion list
     nonbonded_exclusion_list = cgmodel.get_nonbonded_exclusion_list()
@@ -802,34 +831,6 @@ def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, se
     epsilon_list = []
     res_type_list = []
     param_dict_ref = {} # Use this to evaluate energies without nonbonded terms
-    
-    # Check that the new monomer topologies are compatible with the reference cgmodel:
-    cgmodel_mono0 = cgmodel.monomer_types[0]
-    n_particle_per_mono_ref = len(cgmodel_mono0["particle_sequence"])
-    bond_list_per_mono_ref = cgmodel_mono0["bond_list"]
-    bond_start_mono_ref = cgmodel_mono0["start"]
-    bond_end_mono_ref = cgmodel_mono0["end"]
-    
-    # Check topological consistency within the cgmodel:
-    if len(cgmodel.monomer_types) > 1:
-        for mono in cgmodel.monomer_types[1:]:
-            if ((len(mono["particle_sequence"]) != n_particle_per_mono_ref) or
-                (mono["bond_list"] != bond_list_per_mono_ref) or
-                (mono["start"] != bond_start_mono_ref) or
-                (mono["end"] != bond_end_mono_ref)):
-                
-                print('Error: residue types in the cgmodel must have the same topology for sequence scan')
-                exit()
-            
-    # Check topological consistency in the new monomer types:
-    for mono in monomer_list:
-        if ((len(mono["particle_sequence"]) != n_particle_per_mono_ref) or
-            (mono["bond_list"] != bond_list_per_mono_ref) or
-            (mono["start"] != bond_start_mono_ref) or
-            (mono["end"] != bond_end_mono_ref)):
-            
-            print('Error: new residue types must have the same topology as those in the reference cgmodel')
-            exit()
     
     for mono in monomer_list:
         for particle in mono["particle_sequence"]:
