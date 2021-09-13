@@ -8,7 +8,7 @@ dependencies:
   - mdtraj
   - mpi4py
   - numpy
-  - openmm
+  - openmm <= 7.5
   - openmmtools
   - pickleshare
   - pip
