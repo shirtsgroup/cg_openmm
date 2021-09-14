@@ -666,7 +666,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
 
 
 def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, sequence=None,
-    output_data='output/output.nc', num_intermediate_states=3, n_trial_boot=200, plot_dir='output',
+    output_data='output/output.nc', num_intermediate_states=3, n_trial_boot=200, plot_dir='',
     frame_begin=0, frame_end=-1, sample_spacing=1, sparsify_stride=1, verbose=False, n_cpu=1):
     """
     Given a cgmodel with a topology and system, evaluate the energy at all structures in each
@@ -698,8 +698,8 @@ def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, se
     :param n_trial_boot: number of trials to run for generating bootstrapping uncertainties. If None, a single heat capacity calculation will be performed. (default=200)
     :type n_trial_boot: int
     
-    :param plot_dir: path to directory to which plot files will be saved
-    type plot_dir: str
+    :param plot_dir: path to directory to which plot files will be saved (default='')
+    :type plot_dir: str
 
     :param frame_begin: analyze starting from this frame, discarding all prior as equilibration period (default=0)
     :type frame_begin: int
@@ -899,7 +899,7 @@ def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, se
                     seq_unique.append(seq_int)
                 else:
                     # Use integer sequence
-                    seq_unique.append(sequence)
+                    seq_unique.append(seq)
         elif type(sequence[0]) == dict:
             seq_int = []
             # Convert monomer dict to integers
@@ -975,6 +975,21 @@ def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, se
             
         if verbose:
             print(f'Evaluating sequence: {seq_print}')  
+            
+        # Set the heat capacity plot path:
+        if plot_dir == None:
+            # Don't create plot:
+            plot_file_reeval = None
+        elif plot_dir == '' or plot_dir == ' ':
+            # Use the current working directory:
+            plot_file_reeval = f"heat_capacity_{seq_print}.pdf"
+        else:
+            # Use the specified plot directory:
+            if os.path.isdir(plot_dir):
+                pass
+            else:
+                os.mkdir(plot_dir)
+            plot_file_reeval = f"{plot_dir}/heat_capacity_{seq_print}.pdf"
         
         # Get residue types of nonbonded pairs:
         res_types = np.zeros((len(res_id_pairs),2))
@@ -1033,7 +1048,7 @@ def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, se
                 frame_end=frame_end,
                 sample_spacing=int(sample_spacing*sparsify_stride),
                 num_intermediate_states=num_intermediate_states,
-                plot_file_reeval=f"{plot_dir}/heat_capacity_{seq_print}.pdf",
+                plot_file_reeval=plot_file_reeval,
                 plot_file_sim=None,
             )
             
@@ -1056,7 +1071,7 @@ def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, se
                 sparsify_stride=sparsify_stride,
                 n_trial_boot=n_trial_boot,
                 num_intermediate_states=num_intermediate_states,
-                plot_file=f"{plot_dir}/heat_capacity_{seq_print}.pdf",
+                plot_file=plot_file_reeval,
             )
         
         seq_time_cv_done = time.perf_counter()

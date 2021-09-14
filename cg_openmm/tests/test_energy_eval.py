@@ -1437,7 +1437,7 @@ def test_eval_FWHM_sequences_no_change_1(tmpdir):
         cgmodel,
         dcd_file_list,
         temperature_list,
-        monomer_list=monomer_list,
+        monomer_list,
         sequence=sequence,
         num_intermediate_states=num_intermediate_states,
         n_trial_boot=None,
@@ -1529,7 +1529,7 @@ def test_eval_FWHM_sequences_no_change_2(tmpdir):
         cgmodel,
         dcd_file_list,
         temperature_list,
-        monomer_list=monomer_list,
+        monomer_list,
         sequence=sequence,
         num_intermediate_states=num_intermediate_states,
         n_trial_boot=None,
@@ -1614,7 +1614,7 @@ def test_eval_FWHM_boot_sequences_no_change_1(tmpdir):
         cgmodel,
         dcd_file_list,
         temperature_list,
-        monomer_list=monomer_list,
+        monomer_list,
         sequence=sequence,
         num_intermediate_states=num_intermediate_states,
         n_trial_boot=10,
@@ -1687,7 +1687,7 @@ def test_eval_FWHM_boot_sequences_no_change_2(tmpdir):
         cgmodel,
         dcd_file_list,
         temperature_list,
-        monomer_list=monomer_list,
+        monomer_list,
         sequence=sequence,
         num_intermediate_states=num_intermediate_states,
         n_trial_boot=10,
@@ -1704,8 +1704,7 @@ def test_eval_FWHM_boot_sequences_no_change_2(tmpdir):
         
 def test_eval_FWHM_sequences_AB(tmpdir):
     """
-    Test sequence energy/heat capacity evaluation code with a new monomer type B defined,
-    checking that heat capacity curve matches the original reference simulation.
+    Test sequence energy/heat capacity evaluation code with a new monomer type B defined.
     Sequence is single list of monomer dicts.
     Single heat capacity calculation (no bootstrapping)
     """
@@ -1779,7 +1778,7 @@ def test_eval_FWHM_sequences_AB(tmpdir):
         cgmodel,
         dcd_file_list,
         temperature_list,
-        monomer_list=monomer_list,
+        monomer_list,
         sequence=sequence,
         num_intermediate_states=num_intermediate_states,
         n_trial_boot=None,
@@ -1796,10 +1795,10 @@ def test_eval_FWHM_sequences_AB(tmpdir):
   
 def test_eval_FWHM_sequences_ABC(tmpdir):
     """
-    Test sequence energy/heat capacity evaluation code with new monomer types B,C defined,
-    checking that heat capacity curve matches the original reference simulation.
+    Test sequence energy/heat capacity evaluation code with new monomer types B,C defined.
     Sequence is single list of monomer dicts.
-    Single heat capacity calculation (no bootstrapping)
+    Single heat capacity calculation (no bootstrapping).
+    No plotting.
     """
     output_directory = tmpdir.mkdir("output")    
     
@@ -1886,7 +1885,111 @@ def test_eval_FWHM_sequences_ABC(tmpdir):
         cgmodel,
         dcd_file_list,
         temperature_list,
-        monomer_list=monomer_list,
+        monomer_list,
+        sequence=sequence,
+        num_intermediate_states=num_intermediate_states,
+        n_trial_boot=None,
+        plot_dir=None,
+        output_data=output_data,
+        frame_begin=frame_begin,
+        frame_end=frame_end,
+        sample_spacing=sample_spacing,
+        sparsify_stride=sparsify_stride,
+        verbose=True,
+        n_cpu=1,
+    )
+    
+
+def test_eval_FWHM_sequences_multi_1(tmpdir):
+    """
+    Test sequence energy/heat capacity evaluation code with a new monomer type B defined,
+    checking that heat capacity curve matches the original reference simulation.
+    Sequence is list of list of monomer dicts.
+    Single heat capacity calculation (no bootstrapping)
+    """
+    output_directory = tmpdir.mkdir("output")    
+    
+    # Replica exchange settings
+    number_replicas = 12
+    min_temp = 200.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
+    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
+    
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+    
+    # Data file with simulated energies:
+    output_data = os.path.join(data_path, "output.nc")
+    
+    # Create list of replica trajectories to analyze
+    dcd_file_list = []
+    for i in range(len(temperature_list)):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+    
+    # Set up monomer dictionaries:
+    A = cgmodel.monomer_types[0]
+    # sigma_bb = 2.25 A
+    # epsilon_bb = 1.5 kJ/mol
+    # sigma_sc = 3.5 A
+    # epsilon_sc = 5.0 kJ/mol
+
+    mass = 100 * unit.amu
+        
+    bb2 = {
+        "particle_type_name": "bb2",
+        "sigma": 2.20 * unit.angstrom,
+        "epsilon": 1.25 * unit.kilojoules_per_mole,
+        "mass": mass
+    }
+    sc2 = {
+        "particle_type_name": "sc2",
+        "sigma": 3.55 * unit.angstrom,
+        "epsilon": 5.25 * unit.kilojoules_per_mole,
+        "mass": mass
+    }
+
+    B = {
+        "monomer_name": "B",
+        "particle_sequence": [bb2, sc2],
+        "bond_list": [[0, 1]],
+        "start": 0,
+        "end": 0,
+    }
+
+    monomer_list = [A,B]
+    
+    nmono = len(cgmodel.sequence)
+    
+    sequence = []
+    
+    seq_1 = []
+    for i in range(int(nmono/2)):
+        seq_1.append(A)
+        seq_1.append(B)
+        
+    seq_2 = []
+    for i in range(int(nmono/4)):
+        seq_2.append(A)
+        seq_2.append(A)
+        seq_2.append(B)
+        seq_2.append(B)
+        
+    sequence.append(seq_1)
+    sequence.append(seq_2)
+        
+    frame_begin = 100
+    frame_end = 150
+    sample_spacing = 1
+    sparsify_stride = 1
+    num_intermediate_states = 1
+
+    # Re-evaluate OpenMM energies:
+    (seq_FWHM, seq_FWHM_uncertainty,
+    seq_Cv, seq_Cv_uncertainty, seq_N_eff) = eval_energy_sequences(
+        cgmodel,
+        dcd_file_list,
+        temperature_list,
+        monomer_list,
         sequence=sequence,
         num_intermediate_states=num_intermediate_states,
         n_trial_boot=None,
@@ -1898,6 +2001,109 @@ def test_eval_FWHM_sequences_ABC(tmpdir):
         sparsify_stride=sparsify_stride,
         verbose=True,
         n_cpu=1,
-    )
+    )    
     
+ 
+def test_eval_FWHM_sequences_multi_2(tmpdir):
+    """
+    Test sequence energy/heat capacity evaluation code with a new monomer type B defined,
+    checking that heat capacity curve matches the original reference simulation.
+    Sequence is list of list of integers corresponding to indices in monomer_list.
+    Single heat capacity calculation (no bootstrapping)
+    """
+    output_directory = tmpdir.mkdir("output")
+    
+    # Replica exchange settings
+    number_replicas = 12
+    min_temp = 200.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
+    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
+    
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+    
+    # Data file with simulated energies:
+    output_data = os.path.join(data_path, "output.nc")
+    
+    # Create list of replica trajectories to analyze
+    dcd_file_list = []
+    for i in range(len(temperature_list)):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+    
+    # Set up monomer dictionaries:
+    A = cgmodel.monomer_types[0]
+    # sigma_bb = 2.25 A
+    # epsilon_bb = 1.5 kJ/mol
+    # sigma_sc = 3.5 A
+    # epsilon_sc = 5.0 kJ/mol
+
+    mass = 100 * unit.amu
+        
+    bb2 = {
+        "particle_type_name": "bb2",
+        "sigma": 2.20 * unit.angstrom,
+        "epsilon": 1.25 * unit.kilojoules_per_mole,
+        "mass": mass
+    }
+    sc2 = {
+        "particle_type_name": "sc2",
+        "sigma": 3.55 * unit.angstrom,
+        "epsilon": 5.25 * unit.kilojoules_per_mole,
+        "mass": mass
+    }
+
+    B = {
+        "monomer_name": "B",
+        "particle_sequence": [bb2, sc2],
+        "bond_list": [[0, 1]],
+        "start": 0,
+        "end": 0,
+    }
+
+    monomer_list = [A,B]
+    
+    nmono = len(cgmodel.sequence)
+    
+    sequence = []
+    
+    seq_1 = []
+    for i in range(int(nmono/2)):
+        seq_1.append(0)
+        seq_1.append(1)
+        
+    seq_2 = []
+    for i in range(int(nmono/4)):
+        seq_2.append(0)
+        seq_2.append(0)
+        seq_2.append(1)
+        seq_2.append(1)
+        
+    sequence.append(seq_1)
+    sequence.append(seq_2)
+        
+    frame_begin = 100
+    frame_end = 150
+    sample_spacing = 1
+    sparsify_stride = 1
+    num_intermediate_states = 1
+
+    # Re-evaluate OpenMM energies:
+    (seq_FWHM, seq_FWHM_uncertainty,
+    seq_Cv, seq_Cv_uncertainty, seq_N_eff) = eval_energy_sequences(
+        cgmodel,
+        dcd_file_list,
+        temperature_list,
+        monomer_list,
+        sequence=sequence,
+        num_intermediate_states=num_intermediate_states,
+        n_trial_boot=None,
+        plot_dir=output_directory,
+        output_data=output_data,
+        frame_begin=frame_begin,
+        frame_end=frame_end,
+        sample_spacing=sample_spacing,
+        sparsify_stride=sparsify_stride,
+        verbose=True,
+        n_cpu=1,
+    )     
   
