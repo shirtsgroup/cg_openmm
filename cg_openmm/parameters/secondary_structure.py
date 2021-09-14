@@ -51,13 +51,24 @@ def get_native_contacts(cgmodel, native_structure_file, native_contact_distance_
         
     # Include only pairs contained in the nonbonded_interaction_list    
     nonbonded_interaction_list = cgmodel.nonbonded_interaction_list
-    native_structure_distances = distances(nonbonded_interaction_list, native_structure)
+    nonbonded_exclusion_list = cgmodel.get_nonbonded_exclusion_list()
+    
+    # Determine the true nonbonded inclusion list
+    nonbonded_inclusion_list = []
+    
+    for pair in nonbonded_interaction_list:
+        par1 = pair[0]
+        par2 = pair[1]
+        if [par1,par2] not in nonbonded_exclusion_list and [par2,par1] not in nonbonded_exclusion_list:
+            nonbonded_inclusion_list.append(pair)
+                
+    native_structure_distances = distances(nonbonded_inclusion_list, native_structure)
     native_contact_list = []
     native_contact_distances_list = []
     
-    for interaction in range(len(nonbonded_interaction_list)):
+    for interaction in range(len(nonbonded_inclusion_list)):
         if native_structure_distances[interaction] < (native_contact_distance_cutoff):
-            native_contact_list.append(nonbonded_interaction_list[interaction])
+            native_contact_list.append(nonbonded_inclusion_list[interaction])
             native_contact_distances_list.append(distances(native_contact_list, native_structure))
     
     # Units get messed up if converted using np.asarray

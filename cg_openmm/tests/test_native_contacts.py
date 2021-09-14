@@ -45,10 +45,10 @@ def test_native_contacts_pdb(tmpdir):
         
     # Set cutoff parameters:
     # Cutoff for native structure pairwise distances:
-    native_contact_cutoff = 3.5* unit.angstrom
+    native_contact_cutoff = 4.0* unit.angstrom
 
     # Tolerance for current trajectory distances:
-    native_contact_tol = 1.2
+    native_contact_tol = 1.5
     
     # Determine native contacts:
     native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
@@ -102,10 +102,10 @@ def test_native_contacts_dcd(tmpdir):
     
     # Set cutoff parameters:
     # Cutoff for native structure pairwise distances:
-    native_contact_cutoff = 3.5* unit.angstrom
+    native_contact_cutoff = 4.0* unit.angstrom
 
     # Tolerance for current trajectory distances:
-    native_contact_tol = 1.2
+    native_contact_tol = 1.5
     
     # Determine native contacts:
     native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
@@ -190,10 +190,10 @@ def test_expectations_fraction_contacts_pdb(tmpdir):
 
     # Set cutoff parameters:
     # Cutoff for native structure pairwise distances:
-    native_contact_cutoff = 5.0* unit.angstrom
+    native_contact_cutoff = 4.0* unit.angstrom
 
     # Tolerance for current trajectory distances:
-    native_contact_tol = 1.3
+    native_contact_tol = 1.5
 
     # Get native contacts:
     native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
@@ -247,7 +247,7 @@ def test_expectations_fraction_contacts_pdb(tmpdir):
     # Test free energy of folding:
     
     # Cutoff for native contact fraction folded vs. unfolded states:
-    Q_folded = 0.50
+    Q_folded = 0.40
 
     full_T_list, deltaF_values, deltaF_uncertainty = expectations_free_energy(
         Q,
@@ -346,10 +346,10 @@ def test_expectations_fraction_contacts_dcd(tmpdir):
 
     # Set cutoff parameters:
     # Cutoff for native structure pairwise distances:
-    native_contact_cutoff = 5.0* unit.angstrom
+    native_contact_cutoff = 4.0* unit.angstrom
 
     # Tolerance for current trajectory distances:
-    native_contact_tol = 1.3
+    native_contact_tol = 1.5
 
     # Get native contacts:
     native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
