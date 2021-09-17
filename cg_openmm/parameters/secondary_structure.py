@@ -69,12 +69,13 @@ def get_native_contacts(cgmodel, native_structure_file, native_contact_distance_
     for interaction in range(len(nonbonded_inclusion_list)):
         if native_structure_distances[interaction] < (native_contact_distance_cutoff):
             native_contact_list.append(nonbonded_inclusion_list[interaction])
-            native_contact_distances_list.append(distances(native_contact_list, native_structure))
+    
+    native_contact_distances_list = distances(native_contact_list, native_structure)
     
     # Units get messed up if converted using np.asarray
     native_contact_distances = np.zeros((len(native_contact_distances_list)))
     for i in range(len(native_contact_distances_list)):
-        native_contact_distances[i] = native_contact_distances_list[i][0].value_in_unit(unit.nanometer)
+        native_contact_distances[i] = native_contact_distances_list[i].value_in_unit(unit.nanometer)
     native_contact_distances *= unit.nanometer
     
     # Determine particle types of the native contacts:
