@@ -1432,8 +1432,11 @@ def test_eval_FWHM_sequences_no_change_1(tmpdir):
     num_intermediate_states = 1
 
     # Re-evaluate OpenMM energies:
-    (seq_FWHM, seq_FWHM_uncertainty,
-    seq_Cv, seq_Cv_uncertainty, seq_N_eff) = eval_energy_sequences(
+    (seq_Cv, seq_Cv_uncertainty,
+    seq_Tm, seq_Tm_uncertainty,
+    seq_Cv_height, seq_Cv_height_uncertainty,
+    seq_FWHM, seq_FWHM_uncertainty,
+    seq_N_eff) = eval_energy_sequences(
         cgmodel,
         dcd_file_list,
         temperature_list,
@@ -1524,8 +1527,11 @@ def test_eval_FWHM_sequences_no_change_2(tmpdir):
     num_intermediate_states = 1
 
     # Re-evaluate OpenMM energies:
-    (seq_FWHM, seq_FWHM_uncertainty,
-    seq_Cv, seq_Cv_uncertainty, seq_N_eff) = eval_energy_sequences(
+    (seq_Cv, seq_Cv_uncertainty,
+    seq_Tm, seq_Tm_uncertainty,
+    seq_Cv_height, seq_Cv_height_uncertainty,
+    seq_FWHM, seq_FWHM_uncertainty,
+    seq_N_eff) = eval_energy_sequences(
         cgmodel,
         dcd_file_list,
         temperature_list,
@@ -1609,8 +1615,11 @@ def test_eval_FWHM_boot_sequences_no_change_1(tmpdir):
     num_intermediate_states = 1
 
     # Re-evaluate OpenMM energies:
-    (seq_FWHM, seq_FWHM_uncertainty,
-    seq_Cv, seq_Cv_uncertainty, seq_N_eff) = eval_energy_sequences(
+    (seq_Cv, seq_Cv_uncertainty,
+    seq_Tm, seq_Tm_uncertainty,
+    seq_Cv_height, seq_Cv_height_uncertainty,
+    seq_FWHM, seq_FWHM_uncertainty,
+    seq_N_eff) = eval_energy_sequences(
         cgmodel,
         dcd_file_list,
         temperature_list,
@@ -1682,8 +1691,11 @@ def test_eval_FWHM_boot_sequences_no_change_2(tmpdir):
     num_intermediate_states = 1
 
     # Re-evaluate OpenMM energies:
-    (seq_FWHM, seq_FWHM_uncertainty,
-    seq_Cv, seq_Cv_uncertainty, seq_N_eff) = eval_energy_sequences(
+    (seq_Cv, seq_Cv_uncertainty,
+    seq_Tm, seq_Tm_uncertainty,
+    seq_Cv_height, seq_Cv_height_uncertainty,
+    seq_FWHM, seq_FWHM_uncertainty,
+    seq_N_eff) = eval_energy_sequences(
         cgmodel,
         dcd_file_list,
         temperature_list,
@@ -1773,8 +1785,11 @@ def test_eval_FWHM_sequences_AB(tmpdir):
     num_intermediate_states = 1
 
     # Re-evaluate OpenMM energies:
-    (seq_FWHM, seq_FWHM_uncertainty,
-    seq_Cv, seq_Cv_uncertainty, seq_N_eff) = eval_energy_sequences(
+    (seq_Cv, seq_Cv_uncertainty,
+    seq_Tm, seq_Tm_uncertainty,
+    seq_Cv_height, seq_Cv_height_uncertainty,
+    seq_FWHM, seq_FWHM_uncertainty,
+    seq_N_eff) = eval_energy_sequences(
         cgmodel,
         dcd_file_list,
         temperature_list,
@@ -1880,8 +1895,11 @@ def test_eval_FWHM_sequences_ABC(tmpdir):
     num_intermediate_states = 1
 
     # Re-evaluate OpenMM energies:
-    (seq_FWHM, seq_FWHM_uncertainty,
-    seq_Cv, seq_Cv_uncertainty, seq_N_eff) = eval_energy_sequences(
+    (seq_Cv, seq_Cv_uncertainty,
+    seq_Tm, seq_Tm_uncertainty,
+    seq_Cv_height, seq_Cv_height_uncertainty,
+    seq_FWHM, seq_FWHM_uncertainty,
+    seq_N_eff) = eval_energy_sequences(
         cgmodel,
         dcd_file_list,
         temperature_list,
@@ -1984,8 +2002,11 @@ def test_eval_FWHM_sequences_multi_1(tmpdir):
     num_intermediate_states = 1
 
     # Re-evaluate OpenMM energies:
-    (seq_FWHM, seq_FWHM_uncertainty,
-    seq_Cv, seq_Cv_uncertainty, seq_N_eff) = eval_energy_sequences(
+    (seq_Cv, seq_Cv_uncertainty,
+    seq_Tm, seq_Tm_uncertainty,
+    seq_Cv_height, seq_Cv_height_uncertainty,
+    seq_FWHM, seq_FWHM_uncertainty,
+    seq_N_eff) = eval_energy_sequences(
         cgmodel,
         dcd_file_list,
         temperature_list,
@@ -2088,8 +2109,11 @@ def test_eval_FWHM_sequences_multi_2(tmpdir):
     num_intermediate_states = 1
 
     # Re-evaluate OpenMM energies:
-    (seq_FWHM, seq_FWHM_uncertainty,
-    seq_Cv, seq_Cv_uncertainty, seq_N_eff) = eval_energy_sequences(
+    (seq_Cv, seq_Cv_uncertainty,
+    seq_Tm, seq_Tm_uncertainty,
+    seq_Cv_height, seq_Cv_height_uncertainty,
+    seq_FWHM, seq_FWHM_uncertainty,
+    seq_N_eff) = eval_energy_sequences(
         cgmodel,
         dcd_file_list,
         temperature_list,

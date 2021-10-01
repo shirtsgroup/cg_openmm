@@ -956,10 +956,18 @@ def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, se
     beta_all_kJ_mol = 1/(kB.in_units_of(unit.kilojoule_per_mole/unit.kelvin)*temperature_list)    
     
     # Set up results dicts:
-    seq_FWHM = {}
-    seq_FWHM_uncertainty = {}
     seq_Cv = {}
     seq_Cv_uncertainty = {}
+
+    seq_Tm = {}
+    seq_Tm_uncertainty = {}
+    
+    seq_Cv_height = {}
+    seq_Cv_height_uncertainty = {}
+    
+    seq_FWHM = {}
+    seq_FWHM_uncertainty = {}    
+    
     seq_N_eff = {}
     
     for seq in seq_unique:
@@ -1076,15 +1084,23 @@ def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, se
         
         seq_time_cv_done = time.perf_counter()
         if verbose:
-            print(f'Cv eval done ({seq_time_cv_done-seq_time_energies_done:.4f} s)')
+            print(f'Cv eval done ({seq_time_cv_done-seq_time_energies_done:.4f} s)\n')
+        
+        seq_Cv[seq_print] = C_v_values
+        seq_Cv_uncertainty[seq_print] = C_v_uncertainty
+        
+        seq_Tm[seq_print] = Tm_value
+        seq_Tm_uncertainty[seq_print] = Tm_uncertainty
+        
+        seq_Cv_height[seq_print] = Cv_height_value
+        seq_Cv_height_uncertainty[seq_print] = Cv_height_uncertainty        
         
         seq_FWHM[seq_print] = FWHM_value
         seq_FWHM_uncertainty[seq_print] = FWHM_uncertainty
-        seq_Cv[seq_print] = C_v_values
-        seq_Cv_uncertainty[seq_print] = C_v_uncertainty
+        
         seq_N_eff[seq_print] = N_eff_values
     
-    return seq_FWHM, seq_FWHM_uncertainty, seq_Cv, seq_Cv_uncertainty, seq_N_eff
+    return seq_Cv, seq_Cv_uncertainty, seq_Tm, seq_Tm_uncertainty, seq_Cv_height, seq_Cv_height_uncertainty, seq_FWHM, seq_FWHM_uncertainty, seq_N_eff
 
 
 def get_replica_reeval_energies(replica, temperature_list, file_list, topology, system,
