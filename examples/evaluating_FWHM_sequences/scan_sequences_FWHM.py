@@ -120,8 +120,11 @@ frame_end = -1
 n_trial_boot = 200          # Number of bootstraping trials
 num_intermediate_states = 3 # Number of intemediate temperature states for MBAR calculation
 
-(seq_FWHM, seq_FWHM_uncertainty,
-seq_Cv, seq_Cv_uncertainty, seq_N_eff) = eval_energy_sequences(
+(seq_Cv, seq_Cv_uncertainty,
+seq_Tm, seq_Tm_uncertainty,
+seq_Cv_height, seq_Cv_height_uncertainty,
+seq_FWHM, seq_FWHM_uncertainty,
+seq_N_eff) = eval_energy_sequences(
     cgmodel, rep_traj_file_list, temperature_list, monomer_list,
     output_data=output_data, sequence=seq_list, 
     frame_begin=frame_begin, frame_end=frame_end, sparsify_stride=sparsify_stride,
