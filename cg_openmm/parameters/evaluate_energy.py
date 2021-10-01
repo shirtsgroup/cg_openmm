@@ -720,10 +720,15 @@ def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, se
     :type n_cpu: int
 
     :returns:
-        - seq_FWHM - dictionary mapping sequences to their Cv full-width half-maximum
-        - seq_FWHM_uncertainty - dictionary mapping sequences to uncertainty in FWHM (1 standard deviation)
+        - T_list - 1d array of temperatures used in the Cv calculation, including intermediate states ( np.array (float * unit.kelvin) )
         - seq_Cv - dictionary mapping sequences to their Cv vs. temperature curve
         - seq_Cv_uncertainty - dictionary mapping sequences to uncertainty in Cv
+        - seq_Tm - dictionary mapping sequences to their Cv melting point
+        - seq_Tm_uncertainty - dictionary mapping sequences to uncertainty in melting point (1 standard deviation)       
+        - seq_FWHM - dictionary mapping sequences to their Cv full-width half-maximum
+        - seq_FWHM_uncertainty - dictionary mapping sequences to uncertainty in FWHM (1 standard deviation)
+        - seq_Cv_height - dictionary mapping sequences to their Cv relative peak height
+        - seq_Cv_height_uncertainty - dictionary mapping sequences to uncertainty in Cv height (1 standard deviation)
         - seq_N_eff - dictionary mapping sequences to MBAR number of effective samples for all states
     """
 
@@ -1100,7 +1105,7 @@ def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, se
         
         seq_N_eff[seq_print] = N_eff_values
     
-    return seq_Cv, seq_Cv_uncertainty, seq_Tm, seq_Tm_uncertainty, seq_Cv_height, seq_Cv_height_uncertainty, seq_FWHM, seq_FWHM_uncertainty, seq_N_eff
+    return T_list, seq_Cv, seq_Cv_uncertainty, seq_Tm, seq_Tm_uncertainty, seq_Cv_height, seq_Cv_height_uncertainty, seq_FWHM, seq_FWHM_uncertainty, seq_N_eff
 
 
 def get_replica_reeval_energies(replica, temperature_list, file_list, topology, system,

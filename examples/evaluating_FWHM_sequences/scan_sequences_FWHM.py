@@ -120,7 +120,7 @@ frame_end = -1
 n_trial_boot = 200          # Number of bootstraping trials
 num_intermediate_states = 3 # Number of intemediate temperature states for MBAR calculation
 
-(seq_Cv, seq_Cv_uncertainty,
+(T_list, seq_Cv, seq_Cv_uncertainty,
 seq_Tm, seq_Tm_uncertainty,
 seq_Cv_height, seq_Cv_height_uncertainty,
 seq_FWHM, seq_FWHM_uncertainty,
