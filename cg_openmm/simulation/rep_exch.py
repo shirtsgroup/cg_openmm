@@ -29,7 +29,7 @@ kB = (unit.MOLAR_GAS_CONSTANT_R).in_units_of(unit.kilojoule / (unit.kelvin * uni
 def make_replica_dcd_files(
     topology, timestep=5*unit.femtosecond, time_interval=200,
     output_dir="output", output_data="output.nc", checkpoint_data="output_checkpoint.nc",
-    frame_begin=0, frame_stride=1):
+    frame_begin=0, frame_stride=1, center=False):
     """
     Make dcd files from replica exchange simulation trajectory data.
     
@@ -55,7 +55,10 @@ def make_replica_dcd_files(
     :type frame_begin: int
     
     :param frame_stride: advance by this many time intervals when writing dcd trajectories (default=1)
-    :type frame_stride: int 
+    :type frame_stride: int
+    
+    :param center: align all frames in the replica trajectories (default=False)
+    :type center: Boolean
     """
     
     file_list = []
@@ -93,6 +96,11 @@ def make_replica_dcd_files(
             Topology.from_openmm(topology),
             time=traj_times,
         )
+        
+        if center:
+            ref_traj = replica_traj[0]
+            replica_traj.superpose(ref_traj)
+            # This rewrites to replica_traj        
             
         Trajectory.save_dcd(replica_traj,file_name)
         
@@ -101,7 +109,7 @@ def make_replica_dcd_files(
 
 def make_replica_pdb_files(
     topology, output_dir="output", output_data="output.nc", checkpoint_data="output_checkpoint.nc",
-    frame_begin=0, frame_stride=1):
+    frame_begin=0, frame_stride=1, center=False):
     """
     Make pdb files from replica exchange simulation trajectory data.
     
@@ -121,7 +129,10 @@ def make_replica_pdb_files(
     :type frame_begin: int    
     
     :param frame_stride: advance by this many frames when writing pdb trajectories (default=1)
-    :type frame_stride: int   
+    :type frame_stride: int
+
+    :param center: align all frames in the replica trajectories (default=False)
+    :type center: Boolean    
     
     :returns:
         - file_list ( List( str ) ) - A list of names for the files that were written
@@ -150,6 +161,11 @@ def make_replica_pdb_files(
             replica_positions,
             Topology.from_openmm(topology),
         )
+        
+        if center:
+            ref_traj = replica_traj[0]
+            replica_traj.superpose(ref_traj)
+            # This rewrites to replica_traj                
             
         Trajectory.save_pdb(replica_traj,file_name)
         
