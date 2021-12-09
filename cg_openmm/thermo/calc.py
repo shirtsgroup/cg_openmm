@@ -445,6 +445,7 @@ def get_partial_heat_capacities(array_folded_states,
           - Tm ( float ) - For each conformational class, melting point from heat capacity vs T
           - Cv_height ( float ) - For each conformational class, relative height of heat capacity peak
           - ***N_eff( np.array( float ) ) - The number of effective samples at all (including inserted intermediates) states
+          - U_expect_confs ( dict ( np.array( float ) ) - For each conformational class, the energy expectations (in kJ/mol) at each T, including intermediate states
     """    
 
     if bootstrap_energies is not None:
@@ -585,6 +586,9 @@ def get_partial_heat_capacities(array_folded_states,
                 break
                 
     # Compute the expectations for each conformational class:
+    # These are also needed in the heat capacity decomposition,
+    # for the term involving the square of the energy expectation
+    # differences.
     for c in range(n_conf_states):
         U_expect_confs[c] = num_confs[c]/den_confs[c]
         
@@ -638,7 +642,11 @@ def get_partial_heat_capacities(array_folded_states,
     # Uncertainty directly from mbar not implemented here yet    
     dCv_partial = None
     
-    return (Cv_partial, dCv_partial, full_T_list[0:n_T_vals], FWHM_partial, Tm_partial, Cv_height_partial)
+    # Slice the U_expect_confs arrays to correspond to the output temperature list, and add back units:
+    for c in range(n_conf_states):
+        U_expect_confs[c] = U_expect_confs[c][0:n_T_vals]*unit.kilojoule_per_mole
+    
+    return (Cv_partial, dCv_partial, full_T_list[0:n_T_vals], FWHM_partial, Tm_partial, Cv_height_partial, U_expect_confs)
 
     
 def get_heat_capacity_reeval(
@@ -934,7 +942,20 @@ def bootstrap_partial_heat_capacities(array_folded_states,
     :type conf_percent: float
     
     :param n_trial_boot: number of trials to run for generating bootstrapping uncertainties (default=200)
-    :type n_trial_boot: int    
+    :type n_trial_boot: int   
+
+    :returns:
+       - T_list ( np.array ( float * unit.simtk.temperature ) ) - The temperature list corresponding to the heat capacity values in 'Cv'
+       - Cv_values ( dict ( np.array ( float * kJ/mol/K ) ) ) - The heat capacity values for all (including inserted intermediates) states
+       - Cv_uncertainty ( dict ( Tuple ( np.array(float) * kJ/mol/K ) ) ) - confidence interval for all Cv_values computed from bootstrapping
+       - Tm_value ( dict ( float * unit.simtk.temperature ) ) - Melting point mean value computed from bootstrapping
+       - Tm_uncertainty ( dict ( Tuple ( float * unit.simtk.temperature ) ) ) - confidence interval for melting point computed from bootstrapping
+       - Cv_height_value ( dict ( float * kJ/mol/K ) ) - Height of the Cv peak relative to the lowest value over the temperature range used.
+       - Cv_height_uncertainty ( dict ( Tuple ( np.array(float) * kJ/mol/K ) ) ) - confidence interval for all Cv_height_value computed from bootstrapping
+       - FWHM_value ( dict ( float * unit.simtk.temperature ) ) - Cv full width half maximum mean value computed from bootstrapping
+       - FWHM_uncertainty ( dict ( Tuple ( float * unit.simtk.temperature ) ) ) - confidence interval for Cv full width half maximum computed from bootstrapping
+       - U_expect_values ( dict ( np.array ( float * kJ/mol ) ) ) - Energy expectation values for each conformational state, at each T in T_list
+       - U_expect_uncertainty ( dict ( Tuple ( np.array(float) * kJ/mol ) ) ) - confidence interval for U_expect_values computed from bootstrapping
     """
     
     # extract reduced energies and the state indices from the .nc
@@ -963,6 +984,9 @@ def bootstrap_partial_heat_capacities(array_folded_states,
     # Store data for each sampling trial:
     Cv_partial_values_boot = {}
     Cv_partial_uncertainty_boot = {}
+    
+    U_expect_confs_boot = {}
+    
     N_eff_boot = {}
     
     Tm_boot = {}
@@ -1002,7 +1026,7 @@ def bootstrap_partial_heat_capacities(array_folded_states,
               
         # Run standard heat capacity expectation calculation:
         (Cv_partial_values_boot[i_boot], Cv_partial_uncertainty_boot_out, T_list,
-        FWHM_curr, Tm_curr, Cv_height_curr) = get_partial_heat_capacities(
+        FWHM_curr, Tm_curr, Cv_height_curr, U_expect_confs_boot[i_boot]) = get_partial_heat_capacities(
             array_folded_states_resample,
             output_data=output_data,
             num_intermediate_states=num_intermediate_states,
@@ -1012,11 +1036,13 @@ def bootstrap_partial_heat_capacities(array_folded_states,
             )
             
         # Cv_partial_values_boot[i_boot] is a dict mapping {state:Cv_array}
+        # U_expect_confs_boot[i_boot] is likewise a dict mapping {state:U_expect_array}
         # T_list is just a single 1d array
             
         if i_boot == 0:
             # Get units:
             Cv_unit = Cv_partial_values_boot[0][0][0].unit
+            U_unit = U_expect_confs_boot[0][0][0].unit
             T_unit = T_list[0].unit
             
         # To assign to array elements, need to strip units:
@@ -1029,30 +1055,37 @@ def bootstrap_partial_heat_capacities(array_folded_states,
     
     # Convert bootstrap trial dicts to arrays 
     # The keys of Cv_partial_values_boot are [i_boot][state]
+    # The keys of U_expect_confs_boot are [i_boot][state]
     
     arr_Cv_values_boot = {}
+    arr_U_expect_confs_boot = {}
     arr_N_eff_boot = {}
     
     for c in range(n_conf_states):
         arr_Cv_values_boot[c] = np.zeros((n_trial_boot, len(T_list)))
+        arr_U_expect_confs_boot[c] = np.zeros((n_trial_boot, len(T_list)))
         
         for i_boot in range(n_trial_boot):
             arr_Cv_values_boot[c][i_boot,:] = Cv_partial_values_boot[i_boot][c].value_in_unit(Cv_unit)
+            arr_U_expect_confs_boot[c][i_boot,:] = U_expect_confs_boot[i_boot][c].value_in_unit(U_unit)
             
     # Compute mean values:
     Cv_values = {}
+    U_expect_values = {}
     Cv_height_value = {}
     Tm_value = {}
     FWHM_value = {}
     
     for c in range(n_conf_states):
-        Cv_values[c] = np.mean(arr_Cv_values_boot[c],axis=0)*Cv_unit      
+        Cv_values[c] = np.mean(arr_Cv_values_boot[c],axis=0)*Cv_unit
+        U_expect_values[c] = np.mean(arr_U_expect_confs_boot[c],axis=0)*U_unit
         Cv_height_value[c] = np.mean(Cv_height_boot[c])*Cv_unit
         Tm_value[c] = np.mean(Tm_boot[c])*T_unit
         FWHM_value[c] = np.mean(FWHM_boot[c])*T_unit
     
     # Compute confidence intervals:
     Cv_uncertainty = {}
+    U_expect_uncertainty = {}
     Cv_height_uncertainty = {}        
     Tm_uncertainty = {}
     FWHM_uncertainty = {}    
@@ -1064,6 +1097,10 @@ def bootstrap_partial_heat_capacities(array_folded_states,
             # Cv values:
             Cv_std = np.std(arr_Cv_values_boot[c],axis=0)
             Cv_uncertainty[c] = (-Cv_std*Cv_unit, Cv_std*Cv_unit)
+        
+            # U expectation values:
+            U_std = np.std(arr_U_expect_confs_boot[c],axis=0)
+            U_expect_uncertainty[c] = (-U_std*U_unit, U_std*U_unit)
         
             # Cv peak height:
             Cv_height_std = np.std(Cv_height_boot[c])
@@ -1088,34 +1125,42 @@ def bootstrap_partial_heat_capacities(array_folded_states,
             Cv_conf_lo = np.percentile(Cv_diff,p_lo,axis=0,interpolation='linear')
             Cv_conf_hi = np.percentile(Cv_diff,p_hi,axis=0,interpolation='linear')
           
-            Cv_uncertainty[c] = (Cv_conf_lo*Cv_unit, Cv_conf_hi*Cv_unit) 
+            Cv_uncertainty[c] = (Cv_conf_lo*Cv_unit, Cv_conf_hi*Cv_unit)
                         
+            # U expectation values:            
+            U_diff = arr_U_expect_confs_boot[c]-np.mean(arr_U_expect_confs_boot[c],axis=0)
+            U_conf_lo = np.percentile(U_diff,p_lo,axis=0,interpolation='linear')
+            U_conf_hi = np.percentile(U_diff,p_hi,axis=0,interpolation='linear')
+          
+            U_expect_uncertainty[c] = (U_conf_lo*U_unit, U_conf_hi*U_unit)
+            
             # Cv peak height:                
             Cv_height_diff = Cv_height_boot[c]-np.mean(Cv_height_boot[c])
             Cv_height_conf_lo = np.percentile(Cv_height_diff,p_lo,interpolation='linear')
             Cv_height_conf_hi = np.percentile(Cv_height_diff,p_hi,interpolation='linear')
             
-            Cv_height_uncertainty[c] = (Cv_height_conf_lo*Cv_unit, Cv_height_conf_hi*Cv_unit)                  
+            Cv_height_uncertainty[c] = (Cv_height_conf_lo*Cv_unit, Cv_height_conf_hi*Cv_unit)        
             
             # Melting point: 
             Tm_diff = Tm_boot[c]-np.mean(Tm_boot[c])
             Tm_conf_lo = np.percentile(Tm_diff,p_lo,interpolation='linear')
             Tm_conf_hi = np.percentile(Tm_diff,p_hi,interpolation='linear')
             
-            Tm_uncertainty[c] = (Tm_conf_lo*T_unit, Tm_conf_hi*T_unit)  
+            Tm_uncertainty[c] = (Tm_conf_lo*T_unit, Tm_conf_hi*T_unit)
             
             # Full width half maximum:
             FWHM_diff = FWHM_boot[c]-np.mean(FWHM_boot[c])
             FWHM_conf_lo = np.percentile(FWHM_diff,p_lo,interpolation='linear')
             FWHM_conf_hi = np.percentile(FWHM_diff,p_hi,interpolation='linear')
             
-            FWHM_uncertainty[c] = (FWHM_conf_lo*T_unit, FWHM_conf_hi*T_unit) 
+            FWHM_uncertainty[c] = (FWHM_conf_lo*T_unit, FWHM_conf_hi*T_unit)
     
     # Plot and return the heat capacity (with units)
     if plot_file is not None:
         plot_partial_heat_capacities(Cv_values, Cv_uncertainty, T_list, file_name=plot_file)
-                    
-    return T_list, Cv_values, Cv_uncertainty, Tm_value, Tm_uncertainty, Cv_height_value, Cv_height_uncertainty, FWHM_value, FWHM_uncertainty
+
+    return (T_list, Cv_values, Cv_uncertainty, Tm_value, Tm_uncertainty, Cv_height_value, Cv_height_uncertainty,
+        FWHM_value, FWHM_uncertainty, U_expect_values, U_expect_uncertainty)
     
 
 def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_file='heat_capacity_boot.pdf',
@@ -1175,7 +1220,6 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
        - FWHM_value ( float * unit.simtk.temperature ) - Cv full width half maximum mean value computed from bootstrapping
        - FWHM_uncertainty ( Tuple ( float * unit.simtk.temperature ) ) - confidence interval for Cv full width half maximum computed from bootstrapping
        - N_eff_values ( np.array( float ) ) -  The bootstrap mean number of effective samples at all simulated and non-simulated (including inserted intermediates) states
-    
     """
     
     # extract reduced energies and the state indices from the .nc
