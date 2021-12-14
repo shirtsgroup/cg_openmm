@@ -468,7 +468,7 @@ def test_optimize_Q_helix_tol_dcd(tmpdir):
     # Replica exchange settings
     number_replicas = 12
     min_temp = 200.0 * unit.kelvin
-    max_temp = 300.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
     temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
 
     # Load in cgmodel
@@ -513,7 +513,7 @@ def test_optimize_Q_cut_1d_dcd(tmpdir):
     # Replica exchange settings
     number_replicas = 12
     min_temp = 200.0 * unit.kelvin
-    max_temp = 300.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
     temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
 
     # Load in cgmodel
@@ -558,7 +558,7 @@ def test_optimize_Q_cut_1d_dcd_bounds_1(tmpdir):
     # Replica exchange settings
     number_replicas = 12
     min_temp = 200.0 * unit.kelvin
-    max_temp = 300.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
     temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
 
     # Load in cgmodel
@@ -604,7 +604,7 @@ def test_optimize_Q_cut_1d_dcd_bounds_2(tmpdir):
     # Replica exchange settings
     number_replicas = 12
     min_temp = 200.0 * unit.kelvin
-    max_temp = 300.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
     temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
 
     # Load in cgmodel
@@ -647,7 +647,7 @@ def test_optimize_Q_cut_pdb(tmpdir):
     # Replica exchange settings
     number_replicas = 12
     min_temp = 200.0 * unit.kelvin
-    max_temp = 300.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
     temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
 
     # Load in cgmodel
@@ -673,7 +673,7 @@ def test_optimize_Q_cut_pdb(tmpdir):
         frame_stride=200,
         verbose=True,
         plotfile=f'{output_directory}/native_contacts_opt.pdf',
-        minimizer_options={'seed':17, 'maxiter':3, 'atol':0.2},
+        minimizer_options={'seed':17, 'maxiter':3, 'atol':0.5},
         )   
         
     assert os.path.isfile(f'{output_directory}/native_contacts_opt.pdf')
@@ -688,7 +688,7 @@ def test_optimize_Q_cut_dcd(tmpdir):
     # Replica exchange settings
     number_replicas = 12
     min_temp = 200.0 * unit.kelvin
-    max_temp = 300.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
     temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
 
     # Load in cgmodel
@@ -714,7 +714,7 @@ def test_optimize_Q_cut_dcd(tmpdir):
         frame_stride=200,
         verbose=True,
         plotfile=f'{output_directory}/native_contacts_opt.pdf',
-        minimizer_options={'seed':17, 'maxiter':3, 'atol':0.2},
+        minimizer_options={'seed':17, 'maxiter':3, 'atol':0.5},
         )
         
     assert os.path.isfile(f'{output_directory}/native_contacts_opt.pdf')
@@ -733,7 +733,7 @@ def test_optimize_Q_cut_dcd_bounds_1(tmpdir):
     # Replica exchange settings
     number_replicas = 12
     min_temp = 200.0 * unit.kelvin
-    max_temp = 300.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
     temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
 
     # Load in cgmodel
@@ -780,7 +780,7 @@ def test_optimize_Q_cut_dcd_bounds_2(tmpdir):
     # Replica exchange settings
     number_replicas = 12
     min_temp = 200.0 * unit.kelvin
-    max_temp = 300.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
     temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
 
     # Load in cgmodel
