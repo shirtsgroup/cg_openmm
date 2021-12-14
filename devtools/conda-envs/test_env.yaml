@@ -24,6 +24,7 @@ dependencies:
   # Pip-only installs
   - pip:
     - codecov
+    - tomli = 1.2
     - git+https://github.com/shirtsgroup/physical-validation.git
     - git+https://github.com/shirtsgroup/analyze_foldamers.git
 
