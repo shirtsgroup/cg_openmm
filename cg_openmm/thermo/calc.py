@@ -79,6 +79,9 @@ def plot_partial_heat_capacities(Cv_partial, dCv, temperature_list, file_name="h
     
     for key, value in Cv_partial.items(): 
         Cvunit = value.unit
+        
+        Cv = np.array(value)    
+        
         if dCv is not None:
             if type(dCv[key]) == tuple:
                 # Lower and upper uncertainty values given for each point
@@ -90,15 +93,21 @@ def plot_partial_heat_capacities(Cv_partial, dCv, temperature_list, file_name="h
             else:
                 # Single uncertainty value given for each point
                 dCv[key] = np.array(dCv[key])
-            
-        Cv = np.array(value)    
-            
-        plt.errorbar(
-            temperature_list,
-            Cv,
-            yerr=dCv[key],
-            label=f'state {key}',
-            )
+
+            plt.errorbar(
+                temperature_list,
+                Cv,
+                yerr=dCv[key],
+                label=f'state {key}',
+                )
+        
+        else:
+            # Uncertainty is None
+            plt.errorbar(
+                temperature_list,
+                Cv,
+                label=f'state {key}',
+                )
 
     plt.legend(
         loc='upper left',
