@@ -295,6 +295,9 @@ def get_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, output_data
     for s in states:
         temperature_list.append(s.temperature)
     
+    # Close the data file - repeatedly opening the same .nc can cause seg faults:
+    reporter.close()       
+    
     # determine the numerical values of beta at each state in units consistent with the temperature
     Tunit = temperature_list[0].unit
     temps = np.array([temp.value_in_unit(Tunit)  for temp in temperature_list])  # should this just be array to begin with
@@ -484,13 +487,16 @@ def get_partial_heat_capacities(array_folded_states,
             array_folded_states = array_folded_states[:frame_end:sample_spacing,:]
         else:
             array_folded_states = array_folded_states[::sample_spacing,:]
-            
+     
     # Get the temperature list from .nc file:
     states = reporter.read_thermodynamic_states()[0]
     
     temperature_list = []
     for s in states:
         temperature_list.append(s.temperature)
+    
+    # Close the data file - repeatedly opening the same .nc can cause seg faults:
+    reporter.close()    
     
     # determine the numerical values of beta at each state in units consistent with the temperature
     Tunit = temperature_list[0].unit
@@ -739,7 +745,7 @@ def get_heat_capacity_reeval(
             replica_energies_sampled = replica_energies_all[:,:,frame_begin:frame_end:sample_spacing]
         else:
             replica_energies_sampled = replica_energies_all[:,:,frame_begin::sample_spacing]
-        
+       
     # Check number of samples:
     # ***Multiple trajectories: check consistency of each pair
     if replica_energies_sampled.shape[2] != U_kln.shape[2]:    
@@ -753,6 +759,9 @@ def get_heat_capacity_reeval(
     temperature_list = []
     for s in states:
         temperature_list.append(s.temperature)    
+    
+    # Close the data file - repeatedly opening the same .nc can cause seg faults:
+    reporter.close()    
     
     # determine the numerical values of beta at each state in units consistent with the temperature
     Tunit = temperature_list[0].unit
@@ -975,7 +984,10 @@ def bootstrap_partial_heat_capacities(array_folded_states,
         unsampled_state_energies,
         neighborhoods,
         replica_state_indices,
-    ) = analyzer.read_energies()    
+    ) = analyzer.read_energies()
+    
+    # Close the data file - repeatedly opening the same .nc can cause seg faults:
+    reporter.close()
     
     if frame_end > 0:
         replica_energies_all = replica_energies_all[:,:,frame_begin:frame_end]
@@ -1240,6 +1252,9 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
         neighborhoods,
         replica_state_indices,
     ) = analyzer.read_energies()    
+    
+    # Close the data file - repeatedly opening the same .nc can cause seg faults:
+    reporter.close()    
     
     # If we sparsified replica energies when reevaluating energies, need to apply it here:
     if frame_end > 0:
