@@ -141,7 +141,7 @@ def test_helix_contacts_dcd(tmpdir):
     # Replica exchange settings
     number_replicas = 12
     min_temp = 200.0 * unit.kelvin
-    max_temp = 300.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
     temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
     
     # Load in cgmodel
@@ -195,6 +195,9 @@ def test_expectations_fraction_contacts_pdb(tmpdir):
     # Tolerance for current trajectory distances:
     native_contact_tol = 1.5
 
+    # Set starting frame:
+    frame_begin = 200
+
     # Get native contacts:
     native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
         cgmodel,
@@ -207,7 +210,7 @@ def test_expectations_fraction_contacts_pdb(tmpdir):
         pdb_file_list,
         native_contact_list,
         native_contact_distances,
-        frame_begin=100,
+        frame_begin=frame_begin,
         native_contact_tol=native_contact_tol,
     )
     
@@ -215,7 +218,7 @@ def test_expectations_fraction_contacts_pdb(tmpdir):
     # plot Q vs. frame
     plot_native_contact_timeseries(
         Q,
-        frame_begin=100,
+        frame_begin=frame_begin,
         time_interval=1*unit.picosecond,
         plot_per_page=3,
         plotfile=f"{output_directory}/Q_vs_time.pdf",
@@ -229,7 +232,7 @@ def test_expectations_fraction_contacts_pdb(tmpdir):
 
     results = expectations_fraction_contacts(
         Q,
-        frame_begin=100,
+        frame_begin=frame_begin,
         output_data=output_data,
         num_intermediate_states=num_intermediate_states,
     )
@@ -253,7 +256,7 @@ def test_expectations_fraction_contacts_pdb(tmpdir):
         Q,
         Q_folded,
         temperature_list,
-        frame_begin=100,
+        frame_begin=frame_begin,
         output_data=output_data,
         num_intermediate_states=num_intermediate_states,
     )
@@ -288,7 +291,7 @@ def test_expectations_fraction_contacts_pdb(tmpdir):
         deltaH_values_boot, deltaH_uncertainty_boot) = bootstrap_free_energy_folding(
         Q,
         Q_folded,
-        frame_begin=100,
+        frame_begin=frame_begin,
         sample_spacing=2,
         output_data=output_data,
         num_intermediate_states=num_intermediate_states,
@@ -307,7 +310,7 @@ def test_expectations_fraction_contacts_pdb(tmpdir):
         deltaH_values_boot, deltaH_uncertainty_boot) = bootstrap_free_energy_folding(
         Q,
         Q_folded,
-        frame_begin=100,
+        frame_begin=frame_begin,
         sample_spacing=2,
         output_data=output_data,
         num_intermediate_states=num_intermediate_states,
@@ -491,7 +494,7 @@ def test_optimize_Q_helix_tol_dcd(tmpdir):
         num_intermediate_states=0,
         output_data=output_data,
         frame_begin=100,
-        frame_stride=20,
+        frame_stride=100,
         verbose=True,
         plotfile=f'{output_directory}/native_contacts_helix_opt.pdf',
         backbone_type_name='bb',
@@ -537,7 +540,7 @@ def test_optimize_Q_cut_1d_dcd(tmpdir):
         output_data=output_data,
         native_contact_tol=1.3,
         frame_begin=100,
-        frame_stride=200,
+        frame_stride=100,
         verbose=True,
         plotfile=f'{output_directory}/native_contacts_opt_1d.pdf',
         brute_step=0.2,
@@ -582,7 +585,7 @@ def test_optimize_Q_cut_1d_dcd_bounds_1(tmpdir):
         output_data=output_data,
         native_contact_tol=1.3,
         frame_begin=100,
-        frame_stride=200,
+        frame_stride=100,
         verbose=True,
         plotfile=f'{output_directory}/native_contacts_opt_1d.pdf',
         brute_step=0.2,
@@ -628,7 +631,7 @@ def test_optimize_Q_cut_1d_dcd_bounds_2(tmpdir):
         output_data=output_data,
         native_contact_tol=1.3,
         frame_begin=100,
-        frame_stride=200,
+        frame_stride=100,
         verbose=True,
         plotfile=f'{output_directory}/native_contacts_opt_1d.pdf',
         brute_step=0.2,
@@ -670,7 +673,7 @@ def test_optimize_Q_cut_pdb(tmpdir):
         num_intermediate_states=0,
         output_data=output_data,
         frame_begin=100,
-        frame_stride=200,
+        frame_stride=100,
         verbose=True,
         plotfile=f'{output_directory}/native_contacts_opt.pdf',
         minimizer_options={'seed':17, 'maxiter':3, 'atol':0.5},
@@ -711,7 +714,7 @@ def test_optimize_Q_cut_dcd(tmpdir):
         num_intermediate_states=0,
         output_data=output_data,
         frame_begin=100,
-        frame_stride=200,
+        frame_stride=100,
         verbose=True,
         plotfile=f'{output_directory}/native_contacts_opt.pdf',
         minimizer_options={'seed':17, 'maxiter':3, 'atol':0.5},

@@ -381,64 +381,62 @@ def test_physical_validation_1(tmpdir):
         pairs='single',
         ref_state_index=1,
     )
-    
-#***Tests 2-5 of physical_validation lead to seg fault:
 
-# def test_physical_validation_2(tmpdir):
-    # """Test physical validation ensemble check"""
+def test_physical_validation_2(tmpdir):
+    """Test physical validation ensemble check"""
     
-    # plot_directory = tmpdir.mkdir("plot_output")
-    # output_data = os.path.join(data_path,"output.nc")    
+    plot_directory = tmpdir.mkdir("plot_output")
+    output_data = os.path.join(data_path,"output.nc")    
     
-    # # 2) Pair option: 'adjacent'
-    # quantiles = physical_validation_ensemble(
-        # output_data=output_data,
-        # output_directory=data_path,
-        # plotfile=f"{plot_directory}ensemble_check",
-        # pairs='adjacent',
-    # )
+    # 2) Pair option: 'adjacent'
+    quantiles = physical_validation_ensemble(
+        output_data=output_data,
+        output_directory=data_path,
+        plotfile=f"{plot_directory}ensemble_check",
+        pairs='adjacent',
+    )
     
     
-# def test_physical_validation_3(tmpdir):
-    # """Test physical validation ensemble check"""
+def test_physical_validation_3(tmpdir):
+    """Test physical validation ensemble check"""
     
-    # plot_directory = tmpdir.mkdir("plot_output")
-    # output_data = os.path.join(data_path,"output.nc")    
+    plot_directory = tmpdir.mkdir("plot_output")
+    output_data = os.path.join(data_path,"output.nc")    
     
-    # # 3) Pair option: 'all'
-    # quantiles = physical_validation_ensemble(
-        # output_data=output_data,
-        # output_directory=data_path,
-        # plotfile=f"{plot_directory}ensemble_check",
-        # pairs='all',
-    # )
+    # 3) Pair option: 'all'
+    quantiles = physical_validation_ensemble(
+        output_data=output_data,
+        output_directory=data_path,
+        plotfile=f"{plot_directory}ensemble_check",
+        pairs='all',
+    )
     
 
-# def test_physical_validation_4(tmpdir):
-    # """Test physical validation ensemble check"""
+def test_physical_validation_4(tmpdir):
+    """Test physical validation ensemble check"""
     
-    # plot_directory = tmpdir.mkdir("plot_output")
-    # output_data = os.path.join(data_path,"output.nc")        
+    plot_directory = tmpdir.mkdir("plot_output")
+    output_data = os.path.join(data_path,"output.nc")        
     
-    # # 4) Pair option: default
-    # quantiles = physical_validation_ensemble(
-        # output_data=output_data,
-        # output_directory=data_path,
-        # plotfile=f"{plot_directory}ensemble_check",
-    # )
+    # 4) Pair option: default
+    quantiles = physical_validation_ensemble(
+        output_data=output_data,
+        output_directory=data_path,
+        plotfile=f"{plot_directory}ensemble_check",
+    )
     
     
-# def test_physical_validation_5(tmpdir):
-    # """Test physical validation ensemble check"""
+def test_physical_validation_5(tmpdir):
+    """Test physical validation ensemble check"""
     
-    # plot_directory = tmpdir.mkdir("plot_output")
-    # output_data = os.path.join(data_path,"output.nc")        
+    plot_directory = tmpdir.mkdir("plot_output")
+    output_data = os.path.join(data_path,"output.nc")        
     
-    # # 5) Pair option: default from bad pair style
-    # quantiles = physical_validation_ensemble(
-        # output_data=output_data,
-        # output_directory=data_path,
-        # plotfile=f"{plot_directory}ensemble_check",
-        # pairs='invalid',
-    # )
+    # 5) Pair option: default from bad pair style
+    quantiles = physical_validation_ensemble(
+        output_data=output_data,
+        output_directory=data_path,
+        plotfile=f"{plot_directory}ensemble_check",
+        pairs='invalid',
+    )
     
