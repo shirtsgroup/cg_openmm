@@ -291,6 +291,9 @@ def expectations_fraction_contacts(fraction_native_contacts, frame_begin=0, samp
     for s in states:
         temperature_list.append(s.temperature)
 
+    # Close the data file:
+    reporter.close()
+
     # determine the numerical values of beta at each state in units consistent with the temperature
     Tunit = temperature_list[0].unit
     temps = np.array([temp.value_in_unit(Tunit)  for temp in temperature_list])  # should this just be array to begin with
@@ -1187,6 +1190,8 @@ def bootstrap_native_contacts_expectation(
         replica_state_indices,
     ) = analyzer.read_energies()   
    
+    # Close the data file:
+    reporter.close()
             
     # Get native contact fraction of all frames (bootstrapping draws uncorrelated samples from this full dataset)
     # To avoid loading in files each iteration, use alternate version of fraction_native_contacts code

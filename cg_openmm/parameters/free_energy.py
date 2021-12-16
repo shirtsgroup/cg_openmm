@@ -102,6 +102,9 @@ def expectations_free_energy(Q, Q_folded, temperature_list, frame_begin=0, sampl
             replica_state_indices,
         ) = analyzer.read_energies()
         
+        # Close the data file:
+        reporter.close()   
+        
         # Select production frames to analyze
         replica_energies = replica_energies_all[:,:,frame_begin::sample_spacing]
         
@@ -304,6 +307,9 @@ def bootstrap_free_energy_folding(Q, Q_folded, array_folded_states=None, output_
     temperature_list = []
     for s in states:
         temperature_list.append(s.temperature)    
+    
+    # Close the data file:
+    reporter.close()      
     
     # Select production frames to analyze
     replica_energies_prod = replica_energies_all[:,:,frame_begin::]
