@@ -428,6 +428,13 @@ def fraction_native_contacts(
     Q_avg = np.zeros((n_replicas))
     Q_stderr = np.zeros((n_replicas))
       
+    # For homopolymer symmetry, check that the chains are linear,
+    # which is the only option implemented for symmetry checks so far.
+    if homopolymer_sym:
+        if len(cgmodel.particle_type_list) > 1:
+            print(f'Error: For homopolymer symmetry checks, only linear chains with one bead type are supported')
+            exit()
+      
     for rep in range(n_replicas):            
         # This should work for pdb or dcd
         # However for dcd we need to insert a topology, and convert it from openmm->mdtraj topology 
@@ -716,6 +723,13 @@ def optimize_Q_cut(
         # Convert to a 1 element list if not one
         traj_file_list = traj_file_list.split()  
         n_replicas = 1
+    
+    # For homopolymer symmetry, check that the chains are linear,
+    # which is the only option implemented for symmetry checks so far.    
+    if homopolymer_sym:
+        if len(cgmodel.particle_type_list) > 1:
+            print(f'Error: For homopolymer symmetry checks, only linear chains with one bead type are supported')
+            exit()    
         
     for rep in range(n_replicas):
         if traj_file_list[rep][-3:] == 'dcd':
@@ -952,7 +966,14 @@ def optimize_Q_cut_1d(
         # Convert to a 1 element list if not one
         traj_file_list = traj_file_list.split()  
         n_replicas = 1
-        
+      
+    # For homopolymer symmetry, check that the chains are linear,
+    # which is the only option implemented for symmetry checks so far.      
+    if homopolymer_sym:
+        if len(cgmodel.particle_type_list) > 1:
+            print(f'Error: For homopolymer symmetry checks, only linear chains with one bead type are supported')
+            exit()
+      
     for rep in range(n_replicas):
         if traj_file_list[rep][-3:] == 'dcd':
             traj_dict[rep] = md.load(traj_file_list[rep],top=md.Topology.from_openmm(cgmodel.topology))
@@ -1173,6 +1194,13 @@ def bootstrap_native_contacts_expectation(
         # Convert to a 1 element list if not one
         traj_file_list = traj_file_list.split()  
         n_replicas = 1
+      
+    # For homopolymer symmetry, check that the chains are linear,
+    # which is the only option implemented for symmetry checks so far.      
+    if homopolymer_sym:
+        if len(cgmodel.particle_type_list) > 1:
+            print(f'Error: For homopolymer symmetry checks, only linear chains with one bead type are supported')
+            exit()        
         
     for rep in range(n_replicas):
         if traj_file_list[rep][-3:] == 'dcd':
@@ -1457,7 +1485,14 @@ def optimize_Q_tol_helix(
         # Convert to a 1 element list if not one
         traj_file_list = traj_file_list.split()  
         n_replicas = 1
-        
+     
+    # For homopolymer symmetry, check that the chains are linear,
+    # which is the only option implemented for symmetry checks so far.     
+    if homopolymer_sym:
+        if len(cgmodel.particle_type_list) > 1:
+            print(f'Error: For homopolymer symmetry checks, only linear chains with one bead type are supported')
+            exit()
+     
     for rep in range(n_replicas):
         if traj_file_list[rep][-3:] == 'dcd':
             traj_dict[rep] = md.load(traj_file_list[rep],top=md.Topology.from_openmm(cgmodel.topology))
