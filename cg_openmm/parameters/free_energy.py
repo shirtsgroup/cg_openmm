@@ -57,7 +57,7 @@ def expectations_free_energy(Q, Q_folded, temperature_list, frame_begin=0, sampl
     :type Q: 2D numpy array ( float )
     
     :param Q_folded: threshold for a native contact fraction corresponding to a folded state (Q[i,j] is folded if Q[i,j] >= Q_folded)
-    :type Q_folded: float
+    :type Q_folded: float or list ( float )
 
     :param temperature_list: List of temperatures for the simulation data (necessary because bootstrap version doesn't read in the file)
     :type temperature_list: List( float * simtk.unit.temperature )
@@ -118,7 +118,7 @@ def expectations_free_energy(Q, Q_folded, temperature_list, frame_begin=0, sampl
                 # This is the full Q, slice production frames:
                 Q = Q[production_start::sample_spacing,:]
             else:
-                print(f'Error: Q array of shape {Q.shape} incompatible with energies array of shape{replica_energies.shape}')
+                print(f'Error: Q array of shape {Q.shape} incompatible with energies array of shape {replica_energies.shape}')
                 exit()    
             
     # Classify Q into folded/unfolded states
@@ -127,7 +127,7 @@ def expectations_free_energy(Q, Q_folded, temperature_list, frame_begin=0, sampl
     else:
         # Use a precomputed array_folded_states instead of standard classification scheme.
         # Q and Q_folded inputs are ignored.
-        #***The array_folded_states should be sliced with sample_spacing is not a bootstrap calc:
+        #***The array_folded_states should be sliced with sample_spacing if not a bootstrap calc:
         pass
     
     # Number of configurational states:
@@ -258,7 +258,7 @@ def bootstrap_free_energy_folding(Q, Q_folded, array_folded_states=None, output_
     :type Q: 2D numpy array ( float )
     
     :param Q_folded: threshold for a native contact fraction corresponding to a folded state (Q[i,j] is folded if Q[i,j] >= Q_folded)
-    :type Q_folded: float
+    :type Q_folded: float or list ( float )
     
     :param array_folded_states: a precomputed array classifying the different conformational states
     :type array_folded_states: 2d numpy array (int)
@@ -318,11 +318,11 @@ def bootstrap_free_energy_folding(Q, Q_folded, array_folded_states=None, output_
 
     if array_folded_states is None:
         if np.shape(replica_energies_prod)[2] != np.shape(Q)[0]:
-            print(f'Error: Q array of shape {Q.shape} incompatible with energies array of shape{replica_energies_prod.shape}')
+            print(f'Error: Q array of shape {Q.shape} incompatible with energies array of shape {replica_energies_prod.shape}')
             exit()
     else:
         if np.shape(replica_energies_prod)[2] != np.shape(array_folded_states)[0]:
-            print(f'Error: Q array of shape {Q.shape} incompatible with energies array of shape{replica_energies_prod.shape}')
+            print(f'Error: Q array of shape {Q.shape} incompatible with energies array of shape {replica_energies_prod.shape}')
             exit()
         
     if array_folded_states is None:

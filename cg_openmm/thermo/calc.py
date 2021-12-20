@@ -17,10 +17,10 @@ def plot_heat_capacity(Cv, dCv, temperature_list, file_name="heat_capacity.pdf")
     Given an array of temperature-dependent heat capacity values and the uncertainties in their estimates, this function plots the heat capacity curve.
 
     :param Cv: The heat capacity data to plot.
-    :type Cv: List( float )
+    :type Cv: List( float * kJ/mol/K )
 
     :param dCv: The uncertainties in the heat capacity data
-    :type dCv: List( float )
+    :type dCv: List( float * kJ/mol/K )
     
     :param temperature_list: List of temperatures used in replica exchange simulations
     :type temperature: Quantity or numpy 1D array        
@@ -61,10 +61,10 @@ def plot_partial_heat_capacities(Cv_partial, dCv, temperature_list, file_name="h
     Given an array of temperature-dependent heat capacity values and the uncertainties in their estimates, this function plots the heat capacity curve.
 
     :param Cv_partial: The heat capacity data to plot, grouped by conformational state.
-    :type Cv_partial: dict ( list( float ) )
+    :type Cv_partial: dict ( list( float * kJ/mol/K ) )
 
-    :param dCv: The uncertainties in the heat capacity data
-    :type dCv: List( float )
+    :param dCv: The uncertainties corresponding to Cv_partial
+    :type dCv: dict ( list( float * kJ/mol/K ) )
     
     :param temperature_list: List of temperatures used in replica exchange simulations
     :type temperature: Quantity or numpy 1D array        
@@ -257,12 +257,12 @@ def get_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, output_data
     :type bootstrap_energies: 3d numpy array (float)
 
     :returns:
-          - Cv ( List( float ) ) - The heat capacity values for all (including inserted intermediates) states
-          - dCv ( List( float ) ) - The uncertainty in the heat capacity values for intermediate states
+          - Cv ( List( float * kJ/mol/K ) ) - The heat capacity values for all (including inserted intermediates) states
+          - dCv ( List( float * kJ/mol/K ) ) - The uncertainty in the heat capacity values for intermediate states
           - new_temp_list ( List( float * unit.simtk.temperature ) ) - The temperature list corresponding to the heat capacity values in 'Cv'
-          - FWHM ( float ) - Full width half maximum from heat capacity vs T
-          - Tm ( float ) - Melting point from heat capacity vs T
-          - Cv_height ( float ) - Relative height of heat capacity peak
+          - FWHM ( float * unit.simtk.temperature ) - Full width half maximum from heat capacity vs T
+          - Tm ( float * unit.simtk.temperature ) - Melting point from heat capacity vs T
+          - Cv_height ( float * kJ/mol/K ) - Relative height of heat capacity peak
           - N_eff( np.array( float ) ) - The number of effective samples at all (including inserted intermediates) states
     """    
 
@@ -450,14 +450,13 @@ def get_partial_heat_capacities(array_folded_states,
     :type bootstrap_energies: 3d numpy array (float)
 
     :returns:
-          - Cv ( dict ( List( float ) ) ) - For each conformational class, the heat capacity values for all (including inserted intermediates) states
-          - ***dCv ( List( float ) ) - The uncertainty in the heat capacity values for intermediate states
+          - Cv ( dict ( List( float * kJ/mol/K  ) ) ) - For each conformational class, the heat capacity values for all (including inserted intermediates) states
+          - ***dCv ( dict ( List( float * kJ/mol/K ) ) ) - The uncertainty in the heat capacity values for intermediate states (not yet implemented)
           - new_temp_list ( List( float * unit.simtk.temperature ) ) - The temperature list corresponding to the heat capacity values in 'Cv'
-          - FWHM ( float ) - For each conformational class, full width half maximum from heat capacity vs T
-          - Tm ( float ) - For each conformational class, melting point from heat capacity vs T
-          - Cv_height ( float ) - For each conformational class, relative height of heat capacity peak
-          - ***N_eff( np.array( float ) ) - The number of effective samples at all (including inserted intermediates) states
-          - U_expect_confs ( dict ( np.array( float ) ) - For each conformational class, the energy expectations (in kJ/mol) at each T, including intermediate states
+          - FWHM_partial ( dict ( float * unit.simtk.temperature ) ) - For each conformational class, full width half maximum from heat capacity vs T
+          - Tm_partial ( dict ( float * unit.simtk.temperature ) ) - For each conformational class, melting point from heat capacity vs T
+          - Cv_height_partial ( dict ( float * kJ/mol/K ) ) - For each conformational class, relative height of heat capacity peak
+          - U_expect_confs ( dict ( np.array( float * kJ/mol ) ) - For each conformational class, the energy expectations (in kJ/mol) at each T, including intermediate states
     """    
 
     if bootstrap_energies is not None:
@@ -625,13 +624,6 @@ def get_partial_heat_capacities(array_folded_states,
             ip = k+2*n_T_vals
             Cv_partial[c][k] = (U_expect_confs_diff[c][im, ip]) / (full_T_list[ip] - full_T_list[im])
 
-    # we don't actually need these expectations, but this code can be used to validate
-    #results = mbarT.computeExpectations(unsampled_state_energies, state_dependent=True)
-    #E_expect = results[0]
-    #dE_expect = results[1]
-    
-    #N_eff = mbarT.computeEffectiveSampleNumber()
-
     # Now get the full-width half-maximum, melting point, and Cv peak height.
     # Store these are dicts mapping {state:value}
     FWHM_partial = {}
@@ -676,10 +668,10 @@ def get_heat_capacity_reeval(
     and a corresponding temperature list, compute heat capacity as a function of temperature. 
     
     :param U_kln: re-evaluated state energies array to be used for the MBAR calculation (first frame is frame_begin)
-    :type U_kln: 3d numpy array (float) with dimensions [replica, evaluated_state, frame], or list thereof for multiple reference simulations
+    :type U_kln: 3d numpy array (float) with dimensions [replica, evaluated_state, frame]
     
     :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data (default = "output/output.nc")                                                                                          
-    :type output_data: str, or list(str) for multiple reference simulations 
+    :type output_data: str
     
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
     :type frame_begin: int
@@ -694,7 +686,7 @@ def get_heat_capacity_reeval(
     :type num_intermediate_states: int
 
     :param frac_dT: The fraction difference between temperatures points used to calculate finite difference derivatives (default=0.05)
-    :type num_intermediate_states: float
+    :type frac_dT: float
     
     :param plot_file_sim: path to filename to output plot for simulated heat capacity (default=None)
     :type plot_file_sim: str
@@ -706,14 +698,14 @@ def get_heat_capacity_reeval(
     :type bootstrap_energies: 3d numpy array (float)
 
     :returns:
-          - Cv_sim ( np.array( float ) ) - The heat capacity values for all simulated (including inserted intermediates) states
-          - dCv_sim ( np.array( float ) ) - The uncertainty of Cv_sim values
-          - Cv_reeval ( np.array( float ) ) - The heat capacity values for all reevaluated (including inserted intermediates) states
-          - dCv_reeval ( np.array( float ) ) - The uncertainty of Cv_reeval values
+          - Cv_sim ( np.array( float * kJ/mol/K ) ) - The heat capacity values for all simulated (including inserted intermediates) states
+          - dCv_sim ( np.array( float * kJ/mol/K ) ) - The uncertainty of Cv_sim values
+          - Cv_reeval ( np.array( float * kJ/mol/K ) ) - The heat capacity values for all reevaluated (including inserted intermediates) states
+          - dCv_reeval ( np.array( float * kJ/mol/K ) ) - The uncertainty of Cv_reeval values
           - full_T_list ( np.array( float * unit.simtk.temperature ) ) - The temperature list corresponding to the heat capacity values in 'Cv'
-          - FWHM ( float ) - Full width half maximum from heat capacity vs T
-          - Tm ( float ) - Melting point from heat capacity vs T
-          - Cv_height ( float ) - Relative height of heat capacity peak
+          - FWHM ( float * unit.simtk.temperature  ) - Full width half maximum from heat capacity vs T
+          - Tm ( float * unit.simtk.temperature  ) - Melting point from heat capacity vs T
+          - Cv_height ( float * kJ/mol/K ) - Relative height of heat capacity peak
           - N_eff( np.array( float ) ) - The number of effective samples at all (including inserted intermediates) states
     """    
     
@@ -878,9 +870,6 @@ def get_heat_capacity_reeval(
         Cv_sim[k] = (DeltaE_expect[im, ip]) / (full_T_list[ip] - full_T_list[im])
         dCv_sim[k] = (dDeltaE_expect[im, ip]) / (full_T_list[ip] - full_T_list[im])
 
-        
-    # expectations for the differences between states, which we need for numerical derivatives         
-        
     # Next, for the re-evaluated energies:    
     Cv_reeval = np.zeros(n_T_vals)
     dCv_reeval = np.zeros(n_T_vals)
@@ -954,7 +943,7 @@ def bootstrap_partial_heat_capacities(array_folded_states,
     :type num_intermediate_states: int
 
     :param frac_dT: The fraction difference between temperatures points used to calculate finite difference derivatives (default=0.05)
-    :type num_intermediate_states: float    
+    :type frac_dT: float    
     
     :param conf_percent: Confidence level in percent for outputting uncertainties (default = 68.27 = 1 sigma)
     :type conf_percent: float
@@ -1045,7 +1034,7 @@ def bootstrap_partial_heat_capacities(array_folded_states,
             array_folded_states_resample[j,:] = array_folded_states_boot[i,:]
             j += 1
               
-        # Run standard heat capacity expectation calculation:
+        # Run partial heat capacity expectation calculation:
         (Cv_partial_values_boot[i_boot], Cv_partial_uncertainty_boot_out, T_list,
         FWHM_curr, Tm_curr, Cv_height_curr, U_expect_confs_boot[i_boot]) = get_partial_heat_capacities(
             array_folded_states_resample,
@@ -1216,7 +1205,7 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
     :type num_intermediate_states: int
 
     :param frac_dT: The fraction difference between temperatures points used to calculate finite difference derivatives (default=0.05)
-    :type num_intermediate_states: float    
+    :type frac_dT: float    
     
     :param conf_percent: Confidence level in percent for outputting uncertainties (default = 68.27 = 1 sigma)
     :type conf_percent: float
