@@ -145,16 +145,13 @@ def test_native_contacts_dcd_homopolymer_sym(tmpdir):
     
     # Replica exchange settings
     number_replicas = 12
-    min_temp = 200.0 * unit.kelvin
-    max_temp = 600.0 * unit.kelvin
-    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
     
     # Load in cgmodel
     cgmodel = pickle.load(open(f"{data_path_linear}/stored_cgmodel_24mer_linear.pkl", "rb" ))
     
     # Create list of dcd trajectories to analyze
     dcd_file_list = []
-    for i in range(len(temperature_list)):
+    for i in range(number_replicas):
         dcd_file_list.append(f"{data_path_linear}/replica_{i+1}.dcd")
         
     # Set path to native structure file:    
@@ -206,9 +203,6 @@ def test_helix_contacts_dcd(tmpdir):
     
     # Replica exchange settings
     number_replicas = 12
-    min_temp = 200.0 * unit.kelvin
-    max_temp = 600.0 * unit.kelvin
-    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
     
     # Load in cgmodel
     cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
@@ -217,7 +211,7 @@ def test_helix_contacts_dcd(tmpdir):
     # For fraction_native_contacts vs. T, we use state trajectories.
     # However, we can test with the replica pdbs:
     dcd_file_list = []
-    for i in range(len(temperature_list)):
+    for i in range(number_replicas):
         dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
         
     # Load in native structure file:    
@@ -490,16 +484,13 @@ def test_expectations_fraction_contacts_dcd_homopolymer_sym(tmpdir):
     
     # Replica exchange settings
     number_replicas = 12
-    min_temp = 200.0 * unit.kelvin
-    max_temp = 600.0 * unit.kelvin
-    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
     
     # Load in cgmodel
     cgmodel = pickle.load(open(f"{data_path_linear}/stored_cgmodel_24mer_linear.pkl", "rb" ))
     
     # Create list of dcd trajectories to analyze
     dcd_file_list = []
-    for i in range(len(temperature_list)):
+    for i in range(number_replicas):
         dcd_file_list.append(f"{data_path_linear}/replica_{i+1}.dcd")
         
     # Set path to native structure file:    
@@ -548,9 +539,6 @@ def test_bootstrap_native_contacts_expectation_dcd(tmpdir):
     
     # Replica exchange settings
     number_replicas = 12
-    min_temp = 200.0 * unit.kelvin
-    max_temp = 600.0 * unit.kelvin
-    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
     
     # Load in cgmodel
     cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
@@ -559,7 +547,7 @@ def test_bootstrap_native_contacts_expectation_dcd(tmpdir):
     # For fraction_native_contacts vs. T, we use state trajectories.
     # However, we can test with the replica pdbs:
     dcd_file_list = []
-    for i in range(len(temperature_list)):
+    for i in range(number_replicas):
         dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
         
     # Load in native structure file:    
@@ -603,16 +591,13 @@ def test_bootstrap_native_contacts_expectation_dcd_homopolymer_sym(tmpdir):
     
     # Replica exchange settings
     number_replicas = 12
-    min_temp = 200.0 * unit.kelvin
-    max_temp = 600.0 * unit.kelvin
-    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
     
     # Load in cgmodel
     cgmodel = pickle.load(open(f"{data_path_linear}/stored_cgmodel_24mer_linear.pkl", "rb" ))
     
     # Create list of dcd trajectories to analyze
     dcd_file_list = []
-    for i in range(len(temperature_list)):
+    for i in range(number_replicas):
         dcd_file_list.append(f"{data_path_linear}/replica_{i+1}.dcd")
         
     # Set path to native structure file:    
@@ -655,9 +640,6 @@ def test_optimize_Q_helix_tol_dcd(tmpdir):
 
     # Replica exchange settings
     number_replicas = 12
-    min_temp = 200.0 * unit.kelvin
-    max_temp = 600.0 * unit.kelvin
-    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
 
     # Load in cgmodel
     cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
@@ -665,7 +647,7 @@ def test_optimize_Q_helix_tol_dcd(tmpdir):
     # Create list of pdb trajectories to analyze
     # For expectation fraction native contacts, we use replica trajectories: 
     dcd_file_list = []
-    for i in range(len(temperature_list)):
+    for i in range(number_replicas):
         dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
         
     # Load in native structure file:    
@@ -700,9 +682,6 @@ def test_optimize_Q_cut_1d_dcd(tmpdir):
 
     # Replica exchange settings
     number_replicas = 12
-    min_temp = 200.0 * unit.kelvin
-    max_temp = 600.0 * unit.kelvin
-    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
 
     # Load in cgmodel
     cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
@@ -710,7 +689,7 @@ def test_optimize_Q_cut_1d_dcd(tmpdir):
     # Create list of pdb trajectories to analyze
     # For expectation fraction native contacts, we use replica trajectories: 
     dcd_file_list = []
-    for i in range(len(temperature_list)):
+    for i in range(number_replicas):
         dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
         
     # Load in native structure file:    
@@ -745,9 +724,6 @@ def test_optimize_Q_cut_1d_dcd_bounds_1(tmpdir):
 
     # Replica exchange settings
     number_replicas = 12
-    min_temp = 200.0 * unit.kelvin
-    max_temp = 600.0 * unit.kelvin
-    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
 
     # Load in cgmodel
     cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
@@ -755,7 +731,7 @@ def test_optimize_Q_cut_1d_dcd_bounds_1(tmpdir):
     # Create list of pdb trajectories to analyze
     # For expectation fraction native contacts, we use replica trajectories: 
     dcd_file_list = []
-    for i in range(len(temperature_list)):
+    for i in range(number_replicas):
         dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
         
     # Load in native structure file:    
@@ -791,9 +767,6 @@ def test_optimize_Q_cut_1d_dcd_bounds_2(tmpdir):
 
     # Replica exchange settings
     number_replicas = 12
-    min_temp = 200.0 * unit.kelvin
-    max_temp = 600.0 * unit.kelvin
-    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
 
     # Load in cgmodel
     cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
@@ -801,7 +774,7 @@ def test_optimize_Q_cut_1d_dcd_bounds_2(tmpdir):
     # Create list of pdb trajectories to analyze
     # For expectation fraction native contacts, we use replica trajectories: 
     dcd_file_list = []
-    for i in range(len(temperature_list)):
+    for i in range(number_replicas):
         dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
         
     # Load in native structure file:    
@@ -834,9 +807,6 @@ def test_optimize_Q_cut_pdb(tmpdir):
 
     # Replica exchange settings
     number_replicas = 12
-    min_temp = 200.0 * unit.kelvin
-    max_temp = 600.0 * unit.kelvin
-    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
 
     # Load in cgmodel
     cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
@@ -844,7 +814,7 @@ def test_optimize_Q_cut_pdb(tmpdir):
     # Create list of pdb trajectories to analyze
     # For expectation fraction native contacts, we use replica trajectories: 
     pdb_file_list = []
-    for i in range(len(temperature_list)):
+    for i in range(number_replicas):
         pdb_file_list.append(f"{data_path}/replica_{i+1}.pdb")
         
     # Load in native structure file:    
@@ -875,9 +845,6 @@ def test_optimize_Q_cut_dcd(tmpdir):
 
     # Replica exchange settings
     number_replicas = 12
-    min_temp = 200.0 * unit.kelvin
-    max_temp = 600.0 * unit.kelvin
-    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
 
     # Load in cgmodel
     cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
@@ -885,7 +852,7 @@ def test_optimize_Q_cut_dcd(tmpdir):
     # Create list of pdb trajectories to analyze
     # For expectation fraction native contacts, we use replica trajectories: 
     dcd_file_list = []
-    for i in range(len(temperature_list)):
+    for i in range(number_replicas):
         dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
         
     # Load in native structure file:    
@@ -920,9 +887,6 @@ def test_optimize_Q_cut_dcd_bounds_1(tmpdir):
 
     # Replica exchange settings
     number_replicas = 12
-    min_temp = 200.0 * unit.kelvin
-    max_temp = 600.0 * unit.kelvin
-    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
 
     # Load in cgmodel
     cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
@@ -930,7 +894,7 @@ def test_optimize_Q_cut_dcd_bounds_1(tmpdir):
     # Create list of pdb trajectories to analyze
     # For expectation fraction native contacts, we use replica trajectories: 
     dcd_file_list = []
-    for i in range(len(temperature_list)):
+    for i in range(number_replicas):
         dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
         
     # Load in native structure file:    
@@ -967,9 +931,6 @@ def test_optimize_Q_cut_dcd_bounds_2(tmpdir):
 
     # Replica exchange settings
     number_replicas = 12
-    min_temp = 200.0 * unit.kelvin
-    max_temp = 600.0 * unit.kelvin
-    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
 
     # Load in cgmodel
     cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
@@ -977,7 +938,7 @@ def test_optimize_Q_cut_dcd_bounds_2(tmpdir):
     # Create list of pdb trajectories to analyze
     # For expectation fraction native contacts, we use replica trajectories: 
     dcd_file_list = []
-    for i in range(len(temperature_list)):
+    for i in range(number_replicas):
         dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
         
     # Load in native structure file:    
