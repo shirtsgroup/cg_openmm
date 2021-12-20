@@ -50,6 +50,10 @@ def physical_validation_ensemble(
     ) = analyzer.read_energies()
 
     n_particles = np.shape(reporter.read_sampler_states(iteration=0)[0].positions)[0]
+    
+    # Close the data file:
+    reporter.close()     
+    
     T_unit = temperature_list[0].unit
     temps = np.array([temp.value_in_unit(T_unit) for temp in temperature_list])
     beta_k = 1 / (kB.value_in_unit(unit.kilojoule_per_mole/T_unit) * temps)

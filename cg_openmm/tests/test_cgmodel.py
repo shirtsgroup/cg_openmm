@@ -150,7 +150,7 @@ def test_get_bond_list(create_cgmodel):
 def test_get_nonbonded_interaction_list(create_cgmodel):
     cgmodel = create_cgmodel
     nonbond_list = cgmodel.get_nonbonded_interaction_list()
-    assert len(nonbond_list) == 1081
+    assert len(nonbond_list) == 1013
     
 
 def test_get_nonbonded_exclusion_list(create_cgmodel):

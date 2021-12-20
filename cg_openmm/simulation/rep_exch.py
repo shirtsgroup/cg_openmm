@@ -29,7 +29,7 @@ kB = (unit.MOLAR_GAS_CONSTANT_R).in_units_of(unit.kilojoule / (unit.kelvin * uni
 def make_replica_dcd_files(
     topology, timestep=5*unit.femtosecond, time_interval=200,
     output_dir="output", output_data="output.nc", checkpoint_data="output_checkpoint.nc",
-    frame_begin=0, frame_stride=1):
+    frame_begin=0, frame_stride=1, center=False):
     """
     Make dcd files from replica exchange simulation trajectory data.
     
@@ -55,7 +55,10 @@ def make_replica_dcd_files(
     :type frame_begin: int
     
     :param frame_stride: advance by this many time intervals when writing dcd trajectories (default=1)
-    :type frame_stride: int 
+    :type frame_stride: int
+    
+    :param center: align all frames in the replica trajectories (default=False)
+    :type center: Boolean
     """
     
     file_list = []
@@ -93,6 +96,11 @@ def make_replica_dcd_files(
             Topology.from_openmm(topology),
             time=traj_times,
         )
+        
+        if center:
+            ref_traj = replica_traj[0]
+            replica_traj.superpose(ref_traj)
+            # This rewrites to replica_traj        
             
         Trajectory.save_dcd(replica_traj,file_name)
         
@@ -101,7 +109,7 @@ def make_replica_dcd_files(
 
 def make_replica_pdb_files(
     topology, output_dir="output", output_data="output.nc", checkpoint_data="output_checkpoint.nc",
-    frame_begin=0, frame_stride=1):
+    frame_begin=0, frame_stride=1, center=False):
     """
     Make pdb files from replica exchange simulation trajectory data.
     
@@ -121,7 +129,10 @@ def make_replica_pdb_files(
     :type frame_begin: int    
     
     :param frame_stride: advance by this many frames when writing pdb trajectories (default=1)
-    :type frame_stride: int   
+    :type frame_stride: int
+
+    :param center: align all frames in the replica trajectories (default=False)
+    :type center: Boolean    
     
     :returns:
         - file_list ( List( str ) ) - A list of names for the files that were written
@@ -150,6 +161,11 @@ def make_replica_pdb_files(
             replica_positions,
             Topology.from_openmm(topology),
         )
+        
+        if center:
+            ref_traj = replica_traj[0]
+            replica_traj.superpose(ref_traj)
+            # This rewrites to replica_traj                
             
         Trajectory.save_pdb(replica_traj,file_name)
         
@@ -788,7 +804,7 @@ def run_replica_exchange(
 
     print("Running OpenMM replica exchange simulation...")
     print(f"Time step: {simulation_time_step}")
-    print(f"Iterations: {exchange_attempts}")
+    print(f"Iterations: {exchange_attempts}",flush=True)
     try:
         simulation.run()
     except BaseException:
@@ -799,7 +815,7 @@ def run_replica_exchange(
         
         
 def restart_replica_exchange(
-    total_simulation_time=1*unit.nanosecond,
+    total_simulation_time,
     simulation_time_step=5*unit.picosecond,
     exchange_frequency=200,
     output_data="output/output.nc",
@@ -809,7 +825,7 @@ def restart_replica_exchange(
     Restart an OpenMMTools replica exchange simulation using an OpenMM coarse grained model and
     output .nc files from the previous segment of the simulation. 
 
-    :param total_simulation_time: Total run time to add to the original simulation (default=1*unit.nanosecond)
+    :param total_simulation_time: Total run time for original + new simulation segments
     :type total_simulation_time: `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_
 
     :param simulation_time_step: Simulation integration time step (default=5*unit.picosecond)
@@ -822,6 +838,7 @@ def restart_replica_exchange(
     :type output_data: str
     """
 
+    # Compute number of total time steps and iterations:
     simulation_steps = int(np.floor(total_simulation_time / simulation_time_step))
     exchange_attempts = int(np.floor(simulation_steps / exchange_frequency))
 
@@ -829,11 +846,14 @@ def restart_replica_exchange(
     reporter = MultiStateReporter(output_data, open_mode="r+")
     simulation = ReplicaExchangeSampler.from_storage(reporter)
 
-    print("Running OpenMM replica exchange simulation...")
-    print(f"Time step: {simulation_time_step}")
-    print(f"Iterations: {exchange_attempts}")
+    # Compute how many more iterations are needed:
+    n_iter_remain = exchange_attempts-simulation.iteration
 
-    simulation.extend(n_iterations=exchange_attempts)
+    print(f"Continuing OpenMM replica exchange simulation from iteration {simulation.iteration}")
+    print(f"Time step: {simulation_time_step}")
+    print(f"New iterations: {n_iter_remain}",flush=True)
+
+    simulation.extend(n_iterations=n_iter_remain)
 
     return
    

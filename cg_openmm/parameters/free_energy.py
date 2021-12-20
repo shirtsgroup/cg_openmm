@@ -16,8 +16,8 @@ kB = kB.in_units_of(unit.kilojoule/unit.kelvin/unit.mole)
 def classify_Q_states(Q, Q_folded):
     """
     This function determines the conformational state of each element of the native contacts array, given a threshold
-    for being 'folded/unfolded'. ***In the future we can generalize this to n different states.
-    In the outputted array, 1 is 'folded' and 0 is 'unfolded'.
+    for being 'folded/unfolded'. In the outputted array, 1 is 'folded' and 0 is 'unfolded'. If Q_folded is a list,
+    of multiple cutoffs, additional classification is performed.
     
     :param Q: native contact fraction array of size [n_frames x n_states]
     :type Q: 2D numpy array ( float )
@@ -29,14 +29,27 @@ def classify_Q_states(Q, Q_folded):
       - array_folded_states ( 2D numpy array ( float ) ) - conformational state matrix of shape [n_frames x n_replicas]
     """
     
-    # TODO: generalize to n conformational states
-    array_folded_states = np.multiply((Q>=Q_folded),1)
+    if type(Q_folded) == list:
+        # Multiple states specified
+        # Sort to ascending order:
+        Q_folded = sorted(Q_folded)
+        
+        array_folded_states = np.zeros_like(Q)
+        
+        for q in Q_folded:
+            array_folded_states += np.multiply((Q>=q),1)
+            # 0 is unfolded, 1 is folded state with smallest Q cutoff, 2 is folded state with
+            # next largest Q cutoff, and so on.
+            
+    else:
+        # Assume a binary folded/unfolded system
+        array_folded_states = np.multiply((Q>=Q_folded),1)
     
-    return array_folded_states 
+    return array_folded_states
 
 
 def expectations_free_energy(Q, Q_folded, temperature_list, frame_begin=0, sample_spacing=1, output_data="output/output.nc",
-    bootstrap_energies=None, num_intermediate_states=0):
+    bootstrap_energies=None, num_intermediate_states=0, array_folded_states=None):
     """
     This function calculates the free energy difference (with uncertainty) between all conformational states as a function of temperature.
 
@@ -44,7 +57,7 @@ def expectations_free_energy(Q, Q_folded, temperature_list, frame_begin=0, sampl
     :type Q: 2D numpy array ( float )
     
     :param Q_folded: threshold for a native contact fraction corresponding to a folded state (Q[i,j] is folded if Q[i,j] >= Q_folded)
-    :type Q_folded: float
+    :type Q_folded: float or list ( float )
 
     :param temperature_list: List of temperatures for the simulation data (necessary because bootstrap version doesn't read in the file)
     :type temperature_list: List( float * simtk.unit.temperature )
@@ -63,6 +76,9 @@ def expectations_free_energy(Q, Q_folded, temperature_list, frame_begin=0, sampl
     
     :param bootstrap_energies: a custom replica_energies array to be used for bootstrapping calculations. Used instead of the energies in the .nc file.
     :type bootstrap_energies: 2d numpy array (float)
+    
+    :param array_folded_states: a precomputed array classifying the different conformational states
+    :type array_folded_states: 2d numpy array (int)
     
     :returns:
       - full_T_list - A 1D numpy array listing of all temperatures, including sampled and intermediate unsampled
@@ -86,6 +102,9 @@ def expectations_free_energy(Q, Q_folded, temperature_list, frame_begin=0, sampl
             replica_state_indices,
         ) = analyzer.read_energies()
         
+        # Close the data file:
+        reporter.close()   
+        
         # Select production frames to analyze
         replica_energies = replica_energies_all[:,:,frame_begin::sample_spacing]
         
@@ -99,11 +118,17 @@ def expectations_free_energy(Q, Q_folded, temperature_list, frame_begin=0, sampl
                 # This is the full Q, slice production frames:
                 Q = Q[production_start::sample_spacing,:]
             else:
-                print(f'Error: Q array of shape {Q.shape} incompatible with energies array of shape{replica_energies.shape}')
+                print(f'Error: Q array of shape {Q.shape} incompatible with energies array of shape {replica_energies.shape}')
                 exit()    
             
     # Classify Q into folded/unfolded states
-    array_folded_states = classify_Q_states(Q,Q_folded)
+    if array_folded_states is None:
+        array_folded_states = classify_Q_states(Q,Q_folded)
+    else:
+        # Use a precomputed array_folded_states instead of standard classification scheme.
+        # Q and Q_folded inputs are ignored.
+        #***The array_folded_states should be sliced with sample_spacing if not a bootstrap calc:
+        pass
     
     # Number of configurational states:
     n_conf_states = len(np.unique(array_folded_states))
@@ -224,8 +249,8 @@ def expectations_free_energy(Q, Q_folded, temperature_list, frame_begin=0, sampl
     return full_T_list, deltaF_values, deltaF_uncertainty
     
 
-def bootstrap_free_energy_folding(Q, Q_folded, output_data="output/output.nc", frame_begin=0, sample_spacing=1,
-    n_trial_boot=200, num_intermediate_states=0, conf_percent='sigma', plotfile_dir="output"):
+def bootstrap_free_energy_folding(Q, Q_folded, array_folded_states=None, output_data="output/output.nc", frame_begin=0,
+    sample_spacing=1, n_trial_boot=200, num_intermediate_states=0, conf_percent='sigma', plotfile_dir="output"):
     """
     Function for computing uncertainty of free energy, entropy, and enthalpy using bootstrapping with varying starting frames.
 
@@ -233,7 +258,10 @@ def bootstrap_free_energy_folding(Q, Q_folded, output_data="output/output.nc", f
     :type Q: 2D numpy array ( float )
     
     :param Q_folded: threshold for a native contact fraction corresponding to a folded state (Q[i,j] is folded if Q[i,j] >= Q_folded)
-    :type Q_folded: float    
+    :type Q_folded: float or list ( float )
+    
+    :param array_folded_states: a precomputed array classifying the different conformational states
+    :type array_folded_states: 2d numpy array (int)
     
     :param output_data: Path to the simulation .nc file.
     :type output_data: str    
@@ -280,16 +308,29 @@ def bootstrap_free_energy_folding(Q, Q_folded, output_data="output/output.nc", f
     for s in states:
         temperature_list.append(s.temperature)    
     
+    # Close the data file:
+    reporter.close()      
+    
     # Select production frames to analyze
     replica_energies_prod = replica_energies_all[:,:,frame_begin::]
     
     # For shifting reference frame bootstrap, we need the entire Q and energy arrays starting from frame_start
 
-    if np.shape(replica_energies_prod)[2] != np.shape(Q)[0]:
-        print(f'Error: Q array of shape {Q.shape} incompatible with energies array of shape{replica_energies_prod.shape}')
-        exit()
+    if array_folded_states is None:
+        if np.shape(replica_energies_prod)[2] != np.shape(Q)[0]:
+            print(f'Error: Q array of shape {Q.shape} incompatible with energies array of shape {replica_energies_prod.shape}')
+            exit()
+    else:
+        if np.shape(replica_energies_prod)[2] != np.shape(array_folded_states)[0]:
+            print(f'Error: Q array of shape {Q.shape} incompatible with energies array of shape {replica_energies_prod.shape}')
+            exit()
         
-    Q_all = Q
+    if array_folded_states is None:
+        # Use the raw contact fractions as input to the free energy function
+        Q_all = Q
+    else:
+        # Use the precomputed conformational state array as input to the free energy function
+        array_folded_states_all = array_folded_states
 
     # Overall results:
     deltaF_values = {}
@@ -322,35 +363,61 @@ def bootstrap_free_energy_folding(Q, Q_folded, output_data="output/output.nc", f
         
         # Replica energies and Q already have equilibration period removed:
         replica_energies = replica_energies_prod[:,:,ref_shift::sample_spacing]
-        Q = Q_all[ref_shift::sample_spacing,:]
+        
+        if array_folded_states is None:
+            Q = Q_all[ref_shift::sample_spacing,:]
+            n_states = len(Q[0,:])
+        else:
+            array_folded_states = array_folded_states_all[ref_shift::sample_spacing,:]
+            n_states = len(array_folded_states[0,:])
         
         # Get all possible sample indices
         sample_indices_all = np.arange(0,len(replica_energies[0,0,:]))
         # n_samples should match the size of the sliced replica energy dataset
         sample_indices = resample(sample_indices_all, replace=True, n_samples=len(sample_indices_all))
         
-        n_states = len(Q[0,:])
-        
         replica_energies_resample = np.zeros_like(replica_energies)
         # replica_energies is [n_states x n_states x n_frame]
         # Q is [nframes x n_states]
-        Q_resample = np.zeros((len(sample_indices),n_states))
+        
+        if array_folded_states is None:
+            Q_resample = np.zeros((len(sample_indices),n_states))
+        else:
+            array_folded_states_resample = np.zeros((len(sample_indices),n_states))
         
         # Select the sampled frames from Q and replica_energies:
         j = 0
-        for i in sample_indices:
-            replica_energies_resample[:,:,j] = replica_energies[:,:,i]
-            Q_resample[j,:] = Q[i,:]
-            j += 1
+        
+        if array_folded_states is None:
+            for i in sample_indices:
+                replica_energies_resample[:,:,j] = replica_energies[:,:,i]
+                Q_resample[j,:] = Q[i,:]
+                j += 1
+                
+        else:
+            for i in sample_indices:
+                replica_energies_resample[:,:,j] = replica_energies[:,:,i]
+                array_folded_states_resample[j,:] = array_folded_states[i,:]
+                j += 1
             
         # Run free energy expectation calculation:
-        full_T_list, deltaF_values_boot[i_boot], deltaF_uncertainty_boot[i_boot] = expectations_free_energy(
-            Q_resample,
-            Q_folded,
-            temperature_list,
-            bootstrap_energies=replica_energies_resample,
-            num_intermediate_states=num_intermediate_states,
-        )
+        if array_folded_states is None:
+            full_T_list, deltaF_values_boot[i_boot], deltaF_uncertainty_boot[i_boot] = expectations_free_energy(
+                Q_resample,
+                Q_folded,
+                temperature_list,
+                bootstrap_energies=replica_energies_resample,
+                num_intermediate_states=num_intermediate_states,
+            )
+        else:
+            full_T_list, deltaF_values_boot[i_boot], deltaF_uncertainty_boot[i_boot] = expectations_free_energy(
+                None,
+                None,
+                temperature_list,
+                bootstrap_energies=replica_energies_resample,
+                num_intermediate_states=num_intermediate_states,
+                array_folded_states=array_folded_states_resample,
+            )
         
         # Get entropy/enthalpy for fitting current free energy data:
         # The inner dictionary keys will be transition names
@@ -377,12 +444,14 @@ def bootstrap_free_energy_folding(Q, Q_folded, output_data="output/output.nc", f
             arr_deltaF_values_boot[key][i_boot,:] = value.value_in_unit(F_unit)
             
     deltaF_values = {}
+    
     for key, value in arr_deltaF_values_boot.items():
         deltaF_values[key] = np.mean(value,axis=0)*F_unit
             
     # Entropy:        
-    for i_boot in range(n_trial_boot):         
-        arr_deltaS_values_boot[key][i_boot,:] = deltaS_values_boot[i_boot][key].value_in_unit(S_unit)
+    for i_boot in range(n_trial_boot):
+        for key, value in deltaS_values_boot[i_boot].items():    
+            arr_deltaS_values_boot[key][i_boot,:] = deltaS_values_boot[i_boot][key].value_in_unit(S_unit)
             
     deltaS_values = {}
     
@@ -391,7 +460,8 @@ def bootstrap_free_energy_folding(Q, Q_folded, output_data="output/output.nc", f
             
     # Enthalpy:        
     for i_boot in range(n_trial_boot):
-        arr_deltaU_values_boot[key][i_boot,:] = deltaU_values_boot[i_boot][key].value_in_unit(U_unit)
+        for key, value in deltaU_values_boot[i_boot].items():
+            arr_deltaU_values_boot[key][i_boot,:] = deltaU_values_boot[i_boot][key].value_in_unit(U_unit)
             
     deltaU_values = {}
     
