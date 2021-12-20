@@ -36,12 +36,12 @@ def test_optimize_helix_simple(tmpdir):
     
     opt_solution, geometry = optimize_helix_simple(
         n_particle_bb,sigma,epsilon,sidechain,
-        pdbfile=pdbfile, plotfile=plotfile)
+        pdbfile=pdbfile, plotfile=plotfile,
+        DE_popsize=10)
            
-    assert opt_solution.success == True
     assert os.path.isfile(pdbfile)
     assert os.path.isfile(plotfile)
-    
+
     # Check that we can load the pdb file
     pdb_loaded = md.load(pdbfile)
     assert pdb_loaded.n_atoms == 12
@@ -69,9 +69,9 @@ def test_optimize_helix_simple_sidechain(tmpdir):
     
     opt_solution, geometry = optimize_helix_simple(
         n_particle_bb,sigma,epsilon,sidechain,
-        pdbfile=pdbfile, plotfile=plotfile)
-           
-    assert opt_solution.success == True
+        pdbfile=pdbfile, plotfile=plotfile,
+        DE_popsize=10)
+
     assert os.path.isfile(pdbfile)
     assert os.path.isfile(plotfile)
     
@@ -103,9 +103,8 @@ def test_optimize_helix_openmm_unconstrained(tmpdir):
     opt_solution, geometry = optimize_helix_openmm_energy(
         n_particle_bb, sigma_bb, sigma_sc, epsilon_bb, epsilon_sc,
         pdbfile=pdbfile, plotfile=plotfile, bond_dist_bb=None, bond_dist_sc=None,
-        DE_popsize=50)
+        DE_popsize=20)
            
-    assert opt_solution.success == True
     assert os.path.isfile(pdbfile)
     assert os.path.isfile(plotfile)
     
@@ -142,9 +141,8 @@ def test_optimize_helix_openmm_constrained(tmpdir):
         n_particle_bb, sigma_bb, sigma_sc, epsilon_bb, epsilon_sc,
         pdbfile=pdbfile, plotfile=plotfile,
         bond_dist_bb=bond_dist_bb, bond_dist_sc=bond_dist_sc,
-        DE_popsize=50)
+        DE_popsize=20)
                
-    assert opt_solution.success == True
     assert os.path.isfile(pdbfile)
     assert os.path.isfile(plotfile)
     
@@ -190,9 +188,8 @@ def test_optimize_helix_LJ_parameters_unconstrained(tmpdir):
         radius, pitch, n_particle_bb,
         bond_dist_bb=None, bond_dist_sc=None,
         pdbfile=pdbfile, plotfile=plotfile,
-        DE_popsize=50)
+        DE_popsize=20)
                
-    assert opt_solution.success == True
     assert os.path.isfile(pdbfile)
     assert os.path.isfile(plotfile)
     
@@ -242,9 +239,8 @@ def test_optimize_helix_LJ_parameters_constrained(tmpdir):
         radius, pitch, n_particle_bb,
         bond_dist_bb=bond_dist_bb, bond_dist_sc=bond_dist_sc,
         pdbfile=pdbfile, plotfile=plotfile,
-        DE_popsize=50)
-               
-    assert opt_solution.success == True
+        DE_popsize=20)
+
     assert os.path.isfile(pdbfile)
     assert os.path.isfile(plotfile)
     

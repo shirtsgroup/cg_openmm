@@ -160,9 +160,20 @@ def fit_sigmoid(xdata, ydata, plotfile='Q_vs_T_fit.pdf', xlabel='T (K)', ylabel=
         return (y0+y1)/2-((y0-y1)/2)*np.tanh(np.radians(x-x0)/d)
         
     param_guess = [np.mean(xdata),np.min(ydata),np.max(ydata),(np.max(xdata)-np.min(xdata))/10]
-    bounds = (
-        [np.min(xdata), 0, 0, 0],
-        [np.max(xdata), 1, 1, (np.max(xdata)-np.min(xdata))])
+    
+    if np.max(ydata) > 1:
+        # This is not native contact fraction data (for example, radius of gyration data)
+        bounds = (
+            [np.min(xdata), 0, 0, 0],
+            [np.max(xdata), np.max(ydata), 3*np.max(ydata), (np.max(xdata)-np.min(xdata))]
+        )
+    
+    else:
+        # This is likely native contact fraction data
+        bounds = (
+            [np.min(xdata), 0, 0, 0],
+            [np.max(xdata), 1, 1, (np.max(xdata)-np.min(xdata))]
+        )
     
     param_opt, param_cov = curve_fit(tanh_switch, xdata, ydata, param_guess, bounds=bounds)
     
@@ -192,7 +203,10 @@ def fit_sigmoid(xdata, ydata, plotfile='Q_vs_T_fit.pdf', xlabel='T (K)', ylabel=
             label='hyperbolic fit',
         )
         
-        plt.ylim((0,1))
+        
+        if np.max(ydata) <= 1:
+            plt.ylim((0,1))
+            
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
         

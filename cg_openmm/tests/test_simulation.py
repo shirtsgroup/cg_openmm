@@ -394,7 +394,6 @@ def test_run_simulation_dcd(tmpdir):
 def test_run_replica_exchange(tmpdir):
     """
     Run a short replica exchange MD simulation of a 24mer 1b1s model
-    Test replica exchange processing (write pdb files)
     """
 
     # Set output directory
@@ -525,6 +524,21 @@ def test_run_replica_exchange(tmpdir):
     
     assert os.path.isfile(f"{output_directory}/output.nc")
     
+    
+def test_process_replica_exchange(tmpdir):
+    """
+    Test replica exchange processing, trajectory writing with various options
+    """
+
+    # Set output directory
+    # In pytest we need to use a temp directory
+    # tmpdir is a fixture - hence we need to pass it into test function, not import it
+    
+    output_directory = tmpdir.mkdir("output")    
+    
+    # Location of previously saved output.nc:
+    output_data = os.path.join(data_path, "output.nc")
+    
     # Process replica exchange output
     # 1) With plot production only and print_timing:
     replica_energies, replica_states, production_start, sample_spacing, n_transit, mixing_stats = process_replica_exchange_data(
@@ -563,74 +577,195 @@ def test_run_replica_exchange(tmpdir):
         write_data_file=False,
     )
     
-    # Test pdb writer:
+    
+def test_write_state_pdb_traj(tmpdir):
+    """
+    Test state trajectory writer (pdb):
+    """
+    
+    output_directory = tmpdir.mkdir("output")
+    output_data = os.path.join(data_path, "output.nc")
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))   
+    
+    make_state_pdb_files(
+        cgmodel.topology,
+        output_dir=output_directory,
+        output_data=output_data,
+        center=True,
+    )
+    
+    assert os.path.isfile(f"{output_directory}/state_4.pdb")
+
+
+def test_write_state_pdb_traj_no_center(tmpdir):
+    """
+    Test state trajectory writer (pdb):
+    """
+    
+    output_directory = tmpdir.mkdir("output")
+    output_data = os.path.join(data_path, "output.nc")
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))   
+
+    # With non-default frame_begin, stride, no centering:
+    make_state_pdb_files(
+        cgmodel.topology,
+        frame_begin=10,
+        frame_stride=2,
+        output_dir=output_directory,
+        output_data=output_data,
+        center=False,
+    )
+    
+    assert os.path.isfile(f"{output_directory}/state_4.pdb")
+    
+
+def test_write_state_dcd_traj(tmpdir):
+    """
+    Test state trajectory writer (dcd):
+    """   
+
+    output_directory = tmpdir.mkdir("output")
+    output_data = os.path.join(data_path, "output.nc")
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))   
+
+    # For dcd, we also need to set the time intervals:
+    exchange_frequency = 10
+    timestep = 5 * unit.femtosecond
+
+    make_state_dcd_files(
+        cgmodel.topology,
+        timestep=timestep,
+        time_interval=exchange_frequency,
+        output_dir=output_directory,
+        output_data=output_data,
+        center=True,
+    )
+    
+    assert os.path.isfile(f"{output_directory}/state_4.dcd")
+    
+    
+def test_write_state_dcd_traj_no_center(tmpdir):
+    """
+    Test state trajectory writer (dcd):
+    """   
+
+    output_directory = tmpdir.mkdir("output")
+    output_data = os.path.join(data_path, "output.nc")
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))   
+    
+    # For dcd, we also need to set the time intervals:
+    exchange_frequency = 10
+    timestep = 5 * unit.femtosecond    
+    
+    # With non-default frame_begin, stride, no centering:
+    make_state_dcd_files(
+        cgmodel.topology,
+        timestep=timestep,
+        time_interval=exchange_frequency,
+        frame_begin=10,
+        frame_stride=2,
+        output_dir=output_directory,
+        output_data=output_data,
+        center=False
+    )
+       
+    assert os.path.isfile(f"{output_directory}/state_4.dcd")       
+    
+
+def test_write_replica_pdb_traj(tmpdir):
+    """
+    Test replica trajectory writer (pdb):
+    """
+    
+    output_directory = tmpdir.mkdir("output")
+    output_data = os.path.join(data_path, "output.nc")
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))       
+    
     make_replica_pdb_files(
         cgmodel.topology,
         output_dir=output_directory,
-    )
-        
-    make_state_pdb_files(
+        output_data=output_data,
+        center=True,
+    )    
+    
+    assert os.path.isfile(f"{output_directory}/replica_4.pdb")
+    
+
+def test_write_replica_pdb_traj_no_center(tmpdir):
+    """
+    Test replica trajectory writer (pdb):
+    """
+    
+    output_directory = tmpdir.mkdir("output")
+    output_data = os.path.join(data_path, "output.nc")
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))        
+    
+    # With non-default frame_begin, stride, no centering:
+    make_replica_pdb_files(
         cgmodel.topology,
-        output_dir=output_directory
+        frame_begin=10,
+        frame_stride=2,
+        output_dir=output_directory,
+        output_data=output_data,
+        center=False,
     )
     
     assert os.path.isfile(f"{output_directory}/replica_4.pdb")
-    assert os.path.isfile(f"{output_directory}/state_4.pdb")
     
-    # With non-default frame_begin, stride, no centering:
-    make_replica_pdb_files(
-        cgmodel.topology,
-        frame_begin=10,
-        frame_stride=2,
-        output_dir=output_directory
-    )
-    
-    make_state_pdb_files(
-        cgmodel.topology,
-        frame_begin=10,
-        frame_stride=2,
-        output_dir=output_directory,
-        center=False
-    )
-    
+
+def test_write_replica_dcd_traj(tmpdir):
+    """
+    Test replica trajectory writer (dcd):
+    """    
+
+    output_directory = tmpdir.mkdir("output")
+    output_data = os.path.join(data_path, "output.nc")
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))   
+
+    # For dcd, we also need to set the time intervals:
+    exchange_frequency = 10
+    timestep = 5 * unit.femtosecond
+
     # Test dcd writer:
     make_replica_dcd_files(
         cgmodel.topology,
-        timestep=simulation_time_step,
+        timestep=timestep,
         time_interval=exchange_frequency,
-        output_dir=output_directory
+        output_dir=output_directory,
+        output_data=output_data,
+        center=True,
     )
         
-    make_state_dcd_files(
-        cgmodel.topology,
-        timestep=simulation_time_step,
-        time_interval=exchange_frequency,
-        output_dir=output_directory
-    )
-    
     assert os.path.isfile(f"{output_directory}/replica_4.dcd")
-    assert os.path.isfile(f"{output_directory}/state_4.dcd")
+    
+
+def test_write_replica_dcd_traj_no_center(tmpdir):
+    """
+    Test replica trajectory writer (dcd):
+    """    
+
+    output_directory = tmpdir.mkdir("output")
+    output_data = os.path.join(data_path, "output.nc")
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+    
+    # For dcd, we also need to set the time intervals:
+    exchange_frequency = 10
+    timestep = 5 * unit.femtosecond    
     
     # With non-default frame_begin, stride, no centering:
     make_replica_dcd_files(
         cgmodel.topology,
-        timestep=simulation_time_step,
-        time_interval=exchange_frequency,
-        frame_begin=10,
-        frame_stride=2,
-        output_dir=output_directory
-    )
-    
-    make_state_dcd_files(
-        cgmodel.topology,
-        timestep=simulation_time_step,
+        timestep=timestep,
         time_interval=exchange_frequency,
         frame_begin=10,
         frame_stride=2,
         output_dir=output_directory,
-        center=False
+        output_data=output_data,
+        center=False,
     )
     
+    assert os.path.isfile(f"{output_directory}/replica_4.dcd")
+
 
 def test_restart_replica_exchange(tmpdir):
     """
