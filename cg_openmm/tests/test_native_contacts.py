@@ -472,6 +472,163 @@ def test_expectations_fraction_contacts_dcd(tmpdir):
     assert os.path.isfile(f"{output_directory}/Q_vs_T_fit.pdf")
     
     
+def test_expectations_partial_contact_fractions_2state(tmpdir):
+    """
+    Test the partial contact fraction expectation code for the trivial case 
+    of a 2 state system (should match the original expectation native contact fraction result)
+    """
+
+    output_directory = tmpdir.mkdir("output")
+
+    # Replica exchange settings
+    number_replicas = 12
+    min_temp = 200.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
+    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
+
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+
+    # Create list of pdb trajectories to analyze
+    # For expectation fraction native contacts, we use replica trajectories: 
+    dcd_file_list = []
+    for i in range(len(temperature_list)):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+        
+    # Load in native structure file:    
+    native_structure_file=f"{structures_path}/medoid_0.dcd"
+
+    # Set cutoff parameters:
+    # Cutoff for native structure pairwise distances:
+    native_contact_cutoff = 4.0* unit.angstrom
+
+    # Tolerance for current trajectory distances:
+    native_contact_tol = 1.5
+
+    # Set production frames:
+    frame_begin = 100
+
+    # Get native contacts:
+    native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
+        cgmodel,
+        native_structure_file,
+        native_contact_cutoff,
+    )
+
+    Q, Q_avg, Q_stderr, decorrelation_spacing = fraction_native_contacts(
+        cgmodel,
+        dcd_file_list,
+        native_contact_list,
+        native_contact_distances,
+        frame_begin=frame_begin,
+        native_contact_tol=native_contact_tol,
+    )
+    
+    # Set 1 as folded, 0 as unfolded:
+    Q_folded = 0.3
+    array_folded_states = np.multiply((Q>=Q_folded),1)
+    
+    output_data = os.path.join(data_path, "output.nc")
+    num_intermediate_states=1
+
+    Q_values_partial, T_list_out = expectations_partial_contact_fractions(
+        array_folded_states,
+        Q,
+        frame_begin=100,
+        output_data=output_data,
+        num_intermediate_states=num_intermediate_states,
+        transition_list='0_1',
+    )
+    
+    Q_results = expectations_fraction_contacts(
+        Q,
+        frame_begin=100,
+        output_data=output_data,
+        num_intermediate_states=num_intermediate_states,
+    )
+    
+    assert Q_results['Q'].all() == Q_values_partial['0_1'].all()
+    
+    
+def test_expectations_partial_contact_fractions_2state_no_list(tmpdir):
+    """
+    Test the partial contact fraction expectation code for the trivial case 
+    of a 2 state system (should match the original expectation native contact fraction result)
+    (no transition list explicitly specified)
+    """
+
+    output_directory = tmpdir.mkdir("output")
+
+    # Replica exchange settings
+    number_replicas = 12
+    min_temp = 200.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
+    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
+
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+
+    # Create list of pdb trajectories to analyze
+    # For expectation fraction native contacts, we use replica trajectories: 
+    dcd_file_list = []
+    for i in range(len(temperature_list)):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+        
+    # Load in native structure file:    
+    native_structure_file=f"{structures_path}/medoid_0.dcd"
+
+    # Set cutoff parameters:
+    # Cutoff for native structure pairwise distances:
+    native_contact_cutoff = 4.0* unit.angstrom
+
+    # Tolerance for current trajectory distances:
+    native_contact_tol = 1.5
+
+    # Set production frames:
+    frame_begin = 100
+
+    # Get native contacts:
+    native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
+        cgmodel,
+        native_structure_file,
+        native_contact_cutoff,
+    )
+
+    Q, Q_avg, Q_stderr, decorrelation_spacing = fraction_native_contacts(
+        cgmodel,
+        dcd_file_list,
+        native_contact_list,
+        native_contact_distances,
+        frame_begin=frame_begin,
+        native_contact_tol=native_contact_tol,
+    )
+    
+    # Set 1 as folded, 0 as unfolded:
+    Q_folded = 0.3
+    array_folded_states = np.multiply((Q>=Q_folded),1)
+    
+    output_data = os.path.join(data_path, "output.nc")
+    num_intermediate_states=1
+
+    Q_values_partial, T_list_out = expectations_partial_contact_fractions(
+        array_folded_states,
+        Q,
+        frame_begin=100,
+        output_data=output_data,
+        num_intermediate_states=num_intermediate_states,
+        transition_list=None,
+    )
+    
+    Q_results = expectations_fraction_contacts(
+        Q,
+        frame_begin=100,
+        output_data=output_data,
+        num_intermediate_states=num_intermediate_states,
+    )
+    
+    assert Q_results['Q'].all() == Q_values_partial['0_1'].all()
+    
+    
 def test_expectations_fraction_contacts_dcd_homopolymer_sym(tmpdir):
     """
     See if we can determine native contacts expectations as a function of T,
@@ -576,6 +733,151 @@ def test_bootstrap_native_contacts_expectation_dcd(tmpdir):
         )
         
     assert os.path.isfile(f'{output_directory}/native_contacts_boot.pdf')  
+    
+    
+def test_bootstrap_partial_contacts_expectation_dcd_2state(tmpdir):
+    """Test bootstrapping of partial native contacts expectation, based on helix contacts"""
+    
+    output_directory = tmpdir.mkdir("output")
+    output_data = os.path.join(data_path, "output.nc")
+    
+    # Replica exchange settings
+    number_replicas = 12
+    
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+    
+    # Create list of pdb trajectories to analyze
+    # For fraction_native_contacts vs. T, we use state trajectories.
+    # However, we can test with the replica pdbs:
+    dcd_file_list = []
+    for i in range(number_replicas):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+        
+    # Load in native structure file:    
+    native_structure_file=f"{structures_path}/medoid_0.dcd"
+    
+    # Set cutoff parameters:
+    # Cutoff for native structure pairwise distances:
+    native_contact_cutoff = 4.0* unit.angstrom
+
+    # Tolerance for current trajectory distances:
+    native_contact_tol = 1.5    
+    
+    # Determine native contacts:
+    native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
+        cgmodel,
+        native_structure_file,
+        native_contact_cutoff,
+    )
+    
+    frame_begin = 100
+    
+    Q, Q_avg, Q_stderr, decorrelation_spacing = fraction_native_contacts(
+        cgmodel,
+        dcd_file_list,
+        native_contact_list,
+        native_contact_distances,
+        frame_begin=frame_begin,
+        native_contact_tol=native_contact_tol,
+    )
+    
+    # Set 1 as folded, 0 as unfolded:
+    Q_folded = 0.3
+    array_folded_states = np.multiply((Q>=Q_folded),1)    
+    
+    full_T_list, Q_values, Q_uncertainty, sigmoid_results_boot = bootstrap_partial_contacts_expectation(
+        cgmodel,
+        dcd_file_list,
+        native_contact_list,
+        native_contact_distances,
+        array_folded_states,
+        output_data=output_data,
+        frame_begin=frame_begin,
+        sample_spacing=20,
+        native_contact_tol=native_contact_tol,
+        num_intermediate_states=1,
+        n_trial_boot=10,
+        conf_percent='sigma',
+        plotfile=f'{output_directory}/partial_contacts_boot.pdf',
+        transition_list='0_1',
+        )
+        
+    assert os.path.isfile(f'{output_directory}/partial_contacts_boot.pdf')      
+    
+    
+def test_bootstrap_partial_contacts_expectation_dcd_2state_no_list(tmpdir):
+    """
+    Test bootstrapping of partial native contacts expectation, based on helix contacts
+    (no transition list explicitly specified)
+    """
+    
+    output_directory = tmpdir.mkdir("output")
+    output_data = os.path.join(data_path, "output.nc")
+    
+    # Replica exchange settings
+    number_replicas = 12
+    
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+    
+    # Create list of pdb trajectories to analyze
+    # For fraction_native_contacts vs. T, we use state trajectories.
+    # However, we can test with the replica pdbs:
+    dcd_file_list = []
+    for i in range(number_replicas):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+        
+    # Load in native structure file:    
+    native_structure_file=f"{structures_path}/medoid_0.dcd"
+    
+    # Set cutoff parameters:
+    # Cutoff for native structure pairwise distances:
+    native_contact_cutoff = 4.0* unit.angstrom
+
+    # Tolerance for current trajectory distances:
+    native_contact_tol = 1.5    
+    
+    # Determine native contacts:
+    native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
+        cgmodel,
+        native_structure_file,
+        native_contact_cutoff,
+    )
+    
+    frame_begin = 100
+    
+    Q, Q_avg, Q_stderr, decorrelation_spacing = fraction_native_contacts(
+        cgmodel,
+        dcd_file_list,
+        native_contact_list,
+        native_contact_distances,
+        frame_begin=frame_begin,
+        native_contact_tol=native_contact_tol,
+    )
+    
+    # Set 1 as folded, 0 as unfolded:
+    Q_folded = 0.3
+    array_folded_states = np.multiply((Q>=Q_folded),1)    
+    
+    full_T_list, Q_values, Q_uncertainty, sigmoid_results_boot = bootstrap_partial_contacts_expectation(
+        cgmodel,
+        dcd_file_list,
+        native_contact_list,
+        native_contact_distances,
+        array_folded_states,
+        output_data=output_data,
+        frame_begin=frame_begin,
+        sample_spacing=20,
+        native_contact_tol=native_contact_tol,
+        num_intermediate_states=1,
+        n_trial_boot=10,
+        conf_percent='sigma',
+        plotfile=f'{output_directory}/partial_contacts_boot.pdf',
+        transition_list=None,
+        )
+        
+    assert os.path.isfile(f'{output_directory}/partial_contacts_boot.pdf')       
     
     
 def test_bootstrap_native_contacts_expectation_dcd_homopolymer_sym(tmpdir):
