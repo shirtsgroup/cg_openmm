@@ -368,10 +368,10 @@ def expectations_fraction_contacts(fraction_native_contacts, frame_begin=0, samp
     
 def expectations_partial_contact_fractions(array_folded_states, fraction_native_contacts,
     frame_begin=0, sample_spacing=1, output_data="output/output.nc", num_intermediate_states=0,
-    bootstrap_energies=None, transition_list=None):
+    bootstrap_energies=None):
     """
     For systems with more than 2 conformational states, compute the expectation fraction of contacts
-    vs temperature for each individual transition by summing the appropriate mbar weights.
+    vs temperature for each individual configurational state by summing the appropriate mbar weights.
     
     :param array_folded_states: a precomputed array classifying the different conformational states
     :type array_folded_states: 2d numpy array (int)     
@@ -394,11 +394,8 @@ def expectations_partial_contact_fractions(array_folded_states, fraction_native_
     :param bootstrap_energies: a custom replica_energies array to be used for bootstrapping calculations. Used instead of the energies in the .nc file. (default=None)
     :type bootstrap_energies: 2d numpy array (float)
     
-    :param transition_list: a list containing the allowed transitions to a folded state, such as '0_1' or '1_2'. 
-    :type transition_list: list ( str )
-    
     :returns:
-       - Q_expect_confs ( dict ) - dictionary of the form {'m_n': 1D numpy array} containing partial contact fractions for each transition between states m and n
+       - Q_expect_confs ( dict ) - dictionary of the form {'m_n': 1D numpy array} containing partial contact fractions for each conformational state
        - T_list_out ( np.array ( float * unit.simtk.temperature ) ) Temperature list corresponding to the partial contact fraction values
     """
 
@@ -515,50 +512,23 @@ def expectations_partial_contact_fractions(array_folded_states, fraction_native_
     Q_expect_confs = {} # Contact fraction expectations
     
     n_conf_states = len(np.unique(array_folded_states))
-    
-    if n_conf_states == 1:
-        print(f'Only 1 configurational state found. Exiting...')
-        exit()
-    
-    print(f'n_conf_states: {n_conf_states}') 
-    
-    if transition_list is None:
-        # Compute all transitions:
-        transition_list = []
-        for m in range(n_conf_states):
-            for n in range(m+1,n_conf_states):
-                transition_list.append(f'{m}_{n}')
-                
-    elif type(transition_list) == str:
-        # Convert to list if a single string:
-        if type(transition_list) == str:
-            transition_list = transition_list.split()           
-    
-    print(f'transitions: {transition_list}') 
-    
-    for m in range(n_conf_states):
-        for n in range(m+1,n_conf_states):
-            if f'{m}_{n}' in transition_list:
-                num_confs[f'{m}_{n}'] = 0
-                den_confs[f'{m}_{n}'] = 0
 
-    # Loop over the conformational transitions:    
+    for m in range(n_conf_states):
+        num_confs[f'{m}'] = 0
+        den_confs[f'{m}'] = 0
+
+    # Loop over the conformational states:    
     for frame in range(len(array_folded_states)):
         # Sum the weighted energies for partial contact fraction eval:
-        # These expectations are for Q in the subset of states (m,n)
         for m in range(n_conf_states):
-            for n in range(m+1,n_conf_states):
-                if f'{m}_{n}' in transition_list:
-                    if array_folded_states[frame] == m or array_folded_states[frame] == n:
-                        num_confs[f'{m}_{n}'] += w_nk[frame,:]*Q[frame]
-                        den_confs[f'{m}_{n}'] += w_nk[frame,:]
-                        break            
+            if array_folded_states[frame] == m:
+                num_confs[f'{m}'] += w_nk[frame,:]*Q[frame]
+                den_confs[f'{m}'] += w_nk[frame,:]
+                break            
             
     # Now compute the final expectation values:        
     for m in range(n_conf_states):
-        for n in range(m+1,n_conf_states):
-            if f'{m}_{n}' in transition_list:
-                Q_expect_confs[f'{m}_{n}'] = num_confs[f'{m}_{n}']/den_confs[f'{m}_{n}']
+        Q_expect_confs[f'{m}'] = num_confs[f'{m}']/den_confs[f'{m}']
 
     # ***TODO: implement uncertainty directly from the mbar algorithm
 
@@ -691,7 +661,7 @@ def fraction_native_contacts(
                 
                 for m in range(n_mono):
                     for p in range(n_particles_per_mono):
-                        particle_indices_reverse = n_particles - n_particles_per_mono*(m+1) - p
+                        particle_indices_reverse.append(n_particles - n_particles_per_mono*(m+1) + p)
                         # For example, if forward indices [0,1] is [bb,sc] with 84 total particles, then [82,83] is the reverse
                 
                 # Now select the contact pairs:
@@ -815,6 +785,7 @@ def fraction_native_contacts_preloaded(
     
         if rep == 0:
             nframes = traj_dict[rep][frame_begin:].n_frames
+            n_particles = traj_dict[rep][frame_begin:].n_atoms
             Q = np.zeros((nframes,n_replicas))
 
         traj_distances = md.compute_distances(
@@ -827,7 +798,6 @@ def fraction_native_contacts_preloaded(
             # ***Note: this assumes that the particles are indexed by monomer, and in the same
             # order for each monomer.
             
-            n_particles = rep_traj.n_atoms
             reverse_contact_list = []            
             
             if len(cgmodel.particle_type_list) == 1:
@@ -866,7 +836,7 @@ def fraction_native_contacts_preloaded(
                 
                 for m in range(n_mono):
                     for p in range(n_particles_per_mono):
-                        particle_indices_reverse = n_particles - n_particles_per_mono*(m+1) - p
+                        particle_indices_reverse.append(n_particles - n_particles_per_mono*(m+1) + p)
                         # For example, if forward indices [0,1] is [bb,sc] with 84 total particles, then [82,83] is the reverse
                 
                 # Now select the contact pairs:
@@ -1689,7 +1659,6 @@ def bootstrap_partial_contacts_expectation(
     conf_percent='sigma',
     plotfile='Q_vs_T_bootstrap.pdf',
     homopolymer_sym=False,
-    transition_list=None,
     ):
     """
     Given a cgmodel, native contact definitions, and trajectory file list, this function calculates the
@@ -1697,7 +1666,7 @@ def bootstrap_partial_contacts_expectation(
     the uncertainties in the Q vs T folding curve. Intended to be used after the native contact tolerance
     has been optimized (either the helical or generalized versions).
     
-    Here the partial contact fractions are computed, using only the structures classified within a pair of conformations.
+    Here the partial contact fractions are computed for each conformational state in array_folded_states
     
     :param cgmodel: CGModel() class object
     :type cgmodel: class
@@ -1795,19 +1764,7 @@ def bootstrap_partial_contacts_expectation(
     
     # Get the number of conformational state classifications:
     n_conf_states = len(np.unique(array_folded_states))      
-    
-    if transition_list is None:
-        # Compute all transitions:
-        transition_list = []
-        for m in range(n_conf_states):
-            for n in range(m+1,n_conf_states):
-                transition_list.append(f'{m}_{n}')
-                
-    elif type(transition_list) == str:
-        # Convert to list if a single string:
-        if type(transition_list) == str:
-            transition_list = transition_list.split()                      
-                
+
     # For each bootstrap trial, compute the expectation of native contacts and fit to sigmoid.
     Q_expect_boot = {}
     
@@ -1817,12 +1774,12 @@ def bootstrap_partial_contacts_expectation(
     sigmoid_Tm = {}
     Q_folded = {}
     
-    for trans in transition_list:
-        sigmoid_Q_max[trans] = np.zeros(n_trial_boot)
-        sigmoid_Q_min[trans] = np.zeros(n_trial_boot)
-        sigmoid_d[trans] = np.zeros(n_trial_boot)
-        sigmoid_Tm[trans] = np.zeros(n_trial_boot)
-        Q_folded[trans] = np.zeros(n_trial_boot)
+    for m in range(n_conf_states):
+        sigmoid_Q_max[m] = np.zeros(n_trial_boot)
+        sigmoid_Q_min[m] = np.zeros(n_trial_boot)
+        sigmoid_d[m] = np.zeros(n_trial_boot)
+        sigmoid_Tm[m] = np.zeros(n_trial_boot)
+        Q_folded[m] = np.zeros(n_trial_boot)
     
     for i_boot in range(n_trial_boot):
         # Select production frames to analyze
@@ -1857,7 +1814,7 @@ def bootstrap_partial_contacts_expectation(
             j += 1
             
         # Run the native contacts expectation calculation:
-        # Q_expect_boot is nested dict with keys [i_boot]['m_n']
+        # Q_expect_boot is nested dict with keys [i_boot]['m']
         Q_expect_boot[i_boot], T_list_out = expectations_partial_contact_fractions(
             array_folded_states_resample,
             Q_resample,
@@ -1865,31 +1822,29 @@ def bootstrap_partial_contacts_expectation(
             num_intermediate_states=num_intermediate_states,
             bootstrap_energies=replica_energies_resample,
             output_data=output_data,
-            transition_list=transition_list,
         )
         
-        # Fit contact fraction vs T for each transition to sigmoid:
-        for trans in transition_list:
+        # Fit contact fraction vs T for each state to sigmoid:
+        for m in range(n_conf_states):
             param_opt, param_cov = fit_sigmoid(
                 T_list_out,
-                Q_expect_boot[i_boot][trans],
+                Q_expect_boot[i_boot][f'{m}'],
                 plotfile=None
                 )
         
             # Save the individual parameters:
             # These have the reversed order of keys:
             if param_opt[1] >= param_opt[2]:
-                sigmoid_Q_max[trans][i_boot] = param_opt[1]
-                sigmoid_Q_min[trans][i_boot] = param_opt[2]
+                sigmoid_Q_max[m][i_boot] = param_opt[1]
+                sigmoid_Q_min[m][i_boot] = param_opt[2]
             else:
                 # This shouldn't occur unless d is negative
-                print(f'Error with sigmoid fitting')
-                sigmoid_Q_max[trans][i_boot] = param_opt[2]
-                sigmoid_Q_min[trans][i_boot] = param_opt[1]
+                sigmoid_Q_max[m][i_boot] = param_opt[2]
+                sigmoid_Q_min[m][i_boot] = param_opt[1]
                 
-            sigmoid_d[trans][i_boot] = param_opt[3]
-            sigmoid_Tm[trans][i_boot] = param_opt[0]
-            Q_folded[trans][i_boot] = (param_opt[1]+param_opt[2])/2
+            sigmoid_d[m][i_boot] = param_opt[3]
+            sigmoid_Tm[m][i_boot] = param_opt[0]
+            Q_folded[m][i_boot] = (param_opt[1]+param_opt[2])/2
         
     # Compute uncertainty at all temps in Q_expect_boot over the n_trial_boot trials performed:
     
@@ -1899,11 +1854,11 @@ def bootstrap_partial_contacts_expectation(
     # Convert bootstrap trial dicts to array
     arr_Q_values_boot = {}
     
-    for trans in transition_list:
-        arr_Q_values_boot[trans] = np.zeros((n_trial_boot, n_temps))
+    for m in range(n_conf_states):
+        arr_Q_values_boot[m] = np.zeros((n_trial_boot, n_temps))
     
         for i_boot in range(n_trial_boot):
-            arr_Q_values_boot[trans][i_boot,:] = Q_expect_boot[i_boot][trans]
+            arr_Q_values_boot[m][i_boot,:] = Q_expect_boot[i_boot][f'{m}']
             
     # Compute mean values:
 
@@ -1914,13 +1869,13 @@ def bootstrap_partial_contacts_expectation(
     sigmoid_Tm_value = {}
     Q_folded_value = {}
     
-    for trans in transition_list:
-        Q_values[trans] = np.mean(arr_Q_values_boot[trans],axis=0)
-        sigmoid_Q_max_value[trans] = np.mean(sigmoid_Q_max[trans])
-        sigmoid_Q_min_value[trans] = np.mean(sigmoid_Q_min[trans])
-        sigmoid_d_value[trans] = np.mean(sigmoid_d[trans])*unit.kelvin
-        sigmoid_Tm_value[trans] = np.mean(sigmoid_Tm[trans])*unit.kelvin
-        Q_folded_value[trans] = np.mean(Q_folded[trans])
+    for m in range(n_conf_states):
+        Q_values[m] = np.mean(arr_Q_values_boot[m],axis=0)
+        sigmoid_Q_max_value[m] = np.mean(sigmoid_Q_max[m])
+        sigmoid_Q_min_value[m] = np.mean(sigmoid_Q_min[m])
+        sigmoid_d_value[m] = np.mean(sigmoid_d[m])*unit.kelvin
+        sigmoid_Tm_value[m] = np.mean(sigmoid_Tm[m])*unit.kelvin
+        Q_folded_value[m] = np.mean(Q_folded[m])
     
     # Compute confidence intervals:
     Q_uncertainty = {}
@@ -1933,78 +1888,78 @@ def bootstrap_partial_contacts_expectation(
     if conf_percent == 'sigma':
         # Use analytical standard deviation instead of percentile method:
         
-        for trans in transition_list:
+        for m in range(n_conf_states):
             # Q values:
-            Q_std = np.std(arr_Q_values_boot[trans],axis=0)
-            Q_uncertainty[trans] = (-Q_std, Q_std)
+            Q_std = np.std(arr_Q_values_boot[m],axis=0)
+            Q_uncertainty[m] = (-Q_std, Q_std)
             
             # Sigmoid Q_max:
-            sigmoid_Q_max_std = np.std(sigmoid_Q_max[trans])
-            sigmoid_Q_max_uncertainty[trans] = (-sigmoid_Q_max_std, sigmoid_Q_max_std)   
+            sigmoid_Q_max_std = np.std(sigmoid_Q_max[m])
+            sigmoid_Q_max_uncertainty[m] = (-sigmoid_Q_max_std, sigmoid_Q_max_std)   
             
             # Sigmoid Q_min:
-            sigmoid_Q_min_std = np.std(sigmoid_Q_min[trans])
-            sigmoid_Q_min_uncertainty[trans] = (-sigmoid_Q_min_std, sigmoid_Q_min_std) 
+            sigmoid_Q_min_std = np.std(sigmoid_Q_min[m])
+            sigmoid_Q_min_uncertainty[m] = (-sigmoid_Q_min_std, sigmoid_Q_min_std) 
 
             # Sigmoid d:
-            sigmoid_d_std = np.std(sigmoid_d[trans])
-            sigmoid_d_uncertainty[trans] = (-sigmoid_d_std*unit.kelvin, sigmoid_d_std*unit.kelvin)
+            sigmoid_d_std = np.std(sigmoid_d[m])
+            sigmoid_d_uncertainty[m] = (-sigmoid_d_std*unit.kelvin, sigmoid_d_std*unit.kelvin)
             
             # Sigmoid Tm:
-            sigmoid_Tm_std = np.std(sigmoid_Tm[trans])
-            sigmoid_Tm_uncertainty[trans] = (-sigmoid_Tm_std*unit.kelvin, sigmoid_Tm_std*unit.kelvin)
+            sigmoid_Tm_std = np.std(sigmoid_Tm[m])
+            sigmoid_Tm_uncertainty[m] = (-sigmoid_Tm_std*unit.kelvin, sigmoid_Tm_std*unit.kelvin)
             
             # Q_folded:
-            Q_folded_std = np.std(Q_folded[trans])
-            Q_folded_uncertainty[trans] = (-Q_folded_std, Q_folded_std)
+            Q_folded_std = np.std(Q_folded[m])
+            Q_folded_uncertainty[m] = (-Q_folded_std, Q_folded_std)
         
     else:
         # Compute specified confidence interval:
         p_lo = (100-conf_percent)/2
         p_hi = 100-p_lo
                 
-        for trans in transition_list:        
+        for m in range(n_conf_states):        
             # Q values:
-            Q_diff = arr_Q_values_boot[trans]-np.mean(arr_Q_values_boot[trans],axis=0)
+            Q_diff = arr_Q_values_boot[m]-np.mean(arr_Q_values_boot[m],axis=0)
             Q_conf_lo = np.percentile(Q_diff,p_lo,axis=0,interpolation='linear')
             Q_conf_hi = np.percentile(Q_diff,p_hi,axis=0,interpolation='linear')
           
-            Q_uncertainty[trans] = (Q_conf_lo, Q_conf_hi) 
+            Q_uncertainty[m] = (Q_conf_lo, Q_conf_hi) 
                         
             # Sigmoid Q_max:
-            sigmoid_Q_max_diff = sigmoid_Q_max[trans]-np.mean(sigmoid_Q_max[trans])
+            sigmoid_Q_max_diff = sigmoid_Q_max[m]-np.mean(sigmoid_Q_max[m])
             sigmoid_Q_max_conf_lo = np.percentile(sigmoid_Q_max_diff,p_lo,interpolation='linear')
             sigmoid_Q_max_conf_hi = np.percentile(sigmoid_Q_max_diff,p_hi,interpolation='linear')
             
-            sigmoid_Q_max_uncertainty[trans] = (sigmoid_Q_max_conf_lo, sigmoid_Q_max_conf_hi)
+            sigmoid_Q_max_uncertainty[m] = (sigmoid_Q_max_conf_lo, sigmoid_Q_max_conf_hi)
             
             # Sigmoid Q_min:
-            sigmoid_Q_min_diff = sigmoid_Q_min[trans]-np.mean(sigmoid_Q_min[trans])
+            sigmoid_Q_min_diff = sigmoid_Q_min[m]-np.mean(sigmoid_Q_min[m])
             sigmoid_Q_min_conf_lo = np.percentile(sigmoid_Q_min_diff,p_lo,interpolation='linear')
             sigmoid_Q_min_conf_hi = np.percentile(sigmoid_Q_min_diff,p_hi,interpolation='linear')
             
-            sigmoid_Q_min_uncertainty[trans] = (sigmoid_Q_min_conf_lo, sigmoid_Q_min_conf_hi)
+            sigmoid_Q_min_uncertainty[m] = (sigmoid_Q_min_conf_lo, sigmoid_Q_min_conf_hi)
             
             # Sigmoid d:
-            sigmoid_d_diff = sigmoid_d[trans]-np.mean(sigmoid_d[trans])
+            sigmoid_d_diff = sigmoid_d[m]-np.mean(sigmoid_d[m])
             sigmoid_d_conf_lo = np.percentile(sigmoid_d_diff,p_lo,interpolation='linear')
             sigmoid_d_conf_hi = np.percentile(sigmoid_d_diff,p_hi,interpolation='linear')
             
-            sigmoid_d_uncertainty[trans] = (sigmoid_d_conf_lo*unit.kelvin, sigmoid_d_conf_hi*unit.kelvin)
+            sigmoid_d_uncertainty[m] = (sigmoid_d_conf_lo*unit.kelvin, sigmoid_d_conf_hi*unit.kelvin)
             
             # Sigmoid Tm:
-            sigmoid_Tm_diff = sigmoid_Tm[trans]-np.mean(sigmoid_Tm[trans])
+            sigmoid_Tm_diff = sigmoid_Tm[m]-np.mean(sigmoid_Tm[m])
             sigmoid_Tm_conf_lo = np.percentile(sigmoid_Tm_diff,p_lo,interpolation='linear')
             sigmoid_Tm_conf_hi = np.percentile(sigmoid_Tm_diff,p_hi,interpolation='linear')
             
-            sigmoid_Tm_uncertainty[trans] = (sigmoid_Tm_conf_lo*unit.kelvin, sigmoid_Tm_conf_hi*unit.kelvin)
+            sigmoid_Tm_uncertainty[m] = (sigmoid_Tm_conf_lo*unit.kelvin, sigmoid_Tm_conf_hi*unit.kelvin)
             
             # Q_folded:
-            Q_folded_diff = Q_folded[trans]-np.mean(Q_folded[trans])
+            Q_folded_diff = Q_folded[m]-np.mean(Q_folded[m])
             Q_folded_conf_lo = np.percentile(Q_folded_diff,p_lo,interpolation='linear')
             Q_folded_conf_hi = np.percentile(Q_folded_diff,p_hi,interpolation='linear')
             
-            Q_folded_uncertainty[trans] = (Q_folded_conf_lo, Q_folded_conf_hi*unit.kelvin)      
+            Q_folded_uncertainty[m] = (Q_folded_conf_lo, Q_folded_conf_hi*unit.kelvin)      
     
     # Compile sigmoid results into dict of dicts:
     sigmoid_results_boot = {}
@@ -2333,7 +2288,7 @@ def plot_native_contact_fraction(temperature_list, Q, Q_uncertainty, plotfile="Q
     
 def plot_partial_contact_fractions(temperature_list, Q_values, Q_uncertainty, plotfile="partial_Q_vs_T.pdf", sigmoid_dict=None):
     """
-    Given a list of temperatures and corresponding partial contact fractions, plot Q vs T for each transition.
+    Given a list of temperatures and corresponding partial contact fractions, plot Q vs T for each conformational state.
     If a sigmoid dict from bootstrapping is given, also plot the sigmoid curve.
     Note that this sigmoid curve is generated by using the mean values of the 4 hyperbolic fitting parameters
     taken over all bootstrap trials, not a direct fit to the Q vs T data. 
@@ -2363,25 +2318,25 @@ def plot_partial_contact_fractions(temperature_list, Q_values, Q_uncertainty, pl
         def tanh_switch(x,x0,y0,y1,d):
             return (y0+y1)/2-((y0-y1)/2)*np.tanh(np.radians(x-x0)/d)
         
-        for trans, value in Q_values.items():
+        for key, value in Q_values.items():
             xsig = np.linspace(temperature_array[0],temperature_array[-1],1000)
             ysig = tanh_switch(
                 xsig,
-                sigmoid_dict['sigmoid_Tm_value'][trans].value_in_unit(unit.kelvin),
-                sigmoid_dict['sigmoid_Q_max_value'][trans],
-                sigmoid_dict['sigmoid_Q_min_value'][trans],
-                sigmoid_dict['sigmoid_d_value'][trans].value_in_unit(unit.kelvin),
+                sigmoid_dict['sigmoid_Tm_value'][key].value_in_unit(unit.kelvin),
+                sigmoid_dict['sigmoid_Q_max_value'][key],
+                sigmoid_dict['sigmoid_Q_min_value'][key],
+                sigmoid_dict['sigmoid_d_value'][key].value_in_unit(unit.kelvin),
                 )
             
             
             errorbar1 = plt.errorbar(
                 temperature_array,
-                Q_values[trans],
+                Q_values[key],
                 yerr=Q_uncertainty,
                 linewidth=0.5,
                 markersize=4,
                 fmt='o',
-                label=f'trans {trans} mean',
+                label=f'state {key}',
                 fillstyle='none',
                 capsize=4,
             )
@@ -2393,15 +2348,15 @@ def plot_partial_contact_fractions(temperature_list, Q_values, Q_uncertainty, pl
             
             line2 = plt.plot(
                 xsig, ysig,'-',
-                label=f'trans {trans} fit',
+                label=f'state {key} fit',
                 color=color1, # keep the same color
             )
             
             line3 = plt.errorbar(
-                sigmoid_dict['sigmoid_Tm_value'][trans].value_in_unit(unit.kelvin),
-                sigmoid_dict['Q_folded_value'][trans],
-                xerr=sigmoid_dict['sigmoid_Tm_uncertainty'][trans][1].value_in_unit(unit.kelvin),
-                yerr=sigmoid_dict['Q_folded_uncertainty'][trans][1],
+                sigmoid_dict['sigmoid_Tm_value'][key].value_in_unit(unit.kelvin),
+                sigmoid_dict['Q_folded_value'][key],
+                xerr=sigmoid_dict['sigmoid_Tm_uncertainty'][key][1].value_in_unit(unit.kelvin),
+                yerr=sigmoid_dict['Q_folded_uncertainty'][key][1],
                 linewidth=0.5,
                 markersize=4,
                 fmt='D-r',
@@ -2427,14 +2382,14 @@ def plot_partial_contact_fractions(temperature_list, Q_values, Q_uncertainty, pl
                 # )
 
     else:
-        for trans, value in Q_values.items():
+        for key, value in Q_values.items():
             plt.errorbar(
                 temperature_array,
-                Q_values[trans],
-                Q_uncertainty[trans],
+                Q_values[key],
+                Q_uncertainty[key],
                 linewidth=0.5,
                 markersize=4,
-                label=f'trans {trans}',
+                label=f'state {key}',
                 fmt='o-',
                 fillstyle='none',
                 capsize=4,
