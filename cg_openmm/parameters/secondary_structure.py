@@ -621,6 +621,8 @@ def fraction_native_contacts(
         
             # ***Note: this assumes that the particles are indexed by monomer, and in the same
             # order for each monomer.
+            # We check if the model is a linear homopolymer, since there may be multiple backbone
+            # beads per monomer.
             
             n_particles = rep_traj.n_atoms
             reverse_contact_list = []            
@@ -637,32 +639,38 @@ def fraction_native_contacts(
                 # We need to use the particle type list of the original model,
                 # and reconstruct monomer by monomer from the opposite end.
                 
-                # This should also work for 1 particle per monomer.
-                
                 particle_type_list = []
-                mono_indices_list = []
                 particle_indices_forward = []
                 particle_indices_reverse = []
 
-                for p in range(n_particles):
-                    particle_indices_forward.append(p)
-                    particle_type_list.append(cgmodel.get_particle_type_name(p))
-                    mono_indices_list.append(cgmodel.get_particle_monomer(p))
+                # Check if linear chain with multiple beads per monomer:
+                mono = cgmodel.monomer_types
+                if len(mono) > 1:
+                    print(f'Error: cannot apply end-to-end symmetry with multiple monomer types')
+                    exit()
                 
-                n_particles_per_mono = 0
+                mono = mono[0]
+                mono_bond_start = mono['start']
+                mono_bond_end = mono['end']
+                mono_bond_list = mono['bond_list']
+                mono_particle_sequence = mono['particle_sequence']
+
+                #***TODO: add rigorous check for linear topology here.
                 
-                for p in range(n_particles):
-                    if cgmodel.get_particle_monomer(p) == 0:
-                        n_particles_per_mono += 1
-                    else:
-                        break
+                n_particle_unique = len(set(particle_type_list))
                 
+                n_particles_per_mono = len(mono_particle_sequence)
+
                 n_mono = int(n_particles/n_particles_per_mono)
                 
-                for m in range(n_mono):
-                    for p in range(n_particles_per_mono):
-                        particle_indices_reverse.append(n_particles - n_particles_per_mono*(m+1) + p)
-                        # For example, if forward indices [0,1] is [bb,sc] with 84 total particles, then [82,83] is the reverse
+                if n_particle_unique == 1:
+                    particle_indices_reverse = particle_indices_forward[::-1]
+                
+                else:
+                    for m in range(n_mono):
+                        for p in range(n_particles_per_mono):
+                            particle_indices_reverse.append(n_particles - n_particles_per_mono*(m+1) + p)
+                            # For example, if forward indices [0,1] is [bb,sc] with 84 total particles, then [82,83] is the reverse
                 
                 # Now select the contact pairs:
                 for pair in native_contact_list:
