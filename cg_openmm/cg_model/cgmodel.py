@@ -485,21 +485,24 @@ class CGModel(object):
         if self.include_bond_forces or self.constrain_bonds:
             self.bond_list = self.get_bond_list()
         else:
-            if self.exclusions[0] == 0:
+            if self.exclusions[0] == 0 or self.rosetta_functional_form:
                 print(f"Error: bonded particles must have either bond forces or 1-2 nonbonded forces")
                 exit()
             self.bond_list = []
             
         # Check for missing 1-3 interactions:
-        if self.include_bond_angle_forces == False and self.exclusions[1] == 0:
+        if ((self.include_bond_angle_forces == False and self.exclusions[1] == 0) or
+            (self.include_bond_angle_forces == False and self.rosetta_functional_form)):
             print(f"Warning: there are no 1-3 nonbonded or angle forces defined")        
         
         # Check for missing 1-4 interactions:
-        if (self.include_torsion_forces == False or self.rosetta_functional_form) and self.exclusions[2] == 0:
+        if ((self.include_torsion_forces == False and self.exclusions[2] == 0) or
+            (self.include_torsion_forces == False and self.rosetta_functional_form)):
             print(f"Warning: there are no 1-4 nonbonded or torsion forces defined")      
 
         self.bond_angle_list = self.get_bond_angle_list()
         self.torsion_list = self.get_torsion_list()
+        
         if 0 in self.exclusions:
             # There are one or more exclusion rules defined
             self.nonbonded_exclusion_list = self.get_nonbonded_exclusion_list(
@@ -709,13 +712,13 @@ class CGModel(object):
                         exclusion_list.append([bead_index + beadi, bead_index + beadj])
                 bead_index = bead_index + monomer["num_beads"]
 
-        if self.exclusions[0] == 0:
+        if self.exclusions[0] == 0 or rosetta_functional_form:
             # Exclude bonds:
             for bond in self.bond_list:
                 if bond not in exclusion_list and bond.reverse() not in exclusion_list:
                     exclusion_list.append(bond)
                     
-        if self.exclusions[1] == 0:
+        if self.exclusions[1] == 0 or rosetta_functional_form:
             # Exclude angles:
             for angle in self.bond_angle_list:
                 angle_ends = [angle[0], angle[2]]

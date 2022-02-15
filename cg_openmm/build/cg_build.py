@@ -539,16 +539,17 @@ def add_rosetta_exception_parameters(cgmodel, nonbonded_force, particle_index_1,
         if [index_1, index_2] not in exception_list and [index_2, index_1] not in exception_list:
             exception_list.append([index_1, index_2])
 
-    if [particle_index_1, particle_index_2] not in exception_list and [
-        particle_index_2,
-        particle_index_1,
-    ] not in exception_list:
+    if (([particle_index_1, particle_index_2] not in exception_list) and
+        ([particle_index_2, particle_index_1] not in exception_list)):
+        
         charge_1 = cgmodel.get_particle_charge(particle_index_1)
         sigma_1 = cgmodel.get_particle_sigma(particle_index_1).in_units_of(unit.nanometer)
         epsilon_1 = cgmodel.get_particle_epsilon(particle_index_1).in_units_of(unit.kilojoule_per_mole)
+        
         charge_2 = cgmodel.get_particle_charge(particle_index_2)
         sigma_2 = cgmodel.get_particle_sigma(particle_index_2).in_units_of(unit.nanometer)
         epsilon_2 = cgmodel.get_particle_epsilon(particle_index_2).in_units_of(unit.kilojoule_per_mole)
+        
         sigma = (sigma_1 + sigma_2) / 2.0
         epsilon = 0.2 * unit.sqrt(epsilon_1 * epsilon_2)
         nonbonded_force.addException(
@@ -637,7 +638,7 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
             # We need to specify a default value of kappa when adding global parameter
             nonbonded_force.addGlobalParameter("kappa",kappa)
             
-            # TODO: add the rosetta_function_form switching function
+            # TODO: add the rosetta_functional_form switching function
             nonbonded_force.setNonbondedMethod(mm.NonbondedForce.NoCutoff)
             
             for particle in range(cgmodel.num_beads):
@@ -673,6 +674,29 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
             # Add nonbonded exclusions:
             for pair in cgmodel.get_nonbonded_exclusion_list():
                 nonbonded_force.addException(pair[0],pair[1],0,0,0)
+                
+            # For rosetta, apply a 0.2 weight to 1-5 interactions:    
+            if rosetta_functional_form:
+                for torsion in cgmodel.torsion_list:
+                    for bond in cgmodel.bond_list:
+                        if bond[0] not in torsion:
+                            if bond[1] == torsion[0]:
+                                nonbonded_force = add_rosetta_exception_parameters(
+                                    cgmodel, nonbonded_force, bond[0], torsion[3]
+                                )
+                            if bond[1] == torsion[3]:
+                                nonbonded_force = add_rosetta_exception_parameters(
+                                    cgmodel, nonbonded_force, bond[0], torsion[0]
+                                )
+                        if bond[1] not in torsion:
+                            if bond[0] == torsion[0]:
+                                nonbonded_force = add_rosetta_exception_parameters(
+                                    cgmodel, nonbonded_force, bond[1], torsion[3]
+                                )
+                            if bond[0] == torsion[3]:
+                                nonbonded_force = add_rosetta_exception_parameters(
+                                    cgmodel, nonbonded_force, bond[1], torsion[0]
+                                )
 
         cgmodel.system.addForce(nonbonded_force)
         force = nonbonded_force
