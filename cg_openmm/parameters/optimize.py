@@ -9,9 +9,9 @@ from cg_openmm.thermo.calc import bootstrap_heat_capacity
 from scipy.optimize import minimize, minimize_scalar
 
 def optimize_force_field_parameters_Cv_FWHM(cgmodel, file_list, temperature_list, param_bounds_dict,
-    frame_begin=0, frame_end=-1, frame_stride=1, output_data='output.nc',
-    verbose=False, n_cpu=1, min_eff_samples=50,
-    n_trial_boot=50, num_intermediate_states=0, plotfile="optimize_FWHM_iterations.pdf",
+    frame_begin=0, frame_end=-1, sample_spacing=1, sparsify_stride=1, output_data='output.nc',
+    verbose=False, n_cpu=12, min_eff_samples=50,
+    n_trial_boot=200, num_intermediate_states=0, plotfile='optimize_FWHM_iterations.pdf',
     min_method='TNC'):
     """
     Generalized function for optimizating a set of cgmodel force field parameters to minimize
@@ -27,7 +27,7 @@ def optimize_force_field_parameters_Cv_FWHM(cgmodel, file_list, temperature_list
     :param temperature_list: List of temperatures associated with file_list
     :type temperature_list: List( float * simtk.unit.temperature )
 
-    :param param_bounds_dict: dictionary containing force field parameter names and bounds
+    :param param_bounds_dict: dictionary containing force field parameter names and bounds. Parameters not specified will use the fixed values defined in the cgmodel.
     :type param_bounds_dict: dict{'param_name': (bound_lo * simtk.unit, bound_hi * simtk.unit)}
 
     :param frame_begin: analyze starting from this frame, discarding all prior as equilibration period (default=0)
@@ -35,9 +35,12 @@ def optimize_force_field_parameters_Cv_FWHM(cgmodel, file_list, temperature_list
 
     :param frame_end: analyze up to this frame only, discarding the rest (default=-1).
     :type frame_end: int
+    
+    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData (default=1)
+    :type sample_spacing: int
 
-    :param frame_stride: advance by this many frames between each evaluation (default=1)
-    :type frame_stride: int
+    :param sparsify_stride: advance by this many frames between each energy evaluation (default=1)
+    :type sparsify_stride: int
 
     :param verbose: option to print out detailed per-particle parameter changes (default=False)
     :type verbose: Boolean
@@ -45,16 +48,16 @@ def optimize_force_field_parameters_Cv_FWHM(cgmodel, file_list, temperature_list
     :param n_cpu: number of cpus for running parallel energy evaluations (default=1)
     :type n_cpu: int
     
-    :param min_eff_samples: minimum number of effective samples determined from the mbar object, below which a full simulation is needed
+    :param min_eff_samples: minimum number of effective samples determined from the mbar object, below which a full simulation is needed (default=50)
     :type min_eff_samples: int
     
-    :param min_method: SciPy minimize method to use
+    :param min_method: SciPy minimize method to use (default='TNC')
     :type min_method: str
     
     :param num_intermediate_states: The number of states to insert between existing states in 'temperature_list' (default=0)
     :type num_intermediate_states: int
     
-    :param plotfile: path to filename to output plot
+    :param plotfile: path to filename to output plot (default='optimize_FWHM_iterations.pdf')
     :type plotfile: str
     
     :returns:
@@ -74,13 +77,22 @@ def optimize_force_field_parameters_Cv_FWHM(cgmodel, file_list, temperature_list
         # key should be a valid force field parameter name
         param_names.append(key)
         # Every parameter except periodicity should have units
+        # For now, changing periodicity is not supported.
+        
+        # TODO: add support for sums of periodic torsion terms
         units.append(value[0].unit)
         bounds.append((value[0].value_in_unit(units[-1]),value[1].value_in_unit(units[-1])))
         # Use mean value as starting guess:
         x0.append((value[1].value_in_unit(units[-1])+value[0].value_in_unit(units[-1]))/2)
 
+    if verbose:
+        print(f'param_names: {param_names}')
+        print(f'unit: {units}')
+        print(f'bounds: {bounds}')
+        print(f'x0: {x0}')
+
     def get_reeval_FWHM(param_values, cgmodel, file_list, temperature_list, output_data,
-        param_names, units, frame_begin, frame_stride, frame_end,
+        param_names, units, frame_begin, sample_spacing, sparsify_stride, frame_end,
         n_cpu, n_trial_boot, num_intermediate_states):
         """
         Objective function to be minimized
@@ -88,31 +100,34 @@ def optimize_force_field_parameters_Cv_FWHM(cgmodel, file_list, temperature_list
 
         # Construct dictionary of parameter update instructions:
         param_dict = {}
-        print(f'Current parameter value: {param_values}')
-        for i in range(len(param_names)):
-            param_dict[param_names[i]] = param_values * units[i]
+        
+        # if len(param_names) == 1:
+            # # 1D optimization:
+            # param_dict[param_names[0]] = param_values * units[0]
 
-            # For multivariate we would use this:
-            # param_dict[param_names[i]] = param_values[i] * units[i]
+        for i in range(len(param_names)):
+            param_dict[param_names[i]] = param_values[i] * units[i]
+    
+        if verbose:
+            print(f'Current parameters: {param_dict}')        
         
         # Re-evaluate energy with current force field parameters:
-        # For bootstrapping, evaluate all frames between [frame_begin:frame_end], and only
-        # apply the stride to the heat capacity part
+        # For bootstrapping, evaluate all frames between [frame_begin:sparsify_stride:frame_end], and
+        # apply the sample_spacing only to the heat capacity part
         U_eval, simulation = eval_energy(
             cgmodel,
             file_list,
             temperature_list,
             param_dict,
             frame_begin=frame_begin,
-            frame_stride=1,
+            frame_stride=sparsify_stride,
             frame_end=frame_end,
             n_cpu=n_cpu,
             verbose=verbose,
             )
 
         # Evaluate heat capacity and full-width half-maximum from bootstrapping:
-        (new_temperature_list,
-        C_v_values, C_v_uncertainty,
+        (new_temperature_list, C_v_values, C_v_uncertainty,
         Tm_value, Tm_uncertainty,
         Cv_height_value, Cv_height_uncertainty,
         FWHM_value, FWHM_uncertainty,
@@ -121,36 +136,53 @@ def optimize_force_field_parameters_Cv_FWHM(cgmodel, file_list, temperature_list
             output_data=output_data,
             frame_begin=frame_begin,
             frame_end=frame_end,
-            sample_spacing=frame_stride,
+            sample_spacing=sample_spacing,
+            sparsify_stride=sparsify_stride,
             num_intermediate_states=num_intermediate_states,
             n_trial_boot=n_trial_boot,
             plot_file=f'heat_capacity_boot_{param_names[0]}_{param_values}.pdf',
         )
-
-        print(f'Current FWHM: {FWHM_value} +/- {FWHM_uncertainty[0]}')
+        
+        if verbose:
+            print(f'Current FWHM: {FWHM_value} +/- {FWHM_uncertainty[0]}')
+            print(f'Current minimum N_eff: {np.min(N_eff_values)}')
+        
+        # Check for minimum N_eff criteria.
+        # If too small, the minimization should stop if we're using a gradient method.
+        # If we're not using a gradient method, return a large value.
+        
+        if np.min(N_eff_values) < min_eff_samples:
+            print(f'Insufficient number of effective samples ({np.min(N_eff_values)})')
+            
+            # print(f'Creating a cgmodel with current parameters...,end='')
+            # Create the cgmodel
+            # print('done')
+            
+            exit()
+        
         return FWHM_value.value_in_unit(unit.kelvin)
 
     # Run optimization:
 
-    if len(param_names) == 1:
-        # Do scalar optimization:
-        opt_results = minimize_scalar(get_reeval_FWHM, x0,
-            args=(cgmodel, file_list, temperature_list, output_data, param_names, units,
-            frame_begin, frame_stride, frame_end, n_cpu, n_trial_boot, num_intermediate_states),
-            method='bounded',
-            bounds=[bounds[0][0],bounds[0][1]],
-            options={'maxiter': 5},
-        )
+    # if len(param_names) == 1:
+        # # Do scalar optimization:
+        # opt_results = minimize_scalar(get_reeval_FWHM, x0,
+            # args=(cgmodel, file_list, temperature_list, output_data, param_names, units,
+            # frame_begin, sample_spacing, sparsify_stride, frame_end, n_cpu, n_trial_boot, num_intermediate_states),
+            # method='bounded',
+            # bounds=[bounds[0][0],bounds[0][1]],
+            # options={'maxiter': 25},
+            # )
 
-    else:
-        # Do multivariate optimization:
-        opt_results = minimize(get_reeval_FWHM, x0,
-            args=(cgmodel, file_list, temperature_list, output_data, param_names, units,
-            frame_begin, frame_stride, frame_end, n_cpu, n_trial_boot, num_intermediate_states),
-            method=min_method,
-            bounds=bounds,
-            options={'maxfun': 5},
-        )    
+    # else:
+    # Do multivariate optimization:
+    opt_results = minimize(get_reeval_FWHM, x0, jac='2-point',
+        args=(cgmodel, file_list, temperature_list, output_data, param_names, units,
+        frame_begin, sample_spacing, sparsify_stride, frame_end, n_cpu, n_trial_boot, num_intermediate_states),
+        method=min_method,
+        bounds=bounds,
+        options={'maxfun': 25, 'finite_diff_rel_step': 0.005, 'eta': 0.5}, # This should be user input
+    )    
         
     # TODO: plot the heat capacity curves at each iteration, and make a plot of all FWHM_values    
 

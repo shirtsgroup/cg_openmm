@@ -51,19 +51,30 @@ def get_native_contacts(cgmodel, native_structure_file, native_contact_distance_
         
     # Include only pairs contained in the nonbonded_interaction_list    
     nonbonded_interaction_list = cgmodel.nonbonded_interaction_list
-    native_structure_distances = distances(nonbonded_interaction_list, native_structure)
-    native_contact_list = []
-    native_contact_distances_list = []
+    nonbonded_exclusion_list = cgmodel.get_nonbonded_exclusion_list()
     
-    for interaction in range(len(nonbonded_interaction_list)):
+    # Determine the true nonbonded inclusion list
+    nonbonded_inclusion_list = []
+    
+    for pair in nonbonded_interaction_list:
+        par1 = pair[0]
+        par2 = pair[1]
+        if [par1,par2] not in nonbonded_exclusion_list and [par2,par1] not in nonbonded_exclusion_list:
+            nonbonded_inclusion_list.append(pair)
+                
+    native_structure_distances = distances(nonbonded_inclusion_list, native_structure)
+    native_contact_list = []
+    
+    for interaction in range(len(nonbonded_inclusion_list)):
         if native_structure_distances[interaction] < (native_contact_distance_cutoff):
-            native_contact_list.append(nonbonded_interaction_list[interaction])
-            native_contact_distances_list.append(distances(native_contact_list, native_structure))
+            native_contact_list.append(nonbonded_inclusion_list[interaction])
+    
+    native_contact_distances_list = distances(native_contact_list, native_structure)
     
     # Units get messed up if converted using np.asarray
     native_contact_distances = np.zeros((len(native_contact_distances_list)))
     for i in range(len(native_contact_distances_list)):
-        native_contact_distances[i] = native_contact_distances_list[i][0].value_in_unit(unit.nanometer)
+        native_contact_distances[i] = native_contact_distances_list[i].value_in_unit(unit.nanometer)
     native_contact_distances *= unit.nanometer
     
     # Determine particle types of the native contacts:
@@ -280,6 +291,9 @@ def expectations_fraction_contacts(fraction_native_contacts, frame_begin=0, samp
     for s in states:
         temperature_list.append(s.temperature)
 
+    # Close the data file:
+    reporter.close()
+
     # determine the numerical values of beta at each state in units consistent with the temperature
     Tunit = temperature_list[0].unit
     temps = np.array([temp.value_in_unit(Tunit)  for temp in temperature_list])  # should this just be array to begin with
@@ -360,6 +374,7 @@ def fraction_native_contacts(
     frame_begin=0,
     native_contact_tol=1.3,
     subsample=True,
+    homopolymer_sym=False,
 ):
     """
     Given a cgmodel, mdtraj trajectory object, and positions for the native structure, this function calculates the fraction of native contacts for the model.
@@ -384,7 +399,10 @@ def fraction_native_contacts(
     
     :param subsample: option to use pymbar subsampleCorrelatedData to detect and return the interval between uncorrelated data points (default=True)
     :type subsample: Boolean
-
+    
+    :param homopolymer_sym: if there is end-to-end symmetry, scan forwards and backwards sequences for highest Q (default=False)
+    :type homopolymer_sym: Boolean    
+    
     :returns:
       - Q ( numpy array (float * nframes x nreplicas) ) - The fraction of native contacts for all selected frames in the trajectories.
       - Q_avg ( numpy array (float * nreplicas) ) - Mean values of Q for each replica.
@@ -410,6 +428,13 @@ def fraction_native_contacts(
     Q_avg = np.zeros((n_replicas))
     Q_stderr = np.zeros((n_replicas))
       
+    # For homopolymer symmetry, check that the chains are linear,
+    # which is the only option implemented for symmetry checks so far.
+    if homopolymer_sym:
+        if len(cgmodel.particle_type_list) > 1:
+            print(f'Error: For homopolymer symmetry checks, only linear chains with one bead type are supported')
+            exit()
+      
     for rep in range(n_replicas):            
         # This should work for pdb or dcd
         # However for dcd we need to insert a topology, and convert it from openmm->mdtraj topology 
@@ -418,8 +443,8 @@ def fraction_native_contacts(
         else:
             rep_traj = md.load(file_list[rep])
         # Select frames for analysis:
-        rep_traj = rep_traj[frame_begin:]
-        
+        rep_traj = rep_traj[frame_begin::]
+
         if rep == 0:
             nframes = rep_traj.n_frames
             Q = np.zeros((nframes,n_replicas))
@@ -427,6 +452,27 @@ def fraction_native_contacts(
         traj_distances = md.compute_distances(
             rep_traj,native_contact_list,periodic=False,opt=True)
         # This produces a [nframe x len(native_contacts)] array
+        
+        if homopolymer_sym:
+            # We can simply reverse the indices of the native contact list:
+            # ***TODO: allow the reversed indices to be specified explicitly.
+            # (such as if there are sidechains, or the order in the pdb file is different)
+  
+            n_particles = rep_traj.n_atoms
+            reverse_contact_list = []
+            for pair in native_contact_list:
+                reverse_par0 = n_particles-pair[0]-1
+                reverse_par1 = n_particles-pair[1]-1
+                reverse_contact_list.append([reverse_par0, reverse_par1])
+                
+            reverse_distances = md.compute_distances(
+                rep_traj,reverse_contact_list,periodic=False,opt=True)
+  
+            # Select the smaller of the forward/reverse distances
+            for frame in range(traj_distances.shape[0]):
+                for pair in range(traj_distances.shape[1]):
+                    if reverse_distances[frame,pair] < traj_distances[frame,pair]:
+                        traj_distances[frame,pair] = reverse_distances[frame,pair]
   
         # Compute Boolean matrix for whether or not a distance is native
         native_contact_matrix = (traj_distances<native_contact_tol*(native_contact_distances.value_in_unit(nc_unit)))
@@ -482,6 +528,7 @@ def fraction_native_contacts_preloaded(
     frame_begin=0,
     native_contact_tol=1.3,
     subsample=True,
+    homopolymer_sym=False,
 ):
     """
     Given a cgmodel, mdtraj trajectory object, and positions for the native structure, this function calculates the fraction of native contacts for the model.
@@ -506,6 +553,9 @@ def fraction_native_contacts_preloaded(
     
     :param subsample: option to use pymbar subsampleCorrelatedData to detect and return the interval between uncorrelated data points (default=True)
     :type subsample: Boolean
+    
+    :param homopolymer_sym: if there is end-to-end symmetry, scan forwards and backwards sequences for highest Q (default=False)
+    :type homopolymer_sym: Boolean    
 
     :returns:
       - Q ( numpy array (float * nframes x nreplicas) ) - The fraction of native contacts for all selected frames in the trajectories.
@@ -526,20 +576,38 @@ def fraction_native_contacts_preloaded(
     Q_avg = np.zeros((n_replicas))
     Q_stderr = np.zeros((n_replicas))
       
-    for rep in range(n_replicas):            
-        if rep == 0:
-            nframes = traj_dict[rep].n_frames
-            Q = np.zeros((nframes,n_replicas))
-        
-        traj_distances = md.compute_distances(
-            traj_dict[rep][frame_begin:],native_contact_list,periodic=False,opt=True)
-            
+    for rep in range(n_replicas):
+    
         if rep == 0:
             nframes = traj_dict[rep][frame_begin:].n_frames
             Q = np.zeros((nframes,n_replicas))
+
+        traj_distances = md.compute_distances(
+            traj_dict[rep][frame_begin:],native_contact_list,periodic=False,opt=True)
             
         # This produces a [nframe x len(native_contacts)] array
+        
+        if homopolymer_sym:
+            # We can simply reverse the indices of the native contact list:
+            # ***TODO: allow the reversed indices to be specified explicitly.
+            # (such as if there are sidechains, or the order in the pdb file is different)
   
+            n_particles = traj_dict[rep].n_atoms
+            reverse_contact_list = []
+            for pair in native_contact_list:
+                reverse_par0 = n_particles-pair[0]-1
+                reverse_par1 = n_particles-pair[1]-1
+                reverse_contact_list.append([reverse_par0, reverse_par1])
+                
+            reverse_distances = md.compute_distances(
+                traj_dict[rep][frame_begin:],reverse_contact_list,periodic=False,opt=True)
+  
+            # Select the smaller of the forward/reverse distances
+            for frame in range(traj_distances.shape[0]):
+                for pair in range(traj_distances.shape[1]):
+                    if reverse_distances[frame,pair] < traj_distances[frame,pair]:
+                        traj_distances[frame,pair] = reverse_distances[frame,pair]
+
         # Compute Boolean matrix for whether or not a distance is native
         native_contact_matrix = (traj_distances<native_contact_tol*(native_contact_distances.value_in_unit(nc_unit)))
 
@@ -590,7 +658,7 @@ def optimize_Q_cut(
     cgmodel, native_structure_file, traj_file_list, output_data="output/output.nc",
     num_intermediate_states=0, frame_begin=0, frame_stride=1,
     plotfile='native_contacts_opt_2d.pdf', verbose=False, minimizer_options=None,
-    bounds_nc_cut=None, bounds_nc_tol=(1,2)):
+    bounds_nc_cut=None, bounds_nc_tol=(1,2), homopolymer_sym=False):
     """
     Given a coarse grained model and a native structure as input, optimize both the distance cutoff defining
     the native contact pairs and the distance tolerance for scanning the trajectory for native contacts.
@@ -630,6 +698,9 @@ def optimize_Q_cut(
     
     :param bounds_nc_tol: native contact tolerance factor bounds (default=(1,2))
     :type bounds_nc_tol: tuple
+    
+    :param homopolymer_sym: if there is end-to-end symmetry, scan forwards and backwards sequences for highest Q (default=False)
+    :type homopolymer_sym: Boolean 
 
     :returns:
        - native_contact_cutoff ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The ideal distance below which two nonbonded, interacting particles should be defined as a "native contact"
@@ -652,6 +723,13 @@ def optimize_Q_cut(
         # Convert to a 1 element list if not one
         traj_file_list = traj_file_list.split()  
         n_replicas = 1
+    
+    # For homopolymer symmetry, check that the chains are linear,
+    # which is the only option implemented for symmetry checks so far.    
+    if homopolymer_sym:
+        if len(cgmodel.particle_type_list) > 1:
+            print(f'Error: For homopolymer symmetry checks, only linear chains with one bead type are supported')
+            exit()    
         
     for rep in range(n_replicas):
         if traj_file_list[rep][-3:] == 'dcd':
@@ -683,6 +761,7 @@ def optimize_Q_cut(
                 frame_begin=frame_begin,
                 native_contact_tol=native_contact_tol,
                 subsample=False,
+                homopolymer_sym=homopolymer_sym,
             )
             
             if Q.sum() == 0:
@@ -726,7 +805,7 @@ def optimize_Q_cut(
             print(f"native_contact_cutoff: {native_contact_cutoff}")
             print(f"native_contact_tol: {native_contact_tol}")
             print(f"number native contacts: {len(native_contact_list)}")
-            print(f"sigmoid params: {param_opt}\n")
+            print(f"sigmoid params: {param_opt}\n",flush=True)
             
         return min_val
     
@@ -791,7 +870,8 @@ def optimize_Q_cut(
             native_contact_list,
             native_contact_distances,
             frame_begin=frame_begin,
-            native_contact_tol=native_contact_tol
+            native_contact_tol=native_contact_tol,
+            homopolymer_sym=homopolymer_sym,
         )
 
         # Get expectations 
@@ -822,7 +902,7 @@ def optimize_Q_cut_1d(
     cgmodel, native_structure_file, traj_file_list, output_data="output/output.nc",
     num_intermediate_states=0, frame_begin=0, frame_stride=1, native_contact_tol = 1.3,
     plotfile='native_contacts_opt_1d.pdf', verbose=False, brute_step=0.1,
-    bounds=None):
+    bounds=None, homopolymer_sym=False):
     """
     Given a coarse grained model and a native structure as input, optimize the distance cutoff defining
     the native contact pairs, with a fixed distance tolerance factor for scanning the trajectory.
@@ -862,6 +942,9 @@ def optimize_Q_cut_1d(
     
     :param bounds: bounds in distance units for brute force optimization - if None, will determine bounds based on backbone sigma parameter (default=None)
     :type bounds: tuple
+    
+    :param homopolymer_sym: if there is end-to-end symmetry, scan forwards and backwards sequences for highest Q (default=False)
+    :type homopolymer_sym: Boolean       
 
     :returns:
        - native_contact_cutoff ( `Quantity() <https://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - The ideal distance below which two nonbonded, interacting particles should be defined as a "native contact"
@@ -883,7 +966,14 @@ def optimize_Q_cut_1d(
         # Convert to a 1 element list if not one
         traj_file_list = traj_file_list.split()  
         n_replicas = 1
-        
+      
+    # For homopolymer symmetry, check that the chains are linear,
+    # which is the only option implemented for symmetry checks so far.      
+    if homopolymer_sym:
+        if len(cgmodel.particle_type_list) > 1:
+            print(f'Error: For homopolymer symmetry checks, only linear chains with one bead type are supported')
+            exit()
+      
     for rep in range(n_replicas):
         if traj_file_list[rep][-3:] == 'dcd':
             traj_dict[rep] = md.load(traj_file_list[rep],top=md.Topology.from_openmm(cgmodel.topology))
@@ -913,6 +1003,7 @@ def optimize_Q_cut_1d(
                 frame_begin=frame_begin,
                 native_contact_tol=native_contact_tol,
                 subsample=False,
+                homopolymer_sym=homopolymer_sym,
             )
             
             if Q.sum() == 0:
@@ -955,7 +1046,7 @@ def optimize_Q_cut_1d(
             # Print parameters at each iteration:
             print(f"native_contact_cutoff: {native_contact_cutoff}")
             print(f"number native contacts: {len(native_contact_list)}")
-            print(f"sigmoid params: {param_opt}\n")
+            print(f"sigmoid params: {param_opt}\n",flush=True)
             
         return min_val
     
@@ -1010,7 +1101,8 @@ def optimize_Q_cut_1d(
         native_contact_list,
         native_contact_distances,
         frame_begin=frame_begin,
-        native_contact_tol=native_contact_tol
+        native_contact_tol=native_contact_tol,
+        homopolymer_sym=homopolymer_sym,
     )
 
     # Get expectations 
@@ -1040,6 +1132,7 @@ def bootstrap_native_contacts_expectation(
     n_trial_boot=200,
     conf_percent='sigma',
     plotfile='Q_vs_T_bootstrap.pdf',
+    homopolymer_sym=False,
     ):
     """
     Given a cgmodel, native contact definitions, and trajectory file list, this function calculates the
@@ -1080,6 +1173,9 @@ def bootstrap_native_contacts_expectation(
     :param plotfile: Path to output file for plotting results (default='Q_vs_T_bootstrap.pdf')
     :type plotfile: str
     
+    :param homopolymer_sym: if there is end-to-end symmetry, scan forwards and backwards sequences for highest Q (default=False)
+    :type homopolymer_sym: Boolean    
+    
     :returns:
        - temp_list ( List( float * unit.simtk.temperature ) ) - The temperature list corresponding to the native contact fraction values
        - Q_values ( List( float ) ) - The native contact fraction values for all (including inserted intermediates) states
@@ -1098,6 +1194,13 @@ def bootstrap_native_contacts_expectation(
         # Convert to a 1 element list if not one
         traj_file_list = traj_file_list.split()  
         n_replicas = 1
+      
+    # For homopolymer symmetry, check that the chains are linear,
+    # which is the only option implemented for symmetry checks so far.      
+    if homopolymer_sym:
+        if len(cgmodel.particle_type_list) > 1:
+            print(f'Error: For homopolymer symmetry checks, only linear chains with one bead type are supported')
+            exit()        
         
     for rep in range(n_replicas):
         if traj_file_list[rep][-3:] == 'dcd':
@@ -1115,6 +1218,8 @@ def bootstrap_native_contacts_expectation(
         replica_state_indices,
     ) = analyzer.read_energies()   
    
+    # Close the data file:
+    reporter.close()
             
     # Get native contact fraction of all frames (bootstrapping draws uncorrelated samples from this full dataset)
     # To avoid loading in files each iteration, use alternate version of fraction_native_contacts code
@@ -1126,6 +1231,7 @@ def bootstrap_native_contacts_expectation(
         frame_begin=frame_begin,
         native_contact_tol=native_contact_tol,
         subsample=False,
+        homopolymer_sym=homopolymer_sym,
     )
     
     # For each bootstrap trial, compute the expectation of native contacts and fit to sigmoid.
@@ -1316,7 +1422,8 @@ def bootstrap_native_contacts_expectation(
 def optimize_Q_tol_helix(
     cgmodel, native_structure_file, traj_file_list, output_data="output/output.nc",
     num_intermediate_states=0, frame_begin=0, frame_stride=1, backbone_type_name='bb',
-    plotfile='native_contacts_helix_opt.pdf', verbose=False, brute_step=0.1):
+    plotfile='native_contacts_helix_opt.pdf', verbose=False, brute_step=0.1,
+    homopolymer_sym=False):
     """
     Given a coarse grained model and a native structure as input, determine which helical backbone
     sequences are native contacts, and the optimal distance tolerance for scanning the
@@ -1354,6 +1461,9 @@ def optimize_Q_tol_helix(
     
     :param brute_step: step size in native distance multiples for brute force tolerance optimization (final optimization searches between intervals) (default=0.1)
     :type brute_step: float
+    
+    :param homopolymer_sym: if there is end-to-end symmetry, scan forwards and backwards sequences for highest Q (default=False)
+    :type homopolymer_sym: Boolean    
 
     :returns:
        - opt_seq_spacing ( int ) - the (i) to (i+n) number n defining contacting backbone beads
@@ -1375,7 +1485,14 @@ def optimize_Q_tol_helix(
         # Convert to a 1 element list if not one
         traj_file_list = traj_file_list.split()  
         n_replicas = 1
-        
+     
+    # For homopolymer symmetry, check that the chains are linear,
+    # which is the only option implemented for symmetry checks so far.     
+    if homopolymer_sym:
+        if len(cgmodel.particle_type_list) > 1:
+            print(f'Error: For homopolymer symmetry checks, only linear chains with one bead type are supported')
+            exit()
+     
     for rep in range(n_replicas):
         if traj_file_list[rep][-3:] == 'dcd':
             traj_dict[rep] = md.load(traj_file_list[rep],top=md.Topology.from_openmm(cgmodel.topology))
@@ -1404,6 +1521,7 @@ def optimize_Q_tol_helix(
                 frame_begin=frame_begin,
                 native_contact_tol=native_contact_tol,
                 subsample=False,
+                homopolymer_sym=homopolymer_sym,
             )
             
             if Q.sum() == 0:
@@ -1474,7 +1592,8 @@ def optimize_Q_tol_helix(
         native_contact_list,
         native_contact_distances,
         frame_begin=frame_begin,
-        native_contact_tol=native_contact_tol
+        native_contact_tol=native_contact_tol,
+        homopolymer_sym=homopolymer_sym,
     )
 
     # Get expectations 
