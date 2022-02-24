@@ -4,18 +4,19 @@ Unit and regression test for the cg_openmm package.
 
 # Import package, test suite, and other packages as needed  
   
-import os
 import copy
-from simtk import unit
+import os
+import pickle
+
 from cg_openmm.cg_model.cgmodel import CGModel
 from cg_openmm.parameters.evaluate_energy import *
+from cg_openmm.parameters.reweight import (get_opt_temperature_list,
+                                           get_temperature_list)
 from cg_openmm.thermo.calc import *
-from cg_openmm.parameters.reweight import get_temperature_list, get_opt_temperature_list
-from openmmtools.multistate import MultiStateReporter
-from openmmtools.multistate import ReplicaExchangeAnalyzer
-from numpy.testing import assert_almost_equal, assert_allclose
-import pickle
-    
+from numpy.testing import assert_allclose, assert_almost_equal
+from openmm import unit
+from openmmtools.multistate import MultiStateReporter, ReplicaExchangeAnalyzer
+
 current_path = os.path.dirname(os.path.abspath(__file__))
 data_path = os.path.join(current_path, 'test_data')
        

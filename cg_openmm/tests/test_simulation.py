@@ -2,24 +2,26 @@
 Unit and regression test for the cg_openmm package.
 """
 
+import os
+import pickle
+import sys
+
 # Import package, test suite, and other packages as needed
 import cg_openmm
-from simtk import unit
-import pytest
-import sys
-import os
-import simtk.openmm as openmm
-from simtk.openmm.app.pdbfile import PDBFile
-from cg_openmm.cg_model.cgmodel import CGModel
-from cg_openmm.simulation.tools import *
-from cg_openmm.parameters.reweight import get_temperature_list
-from cg_openmm.utilities.iotools import write_pdbfile_without_topology
-from cg_openmm.simulation.rep_exch import *
-from cg_openmm.utilities import random_builder
-from cg_openmm.build.cg_build import build_topology
 import numpy as np
+import openmm
+import pytest
+from cg_openmm.build.cg_build import build_topology
+from cg_openmm.cg_model.cgmodel import CGModel
+from cg_openmm.parameters.reweight import get_temperature_list
+from cg_openmm.simulation.rep_exch import *
+from cg_openmm.simulation.tools import *
+from cg_openmm.utilities import random_builder
+from cg_openmm.utilities.iotools import write_pdbfile_without_topology
 from numpy.testing import assert_almost_equal
-import pickle
+from openmm import unit
+from openmm.app.pdbfile import PDBFile
+
 
 def test_cg_openmm_imported():
     """Sample test, will always pass so long as import statement worked"""

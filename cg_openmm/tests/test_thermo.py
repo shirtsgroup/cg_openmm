@@ -5,15 +5,17 @@ Unit and regression test for the cg_openmm package.
 # Import package, test suite, and other packages as needed  
   
 import os
-from simtk import unit
 import pickle
+
 from cg_openmm.cg_model.cgmodel import CGModel
-from cg_openmm.thermo.calc import *
-from cg_openmm.parameters.secondary_structure import * 
-from cg_openmm.parameters.reweight import get_temperature_list, get_opt_temperature_list
+from cg_openmm.parameters.reweight import (get_opt_temperature_list,
+                                           get_temperature_list)
+from cg_openmm.parameters.secondary_structure import *
 from cg_openmm.simulation.physical_validation import *
-from numpy.testing import assert_almost_equal, assert_allclose
-    
+from cg_openmm.thermo.calc import *
+from numpy.testing import assert_allclose, assert_almost_equal
+from openmm import unit
+
 current_path = os.path.dirname(os.path.abspath(__file__))
 structures_path = os.path.join(current_path, 'test_structures')
 data_path = os.path.join(current_path, 'test_data')

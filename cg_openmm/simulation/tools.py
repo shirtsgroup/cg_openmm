@@ -1,17 +1,18 @@
-import numpy as np
-from simtk import openmm as mm
-from simtk.openmm import *
-from simtk.openmm.vec3 import Vec3
-from simtk import unit
-from simtk.openmm.app.pdbfile import PDBFile
-import mdtraj as md
-import simtk.openmm.app.element as elem
-from simtk.openmm.app import *
-import matplotlib.pyplot as pyplot
 import csv
-from cg_openmm.utilities.iotools import write_bonds
-from cg_openmm.utilities.iotools import write_pdbfile_without_topology
 import sys
+
+import matplotlib.pyplot as pyplot
+import mdtraj as md
+import numpy as np
+import openmm as mm
+import openmm.app.element as elem
+from cg_openmm.utilities.iotools import (write_bonds,
+                                         write_pdbfile_without_topology)
+from openmm import *
+from openmm import unit
+from openmm.app import *
+from openmm.app.pdbfile import PDBFile
+from openmm.vec3 import Vec3
 
 
 def minimize_structure(

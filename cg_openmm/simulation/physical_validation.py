@@ -1,15 +1,18 @@
 import os
+
+import matplotlib.pyplot as pyplot
+import numpy as np
+from openmm import unit
+from openmmtools.multistate import (MultiStateReporter, MultiStateSampler,
+                                    ReplicaExchangeAnalyzer,
+                                    ReplicaExchangeSampler)
+
 import physical_validation as pv
-from physical_validation.data.simulation_data import SimulationData
-from physical_validation.data.observable_data import ObservableData
 from physical_validation.data.ensemble_data import EnsembleData
+from physical_validation.data.observable_data import ObservableData
+from physical_validation.data.simulation_data import SimulationData
 from physical_validation.data.unit_data import UnitData
 from physical_validation.util.error import InputError
-import matplotlib.pyplot as pyplot
-import simtk.unit as unit
-import numpy as np
-from openmmtools.multistate import MultiStateReporter, MultiStateSampler, ReplicaExchangeSampler
-from openmmtools.multistate import ReplicaExchangeAnalyzer
 
 kB = unit.MOLAR_GAS_CONSTANT_R # Boltzmann constant
 

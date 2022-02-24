@@ -1,14 +1,14 @@
-import numpy as np
 from math import exp, log
 
 # OpenMM utilities
 import mdtraj as md
-import simtk.unit as unit
+import numpy as np
 import pymbar
+from matplotlib import pyplot as plt
+from openmm import unit
 from pymbar import timeseries
 from scipy import interpolate
-from scipy.optimize import minimize, minimize_scalar, Bounds, LinearConstraint
-from matplotlib import pyplot as plt
+from scipy.optimize import Bounds, LinearConstraint, minimize, minimize_scalar
 
 kB = (unit.MOLAR_GAS_CONSTANT_R).in_units_of(unit.kilojoule / (unit.kelvin * unit.mole))
 

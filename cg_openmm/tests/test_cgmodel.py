@@ -2,16 +2,17 @@
 Unit and regression test for the cg_openmm package.
 """
 
+import os
+import pickle
+import sys
+
 # Import package, test suite, and other packages as needed
 import cg_openmm
-from simtk import unit
+import openmm
 import pytest
-import sys
-import os
-import simtk.openmm as openmm
-from simtk.openmm.app.pdbfile import PDBFile
 from cg_openmm.cg_model.cgmodel import CGModel
-import pickle
+from openmm import unit
+from openmm.app.pdbfile import PDBFile
 
 current_path = os.path.dirname(os.path.abspath(__file__))
 data_path = os.path.join(current_path, 'test_structures')

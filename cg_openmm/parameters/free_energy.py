@@ -1,11 +1,12 @@
 import os
-import numpy as np
-import simtk.unit as unit
+
 import matplotlib.pyplot as plt
-from cg_openmm.utilities.random_builder import *
-from cg_openmm.utilities.iotools import write_pdbfile_without_topology
-from openmmtools.multistate import MultiStateReporter, ReplicaExchangeAnalyzer
+import numpy as np
 import pymbar
+from cg_openmm.utilities.iotools import write_pdbfile_without_topology
+from cg_openmm.utilities.random_builder import *
+from openmm import unit
+from openmmtools.multistate import MultiStateReporter, ReplicaExchangeAnalyzer
 from scipy import interpolate
 from sklearn.utils import resample
 

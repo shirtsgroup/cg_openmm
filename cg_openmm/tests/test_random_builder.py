@@ -2,22 +2,23 @@
 Unit and regression test for the cg_openmm package.
 """
 
+import os
+import sys
+
 # Import package, test suite, and other packages as needed
 import cg_openmm
-from simtk import unit
 import mdtraj as md
-import pytest
-import sys
-import os
-import simtk.openmm as openmm
-from simtk.openmm.app.pdbfile import PDBFile
-from cg_openmm.cg_model.cgmodel import CGModel
-from cg_openmm.utilities.iotools import write_pdbfile_without_topology
-from cg_openmm.utilities import random_builder
-from cg_openmm.build.cg_build import build_topology
 import numpy as np
+import openmm
+import pytest
+from cg_openmm.build.cg_build import build_topology
+from cg_openmm.cg_model.cgmodel import CGModel
+from cg_openmm.utilities import random_builder
+from cg_openmm.utilities.iotools import write_pdbfile_without_topology
+from openmm import unit
+from openmm.app.pdbfile import PDBFile
 
-        
+
 def test_random_builder(tmpdir):
     """See if the random builder can build a simple 1b1s model"""
     

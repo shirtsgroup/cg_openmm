@@ -1,11 +1,15 @@
+import os
+import random
+import statistics
+
 import numpy as np
-import os, statistics, random
-import simtk.unit as unit
 from cg_openmm.cg_model.cgmodel import CGModel
-from cg_openmm.simulation.tools import *
-from cg_openmm.utilities.iotools import read_pdbfile, write_pdbfile_without_topology
-from cg_openmm.utilities.random_builder import get_random_positions
 from cg_openmm.parameters.secondary_structure import fraction_native_contacts
+from cg_openmm.simulation.tools import *
+from cg_openmm.utilities.iotools import (read_pdbfile,
+                                         write_pdbfile_without_topology)
+from cg_openmm.utilities.random_builder import get_random_positions
+from openmm import unit
 from pymbar import timeseries
 
 

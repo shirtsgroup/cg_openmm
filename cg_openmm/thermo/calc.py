@@ -1,10 +1,10 @@
 import os
-import numpy as np
-from cg_openmm.parameters.reweight import *
+
 import matplotlib.pyplot as plt
-from openmmtools.multistate import MultiStateReporter
-from openmmtools.multistate import ReplicaExchangeAnalyzer
+import numpy as np
 import pymbar
+from cg_openmm.parameters.reweight import *
+from openmmtools.multistate import MultiStateReporter, ReplicaExchangeAnalyzer
 from pymbar import timeseries
 from scipy import interpolate
 from sklearn.utils import resample

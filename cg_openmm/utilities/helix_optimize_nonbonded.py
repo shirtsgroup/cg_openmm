@@ -1,13 +1,13 @@
 import os
-import numpy as np
+
 import mdtraj as md
-from simtk import unit
-from simtk.openmm import LangevinIntegrator
-from simtk.openmm.app import Simulation
-from simtk.openmm.app.pdbfile import PDBFile
+import numpy as np
 from cg_openmm.cg_model.cgmodel import CGModel
-from cg_openmm.utilities.iotools import write_pdbfile_without_topology
 from cg_openmm.utilities.helix_utils import *
+from cg_openmm.utilities.iotools import write_pdbfile_without_topology
+from openmm import LangevinIntegrator, unit
+from openmm.app import Simulation
+from openmm.app.pdbfile import PDBFile
 from scipy.optimize import differential_evolution, root_scalar
 
 

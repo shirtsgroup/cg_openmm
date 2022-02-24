@@ -1,6 +1,7 @@
 import csv
-from simtk import unit
-from simtk.openmm.app.pdbfile import PDBFile
+
+from openmm import unit
+from openmm.app.pdbfile import PDBFile
 
 
 def write_bonds(CGModel, pdb_object):

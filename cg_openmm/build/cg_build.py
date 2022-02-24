@@ -1,15 +1,16 @@
-import os
 import datetime
+import os
 import tempfile
+
 import numpy as np
-from simtk import openmm as mm
-from simtk import unit
-from simtk.openmm.app.pdbfile import PDBFile
-from simtk.openmm.app.topology import Topology
-import simtk.openmm.app.element as elem
+import openmm as mm
+import openmm.app.element as elem
 from cg_openmm.simulation.tools import build_mm_simulation
-from cg_openmm.utilities.util import lj_v
 from cg_openmm.utilities.iotools import write_pdbfile_without_topology
+from cg_openmm.utilities.util import lj_v
+from openmm import unit
+from openmm.app.pdbfile import PDBFile
+from openmm.app.topology import Topology
 
 
 def add_new_elements(cgmodel):

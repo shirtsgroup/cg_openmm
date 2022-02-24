@@ -1,12 +1,14 @@
-import numpy as np
+from statistics import mean
+
 import matplotlib.pyplot as pyplot
 import mdtraj as md
-import simtk.unit as unit
-from statistics import mean
-from cg_openmm.simulation.tools import *
+import numpy as np
 from cg_openmm.parameters.evaluate_energy import *
+from cg_openmm.simulation.tools import *
 from cg_openmm.thermo.calc import bootstrap_heat_capacity
+from openmm import unit
 from scipy.optimize import minimize, minimize_scalar
+
 
 def optimize_force_field_parameters_Cv_FWHM(cgmodel, file_list, temperature_list, param_bounds_dict,
     frame_begin=0, frame_end=-1, sample_spacing=1, sparsify_stride=1, output_data='output.nc',
