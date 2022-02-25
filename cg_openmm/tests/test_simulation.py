@@ -57,7 +57,7 @@ def test_minimize_structure_pdb(tmpdir):
     assert os.path.isfile(f"{output_directory}/medoid_min.pdb")
 
     
-def test_minimize_structure_dcd():
+def test_minimize_structure_dcd(tmpdir):
     """Test energy minimization structure, with reading/writing dcd files"""
 
     # Load in cgmodel
@@ -82,7 +82,7 @@ def test_minimize_structure_dcd():
     assert os.path.isfile(f"{output_directory}/medoid_min.dcd")    
     
 
-def test_set_binary_interaction():
+def test_set_binary_interaction(tmpdir):
     """Regression test for adding binary interaction parameter with customNonbondedForce"""
 
     # Load in cgmodel
@@ -117,11 +117,13 @@ def test_set_binary_interaction():
     
     positions = native_traj.xyz[0] * unit.nanometer
     
+    output_directory = tmpdir.mkdir("output")
+    
     # Minimize energy of native structure
     positions, PE_start, PE_end, simulation = minimize_structure(
         cgmodel_new,
         positions,
-        output_file=f"{structures_path}/medoid_min.dcd",
+        output_file=f"{output_directory}/medoid_min.dcd",
     )
     
     # These should be equal to ~4 decimal places (1 Joule/mol)
