@@ -8,8 +8,9 @@ dependencies:
   - mdtraj
   - mpi4py
   - numpy
-  - openmm <= 7.5
+  - openmm
   - openmmtools
+  - physical_validation
   - pickleshare
   - pip
   - pymbar
@@ -24,7 +25,6 @@ dependencies:
   # Pip-only installs
   - pip:
     - codecov
-    - tomli == 1.2
     - git+https://github.com/shirtsgroup/physical-validation.git
     - git+https://github.com/shirtsgroup/analyze_foldamers.git
 
