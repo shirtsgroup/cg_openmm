@@ -31,16 +31,16 @@ def get_helix_cgmodel(sigma_bb,sigma_sc,epsilon_bb,epsilon_sc,n_particle_bb):
     # Backbone particle:
     bb = {
         "particle_type_name": "bb",
-        "sigma": sigma_bb * unit.angstrom,
-        "epsilon": epsilon_bb * unit.kilojoules_per_mole,
+        "sigma": sigma_bb, # angstrom
+        "epsilon": epsilon_bb, # kilojoules_per_mole
         "mass": mass
     }
         
     # Sidechain particle:
     sc = {
         "particle_type_name": "sc",
-        "sigma": sigma_sc * unit.angstrom,
-        "epsilon": epsilon_sc * unit.kilojoules_per_mole,
+        "sigma": sigma_sc, # angstrom,
+        "epsilon": epsilon_sc, # kilojoules_per_mole,
         "mass": mass
     }
 

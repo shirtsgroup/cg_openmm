@@ -6,7 +6,7 @@ import pickle
 from cg_openmm.parameters.evaluate_energy import *
 from cg_openmm.parameters.reweight import get_temperature_list
 from cg_openmm.thermo.calc import *
-from simtk import unit
+from openmm import unit
 
 # This example demonstrates how to use the energy evaluation and MBAR reweighting
 # framework to calculate the full-width half-maximum of a non-simulated monomer sequence,

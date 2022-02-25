@@ -196,9 +196,10 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
     geometry['sigma_bb'] = (sigma_bb_opt*unit.angstrom).in_units_of(r_unit)
     geometry['sigma_sc'] = (sigma_sc_opt*unit.angstrom).in_units_of(r_unit)
     
-    geometry['helical_radius'] = (r*unit.angstrom).in_units_of(r_unit)
+    # Add back units:
+    geometry['helical_radius'] = r * r_unit
     geometry['particle_spacing'] = t_delta_opt * unit.radian
-    geometry['pitch'] = (2*np.pi*c*unit.angstrom).in_units_of(r_unit)
+    geometry['pitch'] = (2*np.pi*c) * r_unit
         
     # Load dcd file into mdtraj
     traj = md.load(dcdfile,top=md.Topology.from_openmm(cgmodel.topology))

@@ -6,8 +6,8 @@ import cg_openmm
 import numpy as np
 from cg_openmm.cg_model.cgmodel import CGModel
 from cg_openmm.simulation.tools import run_simulation
-from simtk import unit
-from simtk.openmm.app.pdbfile import PDBFile
+from openmm import unit
+from openmm.app.pdbfile import PDBFile
 
 # This example demonstrates how to run a standard (single temperature) NVT simulation
 # for a coarse-grained model in OpenMM.

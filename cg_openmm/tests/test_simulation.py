@@ -44,15 +44,17 @@ def test_minimize_structure_pdb(tmpdir):
     
     positions = native_traj.xyz[0] * unit.nanometer
     
+    output_directory = tmpdir.mkdir("output")
+    
     # Minimize energy of native structure
     positions, PE_start, PE_end, simulation = minimize_structure(
         cgmodel,
         positions,
-        output_file=f"{structures_path}/medoid_min.pdb",
+        output_file=f"{output_directory}/medoid_min.pdb",
     )
     
     assert PE_end < PE_start
-    assert os.path.isfile(f"{structures_path}/medoid_min.pdb")
+    assert os.path.isfile(f"{output_directory}/medoid_min.pdb")
 
     
 def test_minimize_structure_dcd():
@@ -67,15 +69,17 @@ def test_minimize_structure_dcd():
     
     positions = native_traj.xyz[0] * unit.nanometer
     
+    output_directory = tmpdir.mkdir("output")
+    
     # Minimize energy of native structure
     positions, PE_start, PE_end, simulation = minimize_structure(
         cgmodel,
         positions,
-        output_file=f"{structures_path}/medoid_min.dcd",
+        output_file=f"{output_directory}/medoid_min.dcd",
     )
 
     assert PE_end < PE_start
-    assert os.path.isfile(f"{structures_path}/medoid_min.dcd")    
+    assert os.path.isfile(f"{output_directory}/medoid_min.dcd")    
     
 
 def test_set_binary_interaction():

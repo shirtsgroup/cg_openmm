@@ -1,11 +1,12 @@
 
 import os
-from cg_openmm.cg_model.cgmodel import CGModel
-from simtk.openmm.app.pdbfile import PDBFile
-import simtk.openmm as openmm
-from simtk import unit
 import pickle
+
 import numpy as np
+import openmm
+from cg_openmm.cg_model.cgmodel import CGModel
+from openmm import unit
+from openmm.app.pdbfile import PDBFile
 
 output_file1 = "stored_cgmodel.pkl"
 output_file2 = "stored_cgmodel_per1_3.pkl"

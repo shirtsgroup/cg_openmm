@@ -4,12 +4,12 @@ import os
 import time
 
 import numpy as np
-import simtk.openmm as openmm
+import openmm
 from cg_openmm.cg_model.cgmodel import CGModel
 from cg_openmm.parameters.reweight import get_temperature_list
 from cg_openmm.simulation.rep_exch import *
+from openmm import unit
 from openmmtools.cache import global_context_cache
-from simtk import unit
 
 # This example demonstrates how to run a OpenMM replica exchange simulation
 # using a CGModel object.

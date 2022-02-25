@@ -1,4 +1,5 @@
 import os
+
 import numpy as np
 from cg_openmm.utilities.helix_optimize_nonbonded import *
 

@@ -4,7 +4,7 @@ import os
 import pickle
 
 from cg_openmm.simulation.rep_exch import *
-from simtk import unit
+from openmm import unit
 
 # This example demonstrates how to post-process OpenMM replica exchange simulation energies,
 # and generate individual dcd trajectories from the .nc output files.

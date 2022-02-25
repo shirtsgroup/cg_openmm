@@ -4,7 +4,7 @@ import time
 
 from cg_openmm.parameters.free_energy import *
 from cg_openmm.parameters.secondary_structure import *
-from simtk import unit
+from openmm import unit
 
 # Using a generalized backbone native contact scheme, determine the native contact pairwise
 # distance cutoff and tolerance factor maximizes Q_folded-Q_unfolded using a 2D optimization
