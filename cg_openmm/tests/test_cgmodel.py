@@ -358,7 +358,11 @@ def test_exclusions_1_1_1():
     include_nonbonded_forces = True
     include_torsion_forces = True
     constrain_bonds = False
-    exclusions = [1,1,1]
+    
+    # Exclusions:
+    exclusions = {
+        "default_exclusions": [1,1,1],
+    }
 
     # Bond definitions
     bond_length = 1.5 * unit.angstrom
@@ -474,7 +478,11 @@ def test_exclusions_0_1_1():
     include_nonbonded_forces = True
     include_torsion_forces = True
     constrain_bonds = False
-    exclusions = [0,1,1]
+
+    # Exclusions:
+    exclusions = {
+        "default_exclusions": [0,1,1],
+    }
 
     # Bond definitions
     bond_length = 1.5 * unit.angstrom
@@ -590,7 +598,11 @@ def test_exclusions_1_0_1():
     include_nonbonded_forces = True
     include_torsion_forces = True
     constrain_bonds = False
-    exclusions = [1,0,1]
+
+    # Exclusions:
+    exclusions = {
+        "default_exclusions": [1,0,1],
+    }
 
     # Bond definitions
     bond_length = 1.5 * unit.angstrom
@@ -708,7 +720,11 @@ def test_exclusions_1_1_0():
     include_nonbonded_forces = True
     include_torsion_forces = True
     constrain_bonds = False
-    exclusions = [1,1,0]
+
+    # Exclusions:
+    exclusions = {
+        "default_exclusions": [1,1,0],
+    }
 
     # Bond definitions
     bond_length = 1.5 * unit.angstrom
@@ -826,7 +842,11 @@ def test_exclusions_0_0_1():
     include_nonbonded_forces = True
     include_torsion_forces = True
     constrain_bonds = False
-    exclusions = [0,0,1]
+
+    # Exclusions:
+    exclusions = {
+        "default_exclusions": [0,0,1],
+    }
 
     # Bond definitions
     bond_length = 1.5 * unit.angstrom
@@ -945,7 +965,11 @@ def test_exclusions_0_1_0():
     include_nonbonded_forces = True
     include_torsion_forces = True
     constrain_bonds = False
-    exclusions = [0,1,0]
+
+    # Exclusions:
+    exclusions = {
+        "default_exclusions": [0,1,0],
+    }
 
     # Bond definitions
     bond_length = 1.5 * unit.angstrom
@@ -1064,7 +1088,11 @@ def test_exclusions_1_0_0():
     include_nonbonded_forces = True
     include_torsion_forces = True
     constrain_bonds = False
-    exclusions = [1,0,0]
+
+    # Exclusions:
+    exclusions = {
+        "default_exclusions": [1,0,0],
+    }
 
     # Bond definitions
     bond_length = 1.5 * unit.angstrom
@@ -1185,7 +1213,11 @@ def test_exclusions_0_0_0():
     include_torsion_forces = True
     constrain_bonds = False
     rosetta_functional_form = False
-    exclusions = [0,0,0]
+
+    # Exclusions:
+    exclusions = {
+        "default_exclusions": [0,0,0],
+    }
 
     # Bond definitions
     bond_length = 1.5 * unit.angstrom
@@ -1308,7 +1340,11 @@ def test_exclusions_0_0_0_rosetta():
     include_torsion_forces = True
     constrain_bonds = False
     rosetta_functional_form = True
-    exclusions = [0,0,0]
+
+    # Exclusions:
+    exclusions = {
+        "default_exclusions": [0,0,0],
+    }
 
     # Bond definitions
     bond_length = 1.5 * unit.angstrom
@@ -1420,6 +1456,134 @@ def test_exclusions_0_0_0_rosetta():
             
     assert num_exceptions_openmm == num_exceptions_cgmodel + n_15_pairs
     
+
+def test_exclusions_0_1_1_sc():
+    # Create a cgmodel with 1-2 exclusions for bb-sc and sc-sc interactions,
+    # and the default 1-2, 1-3 exclusions for bb-bb interactions
+
+    # Coarse grained model settings
+    include_bond_forces = True
+    include_bond_angle_forces = True
+    include_nonbonded_forces = True
+    include_torsion_forces = True
+    constrain_bonds = False
+    rosetta_functional_form = False
+
+    # Exclusions:
+    exclusions = {
+        "default_exclusions": [0,0,1],
+        "sc_sc_exclusions": [0,1,1],
+        "sc_bb_exclusions": [0,1,1],
+    }
+
+    # Bond definitions
+    bond_length = 1.5 * unit.angstrom
+    bond_lengths = {
+        "bb_bb_bond_length": bond_length,
+        "bb_sc_bond_length": bond_length,
+        "sc_sc_bond_length": bond_length,
+    }
+    bond_force_constant = 1000 * unit.kilojoule_per_mole / unit.nanometer / unit.nanometer
+    bond_force_constants = {
+        "bb_bb_bond_force_constant": bond_force_constant,
+        "bb_sc_bond_force_constant": bond_force_constant,
+        "sc_sc_bond_force_constant": bond_force_constant,
+    }
+
+    # Particle definitions
+    mass = 100.0 * unit.amu
+    r_min = 1.5 * bond_length  # Lennard-Jones potential r_min
+    # Factor of /(2.0**(1/6)) is applied to convert r_min to sigma
+    sigma = r_min / (2.0 ** (1.0 / 6.0))
+    epsilon = 0.5 * unit.kilojoule_per_mole
+    
+    bb = {"particle_type_name": "bb", "sigma": sigma, "epsilon": epsilon, "mass": mass}
+    sc = {"particle_type_name": "sc", "sigma": sigma, "epsilon": epsilon, "mass": mass}
+
+
+    # Bond angle definitions
+    bond_angle_force_constant = 100 * unit.kilojoule_per_mole / unit.radian / unit.radian
+    bond_angle_force_constants = {
+        "bb_bb_bb_bond_angle_force_constant": bond_angle_force_constant,
+        "bb_bb_sc_bond_angle_force_constant": bond_angle_force_constant,
+    }
+    # OpenMM requires angle definitions in units of radians
+    bb_bb_bb_equil_bond_angle = 120.0 * unit.degrees
+    bb_bb_sc_equil_bond_angle = 120.0 * unit.degrees
+    equil_bond_angles = {
+        "bb_bb_bb_equil_bond_angle": bb_bb_bb_equil_bond_angle,
+        "bb_bb_sc_equil_bond_angle": bb_bb_sc_equil_bond_angle,
+    }
+
+    # Torsion angle definitions
+    torsion_force_constant = 20.0 * unit.kilojoule_per_mole
+    torsion_force_constants = {
+        "bb_bb_bb_bb_torsion_force_constant": torsion_force_constant,
+        "bb_bb_bb_sc_torsion_force_constant": torsion_force_constant
+    }
+
+    bb_bb_bb_bb_torsion_phase_angle = 75.0 * unit.degrees
+    bb_bb_bb_sc_torsion_phase_angle = 75.0 * unit.degrees
+
+    torsion_phase_angles = {
+        "bb_bb_bb_bb_torsion_phase_angle": bb_bb_bb_bb_torsion_phase_angle,
+        "bb_bb_bb_sc_torsion_phase_angle": bb_bb_bb_sc_torsion_phase_angle
+    }
+    torsion_periodicities = {
+        "bb_bb_bb_bb_torsion_periodicity": 3,
+        "bb_bb_bb_sc_torsion_periodicity": 3}
+
+    # Monomer definitions
+    A = {
+        "monomer_name": "A",
+        "particle_sequence": [bb, sc],
+        "bond_list": [[0, 1]],
+        "start": 0,
+        "end": 0,
+    }
+    
+    sequence = 24 * [A]
+    
+    pdb_path = os.path.join(data_path, "24mer_1b1s_initial_structure.pdb")
+    positions = PDBFile(pdb_path).getPositions()
+    
+    # Build a coarse grained model
+    cgmodel = CGModel(
+        particle_type_list=[bb, sc],
+        bond_lengths=bond_lengths,
+        bond_force_constants=bond_force_constants,
+        bond_angle_force_constants=bond_angle_force_constants,
+        torsion_force_constants=torsion_force_constants,
+        equil_bond_angles=equil_bond_angles,
+        torsion_phase_angles=torsion_phase_angles,
+        torsion_periodicities=torsion_periodicities,
+        include_nonbonded_forces=include_nonbonded_forces,
+        include_bond_forces=include_bond_forces,
+        include_bond_angle_forces=include_bond_angle_forces,
+        include_torsion_forces=include_torsion_forces,
+        constrain_bonds=constrain_bonds,
+        exclusions=exclusions,
+        rosetta_functional_form=rosetta_functional_form,
+        positions=positions,
+        sequence=sequence,
+        monomer_types=[A],
+    )
+    
+    num_exceptions_cgmodel = len(cgmodel.get_nonbonded_exclusion_list())
+    
+    n_bonds = len(cgmodel.get_bond_list())
+    n_angles_bb_bb_bb = 22
+    
+    assert num_exceptions_cgmodel == n_bonds+n_angles_bb_bb_bb
+    
+    # Now, check the actual exclusions defined in the OpenMM system
+    for force_index, force in enumerate(cgmodel.system.getForces()):
+        force_name = force.__class__.__name__
+        if force_name == 'NonbondedForce':
+            num_exceptions_openmm = force.getNumExceptions()
+            
+    assert num_exceptions_openmm == num_exceptions_cgmodel
+
 
 def test_sums_periodic_torsions_1():
     # Test cg_model with sums of periodic torsions - test 1

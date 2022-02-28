@@ -21,6 +21,10 @@ def get_test_cmgodel_1_1_helix(output_file):
     include_torsion_forces = True
     constrain_bonds = False    
 
+    exclusions = {
+        "default_exclusions": [0,0,1],
+        }
+
     #--------------------------------------------#
     # Particle definitions and oligomer topology #
     #--------------------------------------------#
@@ -118,6 +122,7 @@ def get_test_cmgodel_1_1_helix(output_file):
         include_bond_angle_forces=include_bond_angle_forces,
         include_torsion_forces=include_torsion_forces,
         constrain_bonds=constrain_bonds,
+        exclusions=exclusions,
         positions=positions,
         sequence=sequence,
         monomer_types=[A],
@@ -138,6 +143,10 @@ def get_test_cmgodel_1_1_helix_per1_3(output_file):
     include_nonbonded_forces = True
     include_torsion_forces = True
     constrain_bonds = False    
+
+    exclusions = {
+        "default_exclusions": [0,0,1],
+        }
 
     #--------------------------------------------#
     # Particle definitions and oligomer topology #
@@ -237,6 +246,7 @@ def get_test_cmgodel_1_1_helix_per1_3(output_file):
         include_bond_angle_forces=include_bond_angle_forces,
         include_torsion_forces=include_torsion_forces,
         constrain_bonds=constrain_bonds,
+        exclusions=exclusions,
         positions=positions,
         sequence=sequence,
         monomer_types=[A],
@@ -256,6 +266,10 @@ def get_test_cmgodel_linear(output_file):
     include_nonbonded_forces = True
     include_torsion_forces = True
     constrain_bonds = False    
+
+    exclusions = {
+        "default_exclusions": [0,0,1],
+        }
 
     #--------------------------------------------#
     # Particle definitions and oligomer topology #
@@ -344,6 +358,7 @@ def get_test_cmgodel_linear(output_file):
         include_bond_angle_forces=include_bond_angle_forces,
         include_torsion_forces=include_torsion_forces,
         constrain_bonds=constrain_bonds,
+        exclusions=exclusions,
         positions=positions,
         sequence=sequence,
         monomer_types=[A],
@@ -358,4 +373,4 @@ def get_test_cmgodel_linear(output_file):
 # Generate the test cgmodels:
 cgmodel1 = get_test_cmgodel_1_1_helix(output_file1)
 cgmodel2 = get_test_cmgodel_1_1_helix_per1_3(output_file2)
-cgmodel3 = get_test_cmgodel_linear(output_file3)    
+cgmodel3 = get_test_cmgodel_linear(output_file3)

@@ -111,7 +111,7 @@ class CGModel(object):
         include_bond_angle_forces=True,
         include_torsion_forces=True,
         angle_style='harmonic',
-        exclusions=[0,0,1],
+        exclusions={},
         rosetta_functional_form=False,
         check_energy_conservation=True,
         use_structure_library=False,
@@ -178,7 +178,7 @@ class CGModel(object):
         :type angle_style: str        
         
         :param exclusions: Nonbonded weights for [1-2, 1-3, 1-4] interactions (default = [0,0,1])
-        :type exclusions: list( int )
+        :type exclusions: dict( list( int ) )
         
         :param rosetta_functional_form: Option to use nonbonded exclusions consistent with Rosetta
         :type rosetta_functional_form: Bool
@@ -226,6 +226,7 @@ class CGModel(object):
         )  # from martini 3.0
         self.default_charge = 0.0 * unit.elementary_charge
         self.default_periodicity = 1
+        self.default_exclusion_rules = [0,0,1]
 
         # Initialize user-defined input:
 
@@ -235,12 +236,21 @@ class CGModel(object):
         self.constrain_bonds = constrain_bonds
         self.include_bond_angle_forces = include_bond_angle_forces
         self.include_nonbonded_forces = include_nonbonded_forces
-        self.exclusions = exclusions
         self.include_torsion_forces = include_torsion_forces
         self.angle_style = angle_style
         self.check_energy_conservation = check_energy_conservation
         self.monomer_types = monomer_types
         self.bond_lengths = bond_lengths
+
+        # Validate bonded force and exclusion input
+        self.bond_force_constants = bond_force_constants
+        self.bond_angle_force_constants = bond_angle_force_constants
+        self.equil_bond_angles = equil_bond_angles
+        self.torsion_force_constants = torsion_force_constants
+        self.torsion_periodicities = torsion_periodicities
+        self.torsion_phase_angles = torsion_phase_angles
+        self.exclusions = exclusions
+        self._validate_bonded_forces()
 
         # fill in defaults in particle list
         self.particle_type_list = self._validate_particle_type_list(particle_type_list)
@@ -254,15 +264,6 @@ class CGModel(object):
         # Assign binary interaction parameters
         self.binary_interaction_parameters = binary_interaction_parameters
         self._validate_binary_interaction
-
-        # Assign bonded force properties
-        self.bond_force_constants = bond_force_constants
-        self.bond_angle_force_constants = bond_angle_force_constants
-        self.equil_bond_angles = equil_bond_angles
-        self.torsion_force_constants = torsion_force_constants
-        self.torsion_periodicities = torsion_periodicities
-        self.torsion_phase_angles = torsion_phase_angles
-        self._validate_bonded_forces()
 
         # Assign positions
         if positions == None:
@@ -353,6 +354,11 @@ class CGModel(object):
                 "default_name": "default_torsion_periodicity",
                 "default_value": self.default_periodicity,
                 "suffix": "torsion_periodicity",
+            },
+            "exclusions": {
+                "default_name": "default_exclusions",
+                "default_value": self.default_exclusion_rules,
+                "suffix": "exclusions",
             },
         }
 
@@ -482,34 +488,77 @@ class CGModel(object):
         self.num_beads = self.get_num_beads()
         self.particle_list = self.create_particle_list()
 
+        # Get the number of unique particle types:
+        n_particle_types = len(self.particle_type_list)
+        
+        # Get the number of unique nonbonded pair types:
+        n_pair_types = 0
+        for i in range(1,n_particle_types+1):
+            n_pair_types += i
+
         if self.include_bond_forces or self.constrain_bonds:
             self.bond_list = self.get_bond_list()
         else:
-            if self.exclusions[0] == 0 or self.rosetta_functional_form:
+            # Check if any bond will have zero interaction:
+
+            # Bond forces are excluded using rosetta_functional_form, which overrides any other specified exclusion rules:
+            if self.rosetta_functional_form:
                 print(f"Error: bonded particles must have either bond forces or 1-2 nonbonded forces")
                 exit()
+                
+            # Default exclusions have no bond forces and not all explicit pair types were specified:
+            # (default will always be part of the exclusions dict)
+            if self.exclusions["default_exclusions"][0] == 0 and len(self.exclusions) < n_pair_types+1:
+                print(f"Error: bonded particles must have either bond forces or 1-2 nonbonded forces")
+                exit()
+                
+            # At least one specific pair type has no 1-2 nonbonded interactions:
+            for key,value in self.exclusions.items():
+                if key != "default_exclusions":
+                    if value[0] == 0:
+                        print(f"Error: bonded particles must have either bond forces or 1-2 nonbonded forces")
+                        exit()
+                        
             self.bond_list = []
             
         # Check for missing 1-3 interactions:
-        if ((self.include_bond_angle_forces == False and self.exclusions[1] == 0) or
-            (self.include_bond_angle_forces == False and self.rosetta_functional_form)):
-            print(f"Warning: there are no 1-3 nonbonded or angle forces defined")        
-        
+        if self.include_bond_angle_forces == False:
+            if self.rosetta_functional_form:
+                print(f"Warning: there are no 1-3 nonbonded or angle forces defined")
+            
+            # Default exclusions have no angle forces and not all explicit pair types were specified: 
+            if self.exclusions["default_exclusions"][1] == 0 and len(self.exclusions) < n_pair_types+1:
+                print(f"Warning: at least one pair type has no 1-3 nonbonded or angle forces defined")
+                
+            # At least one specific pair type has no 1-3 nonbonded interactions:
+            for key,value in self.exclusions.items():
+                if key != "default_exclusions":
+                    if value[1] == 0:
+                        print(f"Warning: at least one pair type has no 1-3 nonbonded or angle forces defined")
+            
+            
         # Check for missing 1-4 interactions:
-        if ((self.include_torsion_forces == False and self.exclusions[2] == 0) or
-            (self.include_torsion_forces == False and self.rosetta_functional_form)):
-            print(f"Warning: there are no 1-4 nonbonded or torsion forces defined")      
+        if self.include_torsion_forces == False:
+            if self.rosetta_functional_form:
+                print(f"Warning: there are no 1-4 nonbonded or torsion forces defined")
+            
+            # Default exclusions have no torsion forces and not all explicit pair types were specified: 
+            if self.exclusions["default_exclusions"][2] == 0 and len(self.exclusions) < n_pair_types+1:
+                print(f"Warning: at least one pair type has no 1-4 nonbonded or torsion forces defined")
+                
+            # At least one specific pair type has no 1-4 nonbonded interactions:
+            for key,value in self.exclusions.items():
+                if key != "default_exclusions":
+                    if value[2] == 0:
+                        print(f"Warning: at least one pair type has no 1-4 nonbonded or torsion forces defined")
 
         self.bond_angle_list = self.get_bond_angle_list()
         self.torsion_list = self.get_torsion_list()
         
-        if 0 in self.exclusions:
-            # There are one or more exclusion rules defined
-            self.nonbonded_exclusion_list = self.get_nonbonded_exclusion_list(
-                rosetta_functional_form=self.rosetta_functional_form
-            )
-        else:
-            self.nonbonded_exclusion_list = []
+        # Returns an empty list if no exclusions specified:
+        self.nonbonded_exclusion_list = self.get_nonbonded_exclusion_list(
+            rosetta_functional_form=self.rosetta_functional_form
+        )
 
         self.nonbonded_interaction_list = self.get_nonbonded_interaction_list()
         
@@ -712,28 +761,51 @@ class CGModel(object):
                         exclusion_list.append([bead_index + beadi, bead_index + beadj])
                 bead_index = bead_index + monomer["num_beads"]
 
-        if self.exclusions[0] == 0 or rosetta_functional_form:
-            # Exclude bonds:
+        if rosetta_functional_form:
+            # Exclude all bonds:
             for bond in self.bond_list:
                 if bond not in exclusion_list and bond.reverse() not in exclusion_list:
                     exclusion_list.append(bond)
                     
-        if self.exclusions[1] == 0 or rosetta_functional_form:
-            # Exclude angles:
+            # Exclude all angles:
             for angle in self.bond_angle_list:
                 angle_ends = [angle[0], angle[2]]
                 if angle_ends not in exclusion_list and angle_ends.reverse() not in exclusion_list:
                     exclusion_list.append(angle_ends)
                     
-        if self.exclusions[2] == 0 or rosetta_functional_form:
-            # Exclude torsions:
+            # Exclude all torsions:
             for torsion in self.torsion_list:
                 torsion_ends = [torsion[0], torsion[3]]
                 if (
                     torsion_ends not in exclusion_list
                     and torsion_ends.reverse() not in exclusion_list
                 ):
-                    exclusion_list.append(torsion_ends)
+                    exclusion_list.append(torsion_ends)     
+                    
+        else:
+            # Check for pair-specific exclusions:
+            for bond in self.bond_list:
+                exclusion_rules = self.get_exclusions(bond)
+                if exclusion_rules[0] == 0:
+                    if bond not in exclusion_list and bond.reverse() not in exclusion_list:
+                        exclusion_list.append(bond)
+        
+            for angle in self.bond_angle_list:
+                angle_ends = [angle[0], angle[2]]
+                exclusion_rules = self.get_exclusions(angle_ends)
+                if exclusion_rules[1] == 0:
+                    if angle_ends not in exclusion_list and angle_ends.reverse() not in exclusion_list:
+                        exclusion_list.append(angle_ends)
+                    
+            for torsion in self.torsion_list:
+                torsion_ends = [torsion[0], torsion[3]]
+                exclusion_rules = self.get_exclusions(torsion_ends)
+                if exclusion_rules[2] == 0:
+                    if (
+                        torsion_ends not in exclusion_list
+                        and torsion_ends.reverse() not in exclusion_list
+                    ):
+                        exclusion_list.append(torsion_ends)
 
         return exclusion_list
         
@@ -1260,3 +1332,23 @@ class CGModel(object):
         ]
 
         return self._get_bonded_parameter(particle_types, "torsion_phase_angles")
+        
+        
+    def get_exclusions(self, pair):
+        """
+        Gets the exclusion rules applied to this specific pair of particles.
+        
+        :param pair: A list of 2 indices defining a pair
+        :type pair: List ( int )
+
+        :returns:
+           - exclusion_rules (list(int)) - List of exclusions for [1-2, 1-3, 1-4] nonbonded interactions (0 = no interaction)
+        """
+
+        particle_types = [
+            self.get_particle_type_name(pair[0]),
+            self.get_particle_type_name(pair[1]),
+        ]
+
+        return self._get_bonded_parameter(particle_types, "exclusions")  
+           
