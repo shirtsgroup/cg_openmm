@@ -4,16 +4,17 @@ Unit and regression test for the cg_openmm package.
 
 # Import package, test suite, and other packages as needed
 import os
-import numpy as np
+import pickle
+
 import matplotlib.pyplot as pyplot
 import mdtraj as md
-from simtk import unit
-from simtk.openmm.app.pdbfile import PDBFile
-from cg_openmm.parameters.secondary_structure import *
+import numpy as np
 from cg_openmm.parameters.free_energy import *
 from cg_openmm.parameters.reweight import get_temperature_list
+from cg_openmm.parameters.secondary_structure import *
 from cg_openmm.utilities.util import fit_sigmoid
-import pickle
+from openmm import unit
+from openmm.app.pdbfile import PDBFile
 
 current_path = os.path.dirname(os.path.abspath(__file__))
 structures_path = os.path.join(current_path, 'test_structures')

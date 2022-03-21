@@ -1,21 +1,23 @@
-import os, subprocess
-import numpy as np
-import simtk.unit as unit
+import os
+import subprocess
 from statistics import mean
-from scipy.stats import linregress
-from scipy import spatial
+
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
-from cg_openmm.utilities.random_builder import *
-from cg_openmm.utilities.iotools import write_pdbfile_without_topology
-from openmmtools.multistate import MultiStateReporter, ReplicaExchangeAnalyzer
-import pymbar
-from pymbar import timeseries
 import mdtraj as md
-from scipy.optimize import minimize, Bounds, brute, differential_evolution
-from scipy.special import erf
-from scipy.optimize import minimize_scalar
+import numpy as np
+import pymbar
+from cg_openmm.utilities.iotools import write_pdbfile_without_topology
+from cg_openmm.utilities.random_builder import *
 from cg_openmm.utilities.util import fit_sigmoid
+from matplotlib.backends.backend_pdf import PdfPages
+from openmm import unit
+from openmmtools.multistate import MultiStateReporter, ReplicaExchangeAnalyzer
+from pymbar import timeseries
+from scipy import spatial
+from scipy.optimize import (Bounds, brute, differential_evolution, minimize,
+                            minimize_scalar)
+from scipy.special import erf
+from scipy.stats import linregress
 from sklearn.utils import resample
 
 kB = unit.MOLAR_GAS_CONSTANT_R # Boltzmann constant

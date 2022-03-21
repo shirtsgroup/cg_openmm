@@ -1,10 +1,13 @@
+import math
+import random
+import statistics
 import sys
+
 import numpy as np
-import math, random, statistics
-import simtk.unit as unit
 from cg_openmm.build.cg_build import *
 from cg_openmm.simulation.tools import *
 from cg_openmm.utilities.iotools import write_pdbfile_without_topology
+from openmm import unit
 
 
 def first_bead(positions):

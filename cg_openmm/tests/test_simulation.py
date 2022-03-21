@@ -2,24 +2,26 @@
 Unit and regression test for the cg_openmm package.
 """
 
+import os
+import pickle
+import sys
+
 # Import package, test suite, and other packages as needed
 import cg_openmm
-from simtk import unit
-import pytest
-import sys
-import os
-import simtk.openmm as openmm
-from simtk.openmm.app.pdbfile import PDBFile
-from cg_openmm.cg_model.cgmodel import CGModel
-from cg_openmm.simulation.tools import *
-from cg_openmm.parameters.reweight import get_temperature_list
-from cg_openmm.utilities.iotools import write_pdbfile_without_topology
-from cg_openmm.simulation.rep_exch import *
-from cg_openmm.utilities import random_builder
-from cg_openmm.build.cg_build import build_topology
 import numpy as np
+import openmm
+import pytest
+from cg_openmm.build.cg_build import build_topology
+from cg_openmm.cg_model.cgmodel import CGModel
+from cg_openmm.parameters.reweight import get_temperature_list
+from cg_openmm.simulation.rep_exch import *
+from cg_openmm.simulation.tools import *
+from cg_openmm.utilities import random_builder
+from cg_openmm.utilities.iotools import write_pdbfile_without_topology
 from numpy.testing import assert_almost_equal
-import pickle
+from openmm import unit
+from openmm.app.pdbfile import PDBFile
+
 
 def test_cg_openmm_imported():
     """Sample test, will always pass so long as import statement worked"""
@@ -42,18 +44,20 @@ def test_minimize_structure_pdb(tmpdir):
     
     positions = native_traj.xyz[0] * unit.nanometer
     
+    output_directory = tmpdir.mkdir("output")
+    
     # Minimize energy of native structure
     positions, PE_start, PE_end, simulation = minimize_structure(
         cgmodel,
         positions,
-        output_file=f"{structures_path}/medoid_min.pdb",
+        output_file=f"{output_directory}/medoid_min.pdb",
     )
     
     assert PE_end < PE_start
-    assert os.path.isfile(f"{structures_path}/medoid_min.pdb")
+    assert os.path.isfile(f"{output_directory}/medoid_min.pdb")
 
     
-def test_minimize_structure_dcd():
+def test_minimize_structure_dcd(tmpdir):
     """Test energy minimization structure, with reading/writing dcd files"""
 
     # Load in cgmodel
@@ -65,18 +69,20 @@ def test_minimize_structure_dcd():
     
     positions = native_traj.xyz[0] * unit.nanometer
     
+    output_directory = tmpdir.mkdir("output")
+    
     # Minimize energy of native structure
     positions, PE_start, PE_end, simulation = minimize_structure(
         cgmodel,
         positions,
-        output_file=f"{structures_path}/medoid_min.dcd",
+        output_file=f"{output_directory}/medoid_min.dcd",
     )
 
     assert PE_end < PE_start
-    assert os.path.isfile(f"{structures_path}/medoid_min.dcd")    
+    assert os.path.isfile(f"{output_directory}/medoid_min.dcd")    
     
 
-def test_set_binary_interaction():
+def test_set_binary_interaction(tmpdir):
     """Regression test for adding binary interaction parameter with customNonbondedForce"""
 
     # Load in cgmodel
@@ -111,11 +117,13 @@ def test_set_binary_interaction():
     
     positions = native_traj.xyz[0] * unit.nanometer
     
+    output_directory = tmpdir.mkdir("output")
+    
     # Minimize energy of native structure
     positions, PE_start, PE_end, simulation = minimize_structure(
         cgmodel_new,
         positions,
-        output_file=f"{structures_path}/medoid_min.dcd",
+        output_file=f"{output_directory}/medoid_min.dcd",
     )
     
     # These should be equal to ~4 decimal places (1 Joule/mol)

@@ -1,11 +1,11 @@
-import numpy as np
-from simtk import openmm as mm
-from simtk.openmm import *
-from simtk import unit
-import simtk.openmm.app.element as elem
-from simtk.openmm.app import *
-from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
+import numpy as np
+import openmm as mm
+import openmm.app.element as elem
+from openmm import *
+from openmm import unit
+from openmm.app import *
+from scipy.optimize import curve_fit
 
 
 def distance(positions_1, positions_2):

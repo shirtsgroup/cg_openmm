@@ -1,25 +1,26 @@
 import os
 import subprocess
-import numpy as np
-import matplotlib.pyplot as pyplot
-import matplotlib.cm as cm
-from matplotlib.colors import Normalize
-from matplotlib.backends.backend_pdf import PdfPages
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from simtk import unit
-import openmmtools
-from cg_openmm.utilities.util import set_box_vectors, get_box_vectors
-from simtk.openmm.app.pdbfile import PDBFile
-from simtk.openmm.app.dcdfile import DCDFile
-from mdtraj.formats import PDBTrajectoryFile
-from mdtraj import Topology, Trajectory
-from pymbar import timeseries
-from scipy.special import erf
-from scipy.optimize import minimize_scalar
 import time
 
-from openmmtools.multistate import MultiStateReporter, MultiStateSampler, ReplicaExchangeSampler
-from openmmtools.multistate import ReplicaExchangeAnalyzer
+import matplotlib.cm as cm
+import matplotlib.pyplot as pyplot
+import numpy as np
+import openmmtools
+from cg_openmm.utilities.util import get_box_vectors, set_box_vectors
+from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib.colors import Normalize
+from mdtraj import Topology, Trajectory
+from mdtraj.formats import PDBTrajectoryFile
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from openmm import unit
+from openmm.app.dcdfile import DCDFile
+from openmm.app.pdbfile import PDBFile
+from openmmtools.multistate import (MultiStateReporter, MultiStateSampler,
+                                    ReplicaExchangeAnalyzer,
+                                    ReplicaExchangeSampler)
+from pymbar import timeseries
+from scipy.optimize import minimize_scalar
+from scipy.special import erf
 
 # quiet down some citation spam
 MultiStateSampler._global_citation_silence = True

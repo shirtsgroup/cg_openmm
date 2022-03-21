@@ -1,13 +1,14 @@
 import os
+
+import matplotlib.pyplot as plt
 import numpy as np
-from simtk import unit
-from simtk.openmm.app.pdbfile import PDBFile
 from cg_openmm.cg_model.cgmodel import CGModel
 from cg_openmm.utilities.iotools import write_pdbfile_without_topology
-from scipy.optimize import differential_evolution, root_scalar
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.colors import LightSource
+from mpl_toolkits.mplot3d import Axes3D
+from openmm import unit
+from openmm.app.pdbfile import PDBFile
+from scipy.optimize import differential_evolution, root_scalar
 
 
 def dist_unitless(positions_1, positions_2):
@@ -30,16 +31,16 @@ def get_helix_cgmodel(sigma_bb,sigma_sc,epsilon_bb,epsilon_sc,n_particle_bb):
     # Backbone particle:
     bb = {
         "particle_type_name": "bb",
-        "sigma": sigma_bb * unit.angstrom,
-        "epsilon": epsilon_bb * unit.kilojoules_per_mole,
+        "sigma": sigma_bb, # angstrom
+        "epsilon": epsilon_bb, # kilojoules_per_mole
         "mass": mass
     }
         
     # Sidechain particle:
     sc = {
         "particle_type_name": "sc",
-        "sigma": sigma_sc * unit.angstrom,
-        "epsilon": epsilon_sc * unit.kilojoules_per_mole,
+        "sigma": sigma_sc, # angstrom,
+        "epsilon": epsilon_sc, # kilojoules_per_mole,
         "mass": mass
     }
 

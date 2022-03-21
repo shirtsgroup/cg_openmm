@@ -4,7 +4,7 @@ import os
 import pickle
 
 from cg_openmm.thermo.calc import *
-from simtk import unit
+from openmm import unit
 
 # This example demonstrates how to calculate heat capacity as a function of temperature from
 # replica exchange energies, with uncertainties estimated using pyMBAR.

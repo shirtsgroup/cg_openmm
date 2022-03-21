@@ -1,9 +1,10 @@
 import os
-from simtk import unit
+
 from cg_openmm.cg_model.cgmodel import CGModel
 from cg_openmm.utilities.iotools import write_pdbfile_without_topology
-from simtk.unit import kilojoules_per_mole as kj
-from simtk.unit import nanometer as nm
+from openmm import unit
+from openmm.unit import kilojoules_per_mole as kj
+from openmm.unit import nanometer as nm
 
 # Coarse grained model settings
 include_bond_forces = True

@@ -1,13 +1,13 @@
 import os
-import numpy as np
+
 import mdtraj as md
-from simtk import unit
-from simtk.openmm import LangevinIntegrator
-from simtk.openmm.app import Simulation
-from simtk.openmm.app.pdbfile import PDBFile
+import numpy as np
 from cg_openmm.cg_model.cgmodel import CGModel
 from cg_openmm.utilities.helix_utils import *
 from cg_openmm.utilities.iotools import write_pdbfile_without_topology
+from openmm import LangevinIntegrator, unit
+from openmm.app import Simulation
+from openmm.app.pdbfile import PDBFile
 from scipy.optimize import differential_evolution, root_scalar
 
 
@@ -176,12 +176,12 @@ def optimize_helix_openmm_energy(n_particle_bb, sigma_bb, sigma_sc, epsilon_bb, 
     
     sigma_unit = sigma_bb.unit
     # Use angstrom for writing pdb file:
-    sigma_bb = sigma_bb.value_in_unit(unit.angstrom)
-    sigma_sc = sigma_sc.value_in_unit(unit.angstrom)
+    sigma_bb = sigma_bb.in_units_of(unit.angstrom)
+    sigma_sc = sigma_sc.in_units_of(unit.angstrom)
     
     eps_unit = epsilon_bb.unit
-    epsilon_bb = epsilon_bb.value_in_unit(unit.kilojoule_per_mole)
-    epsilon_sc = epsilon_sc.value_in_unit(unit.kilojoule_per_mole)
+    epsilon_bb = epsilon_bb.in_units_of(unit.kilojoules_per_mole)
+    epsilon_sc = epsilon_sc.in_units_of(unit.kilojoules_per_mole)
     
     # t_delta is related to the specified bond distance - this must be computed at each iteration
     
@@ -210,10 +210,14 @@ def optimize_helix_openmm_energy(n_particle_bb, sigma_bb, sigma_sc, epsilon_bb, 
         params = (simulation, bb_array, sc_array, n_particle_bb)
     
         # Set optimization bounds [t, r, c]:
+        # Bounds cannot have units attached.
+        sigma_bb_val = sigma_bb.value_in_unit(unit.angstrom)
+        sigma_sc_val = sigma_sc.value_in_unit(unit.angstrom)
+        
         if sigma_bb > sigma_sc:
-            bounds = [(0.01,np.pi),(sigma_bb/50,15*sigma_bb),(sigma_bb/50,2*sigma_bb)]
+            bounds = [(0.01,np.pi),(sigma_bb_val/50,15*sigma_bb_val),(sigma_bb_val/50,2*sigma_bb_val)]
         else:
-            bounds = [(0.01,np.pi),(sigma_sc/50,15*sigma_sc),(sigma_sc/50,2*sigma_sc)]
+            bounds = [(0.01,np.pi),(sigma_sc_val/50,15*sigma_sc_val),(sigma_sc_val/50,2*sigma_sc_val)]
         
         opt_sol = differential_evolution(
             compute_LJ_helix_openmm_energy,
@@ -245,10 +249,14 @@ def optimize_helix_openmm_energy(n_particle_bb, sigma_bb, sigma_sc, epsilon_bb, 
         params = (simulation, bb_array, sc_array, n_particle_bb, bond_dist_bb, bond_dist_sc)
     
         # Set optimization bounds [r, c]:
+        # Bounds cannot have units attached.
+        sigma_bb_val = sigma_bb.value_in_unit(unit.angstrom)
+        sigma_sc_val = sigma_sc.value_in_unit(unit.angstrom)
+        
         if sigma_bb > sigma_sc:
-            bounds = [(sigma_bb/50,15*sigma_bb),(sigma_bb/50,2*sigma_bb)]
+            bounds = [(sigma_bb_val/50,15*sigma_bb_val),(sigma_bb_val/50,2*sigma_bb_val)]
         else:
-            bounds = [(sigma_sc/50,15*sigma_sc),(sigma_sc/50,2*sigma_sc)]    
+            bounds = [(sigma_sc_val/50,15*sigma_sc_val),(sigma_sc_val/50,2*sigma_sc_val)]
         
         opt_sol = differential_evolution(
             compute_LJ_helix_openmm_energy_constrained,
@@ -273,8 +281,8 @@ def optimize_helix_openmm_energy(n_particle_bb, sigma_bb, sigma_sc, epsilon_bb, 
         
         
     # Equilibrium LJ distance (for visual representation)
-    r_eq_bb = sigma_bb*np.power(2,(1/6))
-    r_eq_sc = sigma_sc*np.power(2,(1/6))
+    r_eq_bb = sigma_bb_val*np.power(2,(1/6))
+    r_eq_sc = sigma_sc_val*np.power(2,(1/6))
     
     # Get particle positions:
     xyz_par = get_helix_coordinates(r_opt,c_opt,t_par)

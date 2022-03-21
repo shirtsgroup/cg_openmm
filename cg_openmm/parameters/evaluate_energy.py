@@ -1,18 +1,20 @@
+import multiprocessing as mp
 import os
-import numpy as np
-import simtk.unit as unit
+import pickle
+import time
+from itertools import combinations, combinations_with_replacement, product
+
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
+import mdtraj as md
+import numpy as np
+import pymbar
 from cg_openmm.simulation.tools import get_mm_energy
 from cg_openmm.thermo.calc import *
-from simtk.openmm.app import *
-from simtk.openmm import *
-import pymbar
-import mdtraj as md
-import multiprocessing as mp
-import pickle
-from itertools import combinations, combinations_with_replacement, product
-import time
+from matplotlib.backends.backend_pdf import PdfPages
+from openmm import *
+from openmm import unit
+from openmm.app import *
+
 #from memory_profiler import profile
 
 kB = unit.MOLAR_GAS_CONSTANT_R # Boltzmann constant

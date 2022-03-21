@@ -8,7 +8,7 @@ from analyze_foldamers.ensembles.cluster import *
 from cg_openmm.parameters.secondary_structure import *
 from cg_openmm.simulation.tools import minimize_structure
 from cg_openmm.utilities.util import fit_sigmoid
-from simtk import unit
+from openmm import unit
 
 #---------------------------------------#
 # Find native structure from clustering #

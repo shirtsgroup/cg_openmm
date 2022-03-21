@@ -2,16 +2,17 @@
 Unit and regression test for the cg_openmm package.
 """
 
-# Import package, test suite, and other packages as needed
-from simtk import unit
-import pytest
-import mdtraj as md
-import sys
 import os
+import sys
+
+import mdtraj as md
+import numpy as np
+import pytest
 from cg_openmm.utilities.helix_optimize_geometry import *
 from cg_openmm.utilities.helix_optimize_nonbonded import *
-import numpy as np
 from numpy.testing import assert_almost_equal
+# Import package, test suite, and other packages as needed
+from openmm import unit
 
 
 def test_optimize_helix_simple(tmpdir):

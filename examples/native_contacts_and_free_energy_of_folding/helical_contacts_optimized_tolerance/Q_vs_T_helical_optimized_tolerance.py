@@ -4,7 +4,7 @@ import time
 
 from cg_openmm.parameters.free_energy import *
 from cg_openmm.parameters.secondary_structure import *
-from simtk import unit
+from openmm import unit
 
 # Using a helical backbone native contact scheme, determine the tolerance factor which
 # maximizes Q_folded-Q_unfolded, and then calculate native contact fraction and free

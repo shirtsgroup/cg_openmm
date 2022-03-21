@@ -4,7 +4,7 @@ import time
 
 from cg_openmm.parameters.free_energy import *
 from cg_openmm.parameters.secondary_structure import *
-from simtk import unit
+from openmm import unit
 
 # Using a helical backbone native contact scheme with fixed native contact tolerance,
 # calculate native contact fraction and free energy of folding as functions of T.

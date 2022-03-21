@@ -1,11 +1,13 @@
-import simtk.unit as unit
-import sys, os
+import os
+import pickle
+import sys
 from collections import Counter
-from cg_openmm.utilities.random_builder import get_random_positions
+from itertools import chain, combinations, product
+
 from cg_openmm.build.cg_build import *
 from cg_openmm.utilities.iotools import *
-from itertools import chain, combinations, product
-import pickle
+from cg_openmm.utilities.random_builder import get_random_positions
+from openmm import unit
 
 
 class CGModel(object):
@@ -21,7 +23,7 @@ class CGModel(object):
     :Example:
     .. code-block:: python
     
-        from simtk import unit
+        from openmm import unit
         from cg_openmm.cg_model.cgmodel import CGModel
         
         # Specify backbone (bb) and sidechain (sc) particle parameters:
