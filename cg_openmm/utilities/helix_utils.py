@@ -142,6 +142,153 @@ def get_helix_cgmodel(sigma_bb,sigma_sc,epsilon_bb,epsilon_sc,n_particle_bb):
 
     return cgmodel
     
+    
+def get_helix_cgmodel_triangle(sigma_bb,sigma_sc,epsilon_bb,epsilon_sc,n_particle_bb):
+    """
+    Internal function for creating a cgmodel with 1 backbone bead, 3 sidechain beads in a 
+    triangle and with 1-3 nonbonded interactions included, to use in helical optimization.
+    """
+
+    #--------------------------------------------#
+    # Particle definitions and oligomer topology #
+    #--------------------------------------------#
+
+    mass = 100.0 * unit.amu
+
+    # Mass and charge are defaults.
+    # Backbone particle:
+    bb = {
+        "particle_type_name": "bb",
+        "sigma": sigma_bb, # angstrom
+        "epsilon": epsilon_bb, # kilojoules_per_mole
+        "mass": mass
+    }
+        
+    # Sidechain particle:
+    sc = {
+        "particle_type_name": "sc",
+        "sigma": sigma_sc, # angstrom,
+        "epsilon": epsilon_sc, # kilojoules_per_mole,
+        "mass": mass
+    }
+
+    # Monomer definition:
+    A = {
+        "monomer_name": "A",
+        "particle_sequence": [bb, sc, sc, sc],
+        "bond_list": [[0, 1],[1,2],[2,3]],
+        "start": 0,
+        "end": 0,
+    }
+
+    # Residue sequence:
+    sequence = n_particle_bb * [A]
+
+    # Exclusion rules:
+    exclusions = {
+        "default_exclusions": [0,1,1],
+        "bb_bb_exclusions": [0,0,1],
+        }
+
+    #--------------------------#
+    # Harmonic bond parameters #
+    #--------------------------#
+
+    # Bond definitions:
+    bond_lengths = {"default_bond_length": 2.44 * unit.angstrom}
+
+    bond_force_constants = {
+        "default_bond_force_constant": 0 * unit.kilojoule_per_mole / unit.nanometer / unit.nanometer
+    }
+
+    #---------------------------#
+    # Harmonic angle parameters #
+    #---------------------------#
+
+    # Bond angle definitions:
+    bond_angle_force_constants = {
+        "default_bond_angle_force_constant": 0 * unit.kilojoule_per_mole / unit.radian / unit.radian
+    }
+
+    equil_bond_angles = {
+        "default_equil_bond_angle": 127.5 * unit.degrees,
+        "bb_bb_bb_equil_bond_angle": 105.5 * unit.degrees}
+
+    #-----------------------------#
+    # Periodic torsion parameters #
+    #-----------------------------#    
+        
+    # Torsion angle definitions:
+    torsion_force_constants = {
+        "default_torsion_force_constant": 0.0 * unit.kilojoule_per_mole,
+    }
+
+    torsion_phase_angles = {
+        "sc_bb_bb_sc_torsion_phase_angle": 0 * unit.degrees,
+        "bb_bb_bb_bb_torsion_phase_angle": (16.7-180) * unit.degrees,
+        "bb_bb_bb_sc_torsion_phase_angle": 0 * unit.degrees,
+    }
+
+    torsion_periodicities = {
+        "default_torsion_periodicity": 1,
+    }
+
+    # Set initial positions for cgmodel
+    # These are arbitrary - we just can't have overlapping beads
+    # The particles in cgmodel get ordered as bb,sc,sc,sc,bb,sc,sc,sc...
+    positions_init = np.zeros((4*n_particle_bb,3))
+    
+    t0 = np.zeros(n_particle_bb)
+    for i in range(n_particle_bb):
+        t0[i] = i*np.pi/5
+        
+    xyz_bb = get_helix_coordinates(1,1,t0)
+    
+    j = -1
+    for i in range(n_particle_bb):
+        j += 1
+        positions_init[j,:] = xyz_bb[i,:]
+        
+        j += 1
+        positions_init[j,0] = 2*xyz_bb[i,0]
+        positions_init[j,1] = 2*xyz_bb[i,1]
+        positions_init[j,2] = xyz_bb[i,2]
+        
+        j += 1
+        positions_init[j,0] = 3*xyz_bb[i,0]
+        positions_init[j,1] = 3*xyz_bb[i,1]
+        positions_init[j,2] = xyz_bb[i,2]
+
+        j += 1
+        positions_init[j,0] = 4*xyz_bb[i,0]
+        positions_init[j,1] = 4*xyz_bb[i,1]
+        positions_init[j,2] = xyz_bb[i,2]
+
+    positions_init *= unit.angstrom
+    
+    # Build a coarse grained model:
+    cgmodel = CGModel(
+        particle_type_list=[bb, sc],
+        bond_lengths=bond_lengths,
+        bond_force_constants=bond_force_constants,
+        bond_angle_force_constants=bond_angle_force_constants,
+        torsion_force_constants=torsion_force_constants,
+        equil_bond_angles=equil_bond_angles,
+        torsion_phase_angles=torsion_phase_angles,
+        torsion_periodicities=torsion_periodicities,
+        include_nonbonded_forces=True,
+        include_bond_forces=True,
+        include_bond_angle_forces=True,
+        include_torsion_forces=False,
+        constrain_bonds=False,
+        exclusions=exclusions,
+        positions=positions_init,
+        sequence=sequence,
+        monomer_types=[A],
+    )
+
+    return cgmodel    
+    
 
 def get_helix_particle_bonded_lists(cgmodel):
     """
@@ -223,6 +370,116 @@ def get_helix_particle_bonded_lists(cgmodel):
             bb_bond_list, sc_bond_list,
             b_angle_list, s_angle_list,
             bbbb_torsion_list, bbbs_torsion_list, sbbs_torsion_list)
+    
+    
+def get_helix_particle_bonded_lists_triangle(cgmodel):
+    """
+    Internal function for getting particle type list and bonded lists
+    """
+
+    particle_list = cgmodel.create_particle_list()
+    
+    particle_type_list = []
+    
+    bb_list = []
+    sc_list = []
+    
+    # Use particle indices rather than the full particle dictionary:
+    for par in range(len(particle_list)):
+        if cgmodel.get_particle_type_name(par) == 'bb':
+            bb_list.append(par)
+            particle_type_list.append('bb')
+        elif cgmodel.get_particle_type_name(par) == 'sc':
+            sc_list.append(par)
+            particle_type_list.append('sc')
+    
+    # Use arrays for particle type indices
+    bb_array = np.asarray(bb_list)
+    sc_array = np.asarray(sc_list)
+    
+    # Create bond list for each type:
+    bond_list = cgmodel.get_bond_list()
+        
+    bb_bond_list = []
+    bs_bond_list = []
+    ss_bond_list = []
+    
+    for bond in bond_list:
+        type1 = cgmodel.get_particle_type_name(bond[0])
+        type2 = cgmodel.get_particle_type_name(bond[1])
+        
+        if type1 == 'bb' and type2 == 'bb':
+            bb_bond_list.append(bond)
+        elif type1 != type2:
+            bs_bond_list.append(bond)
+        elif type1 == 'sc' and type2 == 'sc':
+            ss_bond_list.append(bond)
+            
+    # Create angle list for each type:
+    angle_list = cgmodel.get_bond_angle_list()
+    
+    bbb_angle_list = []
+    bbs_angle_list = []
+    bss_angle_list = []
+    sss_angle_list = []
+    
+    for angle in angle_list:
+        type1 = cgmodel.get_particle_type_name(angle[0])
+        type2 = cgmodel.get_particle_type_name(angle[1])
+        type3 = cgmodel.get_particle_type_name(angle[2])
+        
+        if type1 == 'bb' and type2 == 'bb' and type3 == 'bb':
+            bbb_angle_list.append(angle)
+            
+        elif (type1 == 'bb' and type2 == 'bb' and type3 == 'sc') or \
+            (type1 == 'sc' and type2 == 'bb' and type3 == 'bb'):
+            bbs_angle_list.append(angle)
+            
+        elif (type1 == 'bb' and type2 == 'sc' and type3 == 'sc') or \
+            (type1 == 'sc' and type2 == 'sc' and type3 == 'bb'):
+            bss_angle_list.append(angle)             
+            
+        elif type1 == 'sc' and type2 == 'sc' and type3 == 'sc':
+            sss_angle_list.append(angle)
+    
+    # Create torsion list for each type:
+    torsion_list = cgmodel.get_torsion_list()
+    
+    bbbb_torsion_list = []
+    bbbs_torsion_list = []
+    bbss_torsion_list = []
+    bsss_torsion_list = []
+    sbbs_torsion_list = []
+    
+    for torsion in torsion_list:
+        type1 = cgmodel.get_particle_type_name(torsion[0])
+        type2 = cgmodel.get_particle_type_name(torsion[1])
+        type3 = cgmodel.get_particle_type_name(torsion[2])
+        type4 = cgmodel.get_particle_type_name(torsion[3])
+        
+        if type1 == 'bb' and type2 == 'bb' and type3 == 'bb' and type4 == 'bb':
+            bbbb_torsion_list.append(torsion)
+            
+        elif (type1 == 'bb' and type2 == 'bb' and type3 == 'bb' and type4 == 'sc') or \
+            (type1 == 'sc' and type2 == 'bb' and type3 == 'bb' and type4 == 'bb'):
+            bbbs_torsion_list.append(torsion)
+          
+        elif (type1 == 'bb' and type2 == 'bb' and type3 == 'sc' and type4 == 'sc') or \
+            (type1 == 'sc' and type2 == 'sc' and type3 == 'bb' and type4 == 'bb'):
+            bbss_torsion_list.append(torsion)
+          
+        elif (type1 == 'bb' and type2 == 'sc' and type3 == 'sc' and type4 == 'sc') or \
+            (type1 == 'sc' and type2 == 'sc' and type3 == 'sc' and type4 == 'bb'):
+            bsss_torsion_list.append(torsion)            
+            
+        elif type1 == 'sc' and type2 == 'bb' and type3 == 'bb' and type4 == 'sc':
+            sbbs_torsion_list.append(torsion)
+    
+    return (particle_type_list, bb_array, sc_array,
+            bb_bond_list, bs_bond_list, ss_bond_list,
+            bbb_angle_list, bbs_angle_list, bss_angle_list, sss_angle_list,
+            bbbb_torsion_list, bbbs_torsion_list, bbss_torsion_list,
+            bsss_torsion_list, sbbs_torsion_list)    
     
     
 def get_helix_coordinates(r,c,t):
