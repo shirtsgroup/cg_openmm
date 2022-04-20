@@ -113,6 +113,8 @@ class CGModel(object):
         include_bond_angle_forces=True,
         include_torsion_forces=True,
         angle_style='harmonic',
+        nonbond_repulsive_exp=12,
+        nonbond_attractive_exp=6,
         exclusions={},
         rosetta_functional_form=False,
         check_energy_conservation=True,
@@ -177,7 +179,13 @@ class CGModel(object):
         :type include_torsion_forces: Bool
         
         :param angle_style: Functional form to use for bond-bending angle potential ('harmonic', 'restricted', or 'cosine') (default='harmonic')
-        :type angle_style: str        
+        :type angle_style: str  
+
+        :param nonbond_repulsive_exp: Repulsive exponent for custom nonbonded Mie potential. For now this same exponent is applied to all pair types. (default=12)
+        :type nonbond_repulsive_exp: float
+        
+        :param nonbond_attractive_exp: Attractive exponent for custom nonbonded Mie potential. For now this same exponent is applied to all pair types. (default=6)
+        :type nonbond_attractive_exp: float
         
         :param exclusions: Nonbonded weights for [1-2, 1-3, 1-4] interactions (default = [0,0,1])
         :type exclusions: dict( list( int ) )
@@ -240,6 +248,8 @@ class CGModel(object):
         self.include_nonbonded_forces = include_nonbonded_forces
         self.include_torsion_forces = include_torsion_forces
         self.angle_style = angle_style
+        self.nonbond_repulsive_exp = nonbond_repulsive_exp
+        self.nonbond_attractive_exp = nonbond_attractive_exp
         self.check_energy_conservation = check_energy_conservation
         self.monomer_types = monomer_types
         self.bond_lengths = bond_lengths
