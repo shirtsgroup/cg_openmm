@@ -940,9 +940,9 @@ def compute_helix_openmm_energy_vary_LJ_2sc_equal(geo, simulation,
     side_xyz1[:,1] = (1+r_bs/r)*xyz[:,1]
     side_xyz1[:,2] = xyz[:,2]
     
-    side_xyz2[:,0] = (1+2*r_bs/r)*xyz[:,0]
-    side_xyz2[:,1] = (1+2*r_bs/r)*xyz[:,1]
-    side_xyz2[:,2] = xyz[:,2]    
+    side_xyz2[:,0] = (1+(r_bs+r_ss)/r)*xyz[:,0]
+    side_xyz2[:,1] = (1+(r_bs+r_ss)/r)*xyz[:,1]
+    side_xyz2[:,2] = xyz[:,2]
     
     # Now, set the backbone and sidechain positions to the correct bead indices:
     positions = np.zeros((3*n_particle_bb,3))
@@ -1023,8 +1023,8 @@ def compute_helix_openmm_energy_vary_LJ_2sc_nonequal(geo, simulation,
     side_xyz1[:,1] = (1+r_bs/r)*xyz[:,1]
     side_xyz1[:,2] = xyz[:,2]
     
-    side_xyz2[:,0] = (1+2*r_bs/r)*xyz[:,0]
-    side_xyz2[:,1] = (1+2*r_bs/r)*xyz[:,1]
+    side_xyz2[:,0] = (1+(r_bs+r_ss)/r)*xyz[:,0]
+    side_xyz2[:,1] = (1+(r_bs+r_ss)/r)*xyz[:,1]
     side_xyz2[:,2] = xyz[:,2]    
     
     # Now, set the backbone and sidechain positions to the correct bead indices:
