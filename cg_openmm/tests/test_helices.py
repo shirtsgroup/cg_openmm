@@ -214,6 +214,54 @@ def test_optimize_helix_LJ_parameters_unconstrained(tmpdir):
     pdb_loaded = md.load(pdbfile)
     assert pdb_loaded.n_atoms == 24      
     
+    
+def test_optimize_helix_LJ_parameters_unconstrained_diff(tmpdir):
+    """
+    Test the LJ helix nonbonded parameter optimization function
+    (1sc, optimize sigmas with specified radius, pitch, no bond constraints,
+    energy difference objective function)
+    """
+    
+    # Helical parameters:
+    radius = 1.5 * unit.angstrom
+    pitch = 1.5 * unit.angstrom
+
+    # Number of backbone particles:
+    n_particle_bb = 12 
+    
+    output_directory = tmpdir.mkdir("output")
+    pdbfile = f"{output_directory}/helix_opt_LJ_openmm_unconstrained_test.pdb"
+    plotfile = f"{output_directory}/helix_opt_LJ_openmm_unconstrained_test.pdf"
+
+    opt_solution, geometry = optimize_helix_LJ_parameters(
+        radius, pitch, n_particle_bb,
+        bond_dist_bb=None, bond_dist_sc=None,
+        pdbfile=pdbfile, plotfile=plotfile,
+        DE_popsize=20, optimize_diff=True)
+               
+    assert os.path.isfile(pdbfile)
+    assert os.path.isfile(plotfile)
+    
+    # Check that the radius and pitch are satisfied:
+    radius_out = geometry['helical_radius']
+    pitch_out = geometry['pitch']
+    
+    assert_almost_equal(
+        radius.value_in_unit(unit.angstrom),
+        radius_out.value_in_unit(unit.angstrom),
+        decimal=6
+    )
+    
+    assert_almost_equal(
+        pitch.value_in_unit(unit.angstrom),
+        pitch_out.value_in_unit(unit.angstrom),
+        decimal=6
+    )
+    
+    # Check that we can load the pdb file
+    pdb_loaded = md.load(pdbfile)
+    assert pdb_loaded.n_atoms == 24          
+    
 
 def test_optimize_helix_LJ_parameters_constrained(tmpdir):
     """
@@ -280,6 +328,74 @@ def test_optimize_helix_LJ_parameters_constrained(tmpdir):
     # Check that we can load the pdb file
     pdb_loaded = md.load(pdbfile)
     assert pdb_loaded.n_atoms == 24    
+    
+    
+def test_optimize_helix_LJ_parameters_constrained_diff(tmpdir):
+    """
+    Test the LJ helix nonbonded parameter optimization function
+    (1sc, optimize sigmas with specified radius, pitch, fixed bond lengths,
+    energy difference objective function)
+    """
+    
+    # Helical parameters:
+    radius = 1.5 * unit.angstrom
+    pitch = 1.5 * unit.angstrom
+
+    # Number of backbone particles:
+    n_particle_bb = 12
+
+    # Bond constraints (equilibrium values)
+    bond_dist_bb = 1.10 * unit.angstrom
+    bond_dist_sc = 1.20 * unit.angstrom    
+    
+    output_directory = tmpdir.mkdir("output")
+    pdbfile = f"{output_directory}/helix_opt_LJ_openmm_constrained_test.pdb"
+    plotfile = f"{output_directory}/helix_opt_LJ_openmm_constrained_test.pdf"
+
+    opt_solution, geometry = optimize_helix_LJ_parameters(
+        radius, pitch, n_particle_bb,
+        bond_dist_bb=bond_dist_bb, bond_dist_sc=bond_dist_sc,
+        pdbfile=pdbfile, plotfile=plotfile,
+        DE_popsize=20, optimize_diff=True)
+
+    assert os.path.isfile(pdbfile)
+    assert os.path.isfile(plotfile)
+    
+    # Check that the bond constraints are satisfied:
+    bond_dist_bb_out = geometry['bb_bb_distance']
+    bond_dist_sc_out = geometry['bb_sc_distance']
+    
+    assert_almost_equal(
+        bond_dist_bb.value_in_unit(unit.angstrom),
+        bond_dist_bb_out.value_in_unit(unit.angstrom),
+        decimal=6
+    )
+    
+    assert_almost_equal(
+        bond_dist_sc.value_in_unit(unit.angstrom),
+        bond_dist_sc_out.value_in_unit(unit.angstrom),
+        decimal=6
+    )
+    
+    # Check that the radius and pitch are satisfied:
+    radius_out = geometry['helical_radius']
+    pitch_out = geometry['pitch']
+    
+    assert_almost_equal(
+        radius.value_in_unit(unit.angstrom),
+        radius_out.value_in_unit(unit.angstrom),
+        decimal=6
+    )
+    
+    assert_almost_equal(
+        pitch.value_in_unit(unit.angstrom),
+        pitch_out.value_in_unit(unit.angstrom),
+        decimal=6
+    )
+    
+    # Check that we can load the pdb file
+    pdb_loaded = md.load(pdbfile)
+    assert pdb_loaded.n_atoms == 24        
     
     
 def test_optimize_helix_LJ_parameters_2sc_equal(tmpdir):
