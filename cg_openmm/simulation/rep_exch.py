@@ -67,7 +67,7 @@ def make_replica_dcd_files(
     output_data_path = os.path.join(output_dir, output_data)
     
     # Get number of replicas:
-    reporter = MultiStateReporter(output_data_path, open_mode="r")
+    reporter = MultiStateReporter(output_data, open_mode='r', checkpoint_storage=checkpoint_data)
     states = reporter.read_thermodynamic_states()[0]
     n_replicas=len(states)
     
@@ -75,8 +75,7 @@ def make_replica_dcd_files(
     xunit = sampler_states[0].positions[0].unit
         
     for replica_index in range(n_replicas):
-        replica_positions = extract_trajectory(topology, replica_index=replica_index,
-            output_data=output_data_path, checkpoint_data=checkpoint_data,
+        replica_positions = extract_trajectory(topology, reporter, replica_index=replica_index,
             frame_begin=frame_begin, frame_stride=frame_stride)
     
         n_frames_tot = replica_positions.shape[0]
@@ -104,7 +103,9 @@ def make_replica_dcd_files(
             # This rewrites to replica_traj        
             
         Trajectory.save_dcd(replica_traj,file_name)
-        
+    
+    reporter.close()
+    
     return file_list
     
 
@@ -143,7 +144,7 @@ def make_replica_pdb_files(
     output_data_path = os.path.join(output_dir, output_data)
     
     # Get number of replicas:
-    reporter = MultiStateReporter(output_data_path, open_mode="r")
+    reporter = MultiStateReporter(output_data, open_mode='r', checkpoint_storage=checkpoint_data)
     states = reporter.read_thermodynamic_states()[0]
     n_replicas = len(states)
     
@@ -151,8 +152,7 @@ def make_replica_pdb_files(
     xunit = sampler_states[0].positions[0].unit
     
     for replica_index in range(n_replicas):
-        replica_positions = extract_trajectory(topology, replica_index=replica_index, 
-            output_data=output_data_path, checkpoint_data=checkpoint_data,
+        replica_positions = extract_trajectory(topology, reporter, replica_index=replica_index, 
             frame_begin=frame_begin, frame_stride=frame_stride)
     
         file_name = f"{output_dir}/replica_{replica_index+1}.pdb"
@@ -170,6 +170,8 @@ def make_replica_pdb_files(
             
         Trajectory.save_pdb(replica_traj,file_name)
         
+    reporter.close()
+    
     return file_list
     
 
@@ -215,15 +217,14 @@ def make_state_dcd_files(
     output_data_path = os.path.join(output_dir, output_data)
     
     # Get number of states:
-    reporter = MultiStateReporter(output_data_path, open_mode="r")
+    reporter = MultiStateReporter(output_data, open_mode='r', checkpoint_storage=checkpoint_data)
     states = reporter.read_thermodynamic_states()[0]
     
     sampler_states = reporter.read_sampler_states(iteration=0)
     xunit = sampler_states[0].positions[0].unit
         
     for state_index in range(len(states)):
-        state_positions = extract_trajectory(topology, state_index=state_index,
-            output_data=output_data_path, checkpoint_data=checkpoint_data,
+        state_positions = extract_trajectory(topology, reporter, state_index=state_index,
             frame_begin=frame_begin, frame_stride=frame_stride)
             
         n_frames_tot = state_positions.shape[0]
@@ -251,6 +252,8 @@ def make_state_dcd_files(
             # This rewrites to state_traj
             
         Trajectory.save_dcd(state_traj,file_name)
+        
+    reporter.close()        
         
     return file_list
     
@@ -291,15 +294,14 @@ def make_state_pdb_files(
     output_data_path = os.path.join(output_dir, output_data)
     
     # Get number of states:
-    reporter = MultiStateReporter(output_data_path, open_mode="r")
+    reporter = MultiStateReporter(output_data, open_mode='r', checkpoint_storage=checkpoint_data)
     states = reporter.read_thermodynamic_states()[0]
     
     sampler_states = reporter.read_sampler_states(iteration=0)
     xunit = sampler_states[0].positions[0].unit
     
     for state_index in range(len(states)):
-        state_positions = extract_trajectory(topology, state_index=state_index, 
-            output_data=output_data_path, checkpoint_data=checkpoint_data,
+        state_positions = extract_trajectory(topology, reporter, state_index=state_index,
             frame_begin=frame_begin, frame_stride=frame_stride)
     
         file_name = f"{output_dir}/state_{state_index+1}.pdb"
@@ -316,12 +318,14 @@ def make_state_pdb_files(
             # This rewrites to state_traj
             
         Trajectory.save_pdb(state_traj,file_name)
-        
+      
+    reporter.close()
+      
     return file_list
     
     
 def extract_trajectory(
-    topology, output_data="output/output.nc", checkpoint_data="output_checkpoint.nc",
+    topology, reporter,
     state_index=None, replica_index=None,
     frame_begin=0, frame_stride=1, frame_end=-1):
     """
@@ -329,8 +333,6 @@ def extract_trajectory(
     Based on YANK extract_trajectory code.
     """
 
-    reporter = MultiStateReporter(output_data, open_mode='r', checkpoint_storage=checkpoint_data)
-    
     # Get dimensions
     trajectory_storage = reporter._storage_checkpoint  
     n_iterations = reporter.read_last_iteration()
