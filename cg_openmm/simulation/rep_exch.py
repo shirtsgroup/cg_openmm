@@ -693,6 +693,9 @@ def process_replica_exchange_data(
         print(f"compute transition matrix: {t17-t16}")
         print(f"total time elapsed: {t17-t1}")
 
+    # Close reporter/.nc file:
+    reporter.close()
+
     return (replica_energies, replica_state_indices, production_start, sample_spacing, n_transit, mixing_stats)
 
 

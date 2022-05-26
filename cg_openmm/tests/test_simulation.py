@@ -660,7 +660,7 @@ def test_run_replica_exchange(tmpdir):
     assert os.path.isfile(f"{output_directory}/output.nc")
     
     
-def test_process_replica_exchange(tmpdir):
+def test_process_replica_exchange_1(tmpdir):
     """
     Test replica exchange processing, trajectory writing with various options
     """
@@ -682,7 +682,19 @@ def test_process_replica_exchange(tmpdir):
         plot_production_only=True,
         print_timing=True,
     )
+
     
+def test_process_replica_exchange_2(tmpdir):
+    """
+    Test replica exchange processing, trajectory writing with various options
+    """
+
+    # Set output directory
+    output_directory = tmpdir.mkdir("output")    
+    
+    # Location of previously saved output.nc:
+    output_data = os.path.join(data_path, "output.nc")
+        
     # 2) With non-default equil_nskip
     replica_energies, replica_states, production_start, sample_spacing, n_transit, mixing_stats = process_replica_exchange_data(
         output_data=output_data,
@@ -691,6 +703,18 @@ def test_process_replica_exchange(tmpdir):
         equil_nskip=2,
     )
     
+    
+def test_process_replica_exchange_3(tmpdir):
+    """
+    Test replica exchange processing, trajectory writing with various options
+    """
+
+    # Set output directory
+    output_directory = tmpdir.mkdir("output")    
+    
+    # Location of previously saved output.nc:
+    output_data = os.path.join(data_path, "output.nc")
+    
     # 3) With frame_begin used to circumvent detectEquilibration
     replica_energies, replica_states, production_start, sample_spacing, n_transit, mixing_stats = process_replica_exchange_data(
         output_data=output_data,
@@ -698,12 +722,36 @@ def test_process_replica_exchange(tmpdir):
         frame_begin=5,
     )   
     
+    
+def test_process_replica_exchange_4(tmpdir):
+    """
+    Test replica exchange processing, trajectory writing with various options
+    """
+
+    # Set output directory
+    output_directory = tmpdir.mkdir("output")    
+    
+    # Location of previously saved output.nc:
+    output_data = os.path.join(data_path, "output.nc")    
+    
     # 4) With frame end specified to analyze only the beginning of a trajectory
     replica_energies, replica_states, production_start, sample_spacing, n_transit, mixing_stats = process_replica_exchange_data(
         output_data=output_data,
         output_directory=output_directory,
         frame_end=25,
     )   
+    
+    
+def test_process_replica_exchange_5(tmpdir):
+    """
+    Test replica exchange processing, trajectory writing with various options
+    """
+
+    # Set output directory
+    output_directory = tmpdir.mkdir("output")    
+    
+    # Location of previously saved output.nc:
+    output_data = os.path.join(data_path, "output.nc")    
     
     # 5) Without writing .dat file:
     replica_energies, replica_states, production_start, sample_spacing, n_transit, mixing_stats = process_replica_exchange_data(
