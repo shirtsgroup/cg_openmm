@@ -8,12 +8,12 @@ from cg_openmm.utilities.iotools import write_pdbfile_without_topology
 from openmm import LangevinIntegrator, unit
 from openmm.app import Simulation
 from openmm.app.pdbfile import PDBFile
-from scipy.optimize import differential_evolution, root_scalar
+from scipy.optimize import differential_evolution, root_scalar, brute
 
 
 def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
-    bond_dist_bb=None, bond_dist_sc=None, optimize_diff=False, DE_popsize=50,
-    pdbfile='LJ_helix_openmm_energy.pdb', plotfile='LJ_helix_openmm_energy.pdf'):
+    bond_dist_bb=None, bond_dist_sc=None, equal_bonds=True, DE_popsize=50,
+    pdbfile='LJ_helix_openmm_energy.pdb', plotfile='LJ_helix_openmm_energy.pdf', exclusions={}):
     """
     1sc model: Optimize backbone and sidechain particle parameters along a helix with specified radius and
     pitch, with equal spacing of backbone particles and sidechain beads normal to the helix.
@@ -33,8 +33,8 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
     :param bond_dist_sc: bond distance for bb-sc bonds. If None, bond distance will also be optimized.
     :type bond_dist_sc: Quantity
     
-    :param optimize_diff: option to optimize the energy difference of the folded helix to an extended chain, rather than just minimizing the helix energy (default=False)
-    :type optimize_diff: bool
+    :param equal_bonds: option to constrain bb-sc bond distance to equal bb-bb bond distance
+    :type equal_bonds: bool    
 
     :param DE_popsize: population size to use in SciPy differential_evolution solver (default=50)
     :type DE_popsize: int
@@ -44,6 +44,9 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
     
     :param plotfile: Path to pdf file for plotting the helical equations and particle positions (default='LJ_helix_openmm_energy.pdf')
     :type plotfile: str
+    
+    :param exclusions: pass cg_openmm exclusion rules to the cgmodel (by default [0,0,1] is applied to all pair types)
+    :type exclusions: dict    
     
     :returns:
       - opt_sol - Results from scipy.optimize (dict)
@@ -70,7 +73,7 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
     sigma_bb = 1.0 * unit.angstrom
     sigma_sc = 1.0 * unit.angstrom
     
-    cgmodel = get_helix_cgmodel(sigma_bb,sigma_sc,epsilon_bb,epsilon_sc,n_particle_bb)
+    cgmodel = get_helix_cgmodel(sigma_bb,sigma_sc,epsilon_bb,epsilon_sc,n_particle_bb,exclusions)
     
     # Get particle type lists and bonded lists:
     (particle_type_list, bb_array, sc_array, bb_bond_list, sc_bond_list,
@@ -94,27 +97,42 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
         # Set sidechain bonds to the backbone bond distance for now
         # Vary t spacing, sigma_bb, sigma_sc
 
-        params = (simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, optimize_diff)
-    
-        # Set optimization bounds [t, sigma_bb, sigma_sc]:
-        # Use a minimium of 3 residues/turn
-        bounds = [(0.01,2*np.pi/3),(r/50,15*r),(r/50,15*r)]
+        params = (simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, equal_bonds)
 
-        opt_sol = differential_evolution(
-            compute_helix_openmm_energy_vary_LJ,
-            bounds,
-            args=params,
-            polish=True,
-            popsize=DE_popsize,
-        )
-        
-        t_delta_opt = opt_sol.x[0]
-        sigma_bb_opt = opt_sol.x[1]
-        sigma_sc_opt = opt_sol.x[2]
-           
-        t_par = np.zeros(n_particle_bb)
-        for i in range(n_particle_bb):
-            t_par[i] = i*t_delta_opt
+        if equal_bonds:
+            # Set optimization bounds [t, sigma_bb, sigma_sc]:
+            # Use a minimium of 3 residues/turn
+            bounds = [(0.01,2*np.pi/3),(r/50,15*r),(r/50,15*r)]
+
+            opt_sol = differential_evolution(
+                compute_helix_openmm_energy_vary_LJ,
+                bounds,
+                args=params,
+                polish=True,
+                popsize=DE_popsize,
+            )
+            
+            t_delta_opt = opt_sol.x[0]
+            sigma_bb_opt = opt_sol.x[1]
+            sigma_sc_opt = opt_sol.x[2]
+            
+        else:
+            # Set optimization bounds [t, sigma_bb, sigma_sc, r_bs]:
+            # Use a minimium of 3 residues/turn
+            bounds = [(0.01,2*np.pi/3),(r/50,15*r),(r/50,15*r),(r/50,15*r)]
+            
+            opt_sol = differential_evolution(
+                compute_helix_openmm_energy_vary_LJ,
+                bounds,
+                args=params,
+                polish=True,
+                popsize=DE_popsize,
+            )
+            
+            t_delta_opt = opt_sol.x[0]
+            sigma_bb_opt = opt_sol.x[1]
+            sigma_sc_opt = opt_sol.x[2]
+            r_bs_opt = opt_sol.x[3]
             
     else:
     
@@ -127,9 +145,9 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
         bond_dist_bb = bond_dist_bb.value_in_unit(unit.angstrom)
         bond_dist_sc = bond_dist_sc.value_in_unit(unit.angstrom)
     
-        params = (simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, bond_dist_bb, bond_dist_sc, optimize_diff)
+        params = (simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, bond_dist_bb, bond_dist_sc)
     
-        # Set optimization bounds [sigma_bb, sigma_sc]:
+        # Set optimization bounds [sigma_bb, sigma_sc]: 
         bounds = [(r/50,15*r),(r/50,15*r)]   
         
         opt_sol = differential_evolution(
@@ -149,10 +167,10 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
             print(t_delta_opt)
             t_delta_opt *= -1
         
-        t_par = np.zeros(n_particle_bb)
-        for i in range(n_particle_bb):
-            t_par[i] = i*t_delta_opt    
-        
+    # Determine backbone particle parametric coordinates:
+    t_par = np.zeros(n_particle_bb)
+    for i in range(n_particle_bb):
+        t_par[i] = i*t_delta_opt    
         
     # Equilibrium LJ distance (for visual representation)
     r_eq_bb = sigma_bb_opt*np.power(2,(1/6))
@@ -163,12 +181,19 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
     
     # Place sidechain particles normal to helix
     r_bb = dist_unitless(xyz[0,:],xyz[1,:])
-    if bond_dist_sc == None:
+    
+    if equal_bonds:
         # Use optimized bond length from first two backbone beads:
         r_bs = r_bb
     else:
-        # Use specified bb-sc bond distance:
-        r_bs = bond_dist_sc
+        if bond_dist_sc is not None:
+            # Use specified bb-sc bond distance:
+            r_bs = bond_dist_sc
+        else:
+            # Use optimized bb-sc bond distance:
+            # Testing out inverted helix
+            # r_bs = -r_bs_opt
+            r_bs = r_bs_opt
     
     side_xyz = np.zeros((n_particle_bb,3))
 
@@ -232,17 +257,7 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
     # Get bb-bb-bb-sc torsion
     dihedral_indices = np.array([[bbbs_torsion_list[0][0], bbbs_torsion_list[0][1], bbbs_torsion_list[0][2], bbbs_torsion_list[0][3]]])
     geometry['bb_bb_bb_sc_angle'] = (md.compute_dihedrals(traj,dihedral_indices)*unit.radians).in_units_of(unit.degrees)[0][0]
-
-    if optimize_diff:
-        # Alse write out the extended conformation
-        positions_extended = get_extended_positions_1sc(
-            r_bb, r_bs, n_particle_bb, geometry['bb_bb_bb_angle'], 
-            )
-
-        # Write pdb file
-        cgmodel.positions = positions_extended * unit.angstrom
-        write_pdbfile_without_topology(cgmodel, pdbfile[:-4]+'ext.pdb')    
-        
+    
     # Plot helix:
     if plotfile is not None:
         plot_LJ_helix(r,c,t_par,r_eq_bb,r_eq_sc=r_eq_sc,plotfile=plotfile)
@@ -250,9 +265,298 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
     return opt_sol, geometry
 
 
+def optimize_helix_LJ_parameters_energy_diff(radius, pitch, n_particle_bb,
+    equal_bonds=True, bond_dist_sc=None, brute_step_rad=0.1, brute_step_r_bs=0.1, DE_popsize=50,
+    pdbfile='LJ_helix_openmm_energy.pdb', plotfile='LJ_helix_openmm_energy.pdf', exclusions={}):
+    """
+    1sc model: Optimize backbone and sidechain particle parameters along a helix with specified radius and
+    pitch, with equal spacing of backbone particles and sidechain beads normal to the helix. Objective
+    function is the energy difference beween helical and extended state, where the extended state also
+    has equilibrium angles and bond distances but no helical backbone contacts. Performs a brute force
+    outer optimization over particle spacing (bond distances), and an inner differential evolution 
+    optimization over the sigma_bb and sigma_sc parameters. 
+    
+    :param radius: fixed helical radius
+    :type radius: Quantity
+    
+    :param pitch: fixed helical pitch (c*2*pi)
+    :type pitch: Quantity
+    
+    :param n_particle_bb: Number of backbone particles to model
+    :type n_particle_bb: int
+    
+    :param equal_bonds: option to constrain bb-sc bond distance to equal bb-bb bond distance
+    :type equal_bonds: bool
+    
+    :param bond_dist_sc: fixed bond distance for backbone-sidechain bonds. Ignored if equal_bonds=True. If None, this bond length will be optimized. (default=None)
+    :type bond_dist_sc: Quantity
+    
+    :param brute_step_rad: step size in radians for outer brute force optimization in backbone particle spacing (default=0.1)
+    :type brute_step_rad: float
+    
+    :param brute_step_r_bs: step size in angstrom for outer brute force optimization bb-sc bond distance (default=0.1)
+    :type brute_step_r_bs: float    
+    
+    :param DE_popsize: population size to use in SciPy differential_evolution solver (default=50)
+    :type DE_popsize: int
+
+    :param pdbfile: Path to pdb file for saving the helical structure (default='LJ_helix_openmm_energy.pdb')
+    :type pdbfile: str
+    
+    :param plotfile: Path to pdf file for plotting the helical equations and particle positions (default='LJ_helix_openmm_energy.pdf')
+    :type plotfile: str
+    
+    :param exclusions: pass cg_openmm exclusion rules to the cgmodel (by default [0,0,1] is applied to all pair types)
+    :type exclusions: dict
+    
+    :returns:
+      - opt_sol - Results from scipy.optimize (dict)
+      - geometry - Dictionary containing key geometric parameters of the optimized helix
+    """
+    
+    r_unit = radius.unit
+    # Use angstrom for writing pdb file:
+    radius = radius.value_in_unit(unit.angstrom)
+    pitch = pitch.value_in_unit(unit.angstrom)
+    
+    r = radius
+    c = pitch/(2*np.pi) # Helical rise parameter
+    
+    # t_delta is related to the specified bond distance - this must be computed at each iteration
+    
+    # Here we need to create a cgmodel
+    
+    # Set initial epsilon parameters
+    epsilon_bb = 1.0 * unit.kilojoule_per_mole
+    epsilon_sc = 1.0 * unit.kilojoule_per_mole
+    
+    # Set initial sigma parameters
+    sigma_bb = 1.0 * unit.angstrom
+    sigma_sc = 1.0 * unit.angstrom
+    
+    cgmodel = get_helix_cgmodel(sigma_bb,sigma_sc,epsilon_bb,epsilon_sc,n_particle_bb,exclusions)
+    
+    # Get particle type lists and bonded lists:
+    (particle_type_list, bb_array, sc_array, bb_bond_list, sc_bond_list,
+    b_angle_list, s_angle_list, bbbb_torsion_list, bbbs_torsion_list,
+    sbbs_torsion_list) = get_helix_particle_bonded_lists(cgmodel)
+    
+    # Get the non-excluded interaction pairs:
+    nonbonded_interaction_list = cgmodel.get_nonbonded_interaction_list()
+    
+    # Easier to separate into bb-bb, bb-sc, and sc-sc interaction lists:
+    bb_interaction_list = []
+    bs_interaction_list = []
+    ss_interaction_list = []
+    
+    for pair in nonbonded_interaction_list:
+        if pair[0] in bb_array and pair[1] in bb_array:
+            bb_interaction_list.append(pair)
+        elif pair[0] in sc_array and pair[1] in sc_array:
+            ss_interaction_list.append(pair)
+        else:
+            bs_interaction_list.append(pair)
+    
+    # Set up Simulation object beforehand:
+    simulation_time_step = 5.0 * unit.femtosecond
+    friction = 0.0 / unit.picosecond
+    integrator = LangevinIntegrator(
+        0.0 * unit.kelvin, friction, simulation_time_step.in_units_of(unit.picosecond)
+    )
+    simulation = Simulation(cgmodel.topology, cgmodel.system, integrator)    
+
+    if equal_bonds:
+        # bb-sc bond lengths are equal to bb-bb bond lengths 
+        # Vary t_spacing in outer function, vary sigma_bb, sigma_sc in inner function
+    
+        # Set bounds for particle spacing:
+        min_rad = 2*np.pi/12 # 12 res/turn
+        max_rad = 2*np.pi/3  #  3 res/turn
+        brute_range = [slice(min_rad,max_rad,brute_step_rad)]
+
+        bond_dist_sc = None
+
+        params_outer = (simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, DE_popsize,
+            bb_interaction_list, bs_interaction_list, ss_interaction_list, bond_dist_sc)
+
+        # Run brute force minimization over the particle spacing, with sigma_bb, sigma_sc optimized in an inner function:
+        opt_results_outer = brute(compute_energy_diff_1sc, brute_range, args=params_outer, finish=None)
+
+        t_delta_opt = opt_results_outer
+
+        # Rerun the final inner optimization to retreive the sigma_bb, sigma_sc:
+        opt_results_inner = compute_energy_diff_1sc(t_delta_opt, simulation, bb_array, sc_array,
+            particle_type_list, r, c, n_particle_bb, DE_popsize,
+            bb_interaction_list, bs_interaction_list, ss_interaction_list, bond_dist_sc, return_inner=True)
+            
+        sigma_bb_opt = opt_results_inner.x[0]
+        sigma_sc_opt = opt_results_inner.x[1]
+        
+    else:
+        if bond_dist_sc is not None:
+            # bb-sc bond lengths indepedent from bb-bb bond lengths
+            # Vary t_spacing, r_bs in outer function, vary sigma_bb, sigma_sc in inner function
+            
+            # Set bounds for particle spacing (radians):
+            min_rad = 2*np.pi/12 # 12 res/turn
+            max_rad = 2*np.pi/3  #  3 res/turn
+            
+            brute_range = [slice(min_rad,max_rad,brute_step_rad)]
+
+            params_outer = (simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, DE_popsize,
+                bb_interaction_list, bs_interaction_list, ss_interaction_list, bond_dist_sc)
+
+            # Run brute force minimization over the particle spacing, with sigma_bb, sigma_sc optimized in an inner function:
+            opt_results_outer = brute(compute_energy_diff_1sc, brute_range, args=params_outer, finish=None)
+
+            t_delta_opt = opt_results_outer
+
+            # Rerun the final inner optimization to retreive the sigma_bb, sigma_sc:
+            opt_results_inner = compute_energy_diff_1sc(t_delta_opt, simulation, bb_array, sc_array,
+                particle_type_list, r, c, n_particle_bb, DE_popsize,
+                bb_interaction_list, bs_interaction_list, ss_interaction_list, bond_dist_sc, return_inner=True)
+                
+            sigma_bb_opt = opt_results_inner.x[0]
+            sigma_sc_opt = opt_results_inner.x[1]
+        
+        else:
+            # bb-sc bond lengths indepedent from bb-bb bond lengths
+            # Vary t_spacing, r_bs in outer function, vary sigma_bb, sigma_sc in inner function
+            
+            # Set bounds for particle spacing (radians):
+            min_rad = 2*np.pi/12 # 12 res/turn
+            max_rad = 2*np.pi/3  #  3 res/turn
+            
+            # bounds for r_bs bond distance (angstrom):
+            min_r_bs = r/10
+            max_r_bs = 3*r
+            
+            brute_range = (slice(min_rad,max_rad,brute_step_rad), slice(min_r_bs,max_r_bs,brute_step_r_bs))
+
+            params_outer = (simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, DE_popsize,
+                bb_interaction_list, bs_interaction_list, ss_interaction_list, bond_dist_sc)
+
+            # Run brute force minimization over the particle spacing, with sigma_bb, sigma_sc optimized in an inner function:
+            opt_results_outer = brute(compute_energy_diff_1sc, brute_range, args=params_outer, finish=None)
+
+            t_delta_opt = opt_results_outer[0]
+            r_bs_opt = opt_results_outer[1]
+
+            # Rerun the final inner optimization to retreive the sigma_bb, sigma_sc:
+            opt_results_inner = compute_energy_diff_1sc(t_delta_opt, simulation, bb_array, sc_array,
+                particle_type_list, r, c, n_particle_bb, DE_popsize,
+                bb_interaction_list, bs_interaction_list, ss_interaction_list, bond_dist_sc, return_inner=True)
+                
+            sigma_bb_opt = opt_results_inner.x[0]
+            sigma_sc_opt = opt_results_inner.x[1]
+        
+        
+    t_par = np.zeros(n_particle_bb)
+    for i in range(n_particle_bb):
+        t_par[i] = i*t_delta_opt    
+    
+    # Get particle positions:
+    xyz = get_helix_coordinates(r,c,t_par)
+    
+    # Place sidechain particles normal to helix
+    r_bb = dist_unitless(xyz[0,:],xyz[1,:])
+    
+    if equal_bonds:
+        # Use optimized bond length from first two backbone beads:
+        r_bs = r_bb
+    else:
+        if bond_dist_sc is not None:
+            # Use specified bb-sc bond distance:
+            r_bs = bond_dist_sc
+        else:
+            r_bs = r_bs_opt
+    
+    side_xyz = np.zeros((n_particle_bb,3))
+
+    side_xyz[:,0] = (1+r_bs/r)*xyz[:,0]
+    side_xyz[:,1] = (1+r_bs/r)*xyz[:,1]
+    side_xyz[:,2] = xyz[:,2]
+    
+    # Now, set the backbone and sidechain positions to the correct bead indices:
+    positions = np.zeros((2*n_particle_bb,3))
+    
+    # This assumes that the backbone and sidechain beads are ordered from end-to-end
+    positions[bb_array] = xyz
+    positions[sc_array] = side_xyz
+    
+    # Write pdb file
+    cgmodel.positions = positions * unit.angstrom
+    write_pdbfile_without_topology(cgmodel, pdbfile)    
+    
+    # Also write dcd file (better precision)
+    dcdfile = pdbfile[:-3]+'dcd'
+    dcdtraj = md.Trajectory(
+        xyz=positions,
+        topology=md.Topology.from_openmm(cgmodel.topology),
+    )
+    md.Trajectory.save_dcd(dcdtraj,dcdfile)    
+
+    # Equilibrium LJ distance (for visual representation)
+    r_eq_bb = sigma_bb_opt*np.power(2,(1/6))
+    r_eq_sc = sigma_sc_opt*np.power(2,(1/6))
+
+    # Store key geometric parameters
+    geometry = {}
+    
+    geometry['sigma_bb'] = (sigma_bb_opt*unit.angstrom).in_units_of(r_unit)
+    geometry['sigma_sc'] = (sigma_sc_opt*unit.angstrom).in_units_of(r_unit)
+    
+    # Add back units:
+    geometry['helical_radius'] = r * r_unit
+    geometry['particle_spacing'] = t_delta_opt * unit.radian
+    geometry['pitch'] = (2*np.pi*c) * r_unit
+        
+    # Load dcd file into mdtraj
+    traj = md.load(dcdfile,top=md.Topology.from_openmm(cgmodel.topology))
+    
+    # Get bb-bb bond distance
+    geometry['bb_bb_distance'] = (dist_unitless(positions[bb_bond_list[0][0],:],positions[bb_bond_list[0][1],:]) * unit.angstrom).in_units_of(r_unit)
+    geometry['bb_sc_distance'] = (dist_unitless(positions[sc_bond_list[0][0],:],positions[sc_bond_list[0][1],:]) * unit.angstrom).in_units_of(r_unit)
+    
+    # Get bb-bb-bb angle
+    angle_indices = np.array([[b_angle_list[0][0], b_angle_list[0][1], b_angle_list[0][2]]])
+    geometry['bb_bb_bb_angle'] = (md.compute_angles(traj,angle_indices)*unit.radians).in_units_of(unit.degrees)[0][0]
+    
+    # Get bb-bb-sc angle
+    angle_indices = np.array([[s_angle_list[0][0], s_angle_list[0][1], s_angle_list[0][2]]])
+    geometry['bb_bb_sc_angle'] = (md.compute_angles(traj,angle_indices)*unit.radians).in_units_of(unit.degrees)[0][0]
+    
+    # Get bb-bb-bb-bb torsion
+    dihedral_indices = np.array([[bbbb_torsion_list[0][0], bbbb_torsion_list[0][1], bbbb_torsion_list[0][2], bbbb_torsion_list[0][3]]])
+    geometry['bb_bb_bb_bb_angle'] = (md.compute_dihedrals(traj,dihedral_indices)*unit.radians).in_units_of(unit.degrees)[0][0]
+    
+    # Get sc-bb-bb-sc torsion
+    dihedral_indices = np.array([[sbbs_torsion_list[0][0], sbbs_torsion_list[0][1], sbbs_torsion_list[0][2], sbbs_torsion_list[0][3]]])
+    geometry['sc_bb_bb_sc_angle'] = (md.compute_dihedrals(traj,dihedral_indices)*unit.radians).in_units_of(unit.degrees)[0][0]
+    
+    # Get bb-bb-bb-sc torsion
+    dihedral_indices = np.array([[bbbs_torsion_list[0][0], bbbs_torsion_list[0][1], bbbs_torsion_list[0][2], bbbs_torsion_list[0][3]]])
+    geometry['bb_bb_bb_sc_angle'] = (md.compute_dihedrals(traj,dihedral_indices)*unit.radians).in_units_of(unit.degrees)[0][0]
+
+    # Alse write out the extended conformation
+    positions_extended = get_extended_positions_1sc(
+        r_bb, r_bs, n_particle_bb, geometry['bb_bb_bb_angle'], 
+        )
+
+    # Write pdb file
+    cgmodel.positions = positions_extended * unit.angstrom
+    write_pdbfile_without_topology(cgmodel, pdbfile[:-4]+'ext.pdb')    
+        
+    # Plot helix:
+    if plotfile is not None:
+        plot_LJ_helix(r,c,t_par,r_eq_bb,r_eq_sc=r_eq_sc,plotfile=plotfile)
+    
+    return geometry, opt_results_outer, opt_results_inner
+
+
 def optimize_helix_LJ_parameters_2sc(radius, pitch, n_particle_bb, sigma_bb,
     bond_dist_bb, equal_sc=True, DE_popsize=200, pdbfile='LJ_helix_2sc_opt.pdb',
-    plotfile='LJ_helix_openmm_energy.pdf'):
+    exclusions={}):
     """
     With specified radius, pitch, backbone sigma, and backbone-backbone bond length, 
     optimize the sidechain sigma and bb-sc, sc-sc bond lengths in a helix with
@@ -282,6 +586,9 @@ def optimize_helix_LJ_parameters_2sc(radius, pitch, n_particle_bb, sigma_bb,
     :param pdbfile: Path to pdb file for saving the helical structure (default='LJ_helix_openmm_energy.pdb')
     :type pdbfile: str
     
+    :param exclusions: pass cg_openmm exclusion rules to the cgmodel (by default [0,0,1] is applied to bb-bb, [0,1,1] to bb-sc, sc-sc)
+    :type exclusions: dict    
+    
     :returns:
       - opt_sol - Results from scipy.optimize (dict)
       - geometry - Dictionary containing key geometric parameters of the optimized helix
@@ -305,10 +612,10 @@ def optimize_helix_LJ_parameters_2sc(radius, pitch, n_particle_bb, sigma_bb,
     sigma_sc = 1.0 * unit.angstrom
     
     if equal_sc:
-        cgmodel = get_helix_cgmodel_2sc_equal(sigma_bb,sigma_sc,epsilon_bb,epsilon_sc,n_particle_bb)
+        cgmodel = get_helix_cgmodel_2sc_equal(sigma_bb,sigma_sc,epsilon_bb,epsilon_sc,n_particle_bb,exclusions)
     else:
         # Need to set 2 independent particle types for sc1, sc2
-        cgmodel = get_helix_cgmodel_2sc_nonequal(sigma_bb,sigma_sc,epsilon_bb,epsilon_sc,n_particle_bb)
+        cgmodel = get_helix_cgmodel_2sc_nonequal(sigma_bb,sigma_sc,epsilon_bb,epsilon_sc,n_particle_bb,exclusions)
     
     # Get particle type lists and bonded lists:
     # (sc1 and sc2 have the same bonded type here)
@@ -479,17 +786,13 @@ def optimize_helix_LJ_parameters_2sc(radius, pitch, n_particle_bb, sigma_bb,
     # Get sc-bb-bb-sc torsion
     dihedral_indices = np.array([[sbbs_torsion_list[0][0], sbbs_torsion_list[0][1], sbbs_torsion_list[0][2], sbbs_torsion_list[0][3]]])
     geometry['sc_bb_bb_sc_angle'] = (md.compute_dihedrals(traj,dihedral_indices)*unit.radians).in_units_of(unit.degrees)[0][0]
-
-    # # Plot helix:
-    # if plotfile is not None:
-        # plot_LJ_helix(r,c,t_par,r_eq_bb,r_eq_sc=r_eq_sc,plotfile=plotfile)
     
     return opt_sol, geometry
 
 
 def optimize_helix_LJ_parameters_triangle_sidechain(radius, pitch, n_particle_bb, sigma_bb,
     bond_dist_bb, DE_popsize=200, pdbfile='LJ_helix_openmm_energy.pdb',
-    plotfile=None):
+    exclusions={}):
     """
     With specified radius, pitch, backbone sigma, and backbone-backbone bond length, 
     optimize the sidechain sigma and backbone-sidechain bond length in a helix with
@@ -519,6 +822,9 @@ def optimize_helix_LJ_parameters_triangle_sidechain(radius, pitch, n_particle_bb
     :param pdbfile: Path to pdb file for saving the helical structure (default='LJ_helix_openmm_energy.pdb')
     :type pdbfile: str
     
+    :param exclusions: pass cg_openmm exclusion rules to the cgmodel (by default [0,0,1] is applied to bb-bb, [0,1,1] to bb-sc, sc-sc)
+    :type exclusions: dict    
+    
     :returns:
       - opt_sol - Results from scipy.optimize (dict)
       - geometry - Dictionary containing key geometric parameters of the optimized helix
@@ -541,7 +847,7 @@ def optimize_helix_LJ_parameters_triangle_sidechain(radius, pitch, n_particle_bb
     # Set initial sigma parameters
     sigma_sc = 1.0 * unit.angstrom
     
-    cgmodel = get_helix_cgmodel_triangle(sigma_bb,sigma_sc,epsilon_bb,epsilon_sc,n_particle_bb)
+    cgmodel = get_helix_cgmodel_triangle(sigma_bb,sigma_sc,epsilon_bb,epsilon_sc,n_particle_bb,exclusions)
     
     # Get particle type lists and bonded lists:
     (particle_type_list, bb_array, sc_array,
@@ -814,7 +1120,7 @@ def optimize_helix_LJ_parameters_triangle_sidechain(radius, pitch, n_particle_bb
 
 
 def compute_helix_openmm_energy_vary_LJ(geo, simulation, bb_array, sc_array, 
-    particle_type_list, r, c, n_particle_bb, optimize_diff):
+    particle_type_list, r, c, n_particle_bb, equal_bonds):
     """
     Internal function for computing openmm energy of Lennard-Jones 12-6 helix
     """
@@ -827,7 +1133,7 @@ def compute_helix_openmm_energy_vary_LJ(geo, simulation, bb_array, sc_array,
     
     # Sidechain sigma parameter
     sigma_sc = geo[2] * unit.angstrom
-    
+
     t1 = np.zeros(n_particle_bb)
     for i in range(n_particle_bb):
         t1[i] = i*t_delta
@@ -839,9 +1145,16 @@ def compute_helix_openmm_energy_vary_LJ(geo, simulation, bb_array, sc_array,
     # the nonbonded energies need to be evaluated. In the cgmodel, all force constants
     # are zero.
         
-    # Place sidechain particles normal to helix with same bond length as bb_bb
+    # Place sidechain particles normal to helix:
     r_bb = dist_unitless(xyz[0,:],xyz[1,:])
-    r_bs = r_bb
+    
+    if not equal_bonds:
+        r_bs = geo[3] # Angstrom
+        # Testing out inverted helix:
+        # r_bs = -np.abs(geo[3])
+    else:
+        r_bs = r_bb
+    
     side_xyz = np.zeros((n_particle_bb,3))
     
     side_xyz[:,0] = (1+r_bs/r)*xyz[:,0]
@@ -855,7 +1168,7 @@ def compute_helix_openmm_energy_vary_LJ(geo, simulation, bb_array, sc_array,
     positions[bb_array] = xyz
     positions[sc_array] = side_xyz
     
-    #positions *= unit.angstrom
+    positions *= unit.angstrom
     
     # Update the nonbonded parameters:
     for force_index, force in enumerate(simulation.system.getForces()):
@@ -877,36 +1190,210 @@ def compute_helix_openmm_energy_vary_LJ(geo, simulation, bb_array, sc_array,
     
     U_helix = potential_energy.value_in_unit(unit.kilojoules_per_mole)
     
-    if optimize_diff:
-        # Compute the helix backbone angle:
-        # 0 -- 1 -- 2
-        vec01 = np.array(xyz[0]-xyz[1])
-        vec21 = np.array(xyz[2]-xyz[1])
-        
-        norm = np.linalg.norm(vec01)*np.linalg.norm(vec21)
-        
-        theta_bbb_rad = np.arccos(np.dot(vec01,vec21)/norm)
-        theta_bbb = theta_bbb_rad*180/np.pi
-        
-        # Also compute the energy of an extended conformation, and compute the difference between helix/extended
-        positions_extended = get_extended_positions_1sc(
-            r_bb, r_bs, n_particle_bb, theta_bbb
-            )
-            
-        # Update the positions:        
-        simulation.context.setPositions(positions_extended)
-        potential_energy_extended = simulation.context.getState(getEnergy=True).getPotentialEnergy()
-            
-        U_extended = potential_energy_extended.value_in_unit(unit.kilojoules_per_mole)
-        
-    if optimize_diff:
-        return 1/(U_extended - U_helix)**2
-    else:
-        return U_helix    
+    return U_helix    
 
+
+def compute_energy_diff_1sc(distance_vars, simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, DE_popsize,
+    bb_interaction_list, bs_interaction_list, ss_interaction_list, bond_dist_sc, return_inner=False):
+    """
+    Internal function for computing openmm energy of Lennard-Jones 12-6 helix
+    """
+    
+    # Particle spacing (radians)
+    if np.size(distance_vars) == 1:
+        t_delta = distance_vars
+    else:
+        t_delta = distance_vars[0]
+    
+    t1 = np.zeros(n_particle_bb)
+    for i in range(n_particle_bb):
+        t1[i] = i*t_delta
+    
+    # Get the backbone coordinates:
+    xyz = get_helix_coordinates(r,c,t1) 
+        
+    # If the bonds, angles, and backbone torsions are at their equilibrium positions,
+    # then we don't need to update any parameters in the simulation object. Just
+    # the nonbonded energies need to be evaluated. In the cgmodel, all force constants
+    # are zero.
+        
+    # Place sidechain particles normal to helix with same bond length as bb_bb
+    r_bb = dist_unitless(xyz[0,:],xyz[1,:])
+    
+    if np.size(distance_vars) == 1:
+        # Just varying particle spacing (r_bb)
+        if bond_dist_sc is None:
+            # Equal bond lengths
+            r_bs = r_bb
+        else:
+            # Use specified bond distance
+            r_bs = bond_dist_sc
+    else:
+        # In brute finishing minimization, enforce this to be positive:
+        r_bs = np.abs(distance_vars[1])
+        
+    side_xyz = np.zeros((n_particle_bb,3))
+    
+    side_xyz[:,0] = (1+r_bs/r)*xyz[:,0]
+    side_xyz[:,1] = (1+r_bs/r)*xyz[:,1]
+    side_xyz[:,2] = xyz[:,2]
+    
+    # Now, set the backbone and sidechain positions to the correct bead indices:
+    positions = np.zeros((2*n_particle_bb,3))
+    
+    # This assumes that the backbone and sidechain beads are ordered from end-to-end
+    positions[bb_array] = xyz
+    positions[sc_array] = side_xyz
+    
+    positions *= unit.angstrom
+    
+    # Compute the helix backbone angle:
+    # 0 -- 1 -- 2
+    vec01 = np.array(xyz[0]-xyz[1])
+    vec21 = np.array(xyz[2]-xyz[1])
+    
+    norm = np.linalg.norm(vec01)*np.linalg.norm(vec21)
+    
+    theta_bbb_rad = np.arccos(np.dot(vec01,vec21)/norm)
+    theta_bbb = theta_bbb_rad*180/np.pi    
+    
+    # Load positions into an mdtraj trajectory:
+    traj_helix = md.Trajectory(
+        xyz=positions,
+        topology=md.Topology.from_openmm(simulation.topology),
+    )
+    
+    # Get the bounds for sigma_bb and sigma_sc from the shortest interacting particle distances:
+    bb_distances = md.compute_distances(traj_helix,bb_interaction_list,periodic=False,opt=True)
+    min_bb_distance_helix = np.min(bb_distances)
+    
+    bs_distances = md.compute_distances(traj_helix,bs_interaction_list,periodic=False,opt=True)
+    min_bs_distance_helix = np.min(bs_distances)
+    
+    ss_distances = md.compute_distances(traj_helix,ss_interaction_list,periodic=False,opt=True)
+    min_ss_distance_helix = np.min(ss_distances)
+    
+    # We also need to the check the distances in the extended model:
+    positions_extended = get_extended_positions_1sc(
+        r_bb, r_bs, n_particle_bb, theta_bbb, 
+        )
+        
+    positions_extended *= unit.angstrom    
+        
+    traj_ext = md.Trajectory(
+        xyz=positions_extended,
+        topology=md.Topology.from_openmm(simulation.topology),
+    )   
+    
+    bb_distances = md.compute_distances(traj_ext,bb_interaction_list,periodic=False,opt=True)
+    min_bb_distance_ext = np.min(bb_distances)
+    
+    bs_distances = md.compute_distances(traj_ext,bs_interaction_list,periodic=False,opt=True)
+    min_bs_distance_ext = np.min(bs_distances)
+    
+    ss_distances = md.compute_distances(traj_ext,ss_interaction_list,periodic=False,opt=True)
+    min_ss_distance_ext = np.min(ss_distances)
+    
+    # Now take the minimum distance for each:
+    if min_bb_distance_ext < min_bb_distance_helix:
+        min_bb_distance = min_bb_distance_ext
+    else:
+        min_bb_distance = min_bb_distance_helix
+        
+    if min_bs_distance_ext < min_bs_distance_helix:
+        min_bs_distance = min_bs_distance_ext
+    else:
+        min_bs_distance = min_bs_distance_helix
+
+    if min_ss_distance_ext < min_ss_distance_helix:
+        min_ss_distance = min_ss_distance_ext
+    else:
+        min_ss_distance = min_ss_distance_helix        
+    
+    bounds_sigma = [(min_bb_distance/10,min_bb_distance),(min_ss_distance/10,min_ss_distance)]
+        
+    # Additionally, we have a constraint that (sigma_bb + sigma_sc)/2 <= min_bs_distance
+    # For now, ignore this since the sigma_bb and sigma_sc bounds should provide a reasonable
+    # solution.
+    
+    params_inner = (simulation, positions, theta_bbb, r_bb, r_bs, particle_type_list, r, c, n_particle_bb)
+        
+    opt_sol_inner = differential_evolution(
+        compute_energy_diff_1sc_inner,
+        bounds_sigma,
+        args=params_inner,
+        polish=True,
+        popsize=DE_popsize,
+        )     
+
+    if return_inner:
+        # Final optimization to retreive inner results:
+        return opt_sol_inner
+    else:
+        # This is the full nested optimization - return only the energy
+        print(f'Opt energy for t_delta = {t_delta}, r_bs = {r_bs}')
+        print(opt_sol_inner)
+        print(f'b-b distance: {r_bb}')
+        print(f'max_sigma_bb: {min_bb_distance}')
+        print(f'max_sigma_bs: {min_bs_distance}')
+        print(f'max_sigma_ss: {min_ss_distance}', flush=True)
+        print('')
+        
+        return opt_sol_inner.fun
+        
+ 
+def compute_energy_diff_1sc_inner(x, simulation, positions, theta_bbb, r_bb, r_bs, particle_type_list, r, c, n_particle_bb):
+    """
+    Internal function for computing openmm energy of Lennard-Jones 12-6 helix
+    (inner optimization of sigma_bb, sigma_sc given fixed bond lengths and helix geometry)
+    """
+
+    sigma_bb = x[0] * unit.angstrom
+    sigma_sc = x[1] * unit.angstrom
+
+    # Update the nonbonded parameters:
+    for force_index, force in enumerate(simulation.system.getForces()):
+        force_name = force.__class__.__name__
+        if force_name == 'NonbondedForce':
+            for particle_index in range(len(particle_type_list)):
+                (q,sigma_old,eps) = force.getParticleParameters(particle_index)
+                
+                # Only need to change the sigma values here:
+                if particle_type_list[particle_index] == 'bb':
+                    force.setParticleParameters(particle_index,q,sigma_bb,eps)
+                else:
+                    force.setParticleParameters(particle_index,q,sigma_sc,eps)
+                force.updateParametersInContext(simulation.context)
+            
+    # Update the positions:        
+    simulation.context.setPositions(positions)
+    potential_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
+    
+    U_helix = potential_energy.value_in_unit(unit.kilojoules_per_mole)
+
+    # Also compute the energy of an extended conformation, and compute the difference between helix/extended
+    positions_extended = get_extended_positions_1sc(
+        r_bb, r_bs, n_particle_bb, theta_bbb
+        )
+        
+    positions_extended *= unit.angstrom    
+        
+    # Update the positions:        
+    simulation.context.setPositions(positions_extended)
+    potential_energy_extended = simulation.context.getState(getEnergy=True).getPotentialEnergy()
+        
+    U_extended = potential_energy_extended.value_in_unit(unit.kilojoules_per_mole)
+    
+    
+    # print(f'Helix energy: {U_helix}')
+    # print(f'Extended energy: {U_extended}')
+    # print('')
+    # Makes sure U_helix > U_extended is not favored over the reverse
+    return U_helix-U_extended 
+        
 
 def compute_helix_openmm_energy_vary_LJ_constrained(
-    geo, simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, bond_dist_bb, bond_dist_sc, optimize_diff):
+    geo, simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, bond_dist_bb, bond_dist_sc):
     """
     Internal function for computing openmm energy of Lennard-Jones 12-6 helix
     """
@@ -968,106 +1455,9 @@ def compute_helix_openmm_energy_vary_LJ_constrained(
     potential_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
     
     U_helix = potential_energy.value_in_unit(unit.kilojoules_per_mole)
-        
-    if optimize_diff:
-        # Compute the helix backbone angle:
-        # 0 -- 1 -- 2
-        vec01 = np.array(xyz[0]-xyz[1])
-        vec21 = np.array(xyz[2]-xyz[1])
-        
-        norm = np.linalg.norm(vec01)*np.linalg.norm(vec21)
-        
-        theta_bbb_rad = np.arccos(np.dot(vec01,vec21)/norm)
-        theta_bbb = theta_bbb_rad*180/np.pi
-        
-        # Also compute the energy of an extended conformation, and compute the difference between helix/extended
-        positions_extended = get_extended_positions_1sc(
-            r_bb, r_bs, n_particle_bb, theta_bbb
-            )
-            
-        # Update the positions:        
-        simulation.context.setPositions(positions_extended)
-        potential_energy_extended = simulation.context.getState(getEnergy=True).getPotentialEnergy()
-            
-        U_extended = potential_energy_extended.value_in_unit(unit.kilojoules_per_mole)
-        
-    if optimize_diff:
-        return 1/(U_extended - U_helix)**2
-    else:
-        return U_helix    
 
+    return U_helix    
 
-def get_extended_positions_1sc(r_bb, r_bs, n_particle_bb, theta_bbb):
-    """
-    Internal function for computing the positions of an extended 1sc model, given bond lengths, backbone angle,
-    and number of backbone particles. Assumes particle ordering of bb,sc,bb,sc...
-    """
-    
-    positions_ext = np.zeros((2*n_particle_bb,3))
-    
-    # Distance between 1-3 neighbor backbone beads:
-    theta_bbb_rad = theta_bbb*np.pi/180
-    c = 2*r_bb*np.sin(theta_bbb_rad/2)
-    
-    # Height of triangle defining the b-b-b angle:
-    h = r_bb*np.cos(theta_bbb_rad/2)
-    
-    # TODO: allow for odd numbers of backbone beads:
-    j = 0
-    for i in range(int(n_particle_bb/2)):
-        # First backbone
-        positions_ext[j,0] = i*c
-        positions_ext[j,1] = 0
-        
-        # First sidechain
-        positions_ext[j+1,0] = i*c
-        positions_ext[j+1,1] = -r_bs
-        
-        # Second backbone
-        positions_ext[j+2,0] = i*c + c/2
-        positions_ext[j+2,1] = h
-        
-        # Second sidechain
-        positions_ext[j+3,0] = i*c + c/2
-        positions_ext[j+3,1] = h+r_bs
-        j += 4
-        
-    return positions_ext    
-
-
-def rotate_coordinates_z(xyz,theta):
-    """
-    Internal function for rotating 3d coordinates by theta (angle between adjacent residues)
-    Theta is specified in radians.
-    """
-    
-    R_mat = np.array([
-        [np.cos(theta), -np.sin(theta), 0],
-        [np.sin(theta),  np.cos(theta), 0],
-        [0, 0, 1]
-        ])
-
-    xyz_rot = np.matmul(R_mat, xyz)    
-    
-    return xyz_rot
-    
-    
-def rotate_coordinates_x(xyz,theta):
-    """
-    Internal function for rotating 3d coordinates by theta (angle to rotate the triangle in-plane)
-    Theta is specified in radians.
-    """
-    
-    R_mat = np.array([
-        [1, 0, 0],
-        [0, np.cos(theta), -np.sin(theta)],
-        [0, np.sin(theta),  np.cos(theta)],
-        ])
-
-    xyz_rot = np.matmul(R_mat, xyz)
-    
-    return xyz_rot    
-    
  
 def compute_helix_openmm_energy_vary_LJ_2sc_equal(geo, simulation,
     particle_type_list, r, c, n_particle_bb, bond_dist_bb):
