@@ -67,7 +67,7 @@ def make_replica_dcd_files(
     output_data_path = os.path.join(output_dir, output_data)
     
     # Get number of replicas:
-    reporter = MultiStateReporter(output_data, open_mode='r', checkpoint_storage=checkpoint_data)
+    reporter = MultiStateReporter(output_data_path, open_mode='r', checkpoint_storage=checkpoint_data)
     states = reporter.read_thermodynamic_states()[0]
     n_replicas=len(states)
     
@@ -144,7 +144,7 @@ def make_replica_pdb_files(
     output_data_path = os.path.join(output_dir, output_data)
     
     # Get number of replicas:
-    reporter = MultiStateReporter(output_data, open_mode='r', checkpoint_storage=checkpoint_data)
+    reporter = MultiStateReporter(output_data_path, open_mode='r', checkpoint_storage=checkpoint_data)
     states = reporter.read_thermodynamic_states()[0]
     n_replicas = len(states)
     
@@ -217,7 +217,7 @@ def make_state_dcd_files(
     output_data_path = os.path.join(output_dir, output_data)
     
     # Get number of states:
-    reporter = MultiStateReporter(output_data, open_mode='r', checkpoint_storage=checkpoint_data)
+    reporter = MultiStateReporter(output_data_path, open_mode='r', checkpoint_storage=checkpoint_data)
     states = reporter.read_thermodynamic_states()[0]
     
     sampler_states = reporter.read_sampler_states(iteration=0)
@@ -294,7 +294,7 @@ def make_state_pdb_files(
     output_data_path = os.path.join(output_dir, output_data)
     
     # Get number of states:
-    reporter = MultiStateReporter(output_data, open_mode='r', checkpoint_storage=checkpoint_data)
+    reporter = MultiStateReporter(output_data_path, open_mode='r', checkpoint_storage=checkpoint_data)
     states = reporter.read_thermodynamic_states()[0]
     
     sampler_states = reporter.read_sampler_states(iteration=0)
