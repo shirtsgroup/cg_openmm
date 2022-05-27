@@ -134,7 +134,7 @@ def optimize_helix_simple(n_particle_bb, sigma, epsilon, sidechain=True, DE_pops
    
 def optimize_helix_openmm_energy(n_particle_bb, sigma_bb, sigma_sc, epsilon_bb, epsilon_sc,
     bond_dist_bb=None, bond_dist_sc=None,DE_popsize=50,
-    pdbfile='LJ_helix_openmm_energy.pdb', plotfile='LJ_helix_openmm_energy.pdf'):
+    pdbfile='LJ_helix_openmm_energy.pdb', plotfile='LJ_helix_openmm_energy.pdf', exclusions={}):
     """
     Optimize backbone particle positions along a helix and helical radius, vertical rise,
     with equal spacing of particles. Assumes a 1-1 model with sidechain beads normal to helix.
@@ -169,6 +169,9 @@ def optimize_helix_openmm_energy(n_particle_bb, sigma_bb, sigma_sc, epsilon_bb, 
     :param plotfile: Path to pdf file for plotting the helical equations and particle positions (default='LJ_helix_openmm_energy.pdf')
     :type plotfile: str
     
+    :param exclusions: pass cg_openmm exclusion rules to the cgmodel (by default [0,0,1] is applied to all pair types)
+    :type exclusions: dict        
+    
     :returns:
       - opt_sol - Results from scipy.optimize (dict)
       - geometry - Dictionary containing key geometric parameters of the optimized helix
@@ -186,7 +189,7 @@ def optimize_helix_openmm_energy(n_particle_bb, sigma_bb, sigma_sc, epsilon_bb, 
     # t_delta is related to the specified bond distance - this must be computed at each iteration
     
     # Here we need to create a cgmodel
-    cgmodel = get_helix_cgmodel(sigma_bb,sigma_sc,epsilon_bb,epsilon_sc,n_particle_bb)
+    cgmodel = get_helix_cgmodel(sigma_bb,sigma_sc,epsilon_bb,epsilon_sc,n_particle_bb,exclusions)
     
     # Get particle type lists and bonded lists:
     (particle_type_list, bb_array, sc_array, bb_bond_list, sc_bond_list,
@@ -363,6 +366,7 @@ def optimize_helix_openmm_energy(n_particle_bb, sigma_bb, sigma_sc, epsilon_bb, 
 def compute_LJ_helix_energy_simple(geo, sigma, epsilon, n_particle_bb, sidechain):
     """
     Internal function for computing energy of Lennard-Jones 12-6 helix
+    (no nonbonded exclusions nor bonded interactions)
     """
     
     # Particle spacing (radians)
@@ -408,6 +412,7 @@ def compute_LJ_helix_energy_simple(geo, sigma, epsilon, n_particle_bb, sidechain
 def compute_LJ_helix_openmm_energy(geo, simulation, bb_array, sc_array, n_particle_bb):
     """
     Internal function for computing openmm energy of Lennard-Jones 12-6 helix
+    (no constraints on bb-bb and bb-sc bond distances)
     """
     
     # Particle spacing (radians)
@@ -457,6 +462,7 @@ def compute_LJ_helix_openmm_energy_constrained(
     geo, simulation, bb_array, sc_array, n_particle_bb, bond_dist_bb, bond_dist_sc):
     """
     Internal function for computing openmm energy of Lennard-Jones 12-6 helix
+    (fixed bb-bb and bb-sc bond lengths)
     """
     
     # Helical radius (units of sigma)
