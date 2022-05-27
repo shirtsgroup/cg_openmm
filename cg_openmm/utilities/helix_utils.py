@@ -1099,3 +1099,69 @@ def plot_LJ_helix(r, c, t_par, r_eq_bb, r_eq_sc=None, plotfile='LJ_helix.pdf'):
     
     return
     
+    
+def write_helix_pdbfile(coordinates, filename, sidechain):
+    """
+    Internal function for writing pdb file of optimized helix
+    (used for the simple helix optimization only)
+    """
+
+    pdb_object = open(filename, "w")
+    particle_list = np.arange(0,coordinates.shape[0],1)
+
+    particle_type_list = [] # Type of each particle
+    monomer_index_list = [] # Residue number of each bead
+
+    if sidechain:
+        mono_id = 0
+        for i in range(int(len(particle_list)/2)):
+            particle_type_list.append('bb')
+            monomer_index_list.append(mono_id)
+            mono_id +=1
+
+        mono_id = 0
+        for i in range(int(len(particle_list)/2)):
+            particle_type_list.append('sc')
+            monomer_index_list.append(mono_id)
+            mono_id +=1
+    else:
+        mono_id = 0
+        for i in range(len(particle_list)):
+            particle_type_list.append('bb')   
+            monomer_index_list.append(mono_id)
+            mono_id +=1            
+
+    for i in range(len(particle_list)):
+        pdb_object.write(
+            f"ATOM{particle_list[i]+1:>7d} {particle_type_list[i]:>3s}{1}   A A{monomer_index_list[i]:>4}    "
+            f"{coordinates[i][0]:>8.3f}"
+            f"{coordinates[i][1]:>8.3f}"
+            f"{coordinates[i][2]:>8.3f}"
+            f"  1.00  0.00\n"
+        )
+    pdb_object.write("TER\n")
+
+    # Add bonds:
+    bond_list = []
+
+    if sidechain:
+        for i in range(int(len(particle_list)/2)-1):
+            bond_list.append([i,i+1])
+        for i in range(int(len(particle_list)/2)):
+            bond_list.append([i,int(i+len(particle_list)/2)])
+    else:
+        for i in range(len(particle_list)-1):
+            bond_list.append([i,i+1])    
+
+    for bond in bond_list:
+        pdb_object.write(
+            "CONECT"
+            + str("{:>5}".format(bond[0] + 1))
+            + str("{:>5}".format(bond[1] + 1))
+            + "\n"
+        )
+    pdb_object.write(str("END\n"))
+
+    pdb_object.close()
+    return    
+    

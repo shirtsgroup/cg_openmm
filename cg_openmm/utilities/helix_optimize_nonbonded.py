@@ -266,7 +266,7 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
 
 
 def optimize_helix_LJ_parameters_energy_diff(radius, pitch, n_particle_bb,
-    equal_bonds=True, bond_dist_sc=None, brute_step_rad=0.1, brute_step_r_bs=0.1, DE_popsize=50,
+    equal_bonds=True, brute_step_rad=0.1, brute_step_r_bs=0.1, DE_popsize=50,
     pdbfile='LJ_helix_openmm_energy.pdb', plotfile='LJ_helix_openmm_energy.pdf', exclusions={}):
     """
     1sc model: Optimize backbone and sidechain particle parameters along a helix with specified radius and
@@ -275,6 +275,8 @@ def optimize_helix_LJ_parameters_energy_diff(radius, pitch, n_particle_bb,
     has equilibrium angles and bond distances but no helical backbone contacts. Performs a brute force
     outer optimization over particle spacing (bond distances), and an inner differential evolution 
     optimization over the sigma_bb and sigma_sc parameters. 
+    
+    Note: finishing function for brute is turned off to avoid costly fine-tuning of the solution
     
     :param radius: fixed helical radius
     :type radius: Quantity
@@ -287,9 +289,6 @@ def optimize_helix_LJ_parameters_energy_diff(radius, pitch, n_particle_bb,
     
     :param equal_bonds: option to constrain bb-sc bond distance to equal bb-bb bond distance
     :type equal_bonds: bool
-    
-    :param bond_dist_sc: fixed bond distance for backbone-sidechain bonds. Ignored if equal_bonds=True. If None, this bond length will be optimized. (default=None)
-    :type bond_dist_sc: Quantity
     
     :param brute_step_rad: step size in radians for outer brute force optimization in backbone particle spacing (default=0.1)
     :type brute_step_rad: float
@@ -310,8 +309,9 @@ def optimize_helix_LJ_parameters_energy_diff(radius, pitch, n_particle_bb,
     :type exclusions: dict
     
     :returns:
-      - opt_sol - Results from scipy.optimize (dict)
       - geometry - Dictionary containing key geometric parameters of the optimized helix
+      - opt_results_outer - Results from scipy.optimize.brute for outer loop bond distances (1D array)
+      - opt_results_inner - Results from scipy.optimize.differential_evolution for optimal inner loop sigmas (dict)
     """
     
     r_unit = radius.unit
@@ -374,10 +374,8 @@ def optimize_helix_LJ_parameters_energy_diff(radius, pitch, n_particle_bb,
         max_rad = 2*np.pi/3  #  3 res/turn
         brute_range = [slice(min_rad,max_rad,brute_step_rad)]
 
-        bond_dist_sc = None
-
         params_outer = (simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, DE_popsize,
-            bb_interaction_list, bs_interaction_list, ss_interaction_list, bond_dist_sc)
+            bb_interaction_list, bs_interaction_list, ss_interaction_list)
 
         # Run brute force minimization over the particle spacing, with sigma_bb, sigma_sc optimized in an inner function:
         opt_results_outer = brute(compute_energy_diff_1sc, brute_range, args=params_outer, finish=None)
@@ -387,68 +385,41 @@ def optimize_helix_LJ_parameters_energy_diff(radius, pitch, n_particle_bb,
         # Rerun the final inner optimization to retreive the sigma_bb, sigma_sc:
         opt_results_inner = compute_energy_diff_1sc(t_delta_opt, simulation, bb_array, sc_array,
             particle_type_list, r, c, n_particle_bb, DE_popsize,
-            bb_interaction_list, bs_interaction_list, ss_interaction_list, bond_dist_sc, return_inner=True)
+            bb_interaction_list, bs_interaction_list, ss_interaction_list, return_inner=True)
             
         sigma_bb_opt = opt_results_inner.x[0]
         sigma_sc_opt = opt_results_inner.x[1]
         
     else:
-        if bond_dist_sc is not None:
-            # bb-sc bond lengths indepedent from bb-bb bond lengths
-            # Vary t_spacing, r_bs in outer function, vary sigma_bb, sigma_sc in inner function
-            
-            # Set bounds for particle spacing (radians):
-            min_rad = 2*np.pi/12 # 12 res/turn
-            max_rad = 2*np.pi/3  #  3 res/turn
-            
-            brute_range = [slice(min_rad,max_rad,brute_step_rad)]
-
-            params_outer = (simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, DE_popsize,
-                bb_interaction_list, bs_interaction_list, ss_interaction_list, bond_dist_sc)
-
-            # Run brute force minimization over the particle spacing, with sigma_bb, sigma_sc optimized in an inner function:
-            opt_results_outer = brute(compute_energy_diff_1sc, brute_range, args=params_outer, finish=None)
-
-            t_delta_opt = opt_results_outer
-
-            # Rerun the final inner optimization to retreive the sigma_bb, sigma_sc:
-            opt_results_inner = compute_energy_diff_1sc(t_delta_opt, simulation, bb_array, sc_array,
-                particle_type_list, r, c, n_particle_bb, DE_popsize,
-                bb_interaction_list, bs_interaction_list, ss_interaction_list, bond_dist_sc, return_inner=True)
-                
-            sigma_bb_opt = opt_results_inner.x[0]
-            sigma_sc_opt = opt_results_inner.x[1]
+        # bb-sc bond lengths indepedent from bb-bb bond lengths
+        # Vary t_spacing, r_bs in outer function, vary sigma_bb, sigma_sc in inner function
         
-        else:
-            # bb-sc bond lengths indepedent from bb-bb bond lengths
-            # Vary t_spacing, r_bs in outer function, vary sigma_bb, sigma_sc in inner function
+        # Set bounds for particle spacing (radians):
+        min_rad = 2*np.pi/12 # 12 res/turn
+        max_rad = 2*np.pi/3  #  3 res/turn
+        
+        # bounds for r_bs bond distance (angstrom):
+        min_r_bs = r/10
+        max_r_bs = 3*r
+        
+        brute_range = (slice(min_rad,max_rad,brute_step_rad), slice(min_r_bs,max_r_bs,brute_step_r_bs))
+
+        params_outer = (simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, DE_popsize,
+            bb_interaction_list, bs_interaction_list, ss_interaction_list)
+
+        # Run brute force minimization over the particle spacing, with sigma_bb, sigma_sc optimized in an inner function:
+        opt_results_outer = brute(compute_energy_diff_1sc, brute_range, args=params_outer, finish=None)
+
+        t_delta_opt = opt_results_outer[0]
+        r_bs_opt = opt_results_outer[1]
+
+        # Rerun the final inner optimization to retreive the sigma_bb, sigma_sc:
+        opt_results_inner = compute_energy_diff_1sc(t_delta_opt, simulation, bb_array, sc_array,
+            particle_type_list, r, c, n_particle_bb, DE_popsize,
+            bb_interaction_list, bs_interaction_list, ss_interaction_list, return_inner=True)
             
-            # Set bounds for particle spacing (radians):
-            min_rad = 2*np.pi/12 # 12 res/turn
-            max_rad = 2*np.pi/3  #  3 res/turn
-            
-            # bounds for r_bs bond distance (angstrom):
-            min_r_bs = r/10
-            max_r_bs = 3*r
-            
-            brute_range = (slice(min_rad,max_rad,brute_step_rad), slice(min_r_bs,max_r_bs,brute_step_r_bs))
-
-            params_outer = (simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, DE_popsize,
-                bb_interaction_list, bs_interaction_list, ss_interaction_list, bond_dist_sc)
-
-            # Run brute force minimization over the particle spacing, with sigma_bb, sigma_sc optimized in an inner function:
-            opt_results_outer = brute(compute_energy_diff_1sc, brute_range, args=params_outer, finish=None)
-
-            t_delta_opt = opt_results_outer[0]
-            r_bs_opt = opt_results_outer[1]
-
-            # Rerun the final inner optimization to retreive the sigma_bb, sigma_sc:
-            opt_results_inner = compute_energy_diff_1sc(t_delta_opt, simulation, bb_array, sc_array,
-                particle_type_list, r, c, n_particle_bb, DE_popsize,
-                bb_interaction_list, bs_interaction_list, ss_interaction_list, bond_dist_sc, return_inner=True)
-                
-            sigma_bb_opt = opt_results_inner.x[0]
-            sigma_sc_opt = opt_results_inner.x[1]
+        sigma_bb_opt = opt_results_inner.x[0]
+        sigma_sc_opt = opt_results_inner.x[1]
         
         
     t_par = np.zeros(n_particle_bb)
@@ -465,11 +436,7 @@ def optimize_helix_LJ_parameters_energy_diff(radius, pitch, n_particle_bb,
         # Use optimized bond length from first two backbone beads:
         r_bs = r_bb
     else:
-        if bond_dist_sc is not None:
-            # Use specified bb-sc bond distance:
-            r_bs = bond_dist_sc
-        else:
-            r_bs = r_bs_opt
+        r_bs = r_bs_opt
     
     side_xyz = np.zeros((n_particle_bb,3))
 
@@ -545,7 +512,7 @@ def optimize_helix_LJ_parameters_energy_diff(radius, pitch, n_particle_bb,
 
     # Write pdb file
     cgmodel.positions = positions_extended * unit.angstrom
-    write_pdbfile_without_topology(cgmodel, pdbfile[:-4]+'ext.pdb')    
+    write_pdbfile_without_topology(cgmodel, pdbfile[:-4]+'_ext.pdb')    
         
     # Plot helix:
     if plotfile is not None:
@@ -1194,7 +1161,7 @@ def compute_helix_openmm_energy_vary_LJ(geo, simulation, bb_array, sc_array,
 
 
 def compute_energy_diff_1sc(distance_vars, simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, DE_popsize,
-    bb_interaction_list, bs_interaction_list, ss_interaction_list, bond_dist_sc, return_inner=False):
+    bb_interaction_list, bs_interaction_list, ss_interaction_list, return_inner=False):
     """
     Internal function for computing openmm energy of Lennard-Jones 12-6 helix
     """
@@ -1221,13 +1188,8 @@ def compute_energy_diff_1sc(distance_vars, simulation, bb_array, sc_array, parti
     r_bb = dist_unitless(xyz[0,:],xyz[1,:])
     
     if np.size(distance_vars) == 1:
-        # Just varying particle spacing (r_bb)
-        if bond_dist_sc is None:
-            # Equal bond lengths
-            r_bs = r_bb
-        else:
-            # Use specified bond distance
-            r_bs = bond_dist_sc
+        # Equal bonds - just varying particle spacing (r_bb)
+        r_bs = r_bb
     else:
         # In brute finishing minimization, enforce this to be positive:
         r_bs = np.abs(distance_vars[1])
@@ -1331,13 +1293,13 @@ def compute_energy_diff_1sc(distance_vars, simulation, bb_array, sc_array, parti
         return opt_sol_inner
     else:
         # This is the full nested optimization - return only the energy
-        print(f'Opt energy for t_delta = {t_delta}, r_bs = {r_bs}')
-        print(opt_sol_inner)
-        print(f'b-b distance: {r_bb}')
-        print(f'max_sigma_bb: {min_bb_distance}')
-        print(f'max_sigma_bs: {min_bs_distance}')
-        print(f'max_sigma_ss: {min_ss_distance}', flush=True)
-        print('')
+        # print(f'Opt energy for t_delta = {t_delta}, r_bs = {r_bs}')
+        # print(opt_sol_inner)
+        # print(f'b-b distance: {r_bb}')
+        # print(f'max_sigma_bb: {min_bb_distance}')
+        # print(f'max_sigma_bs: {min_bs_distance}')
+        # print(f'max_sigma_ss: {min_ss_distance}', flush=True)
+        # print('')
         
         return opt_sol_inner.fun
         
