@@ -191,8 +191,6 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
             r_bs = bond_dist_sc
         else:
             # Use optimized bb-sc bond distance:
-            # Testing out inverted helix
-            # r_bs = -r_bs_opt
             r_bs = r_bs_opt
     
     side_xyz = np.zeros((n_particle_bb,3))
@@ -1079,10 +1077,6 @@ def optimize_helix_LJ_parameters_triangle_sidechain(radius, pitch, n_particle_bb
     dihedral_indices = np.array([[sbbs_torsion_list[0][0], sbbs_torsion_list[0][1], sbbs_torsion_list[0][2], sbbs_torsion_list[0][3]]])
     geometry['sc_bb_bb_sc_angle'] = (md.compute_dihedrals(traj,dihedral_indices)*unit.radians).in_units_of(unit.degrees)[0][0]
 
-    # # Plot helix:
-    # if plotfile is not None:
-        # plot_LJ_helix(r,c,t_par,r_eq_bb,r_eq_sc=r_eq_sc,plotfile=plotfile)
-    
     return opt_sol, geometry
 
 
@@ -1117,8 +1111,6 @@ def compute_helix_openmm_energy_vary_LJ(geo, simulation, bb_array, sc_array,
     
     if not equal_bonds:
         r_bs = geo[3] # Angstrom
-        # Testing out inverted helix:
-        # r_bs = -np.abs(geo[3])
     else:
         r_bs = r_bb
     
