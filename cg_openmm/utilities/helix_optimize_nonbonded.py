@@ -33,7 +33,7 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
     :param bond_dist_sc: bond distance for bb-sc bonds. If None, bond distance will also be optimized.
     :type bond_dist_sc: Quantity
     
-    :param equal_bonds: option to constrain bb-sc bond distance to equal bb-bb bond distance
+    :param equal_bonds: option to constrain bb-sc bond distance to equal bb-bb bond distance. If True, any specified bond distances are ignored. (default=True)
     :type equal_bonds: bool    
 
     :param DE_popsize: population size to use in SciPy differential_evolution solver (default=50)
@@ -550,7 +550,7 @@ def optimize_helix_LJ_parameters_2sc(radius, pitch, n_particle_bb, sigma_bb,
     :param DE_popsize: population size to use in SciPy differential_evolution solver (default=50)
     :type DE_popsize: int
 
-    :param pdbfile: Path to pdb file for saving the helical structure (default='LJ_helix_openmm_energy.pdb')
+    :param pdbfile: Path to pdb file for saving the helical structure (default='LJ_helix_2sc_opt.pdb')
     :type pdbfile: str
     
     :param exclusions: pass cg_openmm exclusion rules to the cgmodel (by default [0,0,1] is applied to bb-bb, [0,1,1] to bb-sc, sc-sc)
@@ -758,7 +758,7 @@ def optimize_helix_LJ_parameters_2sc(radius, pitch, n_particle_bb, sigma_bb,
 
 
 def optimize_helix_LJ_parameters_triangle_sidechain(radius, pitch, n_particle_bb, sigma_bb,
-    bond_dist_bb, DE_popsize=200, pdbfile='LJ_helix_openmm_energy.pdb',
+    bond_dist_bb, DE_popsize=200, pdbfile='LJ_helix_3sc_triangle_opt.pdb',
     exclusions={}):
     """
     With specified radius, pitch, backbone sigma, and backbone-backbone bond length, 
@@ -786,7 +786,7 @@ def optimize_helix_LJ_parameters_triangle_sidechain(radius, pitch, n_particle_bb
     :param DE_popsize: population size to use in SciPy differential_evolution solver (default=50)
     :type DE_popsize: int
 
-    :param pdbfile: Path to pdb file for saving the helical structure (default='LJ_helix_openmm_energy.pdb')
+    :param pdbfile: Path to pdb file for saving the helical structure (default='LJ_helix_3sc_triangle_opt.pdb')
     :type pdbfile: str
     
     :param exclusions: pass cg_openmm exclusion rules to the cgmodel (by default [0,0,1] is applied to bb-bb, [0,1,1] to bb-sc, sc-sc)
@@ -1160,6 +1160,73 @@ def compute_helix_openmm_energy_vary_LJ(geo, simulation, bb_array, sc_array,
     return U_helix    
 
 
+def compute_helix_openmm_energy_vary_LJ_constrained(
+    geo, simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, bond_dist_bb, bond_dist_sc):
+    """
+    Internal function for computing openmm energy of Lennard-Jones 12-6 helix
+    """
+    
+    # Backbone sigma parameter
+    sigma_bb = geo[0] * unit.angstrom
+    
+    # Sidechain sigma parameter
+    sigma_sc = geo[1] * unit.angstrom
+    
+    # Particle spacing (radians)
+    t_delta = get_t_from_bond_distance(r,c,bond_dist_bb)
+    
+    t1 = np.zeros(n_particle_bb)
+    for i in range(n_particle_bb):
+        t1[i] = i*t_delta
+        
+    xyz = get_helix_coordinates(r,c,t1)
+        
+    # If the bonds, angles, and backbone torsions are at their equilibrium positions,
+    # then we don't need to update any parameters in the simulation object. Just
+    # the nonbonded energies need to be evaluated. In the cgmodel, all force constants
+    # are zero.
+        
+    # Place sidechain particles normal to helix with same bond length as bb_bb
+    r_bb = bond_dist_bb
+    r_bs = bond_dist_sc
+    side_xyz = np.zeros((n_particle_bb,3))
+    
+    side_xyz[:,0] = (1+r_bs/r)*xyz[:,0]
+    side_xyz[:,1] = (1+r_bs/r)*xyz[:,1]
+    side_xyz[:,2] = xyz[:,2]
+    
+    # Now, set the backbone and sidechain positions to the correct bead indices:
+    positions = np.zeros((2*n_particle_bb,3))
+    
+    # This assumes that the backbone and sidechain beads are ordered from end-to-end
+    positions[bb_array] = xyz
+    positions[sc_array] = side_xyz
+    
+    #positions *= unit.angstrom
+    
+    # Update the nonbonded parameters:
+    for force_index, force in enumerate(simulation.system.getForces()):
+        force_name = force.__class__.__name__
+        if force_name == 'NonbondedForce':
+            for particle_index in range(len(particle_type_list)):
+                (q,sigma_old,eps) = force.getParticleParameters(particle_index)
+                
+                # Only need to change the sigma values here:
+                if particle_type_list[particle_index] == 'bb':
+                    force.setParticleParameters(particle_index,q,sigma_bb,eps)
+                else:
+                    force.setParticleParameters(particle_index,q,sigma_sc,eps)
+                force.updateParametersInContext(simulation.context)
+            
+    # Update the positions:        
+    simulation.context.setPositions(positions)
+    potential_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
+    
+    U_helix = potential_energy.value_in_unit(unit.kilojoules_per_mole)
+
+    return U_helix   
+
+
 def compute_energy_diff_1sc(distance_vars, simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, DE_popsize,
     bb_interaction_list, bs_interaction_list, ss_interaction_list, return_inner=False):
     """
@@ -1351,74 +1418,7 @@ def compute_energy_diff_1sc_inner(x, simulation, positions, theta_bbb, r_bb, r_b
     # print(f'Extended energy: {U_extended}')
     # print('')
     # Makes sure U_helix > U_extended is not favored over the reverse
-    return U_helix-U_extended 
-        
-
-def compute_helix_openmm_energy_vary_LJ_constrained(
-    geo, simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, bond_dist_bb, bond_dist_sc):
-    """
-    Internal function for computing openmm energy of Lennard-Jones 12-6 helix
-    """
-    
-    # Backbone sigma parameter
-    sigma_bb = geo[0] * unit.angstrom
-    
-    # Sidechain sigma parameter
-    sigma_sc = geo[1] * unit.angstrom
-    
-    # Particle spacing (radians)
-    t_delta = get_t_from_bond_distance(r,c,bond_dist_bb)
-    
-    t1 = np.zeros(n_particle_bb)
-    for i in range(n_particle_bb):
-        t1[i] = i*t_delta
-        
-    xyz = get_helix_coordinates(r,c,t1)
-        
-    # If the bonds, angles, and backbone torsions are at their equilibrium positions,
-    # then we don't need to update any parameters in the simulation object. Just
-    # the nonbonded energies need to be evaluated. In the cgmodel, all force constants
-    # are zero.
-        
-    # Place sidechain particles normal to helix with same bond length as bb_bb
-    r_bb = bond_dist_bb
-    r_bs = bond_dist_sc
-    side_xyz = np.zeros((n_particle_bb,3))
-    
-    side_xyz[:,0] = (1+r_bs/r)*xyz[:,0]
-    side_xyz[:,1] = (1+r_bs/r)*xyz[:,1]
-    side_xyz[:,2] = xyz[:,2]
-    
-    # Now, set the backbone and sidechain positions to the correct bead indices:
-    positions = np.zeros((2*n_particle_bb,3))
-    
-    # This assumes that the backbone and sidechain beads are ordered from end-to-end
-    positions[bb_array] = xyz
-    positions[sc_array] = side_xyz
-    
-    #positions *= unit.angstrom
-    
-    # Update the nonbonded parameters:
-    for force_index, force in enumerate(simulation.system.getForces()):
-        force_name = force.__class__.__name__
-        if force_name == 'NonbondedForce':
-            for particle_index in range(len(particle_type_list)):
-                (q,sigma_old,eps) = force.getParticleParameters(particle_index)
-                
-                # Only need to change the sigma values here:
-                if particle_type_list[particle_index] == 'bb':
-                    force.setParticleParameters(particle_index,q,sigma_bb,eps)
-                else:
-                    force.setParticleParameters(particle_index,q,sigma_sc,eps)
-                force.updateParametersInContext(simulation.context)
-            
-    # Update the positions:        
-    simulation.context.setPositions(positions)
-    potential_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
-    
-    U_helix = potential_energy.value_in_unit(unit.kilojoules_per_mole)
-
-    return U_helix    
+    return U_helix-U_extended  
 
  
 def compute_helix_openmm_energy_vary_LJ_2sc_equal(geo, simulation,

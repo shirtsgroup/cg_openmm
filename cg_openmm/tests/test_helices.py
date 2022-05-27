@@ -36,7 +36,7 @@ def test_optimize_helix_simple(tmpdir):
     plotfile = f"{output_directory}/LJ_helix_test.pdf"
     
     opt_solution, geometry = optimize_helix_simple(
-        n_particle_bb,sigma,epsilon,sidechain,
+        n_particle_bb, sigma, epsilon, sidechain,
         pdbfile=pdbfile, plotfile=plotfile,
         DE_popsize=10)
            
@@ -69,7 +69,7 @@ def test_optimize_helix_simple_sidechain(tmpdir):
     plotfile = f"{output_directory}/LJ_helix_sidechain_test.pdf"
     
     opt_solution, geometry = optimize_helix_simple(
-        n_particle_bb,sigma,epsilon,sidechain,
+        n_particle_bb, sigma, epsilon, sidechain,
         pdbfile=pdbfile, plotfile=plotfile,
         DE_popsize=10)
 
@@ -144,7 +144,7 @@ def test_optimize_helix_openmm_unconstrained_exclusions(tmpdir):
     opt_solution, geometry = optimize_helix_openmm_energy(
         n_particle_bb, sigma_bb, sigma_sc, epsilon_bb, epsilon_sc,
         pdbfile=pdbfile, plotfile=plotfile, bond_dist_bb=None, bond_dist_sc=None,
-        DE_popsize=20,exclusions=exclusions)
+        DE_popsize=20, exclusions=exclusions)
            
     assert os.path.isfile(pdbfile)
     assert os.path.isfile(plotfile)
