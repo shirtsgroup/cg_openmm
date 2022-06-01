@@ -719,31 +719,21 @@ class CGModel(object):
 
         interaction_list = []
 
-        if self.include_bond_forces or self.constrain_bonds:
-            bond_list = self.get_bond_list()
-            for particle_1 in range(self.num_beads):
-                for particle_2 in range(particle_1 + 1, self.num_beads):
-                    if [particle_1, particle_2] not in bond_list and [
-                        particle_2,
-                        particle_1,
-                    ] not in bond_list:
-                        if [particle_1, particle_2] not in interaction_list:
-                            if [particle_2, particle_1] not in interaction_list:
-                                interaction_list.append([particle_1, particle_2])
-                        if [particle_2, particle_1] not in interaction_list:
-                            if [particle_1, particle_2] not in interaction_list:
-                                interaction_list.append([particle_2, particle_1])
-            exclusion_list = self.nonbonded_exclusion_list
-            if exclusion_list != None:
-                for exclusion in exclusion_list:
-                    if exclusion in interaction_list:
-                        interaction_list.remove(exclusion)
-                    if [exclusion[1], exclusion[0]] in interaction_list:
-                        interaction_list.remove([exclusion[1], exclusion[0]])
-        else:
-            for particle_1 in range(self.num_beads):
-                for particle_2 in range(particle_1 + 1, self.num_beads):
+        # First, include all pairs. Then remove any excluded pairs.
+        for particle_1 in range(self.num_beads):
+            for particle_2 in range(particle_1+1, self.num_beads):
+                if ([particle_1, particle_2] not in interaction_list and \
+                    [particle_2, particle_1] not in interaction_list):
                     interaction_list.append([particle_1, particle_2])
+                        
+        exclusion_list = self.nonbonded_exclusion_list
+        
+        for exclusion in exclusion_list:
+            if exclusion in interaction_list:
+                interaction_list.remove(exclusion)
+            if [exclusion[1], exclusion[0]] in interaction_list:
+                interaction_list.remove([exclusion[1], exclusion[0]])
+
         return interaction_list
         
 
