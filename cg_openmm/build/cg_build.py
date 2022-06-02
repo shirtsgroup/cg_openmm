@@ -279,22 +279,26 @@ def verify_topology(cgmodel):
 
     """
 
-    if cgmodel.num_beads != cgmodel.topology.getNumAtoms():
-        print("ERROR: The number of particles in the coarse grained model\n")
-        print("does not match the number of particles in the OpenMM topology.\n")
-        print("There are " + str(cgmodel.num_beads) + " particles in the coarse grained model\n")
-        print("and " + str(cgmodel.topology.getNumAtoms()) + " particles in the OpenMM topology.")
+    # Check number of beads:
+    nbeads_cgmodel = cgmodel.num_beads
+    nbeads_topology = cgmodel.topology.getNumAtoms()
+    
+    if nbeads_cgmodel != nbeads_topology:
+        print("ERROR: The number of particles in the coarse grained model")
+        print("does not match the number of particles in the OpenMM topology.")
+        print(f"There are {nbeads_cgmodel} particles in the coarse grained model")
+        print(f"and {nbeads_topology} particles in the OpenMM topology.")
         exit()
 
-    if cgmodel.polymer_length != cgmodel.topology.getNumResidues():
-        print("ERROR: The number of monomers in the coarse grained model\n")
-        print("does not match the number of residues in the OpenMM topology.\n")
-        print(
-            "There are " + str(cgmodel.polymer_length) + " monomers in the coarse grained model\n"
-        )
-        print(
-            "and " + str(cgmodel.topology.getNumResidues()) + " monomers in the OpenMM topology."
-        )
+    # Check number of residues:
+    nres_cgmodel = cgmodel.polymer_length
+    nres_topology = cgmodel.topology.getNumResidues()
+    
+    if nres_cgmodel != nres_topology:
+        print("ERROR: The number of monomers in the coarse grained model")
+        print("does not match the number of residues in the OpenMM topology.")
+        print(f"There are {nres_cgmodel} monomers in the coarse grained model")
+        print(f"and {nres_topology} monomers in the OpenMM topology.")
         exit()
 
     return
@@ -481,11 +485,6 @@ def check_force(cgmodel, force, force_type=None):
     success = True
     
     if force_type == "Nonbonded":
-        if cgmodel.num_beads != force.getNumParticles():
-            print(f"ERROR: Mismatch in number of particles in the cgmodel ({cgmodel.num_beads})")
-            print(f"and number of particles with nonbonded force definitions in the OpenMM system")
-            print(f"({force.getNumParticles})")
-            success = False
 
         # TODO: add check of the nonbonded energy for Rosetta functional form
         if cgmodel.rosetta_functional_form:
@@ -495,6 +494,11 @@ def check_force(cgmodel, force, force_type=None):
         
         repulsive_exp = cgmodel.nonbond_repulsive_exp
         attractive_exp = cgmodel.nonbond_attractive_exp
+        
+        print(f'nonbonded_interaction_list: {cgmodel.nonbonded_interaction_list}')
+        print(f'nonbonded_exclusion_list: {cgmodel.nonbonded_exclusion_list}')
+        print(f'bond list: {cgmodel.get_bond_list()}')
+        print(f'exclusion_rules: {cgmodel.exclusions}')
         
         for pair in cgmodel.nonbonded_interaction_list:
             if (pair not in cgmodel.nonbonded_exclusion_list and \
@@ -517,7 +521,7 @@ def check_force(cgmodel, force, force_type=None):
                     type2 = cgmodel.get_particle_type_name(pair[1])
                         
                     kappa_name = f"{type1}_{type2}_binary_interaction"
-                    kappa_name_reverse = f"{type1}_{type2}_binary_interaction"
+                    kappa_name_reverse = f"{type2}_{type1}_binary_interaction"
                         
                     if type1 == type2:
                         # Same type particle interactions are not modified

@@ -108,15 +108,7 @@ def write_pdbfile_without_topology(CGModel, filename, energy=None):
     pdb_object = open(filename, "w")
     if energy is not None:
         pdb_object.write(
-            "## The OpenMM potential energy for this structure is: " + str(energy) + "\n"
-        )
-        pdb_object.write("## with the following parameter settings:\n")
-        pdb_object.write(
-            "## sigma = "
-            + str(CGModel.sigmas["bb_bb_sigma"])
-            + ", epsilon = "
-            + str(CGModel.epsilons["bb_bb_eps"])
-            + "\n"
+            f"## The OpenMM potential energy for this structure is: {energy}\n"
         )
 
     coordinates = CGModel.positions
@@ -191,8 +183,5 @@ def read_mm_energies(openmm_data_file):
                 energies["temperature"].append(row["Temperature (K)"])
             except BaseException:
                 continue
-
-    #              print(energies)
-    #              exit()
 
     return energies

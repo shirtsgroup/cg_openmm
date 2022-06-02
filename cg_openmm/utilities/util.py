@@ -38,7 +38,7 @@ def distance(positions_1, positions_2):
     
     distance = np.sqrt(np.sum(np.power((p1-p2),2)))
     distance *= positions_unit
-
+    
     return distance
 
 
@@ -119,7 +119,7 @@ def lj_v(positions_1, positions_2, sigma, epsilon, r_exp=12.0, a_exp=6.0):
         v = 4*epsilon*(np.power((sigma/dist),12.0)-np.power((sigma/dist),6.0))
     else:
         # This is a generalized LJ (Mie) function
-        C = (r_exp/(r_exp-a_exp))*(r_exp/a_exp)**(m/(r_exp-a_exp))
+        C = (r_exp/(r_exp-a_exp))*(r_exp/a_exp)**(a_exp/(r_exp-a_exp))
         v = C*epsilon*(np.power((sigma/dist),r_exp)-np.power((sigma/dist),a_exp))
     
     return v
