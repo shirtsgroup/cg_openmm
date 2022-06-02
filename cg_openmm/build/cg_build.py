@@ -499,7 +499,7 @@ def check_force(cgmodel, force, force_type=None):
         for pair in cgmodel.nonbonded_interaction_list:
             if (pair not in cgmodel.nonbonded_exclusion_list and \
                 reversed(pair) not in cgmodel.nonbonded_exclusion_list):
-                
+
                 particle_1_positions = cgmodel.positions[pair[0]]
                 particle_2_positions = cgmodel.positions[pair[1]]
                 
@@ -561,6 +561,7 @@ def check_force(cgmodel, force, force_type=None):
             simulation_time_step=5.0 * unit.femtosecond,
             print_frequency=1,
         )
+        
         potential_energy = cgmodel.simulation.context.getState(getEnergy=True).getPotentialEnergy()
 
         # Turn any original bonded forces back on:

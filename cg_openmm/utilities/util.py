@@ -31,7 +31,13 @@ def distance(positions_1, positions_2):
 
     """
 
-    distance = np.sqrt(np.sum(np.power((positions_1 - positions_2),2)))
+    # Ensure that the output keeps the original units:
+    positions_unit = positions_1.unit
+    p1 = positions_1.value_in_unit(positions_unit)
+    p2 = positions_2.value_in_unit(positions_unit)
+    
+    distance = np.sqrt(np.sum(np.power((p1-p2),2)))
+    distance *= positions_unit
 
     return distance
 
