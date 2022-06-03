@@ -2361,8 +2361,8 @@ def test_set_binary_interaction_trivial(tmpdir):
     PE_start_kappa_on = PE_start.value_in_unit(unit.kilojoule_per_mole)
     PE_end_kappa_on = PE_end.value_in_unit(unit.kilojoule_per_mole)
     
-    assert_almost_equal(PE_start_kappa_on,PE_start_kappa_off,decimal=4)
-    assert_almost_equal(PE_end_kappa_on,PE_end_kappa_off,decimal=4)
+    assert_almost_equal(PE_start_kappa_on,PE_start_kappa_off,decimal=3)
+    assert_almost_equal(PE_end_kappa_on,PE_end_kappa_off,decimal=3)
     
     
 def test_set_binary_interaction(tmpdir):
@@ -2452,8 +2452,8 @@ def test_set_Mie_exponents_trivial(tmpdir):
     PE_start_Mie_12_6 = PE_start.value_in_unit(unit.kilojoule_per_mole)
     PE_end_Mie_12_6 = PE_end.value_in_unit(unit.kilojoule_per_mole)
     
-    assert_almost_equal(PE_start_LJ_12_6,PE_start_Mie_12_6,decimal=4)
-    assert_almost_equal(PE_end_LJ_12_6,PE_end_Mie_12_6,decimal=4) 
+    assert_almost_equal(PE_start_LJ_12_6,PE_start_Mie_12_6,decimal=3)
+    assert_almost_equal(PE_end_LJ_12_6,PE_end_Mie_12_6,decimal=3) 
 
 
 def test_set_Mie_exponents(tmpdir):
@@ -2554,6 +2554,6 @@ def test_set_Mie_exponents_and_binary_parameter_trivial(tmpdir):
     PE_start_Mie_12_6 = PE_start.value_in_unit(unit.kilojoule_per_mole)
     PE_end_Mie_12_6 = PE_end.value_in_unit(unit.kilojoule_per_mole)
     
-    assert_almost_equal(PE_start_LJ_12_6,PE_start_Mie_12_6,decimal=4)
-    assert_almost_equal(PE_end_LJ_12_6,PE_end_Mie_12_6,decimal=4)     
+    assert_almost_equal(PE_start_LJ_12_6,PE_start_Mie_12_6,decimal=3)
+    assert_almost_equal(PE_end_LJ_12_6,PE_end_Mie_12_6,decimal=3)     
     
