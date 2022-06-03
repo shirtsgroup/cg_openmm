@@ -113,6 +113,8 @@ class CGModel(object):
         include_bond_angle_forces=True,
         include_torsion_forces=True,
         angle_style='harmonic',
+        nonbond_repulsive_exp=12,
+        nonbond_attractive_exp=6,
         exclusions={},
         rosetta_functional_form=False,
         check_energy_conservation=True,
@@ -177,7 +179,13 @@ class CGModel(object):
         :type include_torsion_forces: Bool
         
         :param angle_style: Functional form to use for bond-bending angle potential ('harmonic', 'restricted', or 'cosine') (default='harmonic')
-        :type angle_style: str        
+        :type angle_style: str  
+
+        :param nonbond_repulsive_exp: Repulsive exponent for custom nonbonded Mie potential. For now this same exponent is applied to all pair types. (default=12)
+        :type nonbond_repulsive_exp: float
+        
+        :param nonbond_attractive_exp: Attractive exponent for custom nonbonded Mie potential. For now this same exponent is applied to all pair types. (default=6)
+        :type nonbond_attractive_exp: float
         
         :param exclusions: Nonbonded weights for [1-2, 1-3, 1-4] interactions (default = [0,0,1])
         :type exclusions: dict( list( int ) )
@@ -240,6 +248,8 @@ class CGModel(object):
         self.include_nonbonded_forces = include_nonbonded_forces
         self.include_torsion_forces = include_torsion_forces
         self.angle_style = angle_style
+        self.nonbond_repulsive_exp = nonbond_repulsive_exp
+        self.nonbond_attractive_exp = nonbond_attractive_exp
         self.check_energy_conservation = check_energy_conservation
         self.monomer_types = monomer_types
         self.bond_lengths = bond_lengths
@@ -709,31 +719,21 @@ class CGModel(object):
 
         interaction_list = []
 
-        if self.include_bond_forces or self.constrain_bonds:
-            bond_list = self.get_bond_list()
-            for particle_1 in range(self.num_beads):
-                for particle_2 in range(particle_1 + 1, self.num_beads):
-                    if [particle_1, particle_2] not in bond_list and [
-                        particle_2,
-                        particle_1,
-                    ] not in bond_list:
-                        if [particle_1, particle_2] not in interaction_list:
-                            if [particle_2, particle_1] not in interaction_list:
-                                interaction_list.append([particle_1, particle_2])
-                        if [particle_2, particle_1] not in interaction_list:
-                            if [particle_1, particle_2] not in interaction_list:
-                                interaction_list.append([particle_2, particle_1])
-            exclusion_list = self.nonbonded_exclusion_list
-            if exclusion_list != None:
-                for exclusion in exclusion_list:
-                    if exclusion in interaction_list:
-                        interaction_list.remove(exclusion)
-                    if [exclusion[1], exclusion[0]] in interaction_list:
-                        interaction_list.remove([exclusion[1], exclusion[0]])
-        else:
-            for particle_1 in range(self.num_beads):
-                for particle_2 in range(particle_1 + 1, self.num_beads):
+        # First, include all pairs. Then remove any excluded pairs.
+        for particle_1 in range(self.num_beads):
+            for particle_2 in range(particle_1+1, self.num_beads):
+                if ([particle_1, particle_2] not in interaction_list and \
+                    [particle_2, particle_1] not in interaction_list):
                     interaction_list.append([particle_1, particle_2])
+                        
+        exclusion_list = self.nonbonded_exclusion_list
+        
+        for exclusion in exclusion_list:
+            if exclusion in interaction_list:
+                interaction_list.remove(exclusion)
+            if [exclusion[1], exclusion[0]] in interaction_list:
+                interaction_list.remove([exclusion[1], exclusion[0]])
+
         return interaction_list
         
 

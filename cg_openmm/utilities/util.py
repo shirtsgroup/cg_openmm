@@ -31,21 +31,14 @@ def distance(positions_1, positions_2):
 
     """
 
-    direction_comp = np.zeros(3) * positions_1.unit
-
-    for direction in range(len(direction_comp)):
-        direction_comp[direction] = positions_1[direction].__sub__(positions_2[direction])
-
-    direction_comb = np.zeros(3) * positions_1.unit.__pow__(2.0)
-    for direction in range(3):
-        direction_comb[direction] = direction_comp[direction].__pow__(2.0)
-
-    sqrt_arg = direction_comb[0].__add__(direction_comb[1]).__add__(direction_comb[2])
-
-    value = math.sqrt(sqrt_arg._value)
-    units = sqrt_arg.unit.sqrt()
-    distance = unit.Quantity(value=value, unit=units)
-
+    # Ensure that the output keeps the original units:
+    positions_unit = positions_1.unit
+    p1 = positions_1.value_in_unit(positions_unit)
+    p2 = positions_2.value_in_unit(positions_unit)
+    
+    distance = np.sqrt(np.sum(np.power((p1-p2),2)))
+    distance *= positions_unit
+    
     return distance
 
 
@@ -92,7 +85,7 @@ def set_box_vectors(system, box_size):
     return system
 
 
-def lj_v(positions_1, positions_2, sigma, epsilon):
+def lj_v(positions_1, positions_2, sigma, epsilon, r_exp=12.0, a_exp=6.0):
     """
     Calculate the Lennard-Jones interaction energy between two particles, given their positions and definitions for their equilbrium interaction distance (sigma) and strength (epsilon).
 
@@ -108,16 +101,27 @@ def lj_v(positions_1, positions_2, sigma, epsilon):
     :param epsilon: Lennard-Jones equilibrium interaction energy for two non-bonded particles.
     :type epsilon: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
 
+    :param r_exp: repulsive exponent (default=12.0)
+    :type r_exp: float
+    
+    :param a_exp: attractive exponent (default=6.0)
+    :type a_exp: float
+
     :returns:
        - v ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - Lennard-Jones interaction energy
 
     """
 
     dist = distance(positions_1, positions_2)
-    quot = sigma.__div__(dist)
-    attr = quot.__pow__(6.0)
-    rep = quot.__pow__(12.0)
-    v = 4.0 * epsilon.__mul__(rep.__sub__(attr))
+
+    if r_exp == 12.0 and a_exp == 6.0:
+        # This is a standard LJ 12-6 function
+        v = 4*epsilon*(np.power((sigma/dist),12.0)-np.power((sigma/dist),6.0))
+    else:
+        # This is a generalized LJ (Mie) function
+        C = (r_exp/(r_exp-a_exp))*(r_exp/a_exp)**(a_exp/(r_exp-a_exp))
+        v = C*epsilon*(np.power((sigma/dist),r_exp)-np.power((sigma/dist),a_exp))
+    
     return v
    
     

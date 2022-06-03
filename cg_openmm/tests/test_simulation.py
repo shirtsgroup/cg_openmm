@@ -8,6 +8,7 @@ import sys
 
 # Import package, test suite, and other packages as needed
 import cg_openmm
+import mdtraj as md
 import numpy as np
 import openmm
 import pytest
@@ -29,8 +30,8 @@ def test_cg_openmm_imported():
     
     
 current_path = os.path.dirname(os.path.abspath(__file__))
-data_path = os.path.join(current_path, 'test_data')
-structures_path = os.path.join(current_path, 'test_structures')
+data_path = os.path.join(current_path,'test_data')
+structures_path = os.path.join(current_path,'test_structures')
    
 def test_minimize_structure_pdb(tmpdir):
     """Test energy minimization structure, with reading/writing pdb files"""
@@ -80,62 +81,7 @@ def test_minimize_structure_dcd(tmpdir):
 
     assert PE_end < PE_start
     assert os.path.isfile(f"{output_directory}/medoid_min.dcd")    
-    
 
-def test_set_binary_interaction(tmpdir):
-    """Regression test for adding binary interaction parameter with customNonbondedForce"""
-
-    # Load in cgmodel
-    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))    
-
-    binary_interaction_parameters = {
-        "bb_sc_binary_interaction": 0.0}
-    
-    cgmodel_new = CGModel(
-        particle_type_list=cgmodel.particle_type_list,
-        bond_lengths=cgmodel.bond_lengths,
-        bond_force_constants=cgmodel.bond_force_constants,
-        bond_angle_force_constants=cgmodel.bond_angle_force_constants,
-        torsion_force_constants=cgmodel.torsion_force_constants,
-        equil_bond_angles=cgmodel.equil_bond_angles,
-        torsion_periodicities=cgmodel.torsion_periodicities,
-        torsion_phase_angles=cgmodel.torsion_phase_angles,
-        binary_interaction_parameters=binary_interaction_parameters,
-        include_nonbonded_forces=cgmodel.include_nonbonded_forces,
-        include_bond_forces=cgmodel.include_bond_forces,
-        include_bond_angle_forces=cgmodel.include_bond_angle_forces,
-        include_torsion_forces=cgmodel.include_torsion_forces,
-        constrain_bonds=cgmodel.constrain_bonds,
-        sequence=cgmodel.sequence,
-        positions=cgmodel.positions,
-        monomer_types=cgmodel.monomer_types,
-    )
-    
-    native_structure_file=f"{structures_path}/medoid_0.dcd"
-
-    native_traj = md.load(native_structure_file,top=md.Topology.from_openmm(cgmodel.topology))    
-    
-    positions = native_traj.xyz[0] * unit.nanometer
-    
-    output_directory = tmpdir.mkdir("output")
-    
-    # Minimize energy of native structure
-    positions, PE_start, PE_end, simulation = minimize_structure(
-        cgmodel_new,
-        positions,
-        output_file=f"{output_directory}/medoid_min.dcd",
-    )
-    
-    # These should be equal to ~4 decimal places (1 Joule/mol)
-    PE_start_kappa_off = -382.19839163767057
-    PE_end_kappa_off = -500.99943208890255
-    
-    PE_start_kappa_on = PE_start.value_in_unit(unit.kilojoule_per_mole)
-    PE_end_kappa_on = PE_end.value_in_unit(unit.kilojoule_per_mole)
-    
-    assert_almost_equal(PE_start_kappa_on,PE_start_kappa_off,decimal=4)
-    assert_almost_equal(PE_end_kappa_on,PE_end_kappa_off,decimal=4)
-    
     
 def test_run_simulation_pdb(tmpdir):
     """Run a short MD simulation of a 24mer 1b1s model (pdb trajectory output)"""
@@ -533,7 +479,7 @@ def test_run_replica_exchange(tmpdir):
     assert os.path.isfile(f"{output_directory}/output.nc")
     
     
-def test_process_replica_exchange(tmpdir):
+def test_process_replica_exchange_1(tmpdir):
     """
     Test replica exchange processing, trajectory writing with various options
     """
@@ -555,7 +501,19 @@ def test_process_replica_exchange(tmpdir):
         plot_production_only=True,
         print_timing=True,
     )
+
     
+def test_process_replica_exchange_2(tmpdir):
+    """
+    Test replica exchange processing, trajectory writing with various options
+    """
+
+    # Set output directory
+    output_directory = tmpdir.mkdir("output")    
+    
+    # Location of previously saved output.nc:
+    output_data = os.path.join(data_path, "output.nc")
+        
     # 2) With non-default equil_nskip
     replica_energies, replica_states, production_start, sample_spacing, n_transit, mixing_stats = process_replica_exchange_data(
         output_data=output_data,
@@ -564,6 +522,18 @@ def test_process_replica_exchange(tmpdir):
         equil_nskip=2,
     )
     
+    
+def test_process_replica_exchange_3(tmpdir):
+    """
+    Test replica exchange processing, trajectory writing with various options
+    """
+
+    # Set output directory
+    output_directory = tmpdir.mkdir("output")    
+    
+    # Location of previously saved output.nc:
+    output_data = os.path.join(data_path, "output.nc")
+    
     # 3) With frame_begin used to circumvent detectEquilibration
     replica_energies, replica_states, production_start, sample_spacing, n_transit, mixing_stats = process_replica_exchange_data(
         output_data=output_data,
@@ -571,12 +541,36 @@ def test_process_replica_exchange(tmpdir):
         frame_begin=5,
     )   
     
+    
+def test_process_replica_exchange_4(tmpdir):
+    """
+    Test replica exchange processing, trajectory writing with various options
+    """
+
+    # Set output directory
+    output_directory = tmpdir.mkdir("output")    
+    
+    # Location of previously saved output.nc:
+    output_data = os.path.join(data_path, "output.nc")    
+    
     # 4) With frame end specified to analyze only the beginning of a trajectory
     replica_energies, replica_states, production_start, sample_spacing, n_transit, mixing_stats = process_replica_exchange_data(
         output_data=output_data,
         output_directory=output_directory,
         frame_end=25,
     )   
+    
+    
+def test_process_replica_exchange_5(tmpdir):
+    """
+    Test replica exchange processing, trajectory writing with various options
+    """
+
+    # Set output directory
+    output_directory = tmpdir.mkdir("output")    
+    
+    # Location of previously saved output.nc:
+    output_data = os.path.join(data_path, "output.nc")    
     
     # 5) Without writing .dat file:
     replica_energies, replica_states, production_start, sample_spacing, n_transit, mixing_stats = process_replica_exchange_data(

@@ -9,7 +9,7 @@ dependencies:
   - mpi4py
   - numpy
   - openmm
-  - openmmtools
+  - openmmtools=0.21.1
   - physical_validation
   - pickleshare
   - pip
