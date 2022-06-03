@@ -8,9 +8,10 @@ import openmm.app.element as elem
 from cg_openmm.simulation.tools import build_mm_simulation
 from cg_openmm.utilities.iotools import write_pdbfile_without_topology
 from cg_openmm.utilities.util import lj_v
-from openmm import unit
+from openmm import unit, LangevinIntegrator
 from openmm.app.pdbfile import PDBFile
 from openmm.app.topology import Topology
+from openmm.app.simulation import Simulation
 
 
 def add_new_elements(cgmodel):
@@ -432,7 +433,7 @@ def verify_system(cgmodel):
         exit()
     
     # Check number of particles:
-    n_particles_cgmodel = cgmodel.num_beads()
+    n_particles_cgmodel = cgmodel.num_beads
     n_particles_system = cgmodel.system.getNumParticles()
 
     if n_particles_cgmodel != n_particles_system:
@@ -495,11 +496,6 @@ def check_force(cgmodel, force, force_type=None):
         repulsive_exp = cgmodel.nonbond_repulsive_exp
         attractive_exp = cgmodel.nonbond_attractive_exp
         
-        print(f'nonbonded_interaction_list: {cgmodel.nonbonded_interaction_list}')
-        print(f'nonbonded_exclusion_list: {cgmodel.nonbonded_exclusion_list}')
-        print(f'bond list: {cgmodel.get_bond_list()}')
-        print(f'exclusion_rules: {cgmodel.exclusions}')
-        
         for pair in cgmodel.nonbonded_interaction_list:
             if (pair not in cgmodel.nonbonded_exclusion_list and \
                 reversed(pair) not in cgmodel.nonbonded_exclusion_list):
@@ -547,47 +543,55 @@ def check_force(cgmodel, force, force_type=None):
                     )
                 total_nonbonded_energy += int_energy
         
-        # Save the original force input options:
-        include_bond_forces_in = cgmodel.include_bond_forces
-        include_bond_angle_forces_in = cgmodel.include_bond_angle_forces
-        include_torsion_forces_in = cgmodel.include_torsion_forces
-
-        # Turn off bonded forces to evaluate the OpenMM nonbonded potential energy:
-        cgmodel.include_bond_forces = False
-        cgmodel.include_bond_angle_forces = False
-        cgmodel.include_torsion_forces = False
-        cgmodel.topology = build_topology(cgmodel)
         
-        cgmodel.simulation = build_mm_simulation(
-            cgmodel.topology,
-            cgmodel.system,
-            cgmodel.positions,
-            simulation_time_step=5.0 * unit.femtosecond,
-            print_frequency=1,
+        # Here we can do an energy decomposition by using force groups:
+        
+        # Set up test simulation object:
+        simulation_time_step_test = 5.0 * unit.femtosecond
+        friction_test = 0.0 / unit.picosecond
+        integrator_test = LangevinIntegrator(
+            0.0 * unit.kelvin, friction_test, simulation_time_step_test.in_units_of(unit.picosecond)
         )
         
-        potential_energy = cgmodel.simulation.context.getState(getEnergy=True).getPotentialEnergy()
+        simulation_test = Simulation(cgmodel.topology, cgmodel.system, integrator_test)
+        simulation_test.context.setPositions(cgmodel.positions)    
 
-        # Turn any original bonded forces back on:
-        cgmodel.include_bond_forces = include_bond_forces_in
-        cgmodel.include_bond_angle_forces = include_bond_angle_forces_in
-        cgmodel.include_torsion_forces = include_torsion_forces_in
-        cgmodel.topology = build_topology(cgmodel)
+        # Set force groups:
+        force_names = {}
 
+        for force_index, force in enumerate(simulation_test.system.getForces()):
+            # These are the overall classes of forces, not the particle-specific forces
+            force_names[force_index] = force.__class__.__name__
+            force.setForceGroup(force_index) 
+
+        openmm_nonbonded_energy  = 0.0 * unit.kilojoule_per_mole
+        
+        for force_index, force in enumerate(simulation_test.system.getForces()):         
+            if force.__class__.__name__ in ["NonbondedForce", "CustomNonbondedForce"]:
+                openmm_nonbonded_energy += simulation_test.context.getState(getEnergy=True,groups={force_index}).getPotentialEnergy() 
+            
         # Numpy absolute value gets rid of units - add them back
         energy_diff = np.abs(
-            potential_energy.value_in_unit(unit.kilojoule_per_mole) - 
-            total_nonbonded_energy.value_in_unit(unit.kilojoule_per_mole)
+            total_nonbonded_energy.value_in_unit(unit.kilojoule_per_mole) - 
+            openmm_nonbonded_energy.value_in_unit(unit.kilojoule_per_mole)
             ) * unit.kilojoule_per_mole
 
         if energy_diff > 1E-5 * unit.kilojoule_per_mole:
-            print("Warning: The nonbonded potential energy computed by hand does not agree")
-            print("with the value computed by OpenMM.")
-            print(f"The value computed by OpenMM was: {potential_energy}")
-            print(f"The value computed by hand was: {total_nonbonded_energy}")
-            print("Check the units for your model parameters.  If the problem persists, there")
-            print("could be some other problem with the configuration of your coarse grained model.")
-            success = False
+            if energy_diff > 1E-2 * unit.kilojoule_per_mole:
+                print("Error: The nonbonded potential energy computed by hand does not agree")
+                print("with the value computed by OpenMM.")
+                print(f"The value computed by OpenMM was: {openmm_nonbonded_energy}")
+                print(f"The value computed by hand was: {total_nonbonded_energy}")
+                print("Check the units for your model parameters.  If the problem persists, there")
+                print("could be some other problem with the configuration of your coarse grained model.")
+                success = False
+            else:
+                print("Warning: The nonbonded potential energy computed by hand does not agree")
+                print("with the value computed by OpenMM.")
+                print(f"The value computed by OpenMM was: {openmm_nonbonded_energy}")
+                print(f"The value computed by hand was: {total_nonbonded_energy}")
+                print("Likely this is due to differences in rounding/precision.")
+                success = True
         else:
             # The OpenMM nonbonded energy matches the energy computed manually"
             success = True
@@ -706,104 +710,9 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
                 # Binary interaction paramters with n-m Mie potential:
                 # If not an empty dictionary, use the parameters within
                 
-                # Return a list of the forces added, since we will have multiple
-                force = []
-                
-                # Loop over all possible pair types, and check if a kappa was set
-                particle_type_list = cgmodel.particle_type_list
-                
-                for i in range(len(particle_type_list)):
-                    for j in range(i,len(particle_type_list)):
+                print(f'Mie potentials with binary interaction parameters not yet implemented')
+                exit()
 
-                        # Each pair type combination gets an interaction group
-                        type_i = particle_type_list[i]['particle_type_name']
-                        type_j = particle_type_list[j]['particle_type_name']
-                        
-                        set_list1 = []
-                        set_list2 = []
-                        
-                        kappa_name = f"{type_i}_{type_j}_binary_interaction"
-                        kappa_name_reverse = f"{type_j}_{type_i}_binary_interaction"
-                        
-                        if i == j:
-                            # Same type particle interactions should not be modified
-                            kappa_curr = 0
-                        
-                        else:
-                            if kappa_name in cgmodel.binary_interaction_parameters:
-                                # Apply the binary interaction parameter to this interaction group
-                                kappa_curr = cgmodel.binary_interaction_parameters[kappa_name]
-                                
-                            elif kappa_name_reverse in cgmodel.binary_interaction_parameters:
-                                # Apply the binary interaction parameter to this interaction group
-                                kappa_curr = cgmodel.binary_interaction_parameters[kappa_name_reverse]
-                                
-                            else:
-                                # The binary interaction parameter is not set for this interaction
-                                # group. By default, we will use a value of 0 (standard mixing rules)
-                                
-                                print(f'Warning: no binary interaction parameter set for pair type {type_i}, {type_j}')
-                                print(f'Applying default value of zero (standard mixing rules)')
-                                
-                                kappa_curr = 0
-                
-                        # Use custom nonbonded force with binary interaction parameter
-                        # We can set interaction groups to use different kappa parameters for each pair type.
-                        
-                        # Scan over all pairs to create the interacting sets of particles:
-                        for pair in cgmodel.nonbonded_interaction_list:
-                            pair_type0 = cgmodel.get_particle_type_name(pair[0])
-                            pair_type1 = cgmodel.get_particle_type_name(pair[1])
-                            
-                            # Set 1 will be type_i
-                            # Set 2 will be type_j
-                            
-                            if (pair_type0 == type_i and pair_type1 == type_j):
-                                set_list1.append(pair[0])
-                                set_list2.append(pair[1])
-                                
-                            elif (pair_type0 == type_j and pair_type1 == type_i):
-                                # Add this pair to interaction group
-                                set_list1.append(pair[1])
-                                set_list2.append(pair[0])
-                                
-                        # Add this interaction group to the nonbonded force object:
-                        # Since kappa is neither per-particle nor global over the entire system,
-                        # we can add add separate CustomNonbondedForce for each interaction group
-                        # with kappa set as a different global parameter for each case
-                        
-                        nonbonded_force = mm.CustomNonbondedForce(f"(n/(n-m)*(n/m)^(m/(n-m))*epsilon*((sigma/r)^n-(sigma/r)^m); sigma=0.5*(sigma1+sigma2); epsilon=(1-kappa)*sqrt(epsilon1*epsilon2)")
-                
-                        nonbonded_force.addPerParticleParameter("sigma")
-                        nonbonded_force.addPerParticleParameter("epsilon")
-                        
-                        nonbonded_force.addInteractionGroup(set_list1,set_list2)
-                        
-                        nonbonded_force.addGlobalParameter("kappa",kappa_curr)
-                        nonbonded_force.addGlobalParameter("n",n)
-                        nonbonded_force.addGlobalParameter("m",m)                        
-                
-                        # TODO: add the rosetta_functional_form switching function
-                        nonbonded_force.setNonbondedMethod(mm.NonbondedForce.NoCutoff)
-                        
-                        for particle in range(cgmodel.num_beads):
-                            # We don't need to define charge here, though we should add it in the future
-                            # We also don't need to define kappa since it is a global parameter
-                            sigma = cgmodel.get_particle_sigma(particle)
-                            epsilon = cgmodel.get_particle_epsilon(particle)
-                            nonbonded_force.addParticle((sigma, epsilon))   
-
-                        # Add nonbonded exclusions:
-                        for exclusion_pair in cgmodel.get_nonbonded_exclusion_list():
-                            # Check if these particles were defined in this interaction group
-                            if ((exclusion_pair[0] in set_list1 and exclusion_pair[1] in set_list2) or
-                                (exclusion_pair[1] in set_list1 and exclusion_pair[0] in set_list2)):
-                                nonbonded_force.addExclusion(exclusion_pair[0],exclusion_pair[1])
-                            
-                        cgmodel.system.addForce(nonbonded_force)
-                        force.append(nonbonded_force)         
-                
-            
             else:
                 # Mie potential with standard mixing rules
                 nonbonded_force = mm.CustomNonbondedForce(f"(n/(n-m))*(n/m)^(m/(n-m))*epsilon*((sigma/r)^n-(sigma/r)^m); sigma=0.5*(sigma1+sigma2); epsilon=sqrt(epsilon1*epsilon2)")
@@ -817,10 +726,6 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
                 
                 nonbonded_force.addGlobalParameter("n",n)
                 nonbonded_force.addGlobalParameter("m",m)
-                
-                if cgmodel.binary_interaction_parameters:
-                    # We need to specify a default value of kappa when adding global parameter
-                    nonbonded_force.addGlobalParameter("kappa",kappa)
                 
                 # TODO: add the rosetta_functional_form switching function
                 nonbonded_force.setNonbondedMethod(mm.NonbondedForce.NoCutoff)

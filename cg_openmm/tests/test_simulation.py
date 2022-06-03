@@ -8,6 +8,7 @@ import sys
 
 # Import package, test suite, and other packages as needed
 import cg_openmm
+import mdtraj as md
 import numpy as np
 import openmm
 import pytest
@@ -29,8 +30,8 @@ def test_cg_openmm_imported():
     
     
 current_path = os.path.dirname(os.path.abspath(__file__))
-data_path = os.path.join(current_path, 'test_data')
-structures_path = os.path.join(current_path, 'test_structures')
+data_path = os.path.join(current_path,'test_data')
+structures_path = os.path.join(current_path,'test_structures')
    
 def test_minimize_structure_pdb(tmpdir):
     """Test energy minimization structure, with reading/writing pdb files"""
@@ -80,189 +81,7 @@ def test_minimize_structure_dcd(tmpdir):
 
     assert PE_end < PE_start
     assert os.path.isfile(f"{output_directory}/medoid_min.dcd")    
-    
 
-def test_set_binary_interaction(tmpdir):
-    """Regression test for adding binary interaction parameter with customNonbondedForce"""
-
-    # Load in cgmodel
-    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))    
-
-    binary_interaction_parameters = {
-        "bb_sc_binary_interaction": 0.0}
-    
-    cgmodel_new = CGModel(
-        particle_type_list=cgmodel.particle_type_list,
-        bond_lengths=cgmodel.bond_lengths,
-        bond_force_constants=cgmodel.bond_force_constants,
-        bond_angle_force_constants=cgmodel.bond_angle_force_constants,
-        torsion_force_constants=cgmodel.torsion_force_constants,
-        equil_bond_angles=cgmodel.equil_bond_angles,
-        torsion_periodicities=cgmodel.torsion_periodicities,
-        torsion_phase_angles=cgmodel.torsion_phase_angles,
-        binary_interaction_parameters=binary_interaction_parameters,
-        include_nonbonded_forces=cgmodel.include_nonbonded_forces,
-        include_bond_forces=cgmodel.include_bond_forces,
-        include_bond_angle_forces=cgmodel.include_bond_angle_forces,
-        include_torsion_forces=cgmodel.include_torsion_forces,
-        constrain_bonds=cgmodel.constrain_bonds,
-        sequence=cgmodel.sequence,
-        positions=cgmodel.positions,
-        monomer_types=cgmodel.monomer_types,
-    )
-    
-    native_structure_file=f"{structures_path}/medoid_0.dcd"
-
-    native_traj = md.load(native_structure_file,top=md.Topology.from_openmm(cgmodel.topology))    
-    
-    positions = native_traj.xyz[0] * unit.nanometer
-    
-    output_directory = tmpdir.mkdir("output")
-    
-    # Minimize energy of native structure
-    positions, PE_start, PE_end, simulation = minimize_structure(
-        cgmodel_new,
-        positions,
-        output_file=f"{output_directory}/medoid_min.dcd",
-    )
-    
-    # These should be equal to ~4 decimal places (1 Joule/mol)
-    PE_start_kappa_off = -382.19839163767057
-    PE_end_kappa_off = -500.99943208890255
-    
-    PE_start_kappa_on = PE_start.value_in_unit(unit.kilojoule_per_mole)
-    PE_end_kappa_on = PE_end.value_in_unit(unit.kilojoule_per_mole)
-    
-    assert_almost_equal(PE_start_kappa_on,PE_start_kappa_off,decimal=4)
-    assert_almost_equal(PE_end_kappa_on,PE_end_kappa_off,decimal=4)
-    
-    
-def test_set_Mie_exponents(tmpdir):
-    """
-    Regression test for using Mie potential customNonbondedForce, with 12-6 exponents,
-    no binary interaction parameter
-    """
-
-    # Load in cgmodel
-    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))    
-    
-    # Set Mie exponents:
-    n = 12
-    m = 6
-    
-    cgmodel_new = CGModel(
-        particle_type_list=cgmodel.particle_type_list,
-        bond_lengths=cgmodel.bond_lengths,
-        bond_force_constants=cgmodel.bond_force_constants,
-        bond_angle_force_constants=cgmodel.bond_angle_force_constants,
-        torsion_force_constants=cgmodel.torsion_force_constants,
-        equil_bond_angles=cgmodel.equil_bond_angles,
-        torsion_periodicities=cgmodel.torsion_periodicities,
-        torsion_phase_angles=cgmodel.torsion_phase_angles,
-        nonbond_repulsive_exp = n,
-        nonbond_attractive_exp = m,
-        include_nonbonded_forces=cgmodel.include_nonbonded_forces,
-        include_bond_forces=cgmodel.include_bond_forces,
-        include_bond_angle_forces=cgmodel.include_bond_angle_forces,
-        include_torsion_forces=cgmodel.include_torsion_forces,
-        constrain_bonds=cgmodel.constrain_bonds,
-        sequence=cgmodel.sequence,
-        positions=cgmodel.positions,
-        monomer_types=cgmodel.monomer_types,
-    )
-    
-    native_structure_file=f"{structures_path}/medoid_0.dcd"
-
-    native_traj = md.load(native_structure_file,top=md.Topology.from_openmm(cgmodel.topology))    
-    
-    positions = native_traj.xyz[0] * unit.nanometer
-    
-    output_directory = tmpdir.mkdir("output")
-    
-    # Minimize energy of native structure
-    positions, PE_start, PE_end, simulation = minimize_structure(
-        cgmodel_new,
-        positions,
-        output_file=f"{output_directory}/medoid_min.dcd",
-    )
-    
-    # Check that the energy matches the standard LJ 12-6 potential:
-    # These should be equal to ~4 decimal places (1 Joule/mol)
-    PE_start_LJ_12_6 = -382.19839163767057
-    PE_end_LJ_12_6 = -500.99943208890255
-    
-    PE_start_Mie_12_6 = PE_start.value_in_unit(unit.kilojoule_per_mole)
-    PE_end_Mie_12_6 = PE_end.value_in_unit(unit.kilojoule_per_mole)
-    
-    assert_almost_equal(PE_start_LJ_12_6,PE_start_Mie_12_6,decimal=4)
-    assert_almost_equal(PE_end_LJ_12_6,PE_end_Mie_12_6,decimal=4) 
-
-
-def test_set_Mie_exponents_and_binary_parameter(tmpdir):
-    """
-    Regression test for using Mie potential customNonbondedForce, with 12-6 exponents,
-    with a binary interaction parameter for epsilon mixing rules
-    """
-
-    # Load in cgmodel
-    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))    
-    
-    # Set Mie exponents:
-    n = 12
-    m = 6
-    
-    # Set binary interaction parameter:
-    binary_interaction_parameters = {
-        "bb_sc_binary_interaction": 0.0}    
-    
-    cgmodel_new = CGModel(
-        particle_type_list=cgmodel.particle_type_list,
-        bond_lengths=cgmodel.bond_lengths,
-        bond_force_constants=cgmodel.bond_force_constants,
-        bond_angle_force_constants=cgmodel.bond_angle_force_constants,
-        torsion_force_constants=cgmodel.torsion_force_constants,
-        equil_bond_angles=cgmodel.equil_bond_angles,
-        torsion_periodicities=cgmodel.torsion_periodicities,
-        torsion_phase_angles=cgmodel.torsion_phase_angles,
-        nonbond_repulsive_exp = n,
-        nonbond_attractive_exp = m,
-        binary_interaction_parameters=binary_interaction_parameters,
-        include_nonbonded_forces=cgmodel.include_nonbonded_forces,
-        include_bond_forces=cgmodel.include_bond_forces,
-        include_bond_angle_forces=cgmodel.include_bond_angle_forces,
-        include_torsion_forces=cgmodel.include_torsion_forces,
-        constrain_bonds=cgmodel.constrain_bonds,
-        sequence=cgmodel.sequence,
-        positions=cgmodel.positions,
-        monomer_types=cgmodel.monomer_types,
-    )
-    
-    native_structure_file=f"{structures_path}/medoid_0.dcd"
-
-    native_traj = md.load(native_structure_file,top=md.Topology.from_openmm(cgmodel.topology))    
-    
-    positions = native_traj.xyz[0] * unit.nanometer
-    
-    output_directory = tmpdir.mkdir("output")
-    
-    # Minimize energy of native structure
-    positions, PE_start, PE_end, simulation = minimize_structure(
-        cgmodel_new,
-        positions,
-        output_file=f"{output_directory}/medoid_min.dcd",
-    )
-    
-    # Check that the energy matches the standard LJ 12-6 potential:
-    # These should be equal to ~4 decimal places (1 Joule/mol)
-    PE_start_LJ_12_6 = -382.19839163767057
-    PE_end_LJ_12_6 = -500.99943208890255
-    
-    PE_start_Mie_12_6 = PE_start.value_in_unit(unit.kilojoule_per_mole)
-    PE_end_Mie_12_6 = PE_end.value_in_unit(unit.kilojoule_per_mole)
-    
-    assert_almost_equal(PE_start_LJ_12_6,PE_start_Mie_12_6,decimal=4)
-    assert_almost_equal(PE_end_LJ_12_6,PE_end_Mie_12_6,decimal=4)     
-    
     
 def test_run_simulation_pdb(tmpdir):
     """Run a short MD simulation of a 24mer 1b1s model (pdb trajectory output)"""
