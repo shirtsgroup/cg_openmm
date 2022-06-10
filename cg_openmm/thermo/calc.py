@@ -358,7 +358,13 @@ def get_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, output_data
                 N_k[k] = n_samples//len(temps)  # these are the states that have samples
 
     # call MBAR to find weights at all states, sampled and unsampled
-    mbarT = pymbar.MBAR(unsampled_state_energies,N_k,verbose=False, relative_tolerance=1e-12);
+    
+    solver_protocol = {"method":"L-BFGS-B"}
+    
+    mbarT = pymbar.MBAR(
+        unsampled_state_energies,N_k,verbose=False,relative_tolerance=1e-12,
+        maximum_iterations=10000,solver_protocol=(solver_protocol,),
+        )
 
     for k in range(n_unsampled_states):
         # get the 'unreduced' potential -- we can't take differences of reduced potentials
@@ -557,7 +563,13 @@ def get_partial_heat_capacities(array_folded_states,
                 N_k[k] = n_samples//len(temps)  # these are the states that have samples
 
     # call MBAR to find weights at all states, sampled and unsampled
-    mbarT = pymbar.MBAR(unsampled_state_energies,N_k,verbose=False, relative_tolerance=1e-12);
+    
+    solver_protocol = {"method":"L-BFGS-B"}
+    
+    mbarT = pymbar.MBAR(
+        unsampled_state_energies,N_k,verbose=False,relative_tolerance=1e-12,
+        maximum_iterations=10000,solver_protocol=(solver_protocol,),
+        )
 
     for k in range(n_unsampled_states):
         # get the 'unreduced' potential -- we can't take differences of reduced potentials
@@ -830,11 +842,12 @@ def get_heat_capacity_reeval(
         N_k[k+n_unsampled_states] = 0 # None of these were actually sampled
        
     # call MBAR to find weights at all states, sampled and unsampled
+    
+    solver_protocol = {"method":"L-BFGS-B"}
+    
     mbarT = pymbar.MBAR(
-        unsampled_state_energies,
-        N_k,
-        verbose=False,
-        relative_tolerance=1e-12
+        unsampled_state_energies,N_k,verbose=False,relative_tolerance=1e-12,
+        maximum_iterations=10000,solver_protocol=(solver_protocol,),
     )
 
     for k in range(n_unsampled_states):
