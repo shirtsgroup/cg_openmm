@@ -402,6 +402,8 @@ def get_num_forces(cgmodel):
         total_forces += 1
     if cgmodel.include_torsion_forces:
         total_forces += 1
+    if cgmodel.hbonds:
+        total_forces += 1
         
     return total_forces
 
@@ -487,6 +489,7 @@ def check_force(cgmodel, force, force_type=None):
     
     if force_type == "Nonbonded":
 
+        # TODO: Check the precision of the numpy data being used in the manual calculation. 
         # TODO: add check of the nonbonded energy for Rosetta functional form
         if cgmodel.rosetta_functional_form:
             return True
@@ -576,22 +579,14 @@ def check_force(cgmodel, force, force_type=None):
             openmm_nonbonded_energy.value_in_unit(unit.kilojoule_per_mole)
             ) * unit.kilojoule_per_mole
 
-        if energy_diff > 1E-5 * unit.kilojoule_per_mole:
-            if energy_diff > 1E-2 * unit.kilojoule_per_mole:
-                print("Error: The nonbonded potential energy computed by hand does not agree")
-                print("with the value computed by OpenMM.")
-                print(f"The value computed by OpenMM was: {openmm_nonbonded_energy}")
-                print(f"The value computed by hand was: {total_nonbonded_energy}")
-                print("Check the units for your model parameters.  If the problem persists, there")
-                print("could be some other problem with the configuration of your coarse grained model.")
-                success = False
-            else:
-                print("Warning: The nonbonded potential energy computed by hand does not agree")
-                print("with the value computed by OpenMM.")
-                print(f"The value computed by OpenMM was: {openmm_nonbonded_energy}")
-                print(f"The value computed by hand was: {total_nonbonded_energy}")
-                print("Likely this is due to differences in rounding/precision.")
-                success = True
+        if energy_diff > 1E-1 * unit.kilojoule_per_mole:
+            print("Error: The nonbonded potential energy computed by hand does not agree")
+            print("with the value computed by OpenMM.")
+            print(f"The value computed by OpenMM was: {openmm_nonbonded_energy}")
+            print(f"The value computed by hand was: {total_nonbonded_energy}")
+            print("Check the units for your model parameters.  If the problem persists, there")
+            print("could be some other problem with the configuration of your coarse grained model.")
+            success = False
         else:
             # The OpenMM nonbonded energy matches the energy computed manually"
             success = True
@@ -691,6 +686,101 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
 
         cgmodel.system.addForce(bond_force)
         force = bond_force
+
+    if force_type == "HBond":
+        
+        # Here we define:
+        # a1 = acceptor backbone
+        # a2 = acceptor sidechain
+        # d1 = donor backbone
+        # d2 = donor sidechain
+        
+        hbond_force = mm.CustomHbondForce(
+            f"epsilon_hb*step(-angle(d2,d1,a1)+pi/2)*step(-angle(d2,a1,a2)+pi/2)*(5*(sigma_hb/distance(a1,d1))^12-6*(sigma_hb/distance(a1,d1))^10)*cos(angle(d2,d1,a1)-theta_d)^2*cos(angle(d1,a1,a2)-theta_a)^2"
+            )   
+        
+        # Note: the step functions are 0 if step(x) < 0, and 1 otherwise
+        # We can set pi as a global parameter here
+        # For now the epsilon_hb and sigma_hb and global parameters for homopolymer helices.
+        
+        hbond_force.addGlobalParameter('pi',np.pi)
+        hbond_force.addGlobalParameter('epsilon_hb',cgmodel.hbonds['epsilon_hb'].in_units_of(unit.kilojoules_per_mole))
+        hbond_force.addGlobalParameter('sigma_hb',cgmodel.hbonds['sigma_hb'].in_units_of(unit.nanometer))
+        hbond_force.addGlobalParameter('theta_d',cgmodel.hbonds['theta_d'].in_units_of(unit.radian))
+        hbond_force.addGlobalParameter('theta_a',cgmodel.hbonds['theta_a'].in_units_of(unit.radian))
+        
+        # Loop over donor, acceptor groups
+        
+        # Apply exclusions such that only the specified donor/acceptor pairs will have the interactions
+        # ***A maximum of 4 exclusions per donor are permitted in OpenMM. For now, allow all possible
+        # donor/acceptor pairs to interact with eachother.
+        
+        # Get lists of donor and acceptor residues:
+        donor_list = cgmodel.hbonds['donors']
+        acceptor_list = cgmodel.hbonds['acceptors']
+        
+        # For homopolymers, polymers get built in the order of the particle sequence
+        # specified in the monomer definition. For now, require that the particle sequence
+        # in the monomers be [d1,d2] and equivalently [a1,a2].
+        # For a scheme in which backbone-backbone contacts get the HBond interaction, this means [bb,sc]
+
+        mono0 = cgmodel.get_particle_monomer_type(0)
+        n_particles_per_mono = len(mono0["particle_sequence"])
+        
+        # Map the residue ids to the donor/acceptor ids
+        donor_index_map = {}    
+        acceptor_index_map = {}
+        
+        for donor in donor_list:
+            d1 = donor*n_particles_per_mono    # Particle index of donor1 bead
+            d2 = donor*n_particles_per_mono+1  # Particle index of donor2 bead
+            donor_id = hbond_force.addDonor(d1,d2,-1)     # Third particle not used, so set to -1
+            donor_index_map[donor] = donor_id
+        
+        for acceptor in acceptor_list:
+            a1 = acceptor*n_particles_per_mono    # Particle index of acceptor1 bead
+            a2 = acceptor*n_particles_per_mono+1  # Particle index of acceptor2 bead
+            acceptor_id = hbond_force.addAcceptor(a1,a2,-1)     # Third particle not used, so set to -1  
+            acceptor_index_map[acceptor] = acceptor_id
+
+        # The hbond potential will get applied to all combinations of donor/acceptor pairs, before applying exclusions.
+        all_hbond_pairs = []
+        for donor in donor_list:
+            for acceptor in acceptor_list:
+                all_hbond_pairs.append([donor,acceptor])
+        
+        # Now make a list of the hbond pairs to include, formatted as [donor,acceptor]:
+        included_hbond_pairs = []             
+        for i in range(len(donor_list)):
+            included_hbond_pairs.append([donor_list[i],acceptor_list[i]])
+                
+        # Now apply exclusions:        
+        excluded_hbond_pairs = []
+        # Exclude all hbond pairs not in included_hbond_pairs:  
+        # This does not work because each donor can have a maximimum of 4 exclusions
+        # for pair in all_hbond_pairs:
+            # if pair not in included_hbond_pairs:
+                #excluded_hbond_pairs.append(pair)
+                #hbond_force.addExclusion(donor_index_map[pair[0]],acceptor_index_map[pair[1]])      
+              
+        # We can use these 4 exclusions to exclude any self interaction and 1-2 neighbors which will cause instability:      
+        # Note - this code is specific to 1-1 models.
+        for pair in all_hbond_pairs:
+            if np.abs(pair[0]-pair[1]) < 2:
+                # If 1-2 or 1-3 neighbors (by residue), exclude:
+                excluded_hbond_pairs.append(pair)
+                hbond_force.addExclusion(donor_index_map[pair[0]],acceptor_index_map[pair[1]])      
+              
+        num_exclusions_openmm = hbond_force.getNumExclusions()
+        num_donors_openmm = hbond_force.getNumDonors()
+        num_acceptors_openmm = hbond_force.getNumAcceptors()
+        print(f'num_exclusions_openmm: {num_exclusions_openmm}')
+        print(f'num_donors_openmm: {num_donors_openmm}')
+        print(f'num_acceptors_openmm: {num_acceptors_openmm}')
+        print(f'hbond_exclusions: {excluded_hbond_pairs}')
+        
+        cgmodel.system.addForce(hbond_force)
+        force = hbond_force                
 
     if force_type == "Nonbonded":
 
@@ -1111,6 +1201,16 @@ def build_system(cgmodel, rosetta_functional_form=False, verify=True):
         )
         if cgmodel.positions is not None:
             if not check_force(cgmodel, nonbonded_force, force_type="Nonbonded"):
+                print("ERROR: There was a problem with the nonbonded force definitions")
+                exit()
+
+    if cgmodel.hbonds:
+        # Create directional hbond forces
+        cgmodel, hbond_force = add_force(cgmodel, force_type="HBond")
+        
+        if cgmodel.positions is not None:
+            # ***TODO: add the force check here (manual vs openmm):
+            if not check_force(cgmodel, hbond_force, force_type="HBond"):
                 print("ERROR: There was a problem with the nonbonded force definitions")
                 exit()
 

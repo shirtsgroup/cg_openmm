@@ -116,6 +116,7 @@ class CGModel(object):
         nonbond_repulsive_exp=12,
         nonbond_attractive_exp=6,
         exclusions={},
+        hbonds={},
         rosetta_functional_form=False,
         check_energy_conservation=True,
         use_structure_library=False,
@@ -190,6 +191,9 @@ class CGModel(object):
         :param exclusions: Nonbonded weights for [1-2, 1-3, 1-4] interactions (default = [0,0,1])
         :type exclusions: dict( list( int ) )
         
+        :param hbonds: Dictionary containing directional CustomHbondedForce potential information. 
+        :type hbonds: dict( 'donors': list(); 'acceptors': list(); 'epsilon_hb': Quantity * unit.kilojoule_per_mole; 'sigma_hb': Quantity * unit.angstrom; 'theta_d': Quantity * unit.degrees; 'theta_a': Quantity * unit.degrees )  
+        
         :param rosetta_functional_form: Option to use nonbonded exclusions consistent with Rosetta
         :type rosetta_functional_form: Bool
 
@@ -198,15 +202,6 @@ class CGModel(object):
 
         :param use_structure_library: Flag designating whether or not to use a structure from the foldamers ensemble as the initial positions for the particles in the coarse-grained model (default = False)
         :type use_structure_library: Bool
-
-        :param backbone_lengths: List of the number of beads in the backbone for unique monomer types within the coarse grained model (default = 1)
-        :type backbone_lengths: int
-
-        :param sidechain_lengths: List of the number of beads in the sidechain for unique monomer types within the coarse grained model (default = 1)
-        :type sidechain_lengths: int
-
-        :param sidechain_positions: List of the indices of backbone beads upon which we will place sidechains, default = [0] (add a sidechain to the first backbone bead in each monomer)
-        :type sidechain_positions: List( int )
 
         :param random_positions: Flag designating whether or not to generate a set of random coordinates for the coarse-grained model (default = None)
         :type random_positions: Bool
@@ -275,7 +270,11 @@ class CGModel(object):
         
         # Assign binary interaction parameters
         self.binary_interaction_parameters = binary_interaction_parameters
-        self._validate_binary_interaction
+        self._validate_binary_interaction()
+        
+        # Assign directional H-bond parameters:
+        self.hbonds = hbonds
+        self._validate_hbonds()
 
         # Assign positions
         if positions == None:
@@ -447,14 +446,14 @@ class CGModel(object):
         return particle_type_list
         
         
-    def _validate_binary_interaction(self, binary_interaction_parameters):    
+    def _validate_binary_interaction(self):    
         """
         Check that the binary interaction definitions are valid.
         Each entry in the dictionary should be 'type_name1_type_name2_binary_interaction': float
         """
         
-        if binary_interaction_parameters is not None:
-            for key, value in binary_interaction_parameters.items():
+        if self.binary_interaction_parameters:
+            for key, value in self.binary_interaction_parameters.items():
                 # Extract the particle types:
                 kappa_list = []
                 string = ""
@@ -467,20 +466,66 @@ class CGModel(object):
                 kappa_list.append(string)
                 
                 if kappa_list[-2] != 'binary' or kappa_list[-1] != 'interaction':
-                    print(f'Incorrect suffix for binary interaction parameter for {binary_interaction_parameters[key]}')
+                    print(f'Incorrect suffix for binary interaction parameter for {self.binary_interaction_parameters[key]}')
                     exit()
   
                 # Use the first two particles in the dictionary key:
                 kappa_particle_list = kappa_list[0:2]
                 
+                # Get the names of all particles in particle_type_list:
+                particle_strings = []
+                for particle in self.particle_type_list:
+                    particle_strings.append(particle['particle_type_name'])
+                
                 for particle in kappa_particle_list:
-                    if particle in self.particle_type_list:
+                    if particle in particle_strings:
                         pass
                     else:
                         print(f'Invalid particle name {particle} in binary interaction parameter definition') 
                         exit()
                         
         return
+        
+        
+    def _validate_hbonds(self):    
+        """
+        Check that the direction hydrogen bond force definitions are valid.
+        The hbond dictionary must have the following entries and types:
+        'donors': list of donor residue indices,
+        'acceptors: list of acceptor residue indices,
+        'epsilon_hb': Quantity with energy units (hydrogen bond interaction strength between contacts)
+        'sigma_hb': Quantity with distance units (size parameter for hydrogen bond potential)
+        'theta_d': Quantity with angle units (angle between (sc_donor-bb_donor)---(bb_acceptor))
+        'theta_a': Quantity with angle units (angle between (bb_donor)---(bb_acceptor-sc_acceptor))
+        """
+        
+        if self.hbonds:
+            hbonds = self.hbonds
+            # Check for required parameter keys:
+            for param in ['donors','acceptors','epsilon_hb','sigma_hb','theta_d','theta_a']:
+                if param in hbonds:
+                    pass
+                else:
+                    print(f'Error: incomplete hbond potential parameters provided (missing {param})')
+                    exit()
+                
+            # Check acceptor and donor lists:
+            if (type(hbonds['donors']) == list and type(hbonds['acceptors']) == list and \
+                len(hbonds['donors']) == len(hbonds['acceptors'])):
+                pass
+            else:
+                print(f'Error: invalid hbond donor and acceptor residue lists')
+                exit()
+                
+            # Check hbond parameters:
+            for param in ['epsilon_hb','sigma_hb','theta_d','theta_a']:
+                if type(hbonds[param]) == unit.quantity.Quantity:
+                    pass
+                else:
+                    print(f'Error: invalid {param} parameter - check units')
+                    exit()
+         
+        return        
         
         
     def build_polymer(self, sequence):

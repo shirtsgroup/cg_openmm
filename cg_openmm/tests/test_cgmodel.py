@@ -2557,3 +2557,57 @@ def test_set_Mie_exponents_and_binary_parameter_trivial(tmpdir):
     assert_almost_equal(PE_start_LJ_12_6,PE_start_Mie_12_6,decimal=3)
     assert_almost_equal(PE_end_LJ_12_6,PE_end_Mie_12_6,decimal=3)     
     
+
+def test_set_hbond_potentials(tmpdir):
+    """
+    Test for using directional CustomHBondForce on a 1-1 helix.
+    """
+
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))    
+
+    # Set up hbond parameters:
+    hbonds = {
+        'donors': [1,2],
+        'acceptors': [5,6],
+        'epsilon_hb': 1.0 * unit.kilojoule_per_mole,
+        'sigma_hb': 3.0 * unit.angstrom,
+        'theta_d': 170 * unit.degrees,
+        'theta_a': 170 * unit.degrees,
+        }
+    
+    cgmodel_new = CGModel(
+        particle_type_list=cgmodel.particle_type_list,
+        bond_lengths=cgmodel.bond_lengths,
+        bond_force_constants=cgmodel.bond_force_constants,
+        bond_angle_force_constants=cgmodel.bond_angle_force_constants,
+        torsion_force_constants=cgmodel.torsion_force_constants,
+        equil_bond_angles=cgmodel.equil_bond_angles,
+        torsion_periodicities=cgmodel.torsion_periodicities,
+        torsion_phase_angles=cgmodel.torsion_phase_angles,
+        include_nonbonded_forces=cgmodel.include_nonbonded_forces,
+        include_bond_forces=cgmodel.include_bond_forces,
+        include_bond_angle_forces=cgmodel.include_bond_angle_forces,
+        include_torsion_forces=cgmodel.include_torsion_forces,
+        constrain_bonds=cgmodel.constrain_bonds,
+        hbonds=hbonds,
+        sequence=cgmodel.sequence,
+        positions=cgmodel.positions,
+        monomer_types=cgmodel.monomer_types,
+    )    
+    
+    native_structure_file=f"{structures_path}/medoid_0.dcd"
+
+    native_traj = md.load(native_structure_file,top=md.Topology.from_openmm(cgmodel.topology))    
+    
+    positions = native_traj.xyz[0] * unit.nanometer
+    
+    output_directory = tmpdir.mkdir("output")
+    
+    # Minimize energy:
+    positions, PE_start, PE_end, simulation = minimize_structure(
+        cgmodel_new,
+        positions,
+        output_file=f"{output_directory}/medoid_min.dcd",
+    )    
+    
