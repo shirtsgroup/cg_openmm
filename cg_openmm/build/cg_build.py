@@ -534,6 +534,11 @@ def check_force(cgmodel, force, force_type=None):
                         elif kappa_name_reverse in cgmodel.binary_interaction_parameters:
                             # Apply the binary interaction parameter
                             kappa_ij = cgmodel.binary_interaction_parameters[kappa_name_reverse]
+                        else:
+                            # If this pair type has no defined binary_interaction, use 0,
+                            # which is the default.
+                            
+                            kappa_ij = 0
                     
                 else:
                     kappa_ij = 0
@@ -689,15 +694,46 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
 
     if force_type == "HBond":
         
+        #####################################
+        # Scheme A: Angles are sc-bb---bb
+        #####################################
+        
         # Here we define:
         # a1 = acceptor backbone
         # a2 = acceptor sidechain
         # d1 = donor backbone
-        # d2 = donor sidechain
+        # d2 = donor sidechain        
         
         hbond_force = mm.CustomHbondForce(
-            f"epsilon_hb*step(-angle(d2,d1,a1)+pi/2)*step(-angle(d2,a1,a2)+pi/2)*(5*(sigma_hb/distance(a1,d1))^12-6*(sigma_hb/distance(a1,d1))^10)*cos(angle(d2,d1,a1)-theta_d)^2*cos(angle(d1,a1,a2)-theta_a)^2"
-            )   
+           f"epsilon_hb*step(-abs(angle(d2,d1,a1)-theta_d)+pi/2)*step(-abs(angle(d2,a1,a2)-theta_a)+pi/2)*(5*(sigma_hb/distance(a1,d1))^12-6*(sigma_hb/distance(a1,d1))^10)*cos(angle(d2,d1,a1)-theta_d)^2*cos(angle(d1,a1,a2)-theta_a)^2"
+           )
+
+        #####################################
+        # Scheme B: Angles are bb-bb-bb 
+        #####################################
+        
+        # The center atom (d2/a2) is the h-bonding donor/acceptor           
+        
+        # hbond_force = mm.CustomHbondForce(
+            # f"epsilon_hb*step(-abs(theta_d_shift)+pi/2)*step(-abs(theta_a_shift)+pi/2)*(5*(sigma_hb/dist_da)^12-6*(sigma_hb/dist_da)^10)*cos(theta_d_shift)^2*cos(theta_a_shift)^2; dist_da=distance(a2,d2); theta_d_shift=angle(d1,d2,d3)-theta_d; theta_a_shift=angle(a1,a2,a3)-theta_a"
+            # )        
+            
+        #####################################
+        # Scheme C: Angles are bb-bb---bb 
+        #####################################
+        
+        # The donor group contains b_(i)*-b_(i+1), and the acceptor group contains b_(i-1)-b*
+        # where the * indicates the particles whose hbond distance is measured and i is the
+        # residue index 
+        
+        # a1 = acceptor bb_(i)*
+        # a2 = acceptor bb_(i-1)
+        # d1 = donor bb_(i)*
+        # d2 = donor bb_(i+1)               
+        
+        # hbond_force = mm.CustomHbondForce(
+            # f"epsilon_hb*step(-abs(theta_d_shift)+pi/2)*step(-abs(theta_a_shift)+pi/2)*(5*(sigma_hb/dist_da)^12-6*(sigma_hb/dist_da)^10)*cos(theta_d_shift)^2*cos(theta_a_shift)^2; dist_da=distance(a1,d1); theta_d_shift=angle(d2,d1,a1)-theta_d; theta_a_shift=angle(d1,a1,a2)-theta_a"
+            # )   
         
         # Note: the step functions are 0 if step(x) < 0, and 1 otherwise
         # We can set pi as a global parameter here
@@ -708,12 +744,6 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
         hbond_force.addGlobalParameter('sigma_hb',cgmodel.hbonds['sigma_hb'].in_units_of(unit.nanometer))
         hbond_force.addGlobalParameter('theta_d',cgmodel.hbonds['theta_d'].in_units_of(unit.radian))
         hbond_force.addGlobalParameter('theta_a',cgmodel.hbonds['theta_a'].in_units_of(unit.radian))
-        
-        # Loop over donor, acceptor groups
-        
-        # Apply exclusions such that only the specified donor/acceptor pairs will have the interactions
-        # ***A maximum of 4 exclusions per donor are permitted in OpenMM. For now, allow all possible
-        # donor/acceptor pairs to interact with eachother.
         
         # Get lists of donor and acceptor residues:
         donor_list = cgmodel.hbonds['donors']
@@ -731,6 +761,10 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
         donor_index_map = {}    
         acceptor_index_map = {}
         
+        #####################################
+        # Scheme A: Angles are sc-bb---bb
+        #####################################        
+        
         for donor in donor_list:
             d1 = donor*n_particles_per_mono    # Particle index of donor1 bead
             d2 = donor*n_particles_per_mono+1  # Particle index of donor2 bead
@@ -742,6 +776,40 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
             a2 = acceptor*n_particles_per_mono+1  # Particle index of acceptor2 bead
             acceptor_id = hbond_force.addAcceptor(a1,a2,-1)     # Third particle not used, so set to -1  
             acceptor_index_map[acceptor] = acceptor_id
+            
+        #####################################
+        # Scheme B: Angles are bb-bb-bb 
+        #####################################  
+            
+        # for donor in donor_list:
+            # d1 = (donor-1)*n_particles_per_mono  # Particle index of donor1 bead
+            # d2 = donor*n_particles_per_mono      # Particle index of donor2 bead
+            # d3 = (donor+1)*n_particles_per_mono  # Particle index of donor3 bead
+            # donor_id = hbond_force.addDonor(d1,d2,d3)
+            # donor_index_map[donor] = donor_id
+        
+        # for acceptor in acceptor_list:
+            # a1 = (acceptor-1)*n_particles_per_mono  # Particle index of acceptor1 bead
+            # a2 = acceptor*n_particles_per_mono      # Particle index of acceptor2 bead
+            # a3 = (acceptor+1)*n_particles_per_mono  # Particle index of acceptor3 bead
+            # acceptor_id = hbond_force.addAcceptor(a1,a2,a3)
+            # acceptor_index_map[acceptor] = acceptor_id
+            
+        #####################################
+        # Scheme C: Angles are bb-bb---bb 
+        #####################################  
+            
+        # for donor in donor_list:
+            # d1 = donor*n_particles_per_mono           # Particle index of donor1 bead
+            # d2 = (donor+1)*n_particles_per_mono       # Particle index of donor2 bead
+            # donor_id = hbond_force.addDonor(d1,d2,-1) # Third particle not used, so set to -1
+            # donor_index_map[donor] = donor_id
+        
+        # for acceptor in acceptor_list:
+            # a1 = acceptor*n_particles_per_mono              # Particle index of acceptor1 bead
+            # a2 = (acceptor-1)*n_particles_per_mono          # Particle index of acceptor2 bead
+            # acceptor_id = hbond_force.addAcceptor(a1,a2,-1) # Third particle not used, so set to -1
+            # acceptor_index_map[acceptor] = acceptor_id
 
         # The hbond potential will get applied to all combinations of donor/acceptor pairs, before applying exclusions.
         all_hbond_pairs = []
@@ -1199,7 +1267,7 @@ def build_system(cgmodel, rosetta_functional_form=False, verify=True):
         cgmodel, nonbonded_force = add_force(
             cgmodel, force_type="Nonbonded", rosetta_functional_form=rosetta_functional_form,
         )
-        if cgmodel.positions is not None:
+        if verify and cgmodel.positions is not None:
             if not check_force(cgmodel, nonbonded_force, force_type="Nonbonded"):
                 print("ERROR: There was a problem with the nonbonded force definitions")
                 exit()
@@ -1208,7 +1276,7 @@ def build_system(cgmodel, rosetta_functional_form=False, verify=True):
         # Create directional hbond forces
         cgmodel, hbond_force = add_force(cgmodel, force_type="HBond")
         
-        if cgmodel.positions is not None:
+        if verify and cgmodel.positions is not None:
             # ***TODO: add the force check here (manual vs openmm):
             if not check_force(cgmodel, hbond_force, force_type="HBond"):
                 print("ERROR: There was a problem with the nonbonded force definitions")
@@ -1219,7 +1287,7 @@ def build_system(cgmodel, rosetta_functional_form=False, verify=True):
             # Create bond (harmonic) potentials
             cgmodel, bond_force = add_force(cgmodel, force_type="Bond")
             
-            if cgmodel.positions is not None:
+            if verify and cgmodel.positions is not None:
             # ***This check is currently doing nothing:
                 if not check_force(cgmodel, bond_force, force_type="Bond"):
                     print("ERROR: The bond force definition is giving 'nan'")
@@ -1230,7 +1298,7 @@ def build_system(cgmodel, rosetta_functional_form=False, verify=True):
             # Create bond angle potentials
             cgmodel, bond_angle_force = add_force(cgmodel, force_type="Angle")
 
-            if cgmodel.positions is not None:
+            if verify and cgmodel.positions is not None:
             # ***This check is currently doing nothing:
                 if not check_force(cgmodel, bond_angle_force, force_type="Angle"):
                     print("ERROR: There was a problem with the bond angle force definitions.")
@@ -1241,16 +1309,15 @@ def build_system(cgmodel, rosetta_functional_form=False, verify=True):
             # Create torsion potentials
             cgmodel, torsion_force = add_force(cgmodel, force_type="Torsion")
 
-            if cgmodel.positions is not None:
+            if verify and cgmodel.positions is not None:
             # ***This check is currently doing nothing:
                 if not check_force(cgmodel, torsion_force, force_type="Torsion"):
                     print("ERROR: There was a problem with the torsion definitions.")
                     exit()
 
-    if verify:
-        if cgmodel.positions is not None:
-            if not check_forces(cgmodel):
-                print("ERROR: There was a problem with the forces.")
-                exit()
+    if verify and cgmodel.positions is not None:
+        if not check_forces(cgmodel):
+            print("ERROR: There was a problem with the forces.")
+            exit()
 
     return system

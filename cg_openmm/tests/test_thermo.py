@@ -379,7 +379,7 @@ def test_physical_validation_1(tmpdir):
     quantiles = physical_validation_ensemble(
         output_data=output_data,
         output_directory=data_path,
-        plotfile=f"{plot_directory}ensemble_check",
+        plotfile=f"{plot_directory}/ensemble_check",
         pairs='single',
         ref_state_index=1,
     )
@@ -394,7 +394,7 @@ def test_physical_validation_2(tmpdir):
     quantiles = physical_validation_ensemble(
         output_data=output_data,
         output_directory=data_path,
-        plotfile=f"{plot_directory}ensemble_check",
+        plotfile=f"{plot_directory}/ensemble_check",
         pairs='adjacent',
     )
     
@@ -409,7 +409,7 @@ def test_physical_validation_3(tmpdir):
     quantiles = physical_validation_ensemble(
         output_data=output_data,
         output_directory=data_path,
-        plotfile=f"{plot_directory}ensemble_check",
+        plotfile=f"{plot_directory}/ensemble_check",
         pairs='all',
     )
     
@@ -424,7 +424,7 @@ def test_physical_validation_4(tmpdir):
     quantiles = physical_validation_ensemble(
         output_data=output_data,
         output_directory=data_path,
-        plotfile=f"{plot_directory}ensemble_check",
+        plotfile=f"{plot_directory}/ensemble_check",
     )
     
     
@@ -438,7 +438,7 @@ def test_physical_validation_5(tmpdir):
     quantiles = physical_validation_ensemble(
         output_data=output_data,
         output_directory=data_path,
-        plotfile=f"{plot_directory}ensemble_check",
+        plotfile=f"{plot_directory}/ensemble_check",
         pairs='invalid',
     )
     
