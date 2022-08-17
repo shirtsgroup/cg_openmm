@@ -67,6 +67,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
     # Determine which types of force field parameters are being varied:
     nonbond_sigma = False
     nonbond_epsilon = False
+    binary_interaction = False
 
     bond_k = False
     bond_eq = False
@@ -91,6 +92,9 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
 
         if param_name.find('epsilon'):
             nonbond_epsilon = True
+            
+        if param_name.find('binary_interaction'):
+            binary_interaction = True
 
         if param_name.find('bond_force_constant'):
             bond_k = True
@@ -138,19 +142,26 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
     # Get torsion list:
     torsion_list = cgmodel.get_torsion_list()
     
-    # 1-4 interactions are nonbonded exceptions, and must be updated separately
-    torsion_ends_list = []
-    for torsion in torsion_list:
-        torsion_ends_list.append([torsion[0],torsion[3]])
+    # Get nonbonded exclusion pairs, which need to be updated separately from particle parameters
+    nonbonded_exclusion_list = cgmodel.nonbonded_exclusion_list
 
     for force_index, force in enumerate(simulation.system.getForces()):
         # These are the overall classes of forces, not the particle-specific forces
         force_name = force.__class__.__name__
 
         if force_name == 'NonbondedForce':
-            if nonbond_epsilon or nonbond_sigma:
+            # ***Note: customNonbondedForce such as Mie potentials won't be modified here.
+            # Standard LJ potentials with binary interaction parameter mixing rules can be modified.
+            # For binary interaction parameters, all non-excluded nonbonded interactions are added as exceptions,
+            # even if the binary interaction parameter is 0 (full interaction strength).
+            # For now, the reference cgmodel needs to have binary interaction parameters already set,
+            # so that the nonbonded exceptions are recognized. Only one binary interaction pair parameter needs to
+            # be set for all included interactions to be exceptions.
+            
+            if nonbond_epsilon or nonbond_sigma or binary_interaction:
                 # Update the nonbonded parameters:
                 # 'sigma' and 'epsilon' are contained in the particle dictionaries
+                # Binary interaction parameters are contained in binary_interaction_parameters dictionary
 
                 for particle_index in range(len(particle_type_list)):
                     name = particle_type_list[particle_index]
@@ -189,8 +200,7 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                 for x in range(n_nonbond_exceptions):
                     (par1, par2, chargeProd, sigma_old, epsilon_old) = force.getExceptionParameters(x)
                     
-                    # Only update the 1-4 exceptions. The 1-2 and 1-3 should retain a 0 epsilon value.
-                    if [par1, par2] in torsion_ends_list or [par2, par1] in torsion_ends_list:
+                    if [par1, par2] not in nonbonded_exclusion_list and [par2, par1] not in nonbonded_exclusion_list:
                         
                         name1 = particle_type_list[par1]
                         sigma_str1 = f'{name1}_sigma'
@@ -200,20 +210,35 @@ def eval_energy(cgmodel, file_list, temperature_list, param_dict,
                         sigma_str2 = f'{name2}_sigma'
                         epsilon_str2 = f'{name2}_epsilon'
                         
-                        if (sigma_str1 in param_dict or sigma_str2 in param_dict or 
-                            epsilon_str1 in param_dict or epsilon_str2 in param_dict):
+                        bin_int_str = f'{name1}_{name2}_binary_interaction'
+                        bin_int_str_rev = f'{name2}_{name1}_binary_interaction'
+                        
+                        nonbonded_param_list = [sigma_str1, sigma_str2, epsilon_str1, epsilon_str2, bin_int_str, bin_int_str_rev]
+                        
+                        if any(nonbonded_param in param_dict for nonbonded_param in nonbonded_param_list):
+                        
                             # Update this exception:
                             (q1,sigma1,eps1) = force.getParticleParameters(par1)
                             (q2,sigma2,eps2) = force.getParticleParameters(par2)
                         
                             sigma_ij = (sigma1+sigma2)/2
-                            epsilon_ij = np.sqrt(eps1*eps2)
+                            
+                            if bin_int_str in param_dict:
+                                kappa = param_dict[bin_int_str]
+                                epsilon_ij = (1-kappa)*np.sqrt(eps1*eps2)
+                                
+                            elif bin_int_str_rev in param_dict:
+                                kappa = param_dict[bin_int_str_rev]
+                                epsilon_ij = (1-kappa)*np.sqrt(eps1*eps2)
+                                
+                            else:    
+                                epsilon_ij = np.sqrt(eps1*eps2)
                             
                             # ***TODO: also update the charge product here
                             force.setExceptionParameters(x,par1,par2,0,sigma_ij,epsilon_ij)
                             if verbose:
                                 print(f'Updating nonbonded exception {x}:')
-                                print(f'Particles: {par1}, {par2}')
+                                print(f'Particles: {par1} ({name1}), {par2} ({name2})')
                                 print(f'Old epsilon_ij: {epsilon_old}')
                                 print(f'New epsilon_ij: {epsilon_ij}')
                                 print(f'Old sigma_ij: {sigma_old}')

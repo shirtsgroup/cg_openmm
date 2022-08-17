@@ -230,6 +230,107 @@ def test_eval_energy_new_epsilon(tmpdir):
     assert epsilon_sc_updated == param_dict['sc_epsilon']
     
     
+def test_eval_energy_new_binary_interaction(tmpdir):  
+    """
+    Test simulation parameter update for varying bond lengths.
+    """
+    
+    output_directory = tmpdir.mkdir("output")
+    
+    # Replica exchange settings
+    number_replicas = 12
+    min_temp = 200.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
+    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
+    
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel_binary_interaction.pkl", "rb" ))
+    
+    # Create list of replica trajectories to analyze
+    dcd_file_list = []
+    for i in range(len(temperature_list)):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+    
+    # Set up dictionary of parameter change instructions:
+    param_dict = {}
+    param_dict['bb_sc_binary_interaction'] = 0.75
+    
+    # Re-evaluate OpenMM energies:
+    U_eval, simulation = eval_energy(
+        cgmodel,
+        dcd_file_list,
+        temperature_list,
+        param_dict,
+        frame_begin=100,
+        frame_end=-1,
+        frame_stride=5,
+        verbose=True,
+    )
+
+    nonbonded_exclusion_list = cgmodel.nonbonded_exclusion_list
+
+    # Check the epsilon_ij mixing rules for all nonbonded interactions:
+    for force_index, force in enumerate(simulation.system.getForces()):
+        force_name = force.__class__.__name__
+        if force_name == 'NonbondedForce':
+            for x in range(force.getNumExceptions()):
+                (par1, par2, q_ij,sigma_ij,epsilon_ij_updated) = force.getExceptionParameters(x)
+
+                if [par1,par2] not in nonbonded_exclusion_list and [par2,par1] not in nonbonded_exclusion_list:
+                    epsilon_1 = cgmodel.get_particle_epsilon(par1)
+                    epsilon_2 = cgmodel.get_particle_epsilon(par2)
+                    
+                    type_name1 = cgmodel.get_particle_type_name(par1)
+                    type_name2 = cgmodel.get_particle_type_name(par2)
+                    
+                    if type_name1 != type_name2: # bb-sc
+                        kappa = param_dict['bb_sc_binary_interaction']
+                    else:
+                        kappa = 0
+                    
+                    assert epsilon_ij_updated == (1-kappa)*np.sqrt(epsilon_1*epsilon_2)
+    
+    # Now, try the reverse names:
+    # Set up dictionary of parameter change instructions:
+    param_dict_rev = {}
+    param_dict_rev['sc_bb_binary_interaction'] = 0.80
+    
+    # Re-evaluate OpenMM energies:
+    # Clear the simulation object to reset the parameters
+    del simulation
+    U_eval, simulation = eval_energy(
+        cgmodel,
+        dcd_file_list,
+        temperature_list,
+        param_dict_rev,
+        frame_begin=100,
+        frame_end=-1,
+        frame_stride=5,
+        verbose=True,
+    )
+
+    # Check the epsilon_ij mixing rules for all nonbonded interactions:
+    for force_index, force in enumerate(simulation.system.getForces()):
+        force_name = force.__class__.__name__
+        if force_name == 'NonbondedForce':
+            for x in range(force.getNumExceptions()):
+                (par1, par2, q_ij,sigma_ij,epsilon_ij_updated) = force.getExceptionParameters(x)
+
+                if [par1,par2] not in nonbonded_exclusion_list and [par2,par1] not in nonbonded_exclusion_list:
+                    epsilon_1 = cgmodel.get_particle_epsilon(par1)
+                    epsilon_2 = cgmodel.get_particle_epsilon(par2)
+                    
+                    type_name1 = cgmodel.get_particle_type_name(par1)
+                    type_name2 = cgmodel.get_particle_type_name(par2)
+                    
+                    if type_name1 != type_name2: # bb-sc
+                        kappa = param_dict_rev['sc_bb_binary_interaction']
+                    else:
+                        kappa = 0
+                    
+                    assert epsilon_ij_updated == (1-kappa)*np.sqrt(epsilon_1*epsilon_2)
+
+    
 def test_eval_energy_new_bond_length(tmpdir):  
     """
     Test simulation parameter update for varying bond lengths.
