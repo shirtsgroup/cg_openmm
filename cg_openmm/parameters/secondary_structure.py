@@ -513,7 +513,8 @@ def fraction_native_contacts(
         # Determine value of decorrelation time to use  
         opt_g_results = minimize_scalar(
             erf_fun,
-            bounds=(0,10)
+            bounds=(0,10),
+            method='bounded',
             )
         decorrelation_spacing = int(np.ceil(np.mean(g)+opt_g_results.x*np.std(g)))
     else:
@@ -647,7 +648,8 @@ def fraction_native_contacts_preloaded(
         # Determine value of decorrelation time to use  
         opt_g_results = minimize_scalar(
             erf_fun,
-            bounds=(0,10)
+            bounds=(0,10),
+            method='bounded',
             )
         decorrelation_spacing = int(np.ceil(np.mean(g)+opt_g_results.x*np.std(g)))
     else:
