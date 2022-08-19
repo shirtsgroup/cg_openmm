@@ -960,15 +960,24 @@ class CGModel(object):
                                     torsion[3] = bond_3[0]
                         if len(torsion) == 4:
                             # Determine if the particles defining this torsion are suitable.
-                            if len(torsions) == 0:
-                                torsions.append(torsion)
+                            
+                            # Check if the first and last particles are repeated
+                            # (for closed triangle topologies):
+                            
+                            if torsion[0] == torsion[3]:
+                                # Invalid torsion - don't add
+                                pass
+                            
                             else:
-                                unique = True
-                                for existing_torsion in torsions:
-                                    if Counter(torsion) == Counter(existing_torsion):
-                                        unique = False
-                                if unique:
+                                if len(torsions) == 0:
                                     torsions.append(torsion)
+                                else:
+                                    unique = True
+                                    for existing_torsion in torsions:
+                                        if Counter(torsion) == Counter(existing_torsion):
+                                            unique = False
+                                    if unique:
+                                        torsions.append(torsion)
 
         for angle in angle_list:
             for bond in bond_list:
@@ -984,7 +993,7 @@ class CGModel(object):
                         for existing_torsion in torsions:
                             if Counter(torsion) == Counter(existing_torsion):
                                 unique = False
-                        if unique:
+                        if unique and torsion[0] != torsion[3]:
                             torsions.append(torsion)
                     if bond[0] == angle[2]:
                         torsion = [angle[0], angle[1], angle[2], bond[1]]
@@ -992,7 +1001,7 @@ class CGModel(object):
                         for existing_torsion in torsions:
                             if Counter(torsion) == Counter(existing_torsion):
                                 unique = False
-                        if unique:
+                        if unique and torsion[0] != torsion[3]:
                             torsions.append(torsion)
                     if bond[1] == angle[0]:
                         torsion = [bond[0], angle[0], angle[1], angle[2]]
@@ -1000,7 +1009,7 @@ class CGModel(object):
                         for existing_torsion in torsions:
                             if Counter(torsion) == Counter(existing_torsion):
                                 unique = False
-                        if unique:
+                        if unique and torsion[0] != torsion[3]:
                             torsions.append(torsion)
                     if bond[1] == angle[2]:
                         torsion = [angle[0], angle[1], angle[2], bond[0]]
@@ -1008,7 +1017,7 @@ class CGModel(object):
                         for existing_torsion in torsions:
                             if Counter(torsion) == Counter(existing_torsion):
                                 unique = False
-                        if unique:
+                        if unique and torsion[0] != torsion[3]:
                             torsions.append(torsion)
 
         torsion_set = set(tuple(torsion) for torsion in torsions)
