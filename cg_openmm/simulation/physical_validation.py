@@ -19,7 +19,7 @@ kB = unit.MOLAR_GAS_CONSTANT_R # Boltzmann constant
 def physical_validation_ensemble(
     output_data="output.nc", output_directory="ouput", plotfile='ensemble_check', 
     pairs='single', ref_state_index=0, frame_start=0, frame_stride=1, frame_end=-1,
-    bootstrap_error=False, bootstrap_repititions=200, bootstrap_seed=None, data_is_uncorrelated=False,
+    bootstrap_error=False, bootstrap_repetitions=200, bootstrap_seed=None, data_is_uncorrelated=False,
     ):
     """
     Run ensemble physical validation test for 2 states in replica exchange simulation
@@ -47,8 +47,8 @@ def physical_validation_ensemble(
     :param bootstrap_error: Flag indicating if standard error of energies should be computed via bootstrapping (default=False)
     :type bootstrap_error: bool
     
-    :param bootstrap_repititions: Number of bootstrap repititions (default=200)
-    :type bootstrap_repititions: int
+    :param bootstrap_repetitions: Number of bootstrap repititions (default=200)
+    :type bootstrap_repetitions: int
     
     :param bootstrap_seed: Set a bootstrapping seed for reproducible results. If None, a random seed is used. (default=None)
     :type bootstrap_seed: int
@@ -79,7 +79,7 @@ def physical_validation_ensemble(
         replica_state_indices = replica_state_indices_all[:,frame_start:frame_end:frame_stride]
     else:
         replica_energies = replica_energies_all[:,:,frame_start::frame_stride]    
-        replica_state_indices = replica_state_indices_all[:,frame_start:frame_end:frame_stride]
+        replica_state_indices = replica_state_indices_all[:,frame_start::frame_stride]
 
     del replica_energies_all, replica_state_indices_all
 
@@ -153,7 +153,11 @@ def physical_validation_ensemble(
                 sim_data1,
                 sim_data2,
                 total_energy=False,
-                filename=plotfile
+                filename=plotfile,
+                bootstrap_error=bootstrap_error,
+                bootstrap_repetitions=bootstrap_repetitions,
+                bootstrap_seed=bootstrap_seed,
+                data_is_uncorrelated=data_is_uncorrelated,
                 )
             
             quantiles[f"state{state1_index}_state{state2_index}"] = quantiles_ij[0]
@@ -184,7 +188,11 @@ def physical_validation_ensemble(
                     sim_data1,
                     sim_data2,
                     total_energy=False,
-                    filename=f"{plotfile}_{state1_index}_{state2_index}"
+                    filename=f"{plotfile}_{state1_index}_{state2_index}",
+                    bootstrap_error=bootstrap_error,
+                    bootstrap_repetitions=bootstrap_repetitions,
+                    bootstrap_seed=bootstrap_seed,
+                    data_is_uncorrelated=data_is_uncorrelated,
                     )
                     
                 quantiles[f"state{state1_index}_state{state2_index}"] = quantiles_ij[0]
@@ -216,7 +224,7 @@ def physical_validation_ensemble(
                         total_energy=False,
                         filename=f"{plotfile}_{state1_index}_{state2_index}",
                         bootstrap_error=bootstrap_error,
-                        bootstrap_repititions=bootstrap_repititions,
+                        bootstrap_repetitions=bootstrap_repetitions,
                         bootstrap_seed=bootstrap_seed,
                         data_is_uncorrelated=data_is_uncorrelated,
                         )

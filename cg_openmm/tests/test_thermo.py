@@ -442,3 +442,63 @@ def test_physical_validation_5(tmpdir):
         pairs='invalid',
     )
     
+    
+def test_physical_validation_decorrelated_single(tmpdir):
+    """Test physical validation ensemble check"""
+    
+    plot_directory = tmpdir.mkdir("plot_output")
+    output_data = os.path.join(data_path,"output.nc")
+    
+    # Pair option 'single' with decorrelated trajectories:
+    quantiles = physical_validation_ensemble(
+        output_data=output_data,
+        output_directory=data_path,
+        plotfile=f"{plot_directory}/ensemble_check",
+        pairs='single',
+        ref_state_index=1,
+        data_is_uncorrelated=True,
+        frame_start=10,
+        frame_stride=5,
+        frame_end=-1
+    ) 
+    
+
+def test_physical_validation_decorrelated_adjacent(tmpdir):
+    """Test physical validation ensemble check"""
+    
+    plot_directory = tmpdir.mkdir("plot_output")
+    output_data = os.path.join(data_path,"output.nc")
+    
+    # Pair option 'single' with decorrelated trajectories:
+    quantiles = physical_validation_ensemble(
+        output_data=output_data,
+        output_directory=data_path,
+        plotfile=f"{plot_directory}/ensemble_check",
+        pairs='adjacent',
+        ref_state_index=1,
+        data_is_uncorrelated=True,
+        frame_start=10,
+        frame_stride=5,
+        frame_end=-1
+    )  
+
+
+def test_physical_validation_decorrelated_all(tmpdir):
+    """Test physical validation ensemble check"""
+    
+    plot_directory = tmpdir.mkdir("plot_output")
+    output_data = os.path.join(data_path,"output.nc")
+    
+    # Pair option 'single' with decorrelated trajectories:
+    quantiles = physical_validation_ensemble(
+        output_data=output_data,
+        output_directory=data_path,
+        plotfile=f"{plot_directory}/ensemble_check",
+        pairs='all',
+        ref_state_index=1,
+        data_is_uncorrelated=True,
+        frame_start=10,
+        frame_stride=5,
+        frame_end=-1
+    )     
+    
