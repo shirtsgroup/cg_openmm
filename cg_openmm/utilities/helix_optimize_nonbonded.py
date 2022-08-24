@@ -756,8 +756,8 @@ def optimize_helix_LJ_parameters_2sc(radius, pitch, n_particle_bb, sigma_bb,
 
 
 def optimize_helix_LJ_parameters_triangle_sidechain(radius, pitch, n_particle_bb, sigma_bb,
-    bond_dist_bb, DE_popsize=200, pdbfile='LJ_helix_3sc_triangle_opt.pdb',
-    exclusions={}):
+    bond_dist_bb, DE_popsize=200, pdbfile='LJ_helix_3sc_triangle_opt.pdb', alignment='center',
+    alternating=True, exclusions={}):
     """
     With specified radius, pitch, backbone sigma, and backbone-backbone bond length, 
     optimize the sidechain sigma and backbone-sidechain bond length in a helix with
@@ -787,6 +787,12 @@ def optimize_helix_LJ_parameters_triangle_sidechain(radius, pitch, n_particle_bb
     :param pdbfile: Path to pdb file for saving the helical structure (default='LJ_helix_3sc_triangle_opt.pdb')
     :type pdbfile: str
     
+    :param alignment: sidechain alignment scheme - can be 'center' (center of triangle is fixed normal to backbone) or 'first' (first bead is normal to backbone) (default='center')
+    :type alignment: str
+    
+    :param alternating: Option to treat odd and even triangle in-plane rotation independently (default=True)
+    :type alternating: str
+    
     :param exclusions: pass cg_openmm exclusion rules to the cgmodel (by default [0,0,1] is applied to bb-bb, [0,1,1] to bb-sc, sc-sc)
     :type exclusions: dict    
     
@@ -794,6 +800,11 @@ def optimize_helix_LJ_parameters_triangle_sidechain(radius, pitch, n_particle_bb
       - opt_sol - Results from scipy.optimize (dict)
       - geometry - Dictionary containing key geometric parameters of the optimized helix
     """
+    
+    # Check input:
+    if alignment not in ['center','right']:
+        print(f'Error: invalid alignment input {alignment}')
+        exit()    
     
     r_unit = radius.unit
     # Use angstrom for writing pdb file:
@@ -831,10 +842,13 @@ def optimize_helix_LJ_parameters_triangle_sidechain(radius, pitch, n_particle_bb
     
     bond_dist_bb = bond_dist_bb.value_in_unit(unit.angstrom)
 
-    params = (simulation, particle_type_list, r, c, n_particle_bb, bond_dist_bb)
+    params = (simulation, particle_type_list, r, c, n_particle_bb, bond_dist_bb, alignment, alternating)
 
     # Set optimization bounds [r_bs, sigma_sc, theta1, theta2]:
-    bounds = [(r/50,5*r),(r/50,5*r),(0,2*np.pi/3),(0,2*np.pi/3)]
+    if alternating:
+        bounds = [(r/50,5*r),(r/50,5*r),(0,2*np.pi/3),(0,2*np.pi/3)]
+    else:
+        bounds = [(r/50,5*r),(r/50,5*r),(0,2*np.pi/3)]
     
     opt_sol = differential_evolution(
         compute_helix_openmm_energy_vary_LJ_triangle,
@@ -850,7 +864,11 @@ def optimize_helix_LJ_parameters_triangle_sidechain(radius, pitch, n_particle_bb
     
     # Angles of rotation in-plane (x axis) for triangle templates 1 and 2
     theta1 = opt_sol.x[2]
-    theta2 = opt_sol.x[3]
+    
+    if alternating:
+        theta2 = opt_sol.x[3]
+    else:
+        theta2 = theta1
        
     # Compute particle spacing based on bond constraints
     t_delta_opt = get_t_from_bond_distance(r,c,bond_dist_bb)
@@ -1584,7 +1602,7 @@ def compute_helix_openmm_energy_vary_LJ_2sc_nonequal(geo, simulation,
     
         
 def compute_helix_openmm_energy_vary_LJ_triangle(
-    geo, simulation, particle_type_list, r, c, n_particle_bb, bond_dist_bb):
+    geo, simulation, particle_type_list, r, c, n_particle_bb, bond_dist_bb, alignment, alternating):
     """
     Internal function for computing openmm energy of Lennard-Jones 12-6 helix
     """
@@ -1597,7 +1615,13 @@ def compute_helix_openmm_energy_vary_LJ_triangle(
     
     # Angle of rotation in x for each triangle reference:
     theta1 = geo[2]
-    theta2 = geo[3]
+    
+    if alternating:
+        # Independent odd/even residue in-plane triangle rotation (4D optimization)
+        theta2 = geo[3]
+    else:
+        # All residues get the same in-plane triangle rotation (3D optimization)
+        theta2 = theta1
     
     # sidechain-sidechain bond length:
     r_ss = sigma_sc.value_in_unit(unit.angstrom)*np.power(2,(1/6))
@@ -1616,123 +1640,130 @@ def compute_helix_openmm_energy_vary_LJ_triangle(
     # the nonbonded energies need to be evaluated. In the cgmodel, all force constants
     # are zero.
         
-    # Place sidechain triangle normal to helix
     positions = np.zeros((4*n_particle_bb,3))
 
-    # From the law of cosines:
-    if r_bs > r_ss/2:
-        K = np.sqrt(r_bs**2 - (r_ss**2)/4) 
-    else:
-        K = np.sqrt(r_ss**2 - (r_bs**2)/4)
-        
-    L = np.sqrt((r_ss**2)/3)
-    M = np.sqrt(L**2 - (r_ss**2)/4)
-    
-    # To get the coordinates of the triangle, we need to rotate the coordinates 
-    # by the angle separating each residue.
-    
-    # distance between backbone beads projected onto a circle:
-    dist_bb_xy = np.sqrt(np.sum(np.power((xyz[0,0:2]-xyz[1,0:2]),2)))
-    
-    # helical angle between the two backbone beads projected onto a circle:
-    theta_arc = np.arccos(1-dist_bb_xy**2/(2*(r**2))) # radians
-    
-    # loop over all residues, rotating the reference triangles about the z axis by theta_arc:
-    
-    # Orientation 1:
-    tri_ref_orient1 = np.zeros((3,3))
-    
-    tri_ref_orient1[0,0] = (1+K/r)*xyz[0,0]
-    tri_ref_orient1[0,1] = (1+K/r)*xyz[0,1] - r_ss/2
-    tri_ref_orient1[0,2] = xyz[0,2] + M
-    
-    tri_ref_orient1[1,0] = (1+K/r)*xyz[0,0] 
-    tri_ref_orient1[1,1] = (1+K/r)*xyz[0,1] + r_ss/2
-    tri_ref_orient1[1,2] = xyz[0,2] + M
-
-    tri_ref_orient1[2,0] = (1+K/r)*xyz[0,0]
-    tri_ref_orient1[2,1] = (1+K/r)*xyz[0,1]
-    tri_ref_orient1[2,2] = xyz[0,2] - L  
-    
-    # Apply the rotation in x:
-    tri_ref_no_rotate1 = tri_ref_orient1
-    
-    tri_ref_orient1[0,:] = rotate_coordinates_x(tri_ref_orient1[0,:],theta1)
-    tri_ref_orient1[1,:] = rotate_coordinates_x(tri_ref_orient1[1,:],theta1)
-    tri_ref_orient1[2,:] = rotate_coordinates_x(tri_ref_orient1[2,:],theta1)    
-    
-    # Orientation 2:
-    tri_ref_orient2 = np.zeros((3,3))
-    
-    tri_ref_orient2[0,0] = (1+K/r)*xyz[0,0]
-    tri_ref_orient2[0,1] = (1+K/r)*xyz[0,1] - r_ss/2
-    tri_ref_orient2[0,2] = xyz[0,2] - M
-    
-    tri_ref_orient2[1,0] = (1+K/r)*xyz[0,0]
-    tri_ref_orient2[1,1] = (1+K/r)*xyz[0,1] + r_ss/2
-    tri_ref_orient2[1,2] = xyz[0,2] - M
-
-    tri_ref_orient2[2,0] = (1+K/r)*xyz[0,0]
-    tri_ref_orient2[2,1] = (1+K/r)*xyz[0,1]
-    tri_ref_orient2[2,2] = xyz[0,2] + L  
-    
-    # Apply the rotation in x:
-    tri_ref_no_rotate2 = tri_ref_orient2
-    
-    tri_ref_orient2[0,:] = rotate_coordinates_x(tri_ref_orient2[0,:],theta2)
-    tri_ref_orient2[1,:] = rotate_coordinates_x(tri_ref_orient2[1,:],theta2)
-    tri_ref_orient2[2,:] = rotate_coordinates_x(tri_ref_orient2[2,:],theta2)  
-
-    z_rise = xyz[1,2] - xyz[0,2]
-        
-    j = -1
-    for i in range(n_particle_bb):
-        if i % 2 == 0:
-            # Orientation 1:
-            j += 1
-            positions[j] = xyz[i]
+    if alignment == 'center':
+        # Place sidechain triangle center normal to helix
             
-            j += 1
-            triangle_xyz_a = rotate_coordinates_z(tri_ref_orient1[0,:],theta_arc*i)
-            triangle_xyz_b = rotate_coordinates_z(tri_ref_orient1[1,:],theta_arc*i)
-            triangle_xyz_c = rotate_coordinates_z(tri_ref_orient1[2,:],theta_arc*i)
-            
-            # Use only the x and y from the rotated reference:
-            positions[j] = triangle_xyz_a
-            positions[j,2] = triangle_xyz_a[2] + z_rise*i
-            
-            j += 1
-            positions[j] = triangle_xyz_b
-            positions[j,2] = triangle_xyz_b[2] + z_rise*i
-            
-            j += 1
-            positions[j] = triangle_xyz_c
-            positions[j,2] = triangle_xyz_c[2] + z_rise*i
-            
-            
+        # From the law of cosines:
+        if r_bs > r_ss/2:
+            K = np.sqrt(r_bs**2 - (r_ss**2)/4) 
         else:
-            # Orientation 2:
-            j += 1
-            positions[j] = xyz[i]
+            K = np.sqrt(r_ss**2 - (r_bs**2)/4)
             
-            j += 1
-            triangle_xyz_a = rotate_coordinates_z(tri_ref_orient2[0,:],theta_arc*i)
-            triangle_xyz_b = rotate_coordinates_z(tri_ref_orient2[1,:],theta_arc*i)
-            triangle_xyz_c = rotate_coordinates_z(tri_ref_orient2[2,:],theta_arc*i)
+        L = np.sqrt((r_ss**2)/3)
+        M = np.sqrt(L**2 - (r_ss**2)/4)
+        
+        # To get the coordinates of the triangle, we need to rotate the coordinates 
+        # by the angle separating each residue.
+        
+        # distance between backbone beads projected onto a circle:
+        dist_bb_xy = np.sqrt(np.sum(np.power((xyz[0,0:2]-xyz[1,0:2]),2)))
+        
+        # helical angle between the two backbone beads projected onto a circle:
+        theta_arc = np.arccos(1-dist_bb_xy**2/(2*(r**2))) # radians
+        
+        # loop over all residues, rotating the reference triangles about the z axis by theta_arc:
+        
+        # Orientation 1:
+        tri_ref_orient1 = np.zeros((3,3))
+        
+        tri_ref_orient1[0,0] = (1+K/r)*xyz[0,0]
+        tri_ref_orient1[0,1] = (1+K/r)*xyz[0,1] - r_ss/2
+        tri_ref_orient1[0,2] = xyz[0,2] + M
+        
+        tri_ref_orient1[1,0] = (1+K/r)*xyz[0,0] 
+        tri_ref_orient1[1,1] = (1+K/r)*xyz[0,1] + r_ss/2
+        tri_ref_orient1[1,2] = xyz[0,2] + M
+
+        tri_ref_orient1[2,0] = (1+K/r)*xyz[0,0]
+        tri_ref_orient1[2,1] = (1+K/r)*xyz[0,1]
+        tri_ref_orient1[2,2] = xyz[0,2] - L  
+        
+        # Apply the rotation in x:
+        tri_ref_no_rotate1 = tri_ref_orient1
+        
+        tri_ref_orient1[0,:] = rotate_coordinates_x(tri_ref_orient1[0,:],theta1)
+        tri_ref_orient1[1,:] = rotate_coordinates_x(tri_ref_orient1[1,:],theta1)
+        tri_ref_orient1[2,:] = rotate_coordinates_x(tri_ref_orient1[2,:],theta1)    
+        
+        # Orientation 2:
+        tri_ref_orient2 = np.zeros((3,3))
+        
+        tri_ref_orient2[0,0] = (1+K/r)*xyz[0,0]
+        tri_ref_orient2[0,1] = (1+K/r)*xyz[0,1] - r_ss/2
+        tri_ref_orient2[0,2] = xyz[0,2] - M
+        
+        tri_ref_orient2[1,0] = (1+K/r)*xyz[0,0]
+        tri_ref_orient2[1,1] = (1+K/r)*xyz[0,1] + r_ss/2
+        tri_ref_orient2[1,2] = xyz[0,2] - M
+
+        tri_ref_orient2[2,0] = (1+K/r)*xyz[0,0]
+        tri_ref_orient2[2,1] = (1+K/r)*xyz[0,1]
+        tri_ref_orient2[2,2] = xyz[0,2] + L  
+        
+        # Apply the rotation in x:
+        tri_ref_no_rotate2 = tri_ref_orient2
+        
+        tri_ref_orient2[0,:] = rotate_coordinates_x(tri_ref_orient2[0,:],theta2)
+        tri_ref_orient2[1,:] = rotate_coordinates_x(tri_ref_orient2[1,:],theta2)
+        tri_ref_orient2[2,:] = rotate_coordinates_x(tri_ref_orient2[2,:],theta2)  
+
+        z_rise = xyz[1,2] - xyz[0,2]
             
-            # Use only the x and y from the rotated reference:
-            positions[j] = triangle_xyz_a
-            positions[j,2] = triangle_xyz_a[2] + z_rise*i
-            
-            j += 1
-            positions[j] = triangle_xyz_b
-            positions[j,2] = triangle_xyz_b[2] + z_rise*i
-            
-            j += 1
-            positions[j] = triangle_xyz_c
-            positions[j,2] = triangle_xyz_c[2] + z_rise*i
+        j = -1
+        for i in range(n_particle_bb):
+            if i % 2 == 0:
+                # Orientation 1:
+                j += 1
+                positions[j] = xyz[i]
+                
+                j += 1
+                triangle_xyz_a = rotate_coordinates_z(tri_ref_orient1[0,:],theta_arc*i)
+                triangle_xyz_b = rotate_coordinates_z(tri_ref_orient1[1,:],theta_arc*i)
+                triangle_xyz_c = rotate_coordinates_z(tri_ref_orient1[2,:],theta_arc*i)
+                
+                # Use only the x and y from the rotated reference:
+                positions[j] = triangle_xyz_a
+                positions[j,2] = triangle_xyz_a[2] + z_rise*i
+                
+                j += 1
+                positions[j] = triangle_xyz_b
+                positions[j,2] = triangle_xyz_b[2] + z_rise*i
+                
+                j += 1
+                positions[j] = triangle_xyz_c
+                positions[j,2] = triangle_xyz_c[2] + z_rise*i
+                
+                
+            else:
+                # Orientation 2:
+                j += 1
+                positions[j] = xyz[i]
+                
+                j += 1
+                triangle_xyz_a = rotate_coordinates_z(tri_ref_orient2[0,:],theta_arc*i)
+                triangle_xyz_b = rotate_coordinates_z(tri_ref_orient2[1,:],theta_arc*i)
+                triangle_xyz_c = rotate_coordinates_z(tri_ref_orient2[2,:],theta_arc*i)
+                
+                # Use only the x and y from the rotated reference:
+                positions[j] = triangle_xyz_a
+                positions[j,2] = triangle_xyz_a[2] + z_rise*i
+                
+                j += 1
+                positions[j] = triangle_xyz_b
+                positions[j,2] = triangle_xyz_b[2] + z_rise*i
+                
+                j += 1
+                positions[j] = triangle_xyz_c
+                positions[j,2] = triangle_xyz_c[2] + z_rise*i
+        
+        positions *= unit.angstrom
     
-    positions *= unit.angstrom
+    elif alignment == 'first':
+        # Place the first bead normal to the helix, as in the 1sc model.
+        # However, a simple in-plane rotation doesn't make sense here.
+        pass
     
     # Update the nonbonded parameters:
     for force_index, force in enumerate(simulation.system.getForces()):

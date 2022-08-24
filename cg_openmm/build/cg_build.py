@@ -584,7 +584,7 @@ def check_force(cgmodel, force, force_type=None):
             openmm_nonbonded_energy.value_in_unit(unit.kilojoule_per_mole)
             ) * unit.kilojoule_per_mole
 
-        if energy_diff > 1E-1 * unit.kilojoule_per_mole:
+        if energy_diff > 1E0 * unit.kilojoule_per_mole:
             print("Error: The nonbonded potential energy computed by hand does not agree")
             print("with the value computed by OpenMM.")
             print(f"The value computed by OpenMM was: {openmm_nonbonded_energy}")
