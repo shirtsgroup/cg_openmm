@@ -353,8 +353,13 @@ def expectations_fraction_contacts(fraction_native_contacts, frame_begin=0, samp
                 N_k[k] = n_samples//len(temps)  # these are the states that have samples
 
     # call MBAR to find weights at all states, sampled and unsampled
-    mbarT = pymbar.MBAR(unsampled_state_energies,N_k,verbose=False, relative_tolerance=1e-12);
+    solver_protocol = {"method":"L-BFGS-B"}
     
+    mbarT = pymbar.MBAR(
+        unsampled_state_energies,N_k,verbose=False,relative_tolerance=1e-12,
+        maximum_iterations=10000,solver_protocol=(solver_protocol,),
+        )
+        
     # Now we have the weights at all temperatures, so we can
     # calculate the expectations.
     
