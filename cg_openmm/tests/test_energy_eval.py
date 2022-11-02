@@ -1205,12 +1205,12 @@ def test_optimize_epsilon_scaling_go_models(tmpdir):
         cgmodel,
         medoid_file,
         binary_interaction_list,
-        verbose=True,
+        verbose=False,
     )
 
     # Check that all scaling factors are greater than 1:
     for kappa in binary_interaction_list:
-        assert eps_scaling['kappa_{kappa}'] >= 1.0
+        assert eps_scaling[f'kappa_{kappa}'] >= 1.0
 
 
 def test_native_sequence_optimization_AB_pdb(tmpdir):
