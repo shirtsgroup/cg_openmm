@@ -14,7 +14,7 @@ output_file1 = "stored_cgmodel.pkl"
 output_file2 = "stored_cgmodel_per1_3.pkl"
 output_file3 = "linear_24mer/stored_cgmodel_24mer_linear.pkl"
 output_file4 = "stored_cgmodel_binary_interaction.pkl"
-output_file5 = "stored_cgmodel_helix_3sc_open_triangle.pkl"
+output_file5 = "stored_cgmodel_helix_3sc_open_triangle_8mer.pkl"
 
 def get_test_cmgodel_1_1_helix(output_file):
     # Generate a cgmodel with 1 backbone bead, 1 sidechain bead per residue,
