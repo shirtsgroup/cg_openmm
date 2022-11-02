@@ -1157,7 +1157,17 @@ def get_helix_coordinates_2sc_rotation(r, c, t, r_bs, r_ss, r_eq_bb_sc2, theta, 
     
     # Now, assign each residue to a rotation angle index
     rotation_ids = []
-    
+    # theta_set = np.unique(theta)
+
+    # if len(theta_set) < len(theta):
+        # # Special angle sequence for i-->i+n, i-->i+m
+        # for i in range(n_particle_bb):
+            # # TODO: generalize to n thetas instead of 2
+            # if theta[i] == theta_set[0]:
+                # rotation_ids.append(0)
+            # elif theta[i] == theta_set[1]:
+                # rotation_ids.append(1)
+
     i = 0
     while i < n_particle_bb:
         for a in range(n_rotation_angles):
@@ -1244,8 +1254,8 @@ def get_helix_coordinates_3sc_triangle(r, c, t, r_bs, r_ss, r_eq_bb_sc, theta1, 
     
     if alignment == 'first':
         # Sidechain bead 1 positions in first residue, normal to backbone:
-        ref_orient1[1,0] = (1+r_bs/r)*xyz_backbone[0,0]
-        ref_orient1[1,1] = (1+r_bs/r)*xyz_backbone[0,1]
+        ref_orient1[1,0] = xyz_backbone[0,0]
+        ref_orient1[1,1] = xyz_backbone[0,1] + r_bs
         ref_orient1[1,2] = xyz_backbone[0,2]
         
         # Due to shift in z for sidechains 2,3, need the distance between backbone
@@ -1303,23 +1313,25 @@ def get_helix_coordinates_3sc_triangle(r, c, t, r_bs, r_ss, r_eq_bb_sc, theta1, 
     elif alignment == 'center':
         # Sidechain group center is normal to backbone:
         
-        K = np.sqrt(r_bs**2 - (r_ss**2)/4)  # Distance from backbone bead to center of triangle plane
-        L = np.sqrt((r_ss**2)/3)            # Distance from triangle center to lower bead
-        M = np.sqrt(L**2 - (r_ss**2)/4)     # Distance from triangle center to top of triangle
+        K = np.sqrt(r_bs**2 - (r_ss**2)/4)  # Distance from backbone bead to midpoint of sc1-sc2 bond
+        L = np.sqrt((r_ss**2)/3)            # Distance from triangle center to lower bead (sc3)
+        M = np.sqrt((r_ss**2)/12)           # Distance from triangle center to top of triangle (sc1, sc2 beads)
+
+        xshift = np.sqrt(K**2 - M**2)
 
         # sc1 particle:
-        ref_orient1[1,0] = (1+K/r)*xyz_backbone[0,0]
-        ref_orient1[1,1] = (1+K/r)*xyz_backbone[0,1] - r_ss/2
+        ref_orient1[1,0] = xyz_backbone[0,0] + xshift
+        ref_orient1[1,1] = xyz_backbone[0,1] - r_ss/2
         ref_orient1[1,2] = xyz_backbone[0,2] + M
         
         # sc2 particle:
-        ref_orient1[2,0] = (1+K/r)*xyz_backbone[0,0] 
-        ref_orient1[2,1] = (1+K/r)*xyz_backbone[0,1] + r_ss/2
+        ref_orient1[2,0] = xyz_backbone[0,0] + xshift
+        ref_orient1[2,1] = xyz_backbone[0,1] + r_ss/2
         ref_orient1[2,2] = xyz_backbone[0,2] + M
 
         # sc3 particle:
-        ref_orient1[3,0] = (1+K/r)*xyz_backbone[0,0]
-        ref_orient1[3,1] = (1+K/r)*xyz_backbone[0,1]
+        ref_orient1[3,0] = xyz_backbone[0,0] + xshift
+        ref_orient1[3,1] = xyz_backbone[0,1]
         ref_orient1[3,2] = xyz_backbone[0,2] - L  
 
     ref_orient2 = ref_orient1

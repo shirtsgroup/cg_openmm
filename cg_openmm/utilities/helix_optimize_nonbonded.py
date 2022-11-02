@@ -86,9 +86,9 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
     integrator = LangevinIntegrator(
         0.0 * unit.kelvin, friction, simulation_time_step.in_units_of(unit.picosecond)
     )
-    simulation = Simulation(cgmodel.topology, cgmodel.system, integrator)    
+    simulation = Simulation(cgmodel.topology, cgmodel.system, integrator)
     
-    if bond_dist_bb is None and bond_dist_sc is None:
+    if (bond_dist_bb is None and bond_dist_sc is None) or equal_bonds:
     
         #-----------------------------#
         # Unconstrained bonds version #
@@ -134,13 +134,69 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
             sigma_sc_opt = opt_sol.x[2]
             r_bs_opt = opt_sol.x[3]
             
-    else:
+    elif bond_dist_bb is not None and bond_dist_sc is None:
     
-        #---------------------------#
-        # Constrained bonds version #
-        #---------------------------#
+        #----------------------------#
+        # 1 constrained bond version #
+        #----------------------------#
     
-        # For now, we have to specify both bb-bb and bb-sc bond distances
+        bond_dist_bb = bond_dist_bb.value_in_unit(unit.angstrom)
+    
+        params = (simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, bond_dist_bb, bond_dist_sc)
+    
+        # Set optimization bounds [sigma_bb, sigma_sc, r_bs]: 
+        bounds = [(r/50,15*r),(r/50,15*r),(r/50,15*r)]
+        
+        opt_sol = differential_evolution(
+            compute_helix_openmm_energy_vary_LJ_constrained,
+            bounds,
+            args=params,
+            polish=True,
+            popsize=DE_popsize,
+        )
+        
+        sigma_bb_opt = opt_sol.x[0]
+        sigma_sc_opt = opt_sol.x[1]
+        r_bs_opt = opt_sol.x[2]
+        
+           
+        # Compute particle spacing based on bond constraints
+        t_delta_opt = get_t_from_bond_distance(r,c,bond_dist_bb)
+        if t_delta_opt < 0:
+            print(t_delta_opt)
+            t_delta_opt *= -1 
+
+
+    elif bond_dist_bb is None and bond_dist_sc is not None:
+    
+        #----------------------------#
+        # 1 constrained bond version #
+        #----------------------------#
+    
+        bond_dist_sc = bond_dist_sc.value_in_unit(unit.angstrom)
+    
+        params = (simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, bond_dist_bb, bond_dist_sc)
+    
+        # Set optimization bounds [sigma_bb, sigma_sc, t]: 
+        bounds = [(r/50,15*r),(r/50,15*r),(r/50,15*r)]
+        
+        opt_sol = differential_evolution(
+            compute_helix_openmm_energy_vary_LJ_constrained,
+            bounds,
+            args=params,
+            polish=True,
+            popsize=DE_popsize,
+        )
+        
+        sigma_bb_opt = opt_sol.x[0]
+        sigma_sc_opt = opt_sol.x[1]
+        t_delta_opt = opt_sol.x[2]        
+
+    elif bond_dist_bb is not None and bond_dist_sc is not None:
+    
+        #-----------------------------#
+        # 2 constrained bonds version #
+        #-----------------------------#
         
         bond_dist_bb = bond_dist_bb.value_in_unit(unit.angstrom)
         bond_dist_sc = bond_dist_sc.value_in_unit(unit.angstrom)
@@ -772,10 +828,10 @@ def optimize_helix_LJ_parameters_2sc_rotation(radius, pitch, n_particle_bb, sigm
     :param n_particle_bb: Number of backbone particles to model
     :type n_particle_bb: int
     
-    :param sigma_bb: LJ sigma parameter for backbone beads
+    :param sigma_bb: LJ sigma parameter for backbone beads. If None, sigma_bb and backbone particle spacing will also be optimized. 
     :type sigma_bb: Quantity
     
-    :param bond_dist_bb: bond distance for bb-bb bonds.
+    :param bond_dist_bb: bond distance for bb-bb bonds. If None, sigma_bb and backbone particle spacing will also be optimized.
     :type bond_dist_bb: Quantity
 
     :param equal_sc: Option for keeping the sigma_sc of each sidechain bead the same. If False, each sigma_sc will be varied independently. (default=True)
@@ -829,13 +885,25 @@ def optimize_helix_LJ_parameters_2sc_rotation(radius, pitch, n_particle_bb, sigm
     epsilon_sc = 1.0 * unit.kilojoule_per_mole
     
     # Set initial sigma parameters
+    if sigma_bb is None:
+        sigma_bb_init = 1.0 * unit.angstrom
+    else:
+        sigma_bb_init = sigma_bb
     sigma_sc = 1.0 * unit.angstrom
     
+    if bond_dist_bb is None and sigma_bb is not None:
+        print(f'Warning: setting sigma_bb to None for variable backbone optimization')
+        sigma_bb = None
+    
+    if bond_dist_bb is not None and sigma_bb is None:
+        print(f'Warning: setting bond_dist_bb to None for variable backbone optimization')
+        bond_dist_bb = None
+    
     if equal_sc:
-        cgmodel = get_helix_cgmodel_2sc_equal(sigma_bb,sigma_sc,epsilon_bb,epsilon_sc,n_particle_bb,exclusions)
+        cgmodel = get_helix_cgmodel_2sc_equal(sigma_bb_init,sigma_sc,epsilon_bb,epsilon_sc,n_particle_bb,exclusions)
     else:
         # Need to set 2 independent particle types for sc1, sc2
-        cgmodel = get_helix_cgmodel_2sc_nonequal(sigma_bb,sigma_sc,epsilon_bb,epsilon_sc,n_particle_bb,exclusions)
+        cgmodel = get_helix_cgmodel_2sc_nonequal(sigma_bb_init,sigma_sc,epsilon_bb,epsilon_sc,n_particle_bb,exclusions)
     
     # Get particle type lists and bonded lists:
     # (sc1 and sc2 have the same bonded type here)
@@ -853,8 +921,8 @@ def optimize_helix_LJ_parameters_2sc_rotation(radius, pitch, n_particle_bb, sigm
     )
     simulation = Simulation(cgmodel.topology, cgmodel.system, integrator)    
     
-    bond_dist_bb = bond_dist_bb.value_in_unit(unit.angstrom)
-   
+    if bond_dist_bb is not None:
+        bond_dist_bb = bond_dist_bb.value_in_unit(unit.angstrom)
 
     if equal_sc:
         #-----------------------#
@@ -875,6 +943,12 @@ def optimize_helix_LJ_parameters_2sc_rotation(radius, pitch, n_particle_bb, sigm
             # This keeps the backbone-sc1 bond on the left side for all residues
             
             bounds = []
+            
+            if sigma_bb is None:
+                # Also optimize the backbone parameters:
+                bounds.append((r/10,10*r))  # sigma_bb
+                bounds.append((0.01,2*np.pi/3))  # particle spacing in radians 
+            
             bounds.append((r/10,10*r))  # sigma_sc
             
             if alignment == 'center':
@@ -902,9 +976,11 @@ def optimize_helix_LJ_parameters_2sc_rotation(radius, pitch, n_particle_bb, sigm
                 
         else:
             # Uniform rotation across all residues
-            bounds = [(r/10,10*r),(-np.pi/2,+np.pi/2)]
-            # Due to end-to-end symmetry, we can fix the rotation angle bounds to (-pi/2,pi/2)
-            
+            if sigma_bb is None:
+                bounds = [(0.01,2*np.pi/3),(r/10,10*r),(r/10,10*r),(-np.pi/2,+np.pi/2)]
+                # Due to end-to-end symmetry, we can fix the rotation angle bounds to (-pi/2,pi/2)
+            else:
+                bounds = [(r/10,10*r),(-np.pi/2,+np.pi/2)]
             # No constraints if r_ss is fixed by sigma_sc
             linear_constraint = ()
             
@@ -917,19 +993,52 @@ def optimize_helix_LJ_parameters_2sc_rotation(radius, pitch, n_particle_bb, sigm
             popsize=DE_popsize,
         )
         
-        sigma_sc1_opt = opt_sol.x[0]
-        sigma_sc2_opt = sigma_sc1_opt
+        if sigma_bb is None:
+            t_delta = opt_sol.x[0]
+            sigma_bb_opt = opt_sol.x[1] * unit.angstrom
+        
+            sigma_sc1_opt = opt_sol.x[2]
+            sigma_sc2_opt = sigma_sc1_opt
         
         theta_opt = []
         
-        for a in range(n_rotation_angles):
-            theta_opt.append(opt_sol.x[a+1])
+        if alignment == 'center' and n_rotation_angles == 2:
+            if sigma_bb is not None:
+                t_delta = get_t_from_bond_distance(r,c,bond_dist_bb)
+                
+            res_per_turn = 2*np.pi/t_delta
+            n_seq = np.floor(res_per_turn).astype(int)
+            m_seq = np.ceil(res_per_turn).astype(int)
             
+            if sigma_bb is None:
+                theta1 = opt_sol.x[3]
+                theta2 = opt_sol.x[4]
+            else:
+                theta1 = opt_sol.x[1]
+                theta2 = opt_sol.x[2]
+            i = 0
+            while i < n_particle_bb:
+                for a in range(n_seq):
+                    theta_opt.append(theta1)
+                    i += 1
+                for b in range(m_seq):
+                    theta_opt.append(theta2)
+                    i += 1
+                    
+            theta_opt = theta_opt[0:n_particle_bb]
+        
+        else:
+            if sigma_bb is None:
+                for a in range(n_rotation_angles):
+                    theta_opt.append(opt_sol.x[a+3])
+            else:
+                for a in range(n_rotation_angles):
+                    theta_opt.append(opt_sol.x[a+1])
     else:
         #---------------------------#
         # Non-equal sidechain sigma #
         #---------------------------#
-        
+        # ***TODO: add in the variable backbone option for non-equal sigma_sc
         # Here we also pass sigma_bb to calculate the contact distance for backbone-sc2:
         params = (simulation, particle_type_list, r, c, n_particle_bb, bond_dist_bb, sigma_bb, alignment)
         
@@ -940,22 +1049,37 @@ def optimize_helix_LJ_parameters_2sc_rotation(radius, pitch, n_particle_bb, sigm
             bounds = []
             bounds.append((r/10,10*r))  # sigma_sc1
             bounds.append((r/10,10*r))  # sigma_sc2
-        
+            
+            # For sigma_sc2 >= sigma_sc1:
+            constraint_var_list = []
+            constraint_var_list.append(-1)
+            constraint_var_list.append(1)
+            
             if alignment == 'center':
                 for a in range(n_rotation_angles):
                     bounds.append((-np.pi/2,+np.pi/2))  # Rotation angles
-        
+                    constraint_var_list.append(0)
+                    
             elif alignment == 'first':
                 # Due to end-to-end symmetry, we can set one range to span pi
                 bounds.append((-np.pi/2,+np.pi/2))
+                constraint_var_list.append(0)
                 
                 # The rest of the angles should have full range of rotation:
                 for a in range(n_rotation_angles-1):
                     bounds.append((-np.pi,+np.pi))
+                    constraint_var_list.append(0)
         
             # If we fix r_ss from sigma_sc, there are no constraints:
-            linear_constraint = ()
+            # linear_constraint = ()
         
+            # If we constrain sigma_sc2 >= sigma_sc1, we have the following:
+            linear_constraint = LinearConstraint(
+                constraint_var_list,
+                [0],
+                [np.inf],
+                )
+            
             # If r_ss is independent variable:
             # (Corresponds to [r_ss, sigma_sc1, sigma_sc2, theta1, theta2)
             # linear_constraint = LinearConstraint(
@@ -969,7 +1093,14 @@ def optimize_helix_LJ_parameters_2sc_rotation(radius, pitch, n_particle_bb, sigm
             bounds = [(r/10,10*r),(r/10,10*r),(-np.pi/2,+np.pi/2)]
             
             # If we fix r_ss from sigma_sc, there are no constraints:
-            linear_constraint = ()
+            # linear_constraint = ()
+            
+            # If we constrain sigma_sc2 >= sigma_sc1, we have the following:
+            linear_constraint = LinearConstraint(
+                [-1, 1, 0],
+                [0],
+                [np.inf],
+                )
             
         opt_sol = differential_evolution(
             compute_helix_openmm_energy_vary_LJ_2sc_rotation_nonequal,
@@ -989,22 +1120,27 @@ def optimize_helix_LJ_parameters_2sc_rotation(radius, pitch, n_particle_bb, sigm
             theta_opt.append(opt_sol.x[a+2])
            
     # Compute particle spacing based on bond constraints
-    t_delta_opt = get_t_from_bond_distance(r,c,bond_dist_bb)
+    if sigma_bb is None:
+        t_delta_opt = t_delta
+    else:
+        t_delta_opt = get_t_from_bond_distance(r,c,bond_dist_bb)
+        sigma_bb_opt = sigma_bb
+    
     if t_delta_opt < 0:
         print(t_delta_opt)
         t_delta_opt *= -1
     
     t_par = np.zeros(n_particle_bb)
     for i in range(n_particle_bb):
-        t_par[i] = i*t_delta_opt  
+        t_par[i] = i*t_delta_opt 
 
     # Equilibrium LJ distance (for visual representation)
-    r_eq_bb = sigma_bb.value_in_unit(unit.angstrom)*np.power(2,(1/6))
+    r_eq_bb = sigma_bb_opt.value_in_unit(unit.angstrom)*np.power(2,(1/6))
     r_eq_sc1 = sigma_sc1_opt*np.power(2,(1/6))
     r_eq_sc2 = sigma_sc2_opt*np.power(2,(1/6))
     
-    r_eq_bb_sc1 = (sigma_bb.value_in_unit(unit.angstrom)+sigma_sc1_opt)/2*np.power(2,(1/6))
-    r_eq_bb_sc2 = (sigma_bb.value_in_unit(unit.angstrom)+sigma_sc2_opt)/2*np.power(2,(1/6))
+    r_eq_bb_sc1 = (sigma_bb_opt.value_in_unit(unit.angstrom)+sigma_sc1_opt)/2*np.power(2,(1/6))
+    r_eq_bb_sc2 = (sigma_bb_opt.value_in_unit(unit.angstrom)+sigma_sc2_opt)/2*np.power(2,(1/6))
     r_eq_sc1_sc2 = (sigma_sc1_opt+sigma_sc2_opt)/2*np.power(2,(1/6))
     
     # Can set this to r_eq_bb_sc1 for both equal and nonequal sigma_sc cases:
@@ -1031,12 +1167,18 @@ def optimize_helix_LJ_parameters_2sc_rotation(radius, pitch, n_particle_bb, sigm
     # Store key geometric parameters
     geometry = {}
     
-    geometry['sigma_bb'] = sigma_bb.in_units_of(r_unit)
+    geometry['sigma_bb'] = sigma_bb_opt.in_units_of(r_unit)
     geometry['sigma_sc1'] = (sigma_sc1_opt*unit.angstrom).in_units_of(r_unit)
     geometry['sigma_sc2'] = (sigma_sc2_opt*unit.angstrom).in_units_of(r_unit) 
     
-    for a in range(n_rotation_angles):
-        geometry[f'rotation_angle_type{a+1}'] = (theta_opt[a]*unit.radian).in_units_of(unit.degrees)
+    if alignment == 'center' and n_rotation_angles == 2:
+        # Use the i-->i+n / i-->i+m sequences
+        geometry[f'rotation_angle_type1'] = (theta_opt[0]*unit.radian).in_units_of(unit.degrees)
+        geometry[f'rotation_angle_type2'] = (theta_opt[n_seq]*unit.radian).in_units_of(unit.degrees)
+        
+    else:    
+        for a in range(n_rotation_angles):
+            geometry[f'rotation_angle_type{a+1}'] = (theta_opt[a]*unit.radian).in_units_of(unit.degrees)
     
     # Add back units:
     geometry['helical_radius'] = r * r_unit
@@ -1079,11 +1221,15 @@ def optimize_helix_LJ_parameters_2sc_rotation(radius, pitch, n_particle_bb, sigm
         dihedral_indices = np.array([[bbss_torsion_list[a][0], bbss_torsion_list[a][1], bbss_torsion_list[a][2], bbss_torsion_list[a][3]]])
         geometry[f'bb_bb_sc_sc_angle_type{a+1}'] = (md.compute_dihedrals(traj,dihedral_indices)*unit.radians).in_units_of(unit.degrees)[0][0]    
 
-    # Get sc-bb-bb-sc torsion
-    for a in range(n_rotation_angles):
-        dihedral_indices = np.array([[sbbs_torsion_list[a][0], sbbs_torsion_list[a][1], sbbs_torsion_list[a][2], sbbs_torsion_list[a][3]]])
-        geometry[f'sc_bb_bb_sc_angle_type{a+1}'] = (md.compute_dihedrals(traj,dihedral_indices)*unit.radians).in_units_of(unit.degrees)[0][0] 
-    
+    # Get sc-bb-bb-sc torsion (there are n_residues-1 of these)
+    if n_rotation_angles == n_particle_bb: 
+        for a in range(n_rotation_angles-1):
+            dihedral_indices = np.array([[sbbs_torsion_list[a][0], sbbs_torsion_list[a][1], sbbs_torsion_list[a][2], sbbs_torsion_list[a][3]]])
+            geometry[f'sc_bb_bb_sc_angle_type{a+1}'] = (md.compute_dihedrals(traj,dihedral_indices)*unit.radians).in_units_of(unit.degrees)[0][0] 
+    else:
+        for a in range(n_rotation_angles):
+            dihedral_indices = np.array([[sbbs_torsion_list[a][0], sbbs_torsion_list[a][1], sbbs_torsion_list[a][2], sbbs_torsion_list[a][3]]])
+            geometry[f'sc_bb_bb_sc_angle_type{a+1}'] = (md.compute_dihedrals(traj,dihedral_indices)*unit.radians).in_units_of(unit.degrees)[0][0] 
     return opt_sol, geometry
 
 
@@ -1437,8 +1583,24 @@ def compute_helix_openmm_energy_vary_LJ_constrained(
     # Sidechain sigma parameter
     sigma_sc = geo[1] * unit.angstrom
     
-    # Particle spacing (radians)
-    t_delta = get_t_from_bond_distance(r,c,bond_dist_bb)
+    if bond_dist_bb is None and bond_dist_sc is not None:
+        # variable bond_dist_bb, fixed bond_dist_sc
+        # Particle spacing (radians):
+        t_delta = geo[2]
+        r_bb = get_bond_distance_from_t(r,c,t_delta)
+        r_bs = bond_dist_sc
+        
+    elif bond_dist_sc is None and bond_dist_bb is not None:
+        # variable bond_dist_sc, fixed_bond_dist_bb
+        t_delta = get_t_from_bond_distance(r,c,bond_dist_bb)
+        r_bb = bond_dist_bb
+        r_bs = geo[2]
+        
+    else:
+        # both bond distances fixed
+        t_delta = get_t_from_bond_distance(r,c,bond_dist_bb)
+        r_bb = bond_dist_bb
+        r_bs = bond_dist_sc
     
     t1 = np.zeros(n_particle_bb)
     for i in range(n_particle_bb):
@@ -1452,8 +1614,6 @@ def compute_helix_openmm_energy_vary_LJ_constrained(
     # are zero.
         
     # Place sidechain particles normal to helix with same bond length as bb_bb
-    r_bb = bond_dist_bb
-    r_bs = bond_dist_sc
     side_xyz = np.zeros((n_particle_bb,3))
     
     side_xyz[:,0] = (1+r_bs/r)*xyz[:,0]
@@ -1467,7 +1627,7 @@ def compute_helix_openmm_energy_vary_LJ_constrained(
     positions[bb_array] = xyz
     positions[sc_array] = side_xyz
     
-    #positions *= unit.angstrom
+    positions *= unit.angstrom
     
     # Update the nonbonded parameters:
     for force_index, force in enumerate(simulation.system.getForces()):
@@ -1854,32 +2014,82 @@ def compute_helix_openmm_energy_vary_LJ_2sc_nonequal(geo, simulation,
     
     
 def compute_helix_openmm_energy_vary_LJ_2sc_rotation_equal(geo, simulation,
-    particle_type_list, r, c, n_particle_bb, bond_dist_bb, sigma_bb, alignment):
+    particle_type_list, r, c, n_particle_bb, bond_dist_bb, fixed_sigma_bb, alignment):
     """
     Internal function for computing openmm energy of Lennard-Jones 12-6 helix
     (2sc model, equal sigma_sc for sidechain beads)
     """
     
-    # Sidechain sigma parameter
-    sigma_sc = geo[0] * unit.angstrom
+    if fixed_sigma_bb is None:
+        t_delta = geo[0]
+        sigma_bb = geo[1] * unit.angstrom
+        sigma_sc = geo[2] * unit.angstrom
+    else:
+        t_delta = get_t_from_bond_distance(r,c,bond_dist_bb)
+        sigma_bb = fixed_sigma_bb
+        sigma_sc = geo[0] * unit.angstrom
+    
+    # Sidechain-sidechain equilibrium distance
     r_ss = np.power(2,(1/6))*sigma_sc.value_in_unit(unit.angstrom)
     
     # Equilibrium contact distance for backbone and sidechain bead 2:
     r_eq_bb_sc2 = (sigma_bb.value_in_unit(unit.angstrom)+sigma_sc.value_in_unit(unit.angstrom))/2*np.power(2,(1/6))      
     r_bs = r_eq_bb_sc2
     
-    # Angle of rotation for sidechain 2 bead about backbone-sc1 axis:
-    theta_list = []
-    for a in range(1,len(geo)):
-        theta_list.append(geo[a])
-    
-    # Particle spacing (radians)
-    t_delta = get_t_from_bond_distance(r,c,bond_dist_bb)
-    
     t = np.zeros(n_particle_bb)
     for i in range(n_particle_bb):
         t[i] = i*t_delta
     
+    res_per_turn = 2*np.pi/t_delta
+    n_seq = np.floor(res_per_turn).astype(int)
+    m_seq = np.ceil(res_per_turn).astype(int)
+    
+    # Angle of rotation for sidechain 2 bead about backbone-sc1 axis:
+    theta_list = []
+        
+    # For center alignment hexagonal packing with n < residues/turn < m 
+    # we should apply angles in the following pattern:
+    # (type1 * n), (type2 * m), (type1 * n), (type2 * m), ...    
+    
+    if fixed_sigma_bb is None:
+        if alignment == 'center' and len(geo) == 5:
+            theta1 = geo[3]
+            theta2 = geo[4]
+            i = 0
+            while i < n_particle_bb:
+                for a in range(n_seq):
+                    theta_list.append(theta1)
+                    i += 1
+                for b in range(m_seq):
+                    theta_list.append(theta2)
+                    i += 1
+                    
+            theta_list = theta_list[0:n_particle_bb]
+            
+        else:
+            # Regularly repeating sequences:
+            for a in range(1,len(geo)):
+                theta_list.append(geo[a])   
+    else:
+        if alignment == 'center' and len(geo) == 3:
+            theta1 = geo[1]
+            theta2 = geo[2]
+            i = 0
+            while i < n_particle_bb:
+                for a in range(n_seq):
+                    theta_list.append(theta1)
+                    i += 1
+                for b in range(m_seq):
+                    theta_list.append(theta2)
+                    i += 1
+                    
+            theta_list = theta_list[0:n_particle_bb]
+            
+        else:
+            # Regularly repeating sequences:
+            for a in range(1,len(geo)):
+                theta_list.append(geo[a])                    
+            
     # Get particle coorindates:
     positions = get_helix_coordinates_2sc_rotation(
         r, c, t, r_bs, r_ss, r_eq_bb_sc2, theta_list, alignment
@@ -1894,8 +2104,7 @@ def compute_helix_openmm_energy_vary_LJ_2sc_rotation_equal(geo, simulation,
                 
                 # Only need to change the sigma values here:
                 if particle_type_list[particle_index] == 'bb':
-                    # This is constant and set when creating the cgmodel
-                    pass
+                    force.setParticleParameters(particle_index,q,sigma_bb,eps)
                 else:
                     force.setParticleParameters(particle_index,q,sigma_sc,eps)
                 force.updateParametersInContext(simulation.context)
