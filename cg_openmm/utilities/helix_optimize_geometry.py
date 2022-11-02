@@ -70,7 +70,7 @@ def optimize_helix_simple(n_particle_bb, sigma, epsilon, sidechain=True, DE_pops
     r_eq = sigma*np.power(2,(1/6))  
     
     # Get particle positions:
-    xyz_par = get_helix_coordinates(r_opt,c_opt,t_par)
+    xyz_par = get_helix_backbone_coordinates(r_opt,c_opt,t_par)
     
     if sidechain:
         # Place sidechain particles normal to helix with same bond length as bb_bb
@@ -288,7 +288,7 @@ def optimize_helix_openmm_energy(n_particle_bb, sigma_bb, sigma_sc, epsilon_bb, 
     r_eq_sc = sigma_sc_val*np.power(2,(1/6))
     
     # Get particle positions:
-    xyz_par = get_helix_coordinates(r_opt,c_opt,t_par)
+    xyz_par = get_helix_backbone_coordinates(r_opt,c_opt,t_par)
     
     # Place sidechain particles normal to helix
     if bond_dist_sc == None:
@@ -382,7 +382,7 @@ def compute_LJ_helix_energy_simple(geo, sigma, epsilon, n_particle_bb, sidechain
     for i in range(n_particle_bb):
         t1[i] = i*t_delta
         
-    xyz = get_helix_coordinates(r,c,t1)    
+    xyz = get_helix_backbone_coordinates(r,c,t1)    
         
     # Add any sidechain beads
     if sidechain:
@@ -428,7 +428,7 @@ def compute_LJ_helix_openmm_energy(geo, simulation, bb_array, sc_array, n_partic
     for i in range(n_particle_bb):
         t1[i] = i*t_delta
         
-    xyz = get_helix_coordinates(r,c,t1)
+    xyz = get_helix_backbone_coordinates(r,c,t1)
         
     # If the bonds, angles, and backbone torsions are at their equilibrium positions,
     # then we don't need to update any parameters in the simulation object. Just
@@ -478,7 +478,7 @@ def compute_LJ_helix_openmm_energy_constrained(
     for i in range(n_particle_bb):
         t1[i] = i*t_delta
         
-    xyz = get_helix_coordinates(r,c,t1)
+    xyz = get_helix_backbone_coordinates(r,c,t1)
         
     # If the bonds, angles, and backbone torsions are at their equilibrium positions,
     # then we don't need to update any parameters in the simulation object. Just

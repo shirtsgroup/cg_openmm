@@ -12,6 +12,7 @@ from cg_openmm.cg_model.cgmodel import CGModel
 from cg_openmm.parameters.evaluate_energy import *
 from cg_openmm.parameters.reweight import (get_opt_temperature_list,
                                            get_temperature_list)
+from cg_openmm.parameters.secondary_structure import get_native_contacts
 from cg_openmm.thermo.calc import *
 from numpy.testing import assert_allclose, assert_almost_equal
 from openmm import unit
@@ -1210,6 +1211,37 @@ def test_optimize_epsilon_scaling_go_models(tmpdir):
     # Check that all scaling factors are greater than 1:
     for kappa in binary_interaction_list:
         assert eps_scaling[f'kappa_{kappa}'] >= 1.0
+
+
+def test_native_sequence_optimization_AB_pdb(tmpdir):
+    """
+    Test sequence optimization for 3sc triangle model, where the target is minimizing the
+    contribution of non-native contacts to the energy of the native folded structure.
+    (native structure is pdb file)
+    """
+
+    # Path to native structure
+    native_structure_file = f"{structures_path}/helix_3sc_open_triangle_8mer.pdb"
+    
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel_helix_3sc_open_triangle_8mer.pkl", "rb" ))
+
+    # Get native contact list:
+    native_contact_distance_cutoff = 3.15 * unit.angstrom
+    native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
+        cgmodel,
+        native_structure_file,
+        native_contact_distance_cutoff,
+    )
+    
+    U_eval_diff_out, U_eval_native_out, U_eval_nonnative_out = optimize_go_sequences(
+        cgmodel, native_structure_file, native_contact_list, kappa=0.99, n_restypes=2,
+        seq_prepend=(0,),
+        )
+        
+    assert len(U_eval_diff_out) == 2**7
+    assert len(U_eval_native_out) == 2**7
+    assert len(U_eval_nonnative_out) == 2**7        
 
 
 def test_reeval_heat_capacity(tmpdir):

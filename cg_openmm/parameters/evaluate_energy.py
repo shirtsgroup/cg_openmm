@@ -746,7 +746,9 @@ def match_go_binary_interaction_energies(cgmodel, medoid_file, binary_interactio
 
     if type(binary_interaction_list) in [int, float]:
         # Single parameter - convert to list:
-        binary_interaction_list = list(binary_interaction_list)
+        binary_interaction_val = binary_interaction_list
+        binary_interaction_list = []
+        binary_interaction_list.append(binary_interaction_val)
 
     for kappa in binary_interaction_list:
         # Create parameter update instruction dictionary
@@ -782,8 +784,6 @@ def optimize_eps_scaling(x, param_dict, cgmodel, medoid_file, medoid_ref_energy,
         eps_scaled = particle["epsilon"]*x
         param_dict[f"{type_name}_epsilon"] = eps_scaled
 
-    print(f"param_dict: {param_dict}")
-
     # Evaluate the energy with updated parameters:
     U_scaled, simulation = eval_energy(cgmodel, medoid_file, None, param_dict, verbose=verbose)
 
@@ -794,6 +794,308 @@ def optimize_eps_scaling(x, param_dict, cgmodel, medoid_file, medoid_ref_energy,
 
     return U_diff
 
+
+def optimize_go_sequences(cgmodel, medoid_file, native_contact_list, kappa=0.5,
+    n_restypes=2, seq_prepend=(0,)):
+    """
+    Given a cgmodel with a topology and system, a reference medoid file, and native contact definitions,
+    determine an optimal sequence from a 'n_restypes' alphabet which minimizes the energy from native 
+    contact pairs and maximizes the energy from non-native pairs. Energy of the native structure is kept constant
+    by scaling up all epsilon parameters to compensate for the use of a binary interaction parameter which scales down
+    the non-native interactions. For n_restypes=2, a brute force approach is used to enumerate over all possible sequences.
+    For larger n_restypes, SciPy differential evolution is used. There are no constraints on the relative amounts of each bead type.
+
+    :param cgmodel: CGModel() class object to evaluate energy with. Note that backbone and sidechain bead types should begin with 'b', and 's', respectively.
+    :type cgmodel: class
+
+    :param medoid_file: path to reference medoid file for full interaction energy target
+    :type medoid_file: str
+
+    :param kappa: Binary interaction parameter for cross interactions (i.e. A-B residues), which are scaled by (1-kappa).
+    :type kappa: int
+
+    :param n_restypes: sequence alphabet size (default=2)
+    :type n_restypes: int
+    
+    :param seq_prepend: If not an empty tuple, fix the specified sequence in place, and scan the rest of the residues (default=(0,)). Note that the first residue can always be fixed.
+    :type seq_prepend: tuple
+
+    :returns:
+        - U_eval_diff_out - dictionary mapping sequences to (U_native-U_nonnative)/(U_native+U_nonnative)
+        - U_eval_native_out - dictionary mapping sequences to native energy
+        - U_eval_nonnative_out - dictionary mapping sequences to nonnative energy
+    """
+    
+    # ***TODO: Check that the initial system is a homopolymer, and generalize the bead type parsing.
+    
+    # Get number of particles per monomer:
+    cgmodel_mono0 = cgmodel.monomer_types[0]
+    n_particle_per_mono = len(cgmodel_mono0["particle_sequence"])
+    
+    # Get the number of beads:
+    num_beads = cgmodel.get_num_beads()    
+    
+    # Get the number of monomers:
+    num_monomers = int(num_beads/n_particle_per_mono)
+    
+    # Construct the list of sequences:
+    seq_unique = []
+
+    prod_list = []
+    for i in range(n_restypes):
+        prod_list.append(i)
+        
+    for seq in list(product(prod_list,repeat=(num_monomers-len(seq_prepend)))):
+        seq_full = seq_prepend+seq
+        seq_unique.append(seq_full)
+    
+        # These checks are very slow - usually it is faster to just compute all sequences:
+        
+        # if tuple(reversed(seq)) not in seq_unique: # No reverse duplicates
+            # We also want to avoid sequences that would be the same if 0 and 1 are swapped.
+            # For example 0010001 and 1101110 will give the same solution.
+            # For num_monomers > 2, there are more cases or repeated results, such as 001000 and 002000.
+            
+            # if n_restypes == 2:
+                # seq_array = np.array(seq)
+                # seq_swap = (seq_array*-1)+1
+                # if tuple(seq_swap) not in seq_unique and tuple(reversed(seq_swap)) not in seq_unique:
+                    # # These seq are tuples
+                    # seq_unique.append(seq)
+                    
+            # if n_restypes == 3:
+                # if 2 in seq:
+                    # if 0 in seq and 1 in seq:
+                        # # Adding a third type is only a new result if 0 and 1 are present.
+                        # seq_unique.append(seq)
+                # else:
+                    # seq_unique.append(seq)
+                # else:
+                    # seq_array = np.array(seq)
+                    # seq_swap = (seq_array*-1)+1
+                    # if tuple(seq_swap) not in seq_unique and tuple(reversed(seq_swap)) not in seq_unique:
+                        # # These seq are tuples
+                        # seq_unique.append(seq)
+                
+    print(f'scanning {len(seq_unique)} sequences')
+
+    # The cgmodel should be set up as a Go model, with each particle its own type.
+    # These should be named '{type_name}{res_id}'
+    # This way, we implement the binary interaction parameters for each sequence.
+    
+    # Get full list of particle type names in order of bead index:
+    particle_type_name_all = []
+    for bead_id in range(num_beads):
+        particle_type_name_all.append(cgmodel.get_particle_type_name(bead_id))
+       
+    U_eval_diff_out = {}
+    U_eval_native_out = {}
+    U_eval_nonnative_out = {}       
+        
+    # Get the nonbonded interaction list from cgmodel:
+    nonbonded_interaction_list = cgmodel.get_nonbonded_interaction_list()
+    nonbonded_exclusion_list = cgmodel.get_nonbonded_exclusion_list()
+    
+    nonnative_pair_list = []
+    
+    for pair in nonbonded_interaction_list:
+        par1 = pair[0]
+        par2 = pair[1]
+        if ([par1,par2] not in nonbonded_exclusion_list and [par2,par1] not in nonbonded_exclusion_list and \
+            [par1,par2] not in native_contact_list and [par2,par1] not in native_contact_list):
+            nonnative_pair_list.append(pair)
+          
+    # If different LJ parameters, we need to separate by pair type:
+    bb_bb_native_list = []
+    bb_sc_native_list = []
+    sc_sc_native_list = []
+    
+    bb_bb_nonnative_list = []
+    bb_sc_nonnative_list = []
+    sc_sc_nonnative_list = []
+    
+    # Also get the interaction types for each pair:
+    # The type names may be different for every particle. Just use the first letter
+    # 'b' for backbone and 's' for sidechain.
+    
+    for pair in native_contact_list:
+        type1 = particle_type_name_all[pair[0]][0:1]
+        type2 = particle_type_name_all[pair[1]][0:1]
+        if type1 == 'b' and type2 == 'b':
+            bb_bb_native_list.append(pair)
+        elif type1 == 's' and type2 == 's':
+            sc_sc_native_list.append(pair)
+        elif (type1 == 'b' and type2 == 's') or (type1 == 's' and type2 == 'b'):
+            bb_sc_native_list.append(pair)
+            
+    for pair in nonnative_pair_list:
+        type1 = particle_type_name_all[pair[0]][0:1]
+        type2 = particle_type_name_all[pair[1]][0:1]
+        if type1 == 'b' and type2 == 'b':
+            bb_bb_nonnative_list.append(pair)
+        elif type1 == 's' and type2 == 's':
+            sc_sc_nonnative_list.append(pair)
+        elif (type1 == 'b' and type2 == 's') or (type1 == 's' and type2 == 'b'):
+            bb_sc_nonnative_list.append(pair)
+            
+    # Load the native structure file:
+    if medoid_file[-3:] == 'dcd':
+        medoid_traj = md.load(medoid_file,top=md.Topology.from_openmm(cgmodel.topology))
+    else:
+        medoid_traj = md.load(medoid_file)
+        
+    # Precompute the LJ functions (native and non-native)
+    # The arrays from mdtraj are [n_frames x n_pairs]
+    bb_bb_native_dist_array = md.compute_distances(medoid_traj,bb_bb_native_list)
+    bb_sc_native_dist_array = md.compute_distances(medoid_traj,bb_sc_native_list)
+    sc_sc_native_dist_array = md.compute_distances(medoid_traj,sc_sc_native_list)
+    
+    bb_bb_nonnative_dist_array = md.compute_distances(medoid_traj,bb_bb_nonnative_list)
+    bb_sc_nonnative_dist_array = md.compute_distances(medoid_traj,bb_sc_nonnative_list)
+    sc_sc_nonnative_dist_array = md.compute_distances(medoid_traj,sc_sc_nonnative_list)
+
+    # Get the sigma and epsilon parameters:
+    bb_found = False
+    sc_found = False
+    for i in range(num_beads):
+        type_name_i = cgmodel.get_particle_type_name(i)
+        if type_name_i[0:1] == 'b':
+            bb_found = True
+            sigma_bb = cgmodel.get_particle_sigma(i).value_in_unit(unit.nanometer)
+            epsilon_bb = cgmodel.get_particle_epsilon(i).value_in_unit(unit.kilojoule_per_mole)
+        elif type_name_i[0:1] == 's':
+            sc_found = True
+            sigma_sc = cgmodel.get_particle_sigma(i).value_in_unit(unit.nanometer)
+            epsilon_sc = cgmodel.get_particle_epsilon(i).value_in_unit(unit.kilojoule_per_mole)
+        
+        if bb_found and sc_found:
+            break
+            
+    sigma_bb_sc = (sigma_bb+sigma_sc)/2        
+    epsilon_bb_sc = np.sqrt(epsilon_bb*epsilon_sc)
+
+    LJ_12_factor_bb_bb = 4*epsilon_bb*np.power(sigma_bb,12)
+    LJ_6_factor_bb_bb = -4*epsilon_bb*np.power(sigma_bb,6)
+    
+    LJ_12_factor_bb_sc = 4*epsilon_bb_sc*np.power(sigma_bb_sc,12)
+    LJ_6_factor_bb_sc = -4*epsilon_bb_sc*np.power(sigma_bb_sc,6)    
+    
+    LJ_12_factor_sc_sc = 4*epsilon_sc*np.power(sigma_sc,12)
+    LJ_6_factor_sc_sc = -4*epsilon_sc*np.power(sigma_sc,6)       
+
+    # These are the full LJ energies for all pair types split into native and non-native contributions,
+    # with no binary interaction scaling. Multiply element-wise by kappa vector specific to each sequence.
+    
+    LJ_full_bb_bb_native = LJ_12_factor_bb_bb/np.power(bb_bb_native_dist_array,12) + LJ_6_factor_bb_bb/np.power(bb_bb_native_dist_array,6)
+    LJ_full_bb_sc_native = LJ_12_factor_bb_sc/np.power(bb_sc_native_dist_array,12) + LJ_6_factor_bb_sc/np.power(bb_sc_native_dist_array,6)
+    LJ_full_sc_sc_native = LJ_12_factor_sc_sc/np.power(sc_sc_native_dist_array,12) + LJ_6_factor_sc_sc/np.power(sc_sc_native_dist_array,6)
+    
+    LJ_full_bb_bb_nonnative = LJ_12_factor_bb_bb/np.power(bb_bb_nonnative_dist_array,12) + LJ_6_factor_bb_bb/np.power(bb_bb_nonnative_dist_array,6)
+    LJ_full_bb_sc_nonnative = LJ_12_factor_bb_sc/np.power(bb_sc_nonnative_dist_array,12) + LJ_6_factor_bb_sc/np.power(bb_sc_nonnative_dist_array,6)
+    LJ_full_sc_sc_nonnative = LJ_12_factor_sc_sc/np.power(sc_sc_nonnative_dist_array,12) + LJ_6_factor_sc_sc/np.power(sc_sc_nonnative_dist_array,6)
+    
+    # For each sequence, multiply the LJ vectors by vectors containing 1 for same-type interaction, (1-kappa) for cross interactions (i.e., A-B)
+    
+    # Only need to initialize these once:
+    bb_bb_native_kappa_weights = np.zeros(len(bb_bb_native_list))
+    bb_sc_native_kappa_weights = np.zeros(len(bb_sc_native_list))
+    sc_sc_native_kappa_weights = np.zeros(len(sc_sc_native_list))
+    
+    bb_bb_nonnative_kappa_weights = np.zeros(len(bb_bb_nonnative_list))
+    bb_sc_nonnative_kappa_weights = np.zeros(len(bb_sc_nonnative_list))
+    sc_sc_nonnative_kappa_weights = np.zeros(len(sc_sc_nonnative_list))
+    
+    n = 0
+    for seq in seq_unique:
+    
+        # Sequence by residue:
+        seq_array_res = np.asarray(seq)
+        
+        # Sequence by particle:
+        seq_array_par = np.zeros(num_beads)
+        i = 0
+        for res_seq in seq_array_res:
+            for par in range(n_particle_per_mono):
+                seq_array_par[i] = res_seq
+                i += 1
+        
+        # Construct binary interaction weighting vectors:
+        # Unlike residue interactions get (1-kappa) weight, like residues get 1 weight.
+
+        # native bb-bb
+        i = 0
+        for pair in bb_bb_native_list:
+            if seq_array_par[pair[0]] == seq_array_par[pair[1]]:
+                bb_bb_native_kappa_weights[i] = 1
+            else:
+                bb_bb_native_kappa_weights[i] = (1-kappa)
+            i += 1
+            
+        # native bb-sc
+        i = 0
+        for pair in bb_sc_native_list:
+            if seq_array_par[pair[0]] == seq_array_par[pair[1]]:
+                bb_sc_native_kappa_weights[i] = 1
+            else:
+                bb_sc_native_kappa_weights[i] = (1-kappa)
+            i += 1    
+            
+        # native sc-sc    
+        i = 0
+        for pair in sc_sc_native_list:
+            if seq_array_par[pair[0]] == seq_array_par[pair[1]]:
+                sc_sc_native_kappa_weights[i] = 1
+            else:
+                sc_sc_native_kappa_weights[i] = (1-kappa)
+            i += 1    
+            
+        # nonnative bb-bb
+        i = 0
+        for pair in bb_bb_nonnative_list:
+            if seq_array_par[pair[0]] == seq_array_par[pair[1]]:
+                bb_bb_nonnative_kappa_weights[i] = 1
+            else:
+                bb_bb_nonnative_kappa_weights[i] = (1-kappa)
+            i += 1
+            
+        # nonnative bb-sc
+        i = 0
+        for pair in bb_sc_nonnative_list:
+            if seq_array_par[pair[0]] == seq_array_par[pair[1]]:
+                bb_sc_nonnative_kappa_weights[i] = 1
+            else:
+                bb_sc_nonnative_kappa_weights[i] = (1-kappa)
+            i += 1    
+            
+        # nonnative sc-sc    
+        i = 0
+        for pair in sc_sc_nonnative_list:
+            if seq_array_par[pair[0]] == seq_array_par[pair[1]]:
+                sc_sc_nonnative_kappa_weights[i] = 1
+            else:
+                sc_sc_nonnative_kappa_weights[i] = (1-kappa)
+            i += 1     
+            
+        # Compute the native LJ energy of current sequence:    
+        native_energy_total = (
+            (LJ_full_bb_bb_native*bb_bb_native_kappa_weights).sum() + \
+            (LJ_full_bb_sc_native*bb_sc_native_kappa_weights).sum() + \
+            (LJ_full_sc_sc_native*sc_sc_native_kappa_weights).sum()
+            )
+            
+        # Compute the nonnative LJ energy of current sequence:      
+        nonnative_energy_total = (
+            (LJ_full_bb_bb_nonnative*bb_bb_nonnative_kappa_weights).sum() + \
+            (LJ_full_bb_sc_nonnative*bb_sc_nonnative_kappa_weights).sum() + \
+            (LJ_full_sc_sc_nonnative*sc_sc_nonnative_kappa_weights).sum()
+            ) 
+            
+        U_eval_diff_out[f'{seq}'] = (native_energy_total - nonnative_energy_total) / (native_energy_total + nonnative_energy_total)
+        U_eval_native_out[f'{seq}'] = native_energy_total
+        U_eval_nonnative_out[f'{seq}'] = nonnative_energy_total
+        
+    return U_eval_diff_out, U_eval_native_out, U_eval_nonnative_out
+                    
 
 def eval_energy_sequences(cgmodel, file_list, temperature_list, monomer_list, sequence=None,
     output_data='output/output.nc', num_intermediate_states=3, n_trial_boot=200, plot_dir='',

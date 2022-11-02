@@ -51,7 +51,41 @@ def get_extended_positions_1sc(r_bb, r_bs, n_particle_bb, theta_bbb):
         positions_ext[j+3,1] = h+r_bs
         j += 4
         
-    return positions_ext    
+    return positions_ext        
+    
+def rotate_coordinates_x(xyz, theta):
+    """
+    Internal function for rotating 3d coordinates by theta (angle to rotate the triangle in-plane)
+    Theta is specified in radians.
+    xyz is formatted as (particle, dimension)
+    """
+    
+    R_mat = np.array([
+        [1, 0, 0],
+        [0, np.cos(theta), -np.sin(theta)],
+        [0, np.sin(theta),  np.cos(theta)],
+        ])
+
+    xyz_rot = np.matmul(R_mat, xyz)
+    
+    return xyz_rot
+    
+    
+def rotate_coordinates_y(xyz, theta):
+    """
+    Internal function for rotating 3d coordinates by theta (angle to rotate the triangle in-plane)
+    Theta is specified in radians.
+    """
+    
+    R_mat = np.array([
+        [np.cos(theta), 0, np.sin(theta)],
+        [0, 1, 0],
+        [-np.sin(theta), 0, np.cos(theta)],
+        ])
+
+    xyz_rot = np.matmul(R_mat, xyz)
+    
+    return xyz_rot    
 
 
 def rotate_coordinates_z(xyz, theta):
@@ -67,23 +101,6 @@ def rotate_coordinates_z(xyz, theta):
         ])
 
     xyz_rot = np.matmul(R_mat, xyz)    
-    
-    return xyz_rot
-    
-    
-def rotate_coordinates_x(xyz, theta):
-    """
-    Internal function for rotating 3d coordinates by theta (angle to rotate the triangle in-plane)
-    Theta is specified in radians.
-    """
-    
-    R_mat = np.array([
-        [1, 0, 0],
-        [0, np.cos(theta), -np.sin(theta)],
-        [0, np.sin(theta),  np.cos(theta)],
-        ])
-
-    xyz_rot = np.matmul(R_mat, xyz)
     
     return xyz_rot
 
@@ -192,7 +209,7 @@ def get_helix_cgmodel(sigma_bb, sigma_sc, epsilon_bb, epsilon_sc, n_particle_bb,
     for i in range(n_particle_bb):
         t0[i] = i*np.pi/5
         
-    xyz_bb = get_helix_coordinates(1,1,t0)
+    xyz_bb = get_helix_backbone_coordinates(1,1,t0)
     
     xyz_sc = np.zeros((n_particle_bb,3))
     
@@ -336,7 +353,7 @@ def get_helix_cgmodel_2sc_equal(sigma_bb, sigma_sc, epsilon_bb, epsilon_sc, n_pa
     for i in range(n_particle_bb):
         t0[i] = i*np.pi/5
         
-    xyz_bb = get_helix_coordinates(1,1,t0)
+    xyz_bb = get_helix_backbone_coordinates(1,1,t0)
     
     j = -1
     for i in range(n_particle_bb):
@@ -495,7 +512,7 @@ def get_helix_cgmodel_2sc_nonequal(sigma_bb, sigma_sc, epsilon_bb, epsilon_sc, n
     for i in range(n_particle_bb):
         t0[i] = i*np.pi/5
         
-    xyz_bb = get_helix_coordinates(1,1,t0)
+    xyz_bb = get_helix_backbone_coordinates(1,1,t0)
     
     j = -1
     for i in range(n_particle_bb):
@@ -645,7 +662,7 @@ def get_helix_cgmodel_triangle(sigma_bb, sigma_sc, epsilon_bb, epsilon_sc, n_par
     for i in range(n_particle_bb):
         t0[i] = i*np.pi/5
         
-    xyz_bb = get_helix_coordinates(1,1,t0)
+    xyz_bb = get_helix_backbone_coordinates(1,1,t0)
     
     j = -1
     for i in range(n_particle_bb):
@@ -995,9 +1012,9 @@ def get_helix_particle_bonded_lists_triangle(cgmodel):
             bsss_torsion_list, sbbs_torsion_list)    
     
     
-def get_helix_coordinates(r, c, t):
+def get_helix_backbone_coordinates(r, c, t):
     """
-    Internal functon for getting the coordinates of particles along a helix,
+    Internal functon for getting the backbone coordinates of particles along a helix,
     with positions t.
     """
     
@@ -1009,6 +1026,391 @@ def get_helix_coordinates(r, c, t):
     
     return xyz
     
+    
+def get_helix_coordinates_2sc_rotation(r, c, t, r_bs, r_ss, r_eq_bb_sc2, theta, alignment):
+    """
+    Internal functon for getting the full coordinates of particles along a helix
+    (2sc model with bent bb-sc1-sc2 angle)
+    
+    :param r: helical radius, in Angstrom
+    :type r: float
+    
+    :param c: helical rise parameter, in Angstrom
+    :type c: float
+    
+    :param t: backbone particle spacing, in radians
+    :type t: float
+    
+    :param r_bs: backbone-sidechain bond length, in Angstrom
+    :type r_bs: float
+    
+    :param r_ss: sidechain-sidechain bond length, in Angstrom
+    :type r_ss: float
+    
+    :param r_eq_bb_sc2: equilibrium contact distance for backbone and 2nd sidechain bead, in Angstrom
+    :type r_eq_bb_sc2: float
+    
+    :param theta: angle(s) of rotation for sc2 about bb-sc1 axis, in radians
+    :type theta: list(float) 
+    
+    :param alignment: sidechain alignment scheme - can be 'center' (center of sidechain group is fixed normal to backbone) or 'first' (first bead is normal to backbone)
+    :type alignment: str    
+    
+    :returns:
+      - positions - np.array( n_particles_bb*3 x 3 )
+    
+    """
+
+    n_particle_bb = len(t)
+    
+    # Get backbone coordinates
+    xyz_backbone = get_helix_backbone_coordinates(r,c,t)
+    
+    ref_orient = {}
+    # Type 1 rotation angle:
+    ref_orient[1] = np.zeros((3,3))
+
+    # Backbone positions in first residue:
+    ref_orient[1][0,:] = xyz_backbone[0,:]
+    
+    if alignment == 'first':
+        # Sidechain bead 1 positions in first residue, normal to backbone:
+        ref_orient[1][1,0] = (1+r_bs/r)*xyz_backbone[0,0]
+        ref_orient[1][1,1] = (1+r_bs/r)*xyz_backbone[0,1]
+        ref_orient[1][1,2] = xyz_backbone[0,2]
+
+        # Place second sidechain particle at optimal local rotation:
+        # This theta_sbs tilt angle could also be set as an optimization variable for more degrees of freedom
+        if (r_eq_bb_sc2**2 + r_bs**2 - r_ss**2)/(2*r_eq_bb_sc2*r_bs) > 1:
+            print(f'arccos(x), x > 1')
+            print(f'r_eq_bb_sc2: {r_eq_bb_sc2}')
+            print(f'r_bs: {r_bs}')
+            print(f'r_ss: {r_ss}')
+            print(f'num: {(r_eq_bb_sc2**2 + r_bs**2 - r_ss**2)}')
+            print(f'den: {(2*r_eq_bb_sc2*r_bs)}')
+            
+        elif (r_eq_bb_sc2**2 + r_bs**2 - r_ss**2)/(2*r_eq_bb_sc2*r_bs) < -1:
+            print(f'arccos(x), x < -1')
+            print(f'r_eq_bb_sc2: {r_eq_bb_sc2}')
+            print(f'r_bs: {r_bs}')
+            print(f'r_ss: {r_ss}')
+            print(f'num: {(r_eq_bb_sc2**2 + r_bs**2 - r_ss**2)}')
+            print(f'den: {(2*r_eq_bb_sc2*r_bs)}')
+        
+        theta_sbs = np.arccos((r_eq_bb_sc2**2 + r_bs**2 - r_ss**2)/(2*r_eq_bb_sc2*r_bs))
+    
+        # Shift in x from the first backbone particle:
+        # This is constant for a tilt angle theta_sbs
+        # xshift should always be positive
+        xshift = np.abs(r_eq_bb_sc2*np.cos(theta_sbs))
+        
+        # Shift in y from the first backbone particle: 
+        # This needs to be rotated about the y axis by theta:
+        yshift = r_eq_bb_sc2*np.sin(theta_sbs)
+        
+        ref_orient[1][2,0] = xyz_backbone[0,0] + xshift
+        ref_orient[1][2,1] = xyz_backbone[0,1] + yshift
+        ref_orient[1][2,2] = xyz_backbone[0,2]
+        
+    elif alignment == 'center':
+        # Sidechain group center is normal to backbone:
+
+        # xshift should always be positive and real
+        xshift = np.sqrt(r_bs**2 - (r_ss**2)/4)
+        yshift = r_ss/2
+        
+        # sc1 particle:
+        ref_orient[1][1,0] = xyz_backbone[0,0] + xshift
+        ref_orient[1][1,1] = xyz_backbone[0,1] - yshift
+        ref_orient[1][1,2] = xyz_backbone[0,2]
+        
+        # sc2 particle:
+        ref_orient[1][2,0] = xyz_backbone[0,0] + xshift
+        ref_orient[1][2,1] = xyz_backbone[0,1] + yshift
+        ref_orient[1][2,2] = xyz_backbone[0,2]
+
+    # Here we can have any number of rotation angles:
+    n_rotation_angles = len(theta)
+    for a in range(1,n_rotation_angles):
+        ref_orient[a+1] = ref_orient[1]
+    
+    # Apply the rotation about x axis - this only changes the positions of sidechain bead 2:
+    # The matrix rows here should be x, y, z and columns the particle indices
+
+    ref_orient_rotx = {}
+    ref_orient_rotx[1] = np.transpose(rotate_coordinates_x(np.transpose(ref_orient[1]),theta[0]))
+    
+    for a in range(1,n_rotation_angles):  
+        ref_orient_rotx[a+1] = np.transpose(rotate_coordinates_x(np.transpose(ref_orient[1]),theta[a])) 
+    
+    # Now, rotate the template residue about the z axis to construct the full helix:
+    positions = np.zeros((3*n_particle_bb,3))
+    
+    # distance between backbone beads projected onto a circle:
+    dist_bb_xy = np.sqrt(np.sum(np.power((xyz_backbone[0,0:2]-xyz_backbone[1,0:2]),2)))
+    
+    # helical angle between the two backbone beads projected onto a circle:
+    theta_arc = np.arccos(1-dist_bb_xy**2/(2*(r**2))) # radians
+
+    # Vertical rise from one residue to the next:
+    z_rise = xyz_backbone[1,2] - xyz_backbone[0,2]    
+    
+    # Now, assign each residue to a rotation angle index
+    rotation_ids = []
+    # theta_set = np.unique(theta)
+
+    # if len(theta_set) < len(theta):
+        # # Special angle sequence for i-->i+n, i-->i+m
+        # for i in range(n_particle_bb):
+            # # TODO: generalize to n thetas instead of 2
+            # if theta[i] == theta_set[0]:
+                # rotation_ids.append(0)
+            # elif theta[i] == theta_set[1]:
+                # rotation_ids.append(1)
+
+    i = 0
+    while i < n_particle_bb:
+        for a in range(n_rotation_angles):
+            rotation_ids.append(a)
+            i += 1
+        
+    rotation_ids = rotation_ids[0:n_particle_bb]    
+        
+    # Now, do the rotation about z axis to construct the helix:
+    j = -1
+    for i in range(n_particle_bb):
+        ref_rotx_curr = eval(f'ref_orient_rotx[rotation_ids[i]+1]')
+
+        ref_orient_rotx_rotz_curr = np.transpose(
+            rotate_coordinates_z(np.transpose(ref_rotx_curr),theta_arc*i))
+        
+        # The z coordinate must be also shifted by the rise/residue
+        
+        # Backbone
+        j += 1
+        positions[j,:] = ref_orient_rotx_rotz_curr[0,:]
+        positions[j,2] = ref_orient_rotx_rotz_curr[0,2] + z_rise*i
+        
+        # Sidechain 1
+        j += 1
+        positions[j,:] = ref_orient_rotx_rotz_curr[1,:]
+        positions[j,2] = ref_orient_rotx_rotz_curr[1,2] + z_rise*i
+        
+        # Sidechain 2
+        j += 1
+        positions[j,:] = ref_orient_rotx_rotz_curr[2,:]
+        positions[j,2] = ref_orient_rotx_rotz_curr[2,2] + z_rise*i
+                
+    positions *= unit.angstrom
+
+    return positions
+
+    
+def get_helix_coordinates_3sc_triangle(r, c, t, r_bs, r_ss, r_eq_bb_sc, theta1, theta2, alignment):
+    """
+    Internal functon for getting the full coordinates of particles along a helix
+    (2sc model with bent bb-sc1-sc2 angle)
+    
+    :param r: helical radius, in Angstrom
+    :type r: float
+    
+    :param c: helical rise parameter, in Angstrom
+    :type c: float
+    
+    :param t: backbone particle spacing, in radians
+    :type t: float
+    
+    :param r_bs: backbone-sidechain bond length, in Angstrom
+    :type r_bs: float
+    
+    :param r_ss: sidechain-sidechain bond length, in Angstrom
+    :type r_ss: float
+    
+    :param r_eq_bb_sc: equilibrium contact distance for backbone and non-bonded sidechain bead, in Angstrom
+    :type r_eq_bb_sc: float    
+    
+    :param theta1: angle of rotation for sc2 about bb-sc1 axis (even residues), in radians
+    :type theta1: float
+    
+    :param theta2: angle of rotation for sc2 about bb-sc1 axis (odd residues), in radians
+    :type theta2: float    
+    
+    :param alignment: sidechain alignment scheme - can be 'center' (center of sidechain group is fixed normal to backbone) or 'first' (first bead is normal to backbone)
+    :type alignment: str    
+    
+    :returns:
+      - positions - np.array( n_particles_bb*3 x 3 )
+    
+    """    
+    n_particle_bb = len(t)
+    
+    # Get backbone coordinates
+    xyz_backbone = get_helix_backbone_coordinates(r,c,t)
+    
+    ref_orient1 = np.zeros((4,3))
+
+    # Backbone positions in first residue:
+    ref_orient1[0,:] = xyz_backbone[0,:]
+    
+    if alignment == 'first':
+        # Sidechain bead 1 positions in first residue, normal to backbone:
+        ref_orient1[1,0] = xyz_backbone[0,0]
+        ref_orient1[1,1] = xyz_backbone[0,1] + r_bs
+        ref_orient1[1,2] = xyz_backbone[0,2]
+        
+        # Due to shift in z for sidechains 2,3, need the distance between backbone
+        # and center of line connecting sc2-sc3:
+        
+        d_bb_sc23 = np.sqrt(r_eq_bb_sc**2-(r_ss**2)/4)
+        
+        # r_ss distance projected onto the xy plane:
+        r_ss_xy = r_ss*np.sqrt(3)/2
+    
+        if (d_bb_sc23**2 + r_bs**2 - r_ss_xy**2)/(2*d_bb_sc23*r_bs) > 1:
+            print(f'arccos(x), x > 1')
+            print(f'd_bb_sc23: {d_bb_sc23}')
+            print(f'r_bs: {r_bs}')
+            print(f'r_ss: {r_ss}')
+            print(f'r_ss_xy: {r_ss_xy}')
+            print(f'num: {(d_bb_sc23**2 + r_bs**2 - r_ss_xy**2)}')
+            print(f'den: {(2*d_bb_sc23*r_bs)}')
+            
+        elif (d_bb_sc23**2 + r_bs**2 - r_ss_xy**2)/(2*d_bb_sc23*r_bs) < -1:
+            print(f'arccos(x), x < -1')
+            print(f'd_bb_sc23: {d_bb_sc23}')
+            print(f'r_bs: {r_bs}')
+            print(f'r_ss: {r_ss}')
+            print(f'r_ss_xy: {r_ss_xy}')
+            print(f'num: {(d_bb_sc23**2 + r_bs**2 - r_ss_xy**2)}')
+            print(f'den: {(2*d_bb_sc23*r_bs)}')
+            
+        # Angle in xy plane for sidechain-backbone-sidechain        
+        # theta_sbs = np.arccos((d_bb_sc23**2 + r_bs**2 - r_ss_xy**2)/(2*d_bb_sc23*r_bs))
+    
+        # Shift in x from the first backbone particle:
+        # This is constant for a tilt angle theta_sbs
+        # xshift should always be positive
+        xshift = np.sqrt(3/4*r_ss**2-1/4*r_ss**4/r_bs**2)
+        
+        # Shift in y from the first backbone particle: 
+        # This needs to be rotated about the y axis by theta:
+        yshift = r_bs - 1/2*r_ss**2/r_bs
+        
+        # For equilateral triangle model, also shift in z by r_ss/2:
+        zshift = r_ss/2
+        
+        # sc2 particle:
+        ref_orient1[2,0] = xyz_backbone[0,0] + xshift
+        ref_orient1[2,1] = xyz_backbone[0,1] + yshift
+        ref_orient1[2,2] = xyz_backbone[0,2] + zshift
+        
+        # sc3 particle:
+        ref_orient1[3,0] = xyz_backbone[0,0] + xshift
+        ref_orient1[3,1] = xyz_backbone[0,1] + yshift
+        ref_orient1[3,2] = xyz_backbone[0,2] - zshift
+        
+        
+    elif alignment == 'center':
+        # Sidechain group center is normal to backbone:
+        
+        K = np.sqrt(r_bs**2 - (r_ss**2)/4)  # Distance from backbone bead to midpoint of sc1-sc2 bond
+        L = np.sqrt((r_ss**2)/3)            # Distance from triangle center to lower bead (sc3)
+        M = np.sqrt((r_ss**2)/12)           # Distance from triangle center to top of triangle (sc1, sc2 beads)
+
+        xshift = np.sqrt(K**2 - M**2)
+
+        # sc1 particle:
+        ref_orient1[1,0] = xyz_backbone[0,0] + xshift
+        ref_orient1[1,1] = xyz_backbone[0,1] - r_ss/2
+        ref_orient1[1,2] = xyz_backbone[0,2] + M
+        
+        # sc2 particle:
+        ref_orient1[2,0] = xyz_backbone[0,0] + xshift
+        ref_orient1[2,1] = xyz_backbone[0,1] + r_ss/2
+        ref_orient1[2,2] = xyz_backbone[0,2] + M
+
+        # sc3 particle:
+        ref_orient1[3,0] = xyz_backbone[0,0] + xshift
+        ref_orient1[3,1] = xyz_backbone[0,1]
+        ref_orient1[3,2] = xyz_backbone[0,2] - L  
+
+    ref_orient2 = ref_orient1
+    
+    # Apply the rotation about x axis - this only changes the positions of sidechain bead 2:
+    # The matrix rows here should be x, y, z and columns the particle indices
+
+    ref_orient1_rotx = np.transpose(rotate_coordinates_x(np.transpose(ref_orient1),theta1))
+    ref_orient2_rotx = np.transpose(rotate_coordinates_x(np.transpose(ref_orient2),theta2)) 
+    
+    # Now, rotate the template residue about the z axis to construct the full helix:
+    positions = np.zeros((4*n_particle_bb,3))
+    
+    # distance between backbone beads projected onto a circle:
+    dist_bb_xy = np.sqrt(np.sum(np.power((xyz_backbone[0,0:2]-xyz_backbone[1,0:2]),2)))
+    
+    # helical angle between the two backbone beads projected onto a circle:
+    theta_arc = np.arccos(1-dist_bb_xy**2/(2*(r**2))) # radians
+
+    # Vertical rise from one residue to the next:
+    z_rise = xyz_backbone[1,2] - xyz_backbone[0,2]    
+    
+    j = -1
+    for i in range(n_particle_bb):
+        if i % 2 == 0:
+            # Orientation 1
+            ref_orient1_rotx_rotz = np.transpose(rotate_coordinates_z(np.transpose(ref_orient1_rotx),theta_arc*i))
+            
+            # The z coordinate must be also shifted by the rise/residue
+            
+            # Backbone
+            j += 1
+            positions[j,:] = ref_orient1_rotx_rotz[0,:]
+            positions[j,2] = ref_orient1_rotx_rotz[0,2] + z_rise*i
+            
+            # Sidechain 1
+            j += 1
+            positions[j,:] = ref_orient1_rotx_rotz[1,:]
+            positions[j,2] = ref_orient1_rotx_rotz[1,2] + z_rise*i
+            
+            # Sidechain 2
+            j += 1
+            positions[j,:] = ref_orient1_rotx_rotz[2,:]
+            positions[j,2] = ref_orient1_rotx_rotz[2,2] + z_rise*i
+            
+            # Sidechain 3
+            j += 1
+            positions[j,:] = ref_orient1_rotx_rotz[3,:]
+            positions[j,2] = ref_orient1_rotx_rotz[3,2] + z_rise*i            
+            
+        else:
+            # Orientation 2
+            ref_orient2_rotx_rotz = np.transpose(rotate_coordinates_z(np.transpose(ref_orient2_rotx),theta_arc*i))
+            
+            # The z coordinate must be also shifted by the rise/residue
+            
+            # Backbone
+            j += 1
+            positions[j,:] = ref_orient2_rotx_rotz[0,:]
+            positions[j,2] = ref_orient2_rotx_rotz[0,2] + z_rise*i
+            
+            # Sidechain 1
+            j += 1
+            positions[j,:] = ref_orient2_rotx_rotz[1,:]
+            positions[j,2] = ref_orient2_rotx_rotz[1,2] + z_rise*i
+            
+            # Sidechain 2
+            j += 1
+            positions[j,:] = ref_orient2_rotx_rotz[2,:]
+            positions[j,2] = ref_orient2_rotx_rotz[2,2] + z_rise*i
+            
+            # Sidechain 3
+            j += 1
+            positions[j,:] = ref_orient2_rotx_rotz[3,:]
+            positions[j,2] = ref_orient2_rotx_rotz[3,2] + z_rise*i              
+                
+    positions *= unit.angstrom
+
+    return positions
     
 def get_t_from_bond_distance(r, c, bond_dist_bb):
     """
@@ -1063,10 +1465,10 @@ def plot_LJ_helix(r, c, t_par, r_eq_bb, r_eq_sc=None, plotfile='LJ_helix.pdf'):
     # TODO: add sidechain particles to the 3d plot
     
     # Helix coordinates:
-    xyz_helix = get_helix_coordinates(r,c,np.linspace(0,1.5*max(t_par),num=1001))
+    xyz_helix = get_helix_backbone_coordinates(r,c,np.linspace(0,1.5*max(t_par),num=1001))
     
     # Particle coordinates:
-    xyz_par = get_helix_coordinates(r,c,t_par)
+    xyz_par = get_helix_backbone_coordinates(r,c,t_par)
     
     fig = plt.figure()
     
