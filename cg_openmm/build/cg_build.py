@@ -1074,7 +1074,7 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
                     nonbonded_force = mm.CustomNonbondedForce(f"4*epsilon_rep*(sigma/r)^12-4*epsilon_att*(sigma/r)^6; sigma=0.5*(sigma1+sigma2); epsilon_rep=sqrt(epsilon1*epsilon2); epsilon_att=(1-{kappa})*sqrt(epsilon1*epsilon2)")
                 
                     nonbonded_force.addPerParticleParameter("sigma")
-                    nonbonded_force.addPerParticleParameter("epsilon")           
+                    nonbonded_force.addPerParticleParameter("epsilon")   
                     
                     # TODO: add the rosetta_functional_form switching function
                     nonbonded_force.setNonbondedMethod(mm.NonbondedForce.NoCutoff)
@@ -1087,14 +1087,14 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
                         
                         sigma = cgmodel.get_particle_sigma(particle)
                         epsilon = cgmodel.get_particle_epsilon(particle)
-                        nonbonded_force.addParticle((sigma, epsilon))   
+                        nonbonded_force.addParticle((sigma, epsilon))
 
-                    # Exclude pairs that this kappa doesn't apply to:
-                    for pair in cgmodel.nonbonded_interaction_list:
-                        if pair not in pair_list and reversed(pair) not in pair_list:
-                            nonbonded_force.addExclusion(pair[0],pair[1])
-                            
-                    # Exclude pairs in the nonbonded exclusions list:        
+                    # We can't have different numbers of exclusions for each CustomNonbondedForce
+                    # Instead add pairs as interaction groups:
+                    for pair in pair_list:
+                        nonbonded_force.addInteractionGroup([pair[0]],[pair[1]])
+
+                    # Exclude pairs in the nonbonded exclusions list (commmon to all kappa):        
                     for pair in cgmodel.nonbonded_exclusion_list:
                         nonbonded_force.addExclusion(pair[0],pair[1])
 
