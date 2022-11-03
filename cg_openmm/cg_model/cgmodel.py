@@ -107,6 +107,7 @@ class CGModel(object):
         equil_bond_angles={},
         torsion_phase_angles={},
         binary_interaction_parameters={},
+        go_model=False,
         constrain_bonds=False,
         include_nonbonded_forces=True,
         include_bond_forces=True,
@@ -163,6 +164,9 @@ class CGModel(object):
 
         :param binary_interaction_parameters: Binary interaction parameters used to scale nonbonded interactions between unlike particles (default=None)
         :type binary_interaction_parameters: dict( 'type_name1_type_name2_binary_interaction': float )
+        
+        :param go_model: If True, the binary interaction parameters will be applied only to the attractive component of the nonbonded potential. Otherwise, binary_interaction_parameters will be applied to the total potential (default=False)
+        :type go_model: bool
         
         :param constrain_bonds: Option to use rigid bond constaints during a simulation of the energy for the system (default = False)
         :type constrain_bonds: Bool
@@ -269,6 +273,7 @@ class CGModel(object):
         self.particle_types = add_new_elements(self)
         
         # Assign binary interaction parameters
+        self.go_model = go_model
         self.binary_interaction_parameters = binary_interaction_parameters
         self._validate_binary_interaction()
         

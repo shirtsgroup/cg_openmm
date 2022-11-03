@@ -7,7 +7,7 @@ import openmm as mm
 import openmm.app.element as elem
 from cg_openmm.simulation.tools import build_mm_simulation
 from cg_openmm.utilities.iotools import write_pdbfile_without_topology
-from cg_openmm.utilities.util import lj_v
+from cg_openmm.utilities.util import lj_v, lj_go
 from openmm import unit, LangevinIntegrator
 from openmm.app.pdbfile import PDBFile
 from openmm.app.topology import Topology
@@ -545,10 +545,19 @@ def check_force(cgmodel, force, force_type=None):
                     
                 epsilon_ij = (1-kappa_ij)*np.sqrt(epsilon1*epsilon2)    
                     
-                int_energy = lj_v(
-                    particle_1_positions, particle_2_positions, sigma_ij, epsilon_ij,
-                    r_exp=repulsive_exp, a_exp=attractive_exp
-                    )
+                    
+                if cgmodel.go_model:    
+                    epsilon_ij_repulsive = np.sqrt(epsilon1*epsilon2)
+                    epsilon_ij_attractive = (1-kappa_ij)*np.sqrt(epsilon1*epsilon2)
+                    int_energy = lj_go(
+                        particle_1_positions, particle_2_positions, sigma_ij, epsilon_ij_repulsive,
+                        epsilon_ij_attractive, r_exp=repulsive_exp, a_exp=attractive_exp
+                        )
+                else:
+                    int_energy = lj_v(
+                        particle_1_positions, particle_2_positions, sigma_ij, epsilon_ij,
+                        r_exp=repulsive_exp, a_exp=attractive_exp
+                        )
                 total_nonbonded_energy += int_energy
         
         
@@ -574,7 +583,7 @@ def check_force(cgmodel, force, force_type=None):
 
         openmm_nonbonded_energy  = 0.0 * unit.kilojoule_per_mole
         
-        for force_index, force in enumerate(simulation_test.system.getForces()):         
+        for force_index, force in enumerate(simulation_test.system.getForces()):      
             if force.__class__.__name__ in ["NonbondedForce", "CustomNonbondedForce"]:
                 openmm_nonbonded_energy += simulation_test.context.getState(getEnergy=True,groups={force_index}).getPotentialEnergy() 
             
@@ -905,38 +914,121 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
                 cgmodel.system.addForce(nonbonded_force)
                 force = nonbonded_force                
             
-        else:               
-            # Standard LJ 12-6 potential
-            nonbonded_force = mm.NonbondedForce()
+        else:     
+            if not cgmodel.go_model:
+                # Standard LJ 12-6 potential
+                nonbonded_force = mm.NonbondedForce()
 
-            if rosetta_functional_form:
-                # rosetta has a 4.5-6 A vdw cutoff.  Note the OpenMM cutoff may not be quite the same
-                # functional form as the Rosetta cutoff, but it should be somewhat close.
-                nonbonded_force.setNonbondedMethod(mm.NonbondedForce.CutoffNonPeriodic)
-                nonbonded_force.setCutoffDistance(0.6)  # rosetta cutoff distance in nm
-                nonbonded_force.setUseSwitchingFunction(True)
-                nonbonded_force.setSwitchingDistance(0.45)  # start of rosetta switching distance in nm
-            else:
-                nonbonded_force.setNonbondedMethod(mm.NonbondedForce.NoCutoff)
+                if rosetta_functional_form:
+                    # rosetta has a 4.5-6 A vdw cutoff.  Note the OpenMM cutoff may not be quite the same
+                    # functional form as the Rosetta cutoff, but it should be somewhat close.
+                    nonbonded_force.setNonbondedMethod(mm.NonbondedForce.CutoffNonPeriodic)
+                    nonbonded_force.setCutoffDistance(0.6)  # rosetta cutoff distance in nm
+                    nonbonded_force.setUseSwitchingFunction(True)
+                    nonbonded_force.setSwitchingDistance(0.45)  # start of rosetta switching distance in nm
+                else:
+                    nonbonded_force.setNonbondedMethod(mm.NonbondedForce.NoCutoff)
 
-            for particle in range(cgmodel.num_beads):
-                charge = cgmodel.get_particle_charge(particle)
-                sigma = cgmodel.get_particle_sigma(particle)
-                epsilon = cgmodel.get_particle_epsilon(particle)
-                nonbonded_force.addParticle(charge, sigma, epsilon)
+                for particle in range(cgmodel.num_beads):
+                    charge = cgmodel.get_particle_charge(particle)
+                    sigma = cgmodel.get_particle_sigma(particle)
+                    epsilon = cgmodel.get_particle_epsilon(particle)
+                    nonbonded_force.addParticle(charge, sigma, epsilon)
 
-            # Add nonbonded exclusions:
-            nonbonded_exclusion_list = cgmodel.get_nonbonded_exclusion_list()
-            for pair in nonbonded_exclusion_list:
-                nonbonded_force.addException(pair[0],pair[1],0,0,0)
-               
-            # Check for binary interaction parameters:
-            if cgmodel.binary_interaction_parameters:
-                # If not an empty dict, use the input binary_interaction_parameters
-                # The cross epsilons are rescaled by (1-kappa) with addException
+                # Add nonbonded exclusions:
+                nonbonded_exclusion_list = cgmodel.get_nonbonded_exclusion_list()
+                for pair in nonbonded_exclusion_list:
+                    nonbonded_force.addException(pair[0],pair[1],0,0,0)
+                   
+                # Check for binary interaction parameters:
+                if cgmodel.binary_interaction_parameters:
+                    # If not an empty dict, use the input binary_interaction_parameters
+                    # The cross epsilons are rescaled by (1-kappa) with addException
+                    
+                    for pair in cgmodel.nonbonded_interaction_list:
+                        if pair not in nonbonded_exclusion_list and reversed(pair) not in nonbonded_exclusion_list:
+                            # If already excluded, no further action needed
+                            
+                            pair_type0 = cgmodel.get_particle_type_name(pair[0])
+                            pair_type1 = cgmodel.get_particle_type_name(pair[1])
+                            
+                            kappa_name = f"{pair_type0}_{pair_type1}_binary_interaction"
+                            kappa_name_reverse = f"{pair_type1}_{pair_type0}_binary_interaction"
+                            
+                            if pair_type0 == pair_type1:
+                                # Same type particle interactions should not be modified
+                                kappa = 0
+                            
+                            else:
+                                if kappa_name in cgmodel.binary_interaction_parameters:
+                                    # Apply the binary interaction parameter to this interaction group
+                                    kappa = cgmodel.binary_interaction_parameters[kappa_name]
+                                    
+                                elif kappa_name_reverse in cgmodel.binary_interaction_parameters:
+                                    # Apply the binary interaction parameter to this interaction group
+                                    kappa = cgmodel.binary_interaction_parameters[kappa_name_reverse]
+                                    
+                                else:
+                                    # The binary interaction parameter is not set for this interaction
+                                    # group. By default, we will use a value of 0 (standard mixing rules)
+                                    
+                                    print(f'Warning: no binary interaction parameter set for pair type {pair_type0}, {pair_type1}')
+                                    print(f'Applying default value of zero (standard mixing rules)')
+                                    
+                                    kappa = 0
+
+                            charge1 = cgmodel.get_particle_charge(pair[0])
+                            sigma1 = cgmodel.get_particle_sigma(pair[0]).in_units_of(unit.nanometer)
+                            epsilon1 = cgmodel.get_particle_epsilon(pair[0]).in_units_of(unit.kilojoule_per_mole)
+                            
+                            charge2 = cgmodel.get_particle_charge(pair[1])
+                            sigma2 = cgmodel.get_particle_sigma(pair[1]).in_units_of(unit.nanometer)
+                            epsilon2 = cgmodel.get_particle_epsilon(pair[1]).in_units_of(unit.kilojoule_per_mole)
+                            
+                            charge_ij = charge1*charge2
+                            sigma_ij = (sigma1+sigma2) / 2.0
+                            epsilon_ij = (1-kappa)*np.sqrt(epsilon1*epsilon2)
+                            nonbonded_force.addException(
+                                pair[0], pair[1], charge_ij, sigma_ij, epsilon_ij
+                            )
+                                
+                # For rosetta, apply a 0.2 weight to 1-5 interactions:
+                # This should not be used with the binary interaction parameters.
+                if rosetta_functional_form:
+                    for torsion in cgmodel.torsion_list:
+                        for bond in cgmodel.bond_list:
+                            if bond[0] not in torsion:
+                                if bond[1] == torsion[0]:
+                                    nonbonded_force = add_rosetta_exception_parameters(
+                                        cgmodel, nonbonded_force, bond[0], torsion[3]
+                                    )
+                                if bond[1] == torsion[3]:
+                                    nonbonded_force = add_rosetta_exception_parameters(
+                                        cgmodel, nonbonded_force, bond[0], torsion[0]
+                                    )
+                            if bond[1] not in torsion:
+                                if bond[0] == torsion[0]:
+                                    nonbonded_force = add_rosetta_exception_parameters(
+                                        cgmodel, nonbonded_force, bond[1], torsion[3]
+                                    )
+                                if bond[0] == torsion[3]:
+                                    nonbonded_force = add_rosetta_exception_parameters(
+                                        cgmodel, nonbonded_force, bond[1], torsion[0]
+                                    )
+
+                cgmodel.system.addForce(nonbonded_force)
+                force = nonbonded_force
+            elif cgmodel.go_model: 
+                # Go 12-6 LJ potential
+
+                # We can only set kappa as a global parameter, or as a per-particle parameter.
+                # One way is to use a separate nonbonded force object for each kappa.
+                
+                # First, construct a dictionary mapping kappa to the pairs it should be applied to:
+                kappa_map = {}
                 
                 for pair in cgmodel.nonbonded_interaction_list:
-                    if pair not in nonbonded_exclusion_list and reversed(pair) not in nonbonded_exclusion_list:
+                    if pair not in cgmodel.nonbonded_exclusion_list and reversed(pair) not in cgmodel.nonbonded_exclusion_list:
                         # If already excluded, no further action needed
                         
                         pair_type0 = cgmodel.get_particle_type_name(pair[0])
@@ -947,67 +1039,67 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
                         
                         if pair_type0 == pair_type1:
                             # Same type particle interactions should not be modified
-                            kappa = 0
+                            kappa_pair = 0
                         
                         else:
                             if kappa_name in cgmodel.binary_interaction_parameters:
-                                # Apply the binary interaction parameter to this interaction group
-                                kappa = cgmodel.binary_interaction_parameters[kappa_name]
-                                
+                                kappa_pair = cgmodel.binary_interaction_parameters[kappa_name]
+
                             elif kappa_name_reverse in cgmodel.binary_interaction_parameters:
-                                # Apply the binary interaction parameter to this interaction group
-                                kappa = cgmodel.binary_interaction_parameters[kappa_name_reverse]
+                                kappa_pair = cgmodel.binary_interaction_parameters[kappa_name_reverse]
                                 
                             else:
-                                # The binary interaction parameter is not set for this interaction
-                                # group. By default, we will use a value of 0 (standard mixing rules)
+                                # The binary interaction parameter is not set for this pair.
+                                # By default, we will use a value of 0 (standard mixing rules)
                                 
                                 print(f'Warning: no binary interaction parameter set for pair type {pair_type0}, {pair_type1}')
                                 print(f'Applying default value of zero (standard mixing rules)')
                                 
-                                kappa = 0
+                                kappa_pair = 0
 
-                        charge1 = cgmodel.get_particle_charge(pair[0])
-                        sigma1 = cgmodel.get_particle_sigma(pair[0]).in_units_of(unit.nanometer)
-                        epsilon1 = cgmodel.get_particle_epsilon(pair[0]).in_units_of(unit.kilojoule_per_mole)
-                        
-                        charge2 = cgmodel.get_particle_charge(pair[1])
-                        sigma2 = cgmodel.get_particle_sigma(pair[1]).in_units_of(unit.nanometer)
-                        epsilon2 = cgmodel.get_particle_epsilon(pair[1]).in_units_of(unit.kilojoule_per_mole)
-                        
-                        charge_ij = charge1*charge2
-                        sigma_ij = (sigma1+sigma2) / 2.0
-                        epsilon_ij = (1-kappa)*np.sqrt(epsilon1*epsilon2)
-                        nonbonded_force.addException(
-                            pair[0], pair[1], charge_ij, sigma_ij, epsilon_ij
-                        )
+                    # Add pair to dict:
+                    if kappa_pair in kappa_map:
+                        kappa_map[kappa_pair].append(pair)
+                    else:
+                        kappa_map[kappa_pair] = []
+                        kappa_map[kappa_pair].append(pair)
                             
-            # For rosetta, apply a 0.2 weight to 1-5 interactions:
-            # This should not be used with the binary interaction parameters.
-            if rosetta_functional_form:
-                for torsion in cgmodel.torsion_list:
-                    for bond in cgmodel.bond_list:
-                        if bond[0] not in torsion:
-                            if bond[1] == torsion[0]:
-                                nonbonded_force = add_rosetta_exception_parameters(
-                                    cgmodel, nonbonded_force, bond[0], torsion[3]
-                                )
-                            if bond[1] == torsion[3]:
-                                nonbonded_force = add_rosetta_exception_parameters(
-                                    cgmodel, nonbonded_force, bond[0], torsion[0]
-                                )
-                        if bond[1] not in torsion:
-                            if bond[0] == torsion[0]:
-                                nonbonded_force = add_rosetta_exception_parameters(
-                                    cgmodel, nonbonded_force, bond[1], torsion[3]
-                                )
-                            if bond[0] == torsion[3]:
-                                nonbonded_force = add_rosetta_exception_parameters(
-                                    cgmodel, nonbonded_force, bond[1], torsion[0]
-                                )
+                
+                # Now, create a customNonbondedForce for each unique kappa:
+                force = []
+                for kappa, pair_list in kappa_map.items():
+                    particles_added = []
+                    
+                    # Full repulsive potential with scaled attractive potential
+                    nonbonded_force = mm.CustomNonbondedForce(f"4*epsilon_rep*(sigma/r)^12-4*epsilon_att*(sigma/r)^6; sigma=0.5*(sigma1+sigma2); epsilon_rep=sqrt(epsilon1*epsilon2); epsilon_att=(1-{kappa})*sqrt(epsilon1*epsilon2)")
+                
+                    nonbonded_force.addPerParticleParameter("sigma")
+                    nonbonded_force.addPerParticleParameter("epsilon")           
+                    
+                    # TODO: add the rosetta_functional_form switching function
+                    nonbonded_force.setNonbondedMethod(mm.NonbondedForce.NoCutoff)
+                    
+                    for particle in range(cgmodel.num_beads):
+                        # We don't need to define charge here, though we should add it in the future
+                        # We also don't need to define kappa since it is a global parameter
+                        # Each nonbonded force must have the same number of particles as the system,
+                        # so we add all particles here:
+                        
+                        sigma = cgmodel.get_particle_sigma(particle)
+                        epsilon = cgmodel.get_particle_epsilon(particle)
+                        nonbonded_force.addParticle((sigma, epsilon))   
 
-            cgmodel.system.addForce(nonbonded_force)
-            force = nonbonded_force
+                    # Exclude pairs that this kappa doesn't apply to:
+                    for pair in cgmodel.nonbonded_interaction_list:
+                        if pair not in pair_list and reversed(pair) not in pair_list:
+                            nonbonded_force.addExclusion(pair[0],pair[1])
+                            
+                    # Exclude pairs in the nonbonded exclusions list:        
+                    for pair in cgmodel.nonbonded_exclusion_list:
+                        nonbonded_force.addExclusion(pair[0],pair[1])
+
+                    cgmodel.system.addForce(nonbonded_force)
+                    force.append(nonbonded_force)                
 
     if force_type == "Angle":
 
