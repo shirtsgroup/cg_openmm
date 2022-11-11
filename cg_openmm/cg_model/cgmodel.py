@@ -920,114 +920,46 @@ class CGModel(object):
            - torsions ( List( List( int, int, int, int ) ) ) - A list of the particle indices for the torsions in the coarse-grained model
         """
 
-        bond_list = self.bond_list
         angle_list = self.bond_angle_list
-        torsions = []
-        # Choose the first bond in the torsion
-        for bond_1 in bond_list:
-            # Choose a second bond with which to attempt to define a torsion.
-            torsion = []
-            for bond_2 in bond_list:
-                # Make sure bonds 1 and 2 are different
-                if bond_2 != bond_1 and [bond_2[1], bond_2[0]] != bond_1:
-                    if bond_1[0] == bond_2[1]:
-                        torsion = [bond_2[0], bond_2[1], bond_1[1]]
-                    if bond_1[1] == bond_2[0]:
-                        torsion = [bond_1[0], bond_1[1], bond_2[1]]
+        torsion_list = []
+        
+        # New method - just use two overlapping angles:
+        for i in range(len(angle_list)):
+            for j in range(i,len(angle_list)):
+                angle_1 = angle_list[i]
+                angle_2 = angle_list[j]
 
-                if len(torsion) == 3:
-                    # Choose a third bond with which to attempt a torsion definition
-                    for bond_3 in bond_list:
-                        # Make sure the third bond is different from the first two bonds.
-                        if (
-                            bond_3 != bond_1
-                            and [bond_3[1], bond_3[0]] != bond_1
-                            and bond_3 != bond_2
-                            and [bond_3[1], bond_3[0]] != bond_2
-                        ):
-                            if bond_3[0] in torsion or bond_3[1] in torsion:
-                                if bond_3[0] == torsion[0] and len(torsion) < 4:
-                                    torsion.insert(0, bond_3[1])
-                                if bond_3[0] == torsion[1] and len(torsion) == 4:
-                                    torsion[0] = bond_3[1]
-
-                                if bond_3[1] == torsion[0] and len(torsion) < 4:
-                                    torsion.insert(0, bond_3[0])
-                                if bond_3[1] == torsion[1] and len(torsion) == 4:
-                                    torsion[0] = bond_3[0]
-                                if bond_3[0] == torsion[2] and len(torsion) < 4:
-                                    torsion.append(bond_3[1])
-                                if bond_3[0] == torsion[2] and len(torsion) == 4:
-                                    torsion[3] = bond_3[1]
-                                if bond_3[1] == torsion[2] and len(torsion) < 4:
-                                    torsion.append(bond_3[0])
-                                if bond_3[1] == torsion[2] and len(torsion) == 4:
-                                    torsion[3] = bond_3[0]
-                        if len(torsion) == 4:
-                            # Determine if the particles defining this torsion are suitable.
-                            
-                            # Check if the first and last particles are repeated
-                            # (for closed triangle topologies):
-                            
-                            if torsion[0] == torsion[3]:
-                                # Invalid torsion - don't add
-                                pass
-                            
-                            else:
-                                if len(torsions) == 0:
-                                    torsions.append(torsion)
-                                else:
-                                    unique = True
-                                    for existing_torsion in torsions:
-                                        if Counter(torsion) == Counter(existing_torsion):
-                                            unique = False
-                                    if unique:
-                                        torsions.append(torsion)
-
-        for angle in angle_list:
-            for bond in bond_list:
-                if (
-                    bond[0] in angle
-                    and bond[1] not in angle
-                    or bond[1] in angle
-                    and bond[0] not in angle
-                ):
-                    if bond[0] == angle[0]:
-                        torsion = [bond[1], angle[0], angle[1], angle[2]]
-                        unique = True
-                        for existing_torsion in torsions:
-                            if Counter(torsion) == Counter(existing_torsion):
-                                unique = False
-                        if unique and torsion[0] != torsion[3]:
-                            torsions.append(torsion)
-                    if bond[0] == angle[2]:
-                        torsion = [angle[0], angle[1], angle[2], bond[1]]
-                        unique = True
-                        for existing_torsion in torsions:
-                            if Counter(torsion) == Counter(existing_torsion):
-                                unique = False
-                        if unique and torsion[0] != torsion[3]:
-                            torsions.append(torsion)
-                    if bond[1] == angle[0]:
-                        torsion = [bond[0], angle[0], angle[1], angle[2]]
-                        unique = True
-                        for existing_torsion in torsions:
-                            if Counter(torsion) == Counter(existing_torsion):
-                                unique = False
-                        if unique and torsion[0] != torsion[3]:
-                            torsions.append(torsion)
-                    if bond[1] == angle[2]:
-                        torsion = [angle[0], angle[1], angle[2], bond[0]]
-                        unique = True
-                        for existing_torsion in torsions:
-                            if Counter(torsion) == Counter(existing_torsion):
-                                unique = False
-                        if unique and torsion[0] != torsion[3]:
-                            torsions.append(torsion)
-
-        torsion_set = set(tuple(torsion) for torsion in torsions)
-        torsions = [list(torsion) for torsion in torsion_set]
-        return torsions
+                # Check overlap:
+                if [angle_1[1],angle_1[2]] == [angle_2[0],angle_2[1]]:
+                    # 0 1 2
+                    #   0 1 2
+                    torsion = [angle_1[0], angle_1[1], angle_1[2], angle_2[2]]
+                    # Check that torsion is new and that ends are not the same particle:
+                    if torsion not in torsion_list and reversed(torsion) not in torsion_list and torsion[0] != torsion[3]:
+                        torsion_list.append(torsion)
+                        
+                elif [angle_1[1],angle_1[2]] == [angle_2[2],angle_2[1]]:
+                    # 0 1 2
+                    #   2 1 0
+                    torsion = [angle_1[0], angle_1[1], angle_1[2], angle_2[0]]
+                    if torsion not in torsion_list and reversed(torsion) not in torsion_list and torsion[0] != torsion[3]:
+                        torsion_list.append(torsion)
+                        
+                elif [angle_1[1],angle_1[0]] == [angle_2[0],angle_2[1]]:
+                    # 2 1 0
+                    #   0 1 2
+                    torsion = [angle_1[2], angle_1[1], angle_1[0], angle_2[2]]
+                    if torsion not in torsion_list and reversed(torsion) not in torsion_list and torsion[0] != torsion[3]:
+                        torsion_list.append(torsion)
+                        
+                elif [angle_1[1],angle_1[0]] == [angle_2[2],angle_2[1]]:
+                    # 2 1 0
+                    #   2 1 0
+                    torsion = [angle_1[2], angle_1[1], angle_1[0], angle_2[0]]
+                    if torsion not in torsion_list and reversed(torsion) not in torsion_list and torsion[0] != torsion[3]:
+                        torsion_list.append(torsion)
+        
+        return torsion_list
         
 
     def get_particle_attribute(self, particle, attribute):
