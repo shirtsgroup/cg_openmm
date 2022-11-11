@@ -2759,7 +2759,7 @@ def test_go_cgmodel_3sc(tmpdir):
     # Binary interaction parameters (Go model) #
     #------------------------------------------#
 
-    native_positions_file = "test_structures/helix_3sc_open_triangle_8mer.pdb"
+    native_positions_file = f"{structures_path}/helix_3sc_open_triangle_8mer.pdb"
     positions = PDBFile(native_positions_file).getPositions()
 
     # First, build a dummy cgmodel with no binary interaction parameters:
