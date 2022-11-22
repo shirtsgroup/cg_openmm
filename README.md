@@ -4,6 +4,7 @@ cg_openmm
 [![GH Actions Status](https://github.com/shirtsgroup/cg_openmm/workflows/CI/badge.svg)](https://github.com/shirtsgroup/cg_openmm/actions?query=branch%3Amaster)
 [![codecov](https://codecov.io/gh/shirtsgroup/cg_openmm/branch/master/graph/badge.svg)](https://codecov.io/gh/shirtsgroup/cg_openmm/branch/master)
 [![Documentation Status](https://readthedocs.org/projects/cg-openmm/badge/?version=latest)](https://cg-openmm.readthedocs.io/en/latest/?badge=latest)
+[![DOI](https://zenodo.org/badge/167263331.svg)](https://zenodo.org/badge/latestdoi/167263331)
 
 `cg_openmm` is a python package for setup and thermodynamic analysis of coarse-grained foldamer replica exchange molecular dynamics simulations run using OpenMM.
 
