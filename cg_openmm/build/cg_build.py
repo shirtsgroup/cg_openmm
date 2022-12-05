@@ -547,7 +547,13 @@ def check_force(cgmodel, force, force_type=None):
                     
                     
                 if cgmodel.go_model:    
-                    epsilon_ij_repulsive = np.sqrt(epsilon1*epsilon2)
+                    if cgmodel.go_repulsive_epsilon is None or kappa_ij == 0:
+                        # Native or no uniform repulsive strength specified - using mixing rule:
+                        epsilon_ij_repulsive = np.sqrt(epsilon1*epsilon2)
+                    else:
+                        # Use uniform value for all pair types:
+                        epsilon_ij_repulsive = cgmodel.go_repulsive_epsilon
+                        
                     epsilon_ij_attractive = (1-kappa_ij)*np.sqrt(epsilon1*epsilon2)
                     int_energy = lj_go(
                         particle_1_positions, particle_2_positions, sigma_ij, epsilon_ij_repulsive,
@@ -1071,8 +1077,16 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
                     particles_added = []
                     
                     # Full repulsive potential with scaled attractive potential
-                    nonbonded_force = mm.CustomNonbondedForce(f"4*epsilon_rep*(sigma/r)^12-4*epsilon_att*(sigma/r)^6; sigma=0.5*(sigma1+sigma2); epsilon_rep=sqrt(epsilon1*epsilon2); epsilon_att=(1-{kappa})*sqrt(epsilon1*epsilon2)")
-                
+                    
+                    if kappa == 0 or cgmodel.go_repulsive_epsilon is None:
+                        # This is either a native interaction, or we use mixing rules for the repulsive epsilon
+                        nonbonded_force = mm.CustomNonbondedForce(f"4*epsilon_rep*(sigma/r)^12-4*epsilon_att*(sigma/r)^6; sigma=0.5*(sigma1+sigma2); epsilon_rep=sqrt(epsilon1*epsilon2); epsilon_att=(1-{kappa})*sqrt(epsilon1*epsilon2)")
+                    
+                    else:
+                        # This is a non-native interaction and we use a uniform repulsive epsilon
+                        nonbonded_force = mm.CustomNonbondedForce(f"4*epsilon_rep_uni*(sigma/r)^12-4*epsilon_att*(sigma/r)^6; sigma=0.5*(sigma1+sigma2); epsilon_att=(1-{kappa})*sqrt(epsilon1*epsilon2)")
+                        nonbonded_force.addGlobalParameter("epsilon_rep_uni",cgmodel.go_repulsive_epsilon.in_units_of(unit.kilojoule_per_mole))
+                    
                     nonbonded_force.addPerParticleParameter("sigma")
                     nonbonded_force.addPerParticleParameter("epsilon")   
                     
@@ -1099,7 +1113,8 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
                         nonbonded_force.addExclusion(pair[0],pair[1])
 
                     cgmodel.system.addForce(nonbonded_force)
-                    force.append(nonbonded_force)                
+                    force.append(nonbonded_force)
+                        
 
     if force_type == "Angle":
 

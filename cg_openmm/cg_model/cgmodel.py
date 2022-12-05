@@ -108,6 +108,7 @@ class CGModel(object):
         torsion_phase_angles={},
         binary_interaction_parameters={},
         go_model=False,
+        go_repulsive_epsilon=None,
         constrain_bonds=False,
         include_nonbonded_forces=True,
         include_bond_forces=True,
@@ -167,6 +168,9 @@ class CGModel(object):
         
         :param go_model: If True, the binary interaction parameters will be applied only to the attractive component of the nonbonded potential. Otherwise, binary_interaction_parameters will be applied to the total potential (default=False)
         :type go_model: bool
+        
+        :param go_repulsive_epsilon: If not None and go_model=True, use a fixed value for repulsive interactions, applied only to pairs that also have a binary interaction parameters < 1. (default=None)
+        :type go_repulsive_epsilon: Quantity ( float*unit.kilojoule_per_mole )
         
         :param constrain_bonds: Option to use rigid bond constaints during a simulation of the energy for the system (default = False)
         :type constrain_bonds: Bool
@@ -274,6 +278,7 @@ class CGModel(object):
         
         # Assign binary interaction parameters
         self.go_model = go_model
+        self.go_repulsive_epsilon = go_repulsive_epsilon
         self.binary_interaction_parameters = binary_interaction_parameters
         self._validate_binary_interaction()
         
