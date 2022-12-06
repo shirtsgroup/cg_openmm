@@ -11,8 +11,8 @@ from openmm.app.pdbfile import PDBFile
 from scipy.optimize import differential_evolution, root_scalar, brute, LinearConstraint
 
 
-def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
-    bond_dist_bb=None, bond_dist_sc=None, equal_bonds=True, DE_popsize=50,
+def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb, epsilon_sc=None,
+    bond_dist_bb=None, bond_dist_sc=None, equal_bonds=True, sigma_bb=None, DE_popsize=50,
     pdbfile='LJ_helix_openmm_energy.pdb', plotfile='LJ_helix_openmm_energy.pdf', exclusions={}):
     """
     1sc model: Optimize backbone and sidechain particle parameters along a helix with specified radius and
@@ -27,14 +27,17 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
     :param n_particle_bb: Number of backbone particles to model
     :type n_particle_bb: int
     
-    :param bond_dist_bb: bond distance for bb-bb bonds. If None, bond distance will also be optimized.
+    :param bond_dist_bb: bond distance for bb-bb bonds. If None, bond distance will also be optimized. (default=None)
     :type bond_dist_bb: Quantity
     
-    :param bond_dist_sc: bond distance for bb-sc bonds. If None, bond distance will also be optimized.
+    :param bond_dist_sc: bond distance for bb-sc bonds. If None, bond distance will also be optimized. If 'LJ', the equilibrium nonbonded distance will be used instead. (default=None).
     :type bond_dist_sc: Quantity
     
     :param equal_bonds: option to constrain bb-sc bond distance to equal bb-bb bond distance. If True, any specified bond distances are ignored. (default=True)
     :type equal_bonds: bool    
+    
+    :param sigma_bb: sigma LJ parameter for backbone. If None, sigma_bb will also be optimized. (default=None)
+    :type sigma_bb: Quantity
 
     :param DE_popsize: population size to use in SciPy differential_evolution solver (default=50)
     :type DE_popsize: int
@@ -67,13 +70,14 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
     
     # Set initial epsilon parameters
     epsilon_bb = 1.0 * unit.kilojoule_per_mole
-    epsilon_sc = 1.0 * unit.kilojoule_per_mole
+    if epsilon_sc is None:
+        epsilon_sc = 1.0 * unit.kilojoule_per_mole
     
     # Set initial sigma parameters
-    sigma_bb = 1.0 * unit.angstrom
-    sigma_sc = 1.0 * unit.angstrom
+    sigma_bb_init = 1.0 * unit.angstrom
+    sigma_sc_init = 1.0 * unit.angstrom
     
-    cgmodel = get_helix_cgmodel(sigma_bb,sigma_sc,epsilon_bb,epsilon_sc,n_particle_bb,exclusions)
+    cgmodel = get_helix_cgmodel(sigma_bb_init,sigma_sc_init,epsilon_bb,epsilon_sc,n_particle_bb,exclusions)
     
     # Get particle type lists and bonded lists:
     (particle_type_list, bb_array, sc_array, bb_bond_list, sc_bond_list,
@@ -102,6 +106,8 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
         if equal_bonds:
             # Set optimization bounds [t, sigma_bb, sigma_sc]:
             # Use a minimium of 3 residues/turn
+
+            # TODO: add case where we specific sigma_bb and not bond lengths
             bounds = [(0.01,2*np.pi/3),(r/50,15*r),(r/50,15*r)]
 
             opt_sol = differential_evolution(
@@ -142,10 +148,14 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
     
         bond_dist_bb = bond_dist_bb.value_in_unit(unit.angstrom)
     
-        params = (simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, bond_dist_bb, bond_dist_sc)
-    
-        # Set optimization bounds [sigma_bb, sigma_sc, r_bs]: 
-        bounds = [(r/50,15*r),(r/50,15*r),(r/50,15*r)]
+        params = (simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, bond_dist_bb, bond_dist_sc, sigma_bb)
+
+        if sigma_bb is None:
+            # Set optimization bounds [sigma_bb, sigma_sc, r_bs]: 
+            bounds = [(r/50,15*r),(r/50,15*r),(r/50,15*r)]
+        else:
+            # Set optimization bounds [sigma_sc, r_bs]: 
+            bounds = [(r/50,15*r),(r/50,15*r)]
         
         opt_sol = differential_evolution(
             compute_helix_openmm_energy_vary_LJ_constrained,
@@ -155,11 +165,15 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
             popsize=DE_popsize,
         )
         
-        sigma_bb_opt = opt_sol.x[0]
-        sigma_sc_opt = opt_sol.x[1]
-        r_bs_opt = opt_sol.x[2]
+        if sigma_bb is None:
+            sigma_bb_opt = opt_sol.x[0]
+            sigma_sc_opt = opt_sol.x[1]
+            r_bs_opt = opt_sol.x[2]
+        else:
+            sigma_bb_opt = sigma_bb.value_in_unit(unit.angstrom)
+            sigma_sc_opt = opt_sol.x[0]
+            r_bs_opt = opt_sol.x[1]
         
-           
         # Compute particle spacing based on bond constraints
         t_delta_opt = get_t_from_bond_distance(r,c,bond_dist_bb)
         if t_delta_opt < 0:
@@ -167,7 +181,7 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
             t_delta_opt *= -1 
 
 
-    elif bond_dist_bb is None and bond_dist_sc is not None:
+    elif bond_dist_bb is None and bond_dist_sc is not None and bond_dist_sc != 'LJ':
     
         #----------------------------#
         # 1 constrained bond version #
@@ -175,7 +189,7 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
     
         bond_dist_sc = bond_dist_sc.value_in_unit(unit.angstrom)
     
-        params = (simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, bond_dist_bb, bond_dist_sc)
+        params = (simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, bond_dist_bb, bond_dist_sc, sigma_bb)
     
         # Set optimization bounds [sigma_bb, sigma_sc, t]: 
         bounds = [(r/50,15*r),(r/50,15*r),(r/50,15*r)]
@@ -192,7 +206,7 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
         sigma_sc_opt = opt_sol.x[1]
         t_delta_opt = opt_sol.x[2]        
 
-    elif bond_dist_bb is not None and bond_dist_sc is not None:
+    elif bond_dist_bb is not None and bond_dist_sc is not None and bond_dist_sc != 'LJ':
     
         #-----------------------------#
         # 2 constrained bonds version #
@@ -201,7 +215,7 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
         bond_dist_bb = bond_dist_bb.value_in_unit(unit.angstrom)
         bond_dist_sc = bond_dist_sc.value_in_unit(unit.angstrom)
     
-        params = (simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, bond_dist_bb, bond_dist_sc)
+        params = (simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, bond_dist_bb, bond_dist_sc, sigma_bb)
     
         # Set optimization bounds [sigma_bb, sigma_sc]: 
         bounds = [(r/50,15*r),(r/50,15*r)]   
@@ -222,7 +236,48 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
         if t_delta_opt < 0:
             print(t_delta_opt)
             t_delta_opt *= -1
+            
+    elif bond_dist_bb is not None and bond_dist_sc == 'LJ':
+        # TODO: add the last case with bond_dist_bb is None and bond_dist_sc == 'LJ'
         
+        #----------------------------#
+        #   LJ distance bb-sc bonds  #
+        #----------------------------#
+    
+        bond_dist_bb = bond_dist_bb.value_in_unit(unit.angstrom)
+    
+        params = (simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, bond_dist_bb, bond_dist_sc, sigma_bb)
+
+        if sigma_bb is None:
+            # Set optimization bounds [sigma_bb, sigma_sc]: 
+            bounds = [(r/50,15*r),(r/50,15*r)]
+        else:
+            # Set optimization bounds [sigma_sc]:
+            bounds = [(r/50,15*r)]
+        
+        opt_sol = differential_evolution(
+            compute_helix_openmm_energy_vary_LJ_constrained,
+            bounds,
+            args=params,
+            polish=True,
+            popsize=DE_popsize,
+        )
+        
+        if sigma_bb is None:
+            sigma_bb_opt = opt_sol.x[0]
+            sigma_sc_opt = opt_sol.x[1]
+            r_bs_opt = (sigma_bb_opt+sigma_sc_opt)/2*np.power(2,(1/6))
+        else:
+            sigma_bb_opt = sigma_bb.value_in_unit(unit.angstrom)
+            sigma_sc_opt = opt_sol.x[0]
+            r_bs_opt = r_bs_opt = (sigma_bb_opt+sigma_sc_opt)/2*np.power(2,(1/6))
+        
+        # Compute particle spacing based on bond constraints
+        t_delta_opt = get_t_from_bond_distance(r,c,bond_dist_bb)
+        if t_delta_opt < 0:
+            print(t_delta_opt)
+            t_delta_opt *= -1 
+            
     # Determine backbone particle parametric coordinates:
     t_par = np.zeros(n_particle_bb)
     for i in range(n_particle_bb):
@@ -241,6 +296,8 @@ def optimize_helix_LJ_parameters(radius, pitch, n_particle_bb,
     if equal_bonds:
         # Use optimized bond length from first two backbone beads:
         r_bs = r_bb
+    elif bond_dist_sc == 'LJ':
+        r_bs = r_bs_opt
     else:
         if bond_dist_sc is not None:
             # Use specified bb-sc bond distance:
@@ -999,13 +1056,18 @@ def optimize_helix_LJ_parameters_2sc_rotation(radius, pitch, n_particle_bb, sigm
         
             sigma_sc1_opt = opt_sol.x[2]
             sigma_sc2_opt = sigma_sc1_opt
+            
+        else:
+            t_delta = get_t_from_bond_distance(r,c,bond_dist_bb)
+            sigma_bb_opt = sigma_bb
+            
+            sigma_sc1_opt = opt_sol.x[0]
+            sigma_sc2_opt = sigma_sc1_opt
         
         theta_opt = []
         
         if alignment == 'center' and n_rotation_angles == 2:
-            if sigma_bb is not None:
-                t_delta = get_t_from_bond_distance(r,c,bond_dist_bb)
-                
+            
             res_per_turn = 2*np.pi/t_delta
             n_seq = np.floor(res_per_turn).astype(int)
             m_seq = np.ceil(res_per_turn).astype(int)
@@ -1253,10 +1315,10 @@ def optimize_helix_LJ_parameters_triangle_sidechain(radius, pitch, n_particle_bb
     :param n_particle_bb: Number of backbone particles to model
     :type n_particle_bb: int
     
-    :param sigma_bb: LJ sigma parameter for backbone beads
+    :param sigma_bb: LJ sigma parameter for backbone beads. If None, sigma_bb will also be optimized.
     :type sigma_bb: Quantity
     
-    :param bond_dist_bb: bond distance for bb-bb bonds.
+    :param bond_dist_bb: bond distance for bb-bb bonds. If None, sigma_bb will also be optimized.
     :type bond_dist_bb: Quantity
 
     :param DE_popsize: population size to use in SciPy differential_evolution solver (default=50)
@@ -1301,7 +1363,10 @@ def optimize_helix_LJ_parameters_triangle_sidechain(radius, pitch, n_particle_bb
     # Set initial sigma parameters
     sigma_sc = 1.0 * unit.angstrom
     
-    cgmodel = get_helix_cgmodel_triangle(sigma_bb,sigma_sc,epsilon_bb,epsilon_sc,n_particle_bb,exclusions)
+    if sigma_bb is not None:
+        cgmodel = get_helix_cgmodel_triangle(sigma_bb,sigma_sc,epsilon_bb,epsilon_sc,n_particle_bb,exclusions)
+    else:
+        cgmodel = get_helix_cgmodel_triangle(sigma_sc,sigma_sc,epsilon_bb,epsilon_sc,n_particle_bb,exclusions)
     
     # Get particle type lists and bonded lists:
     (particle_type_list, bb_array, sc_array,
@@ -1318,46 +1383,66 @@ def optimize_helix_LJ_parameters_triangle_sidechain(radius, pitch, n_particle_bb
     )
     simulation = Simulation(cgmodel.topology, cgmodel.system, integrator)    
     
-    bond_dist_bb = bond_dist_bb.value_in_unit(unit.angstrom)
+    if bond_dist_bb is not None:
+        bond_dist_bb = bond_dist_bb.value_in_unit(unit.angstrom)
 
     params = (simulation, particle_type_list, r, c, n_particle_bb, bond_dist_bb, sigma_bb, alignment, alternating)
 
     # Set optimization bounds [sigma_sc, theta1, theta2]:
 
-    if alternating:
-        bounds = [(r/50,5*r),(0,2*np.pi/3),(0,2*np.pi/3)]
+    if sigma_bb is not None and bond_dist_bb is not None:
+        if alternating:
+            bounds = [(r/50,5*r),(0,2*np.pi/3),(0,2*np.pi/3)]
+            
+            # We have a linear constraint that r_ss <= 2*r_bs
+            if alignment == 'center':
+                # No constraint needed - only that sigma_sc be positive:
+                linear_constraint = LinearConstraint(
+                    [1, 0, 0],
+                    [0],
+                    [np.inf]
+                    )
+            elif alignment == 'first':
+                linear_constraint = LinearConstraint(
+                    [(np.power(2,(-1/3))-np.power(2,(1/6))), 0, 0],
+                    [-np.power(2,(-1/3))*sigma_bb.value_in_unit(unit.angstrom)],
+                    [np.inf]
+                    ) 
+                    
+        else:
+            bounds = [(r/50,5*r),(0,2*np.pi/3)]
         
-        # We have a linear constraint that r_ss <= 2*r_bs
-        if alignment == 'center':
-            # No constraint needed - only that sigma_sc be positive:
-            linear_constraint = LinearConstraint(
-                [1, 0, 0],
-                [0],
-                [np.inf]
-                )
-        elif alignment == 'first':
-            linear_constraint = LinearConstraint(
-                [(np.power(2,(-1/3))-np.power(2,(1/6))), 0, 0],
-                [-np.power(2,(-1/3))*sigma_bb.value_in_unit(unit.angstrom)],
-                [np.inf]
-                ) 
-                
-    else:
-        bounds = [(r/50,5*r),(0,2*np.pi/3)]
+            if alignment == 'center':
+                # No constraint needed - only that sigma_sc be positive:
+                linear_constraint = LinearConstraint(
+                    [1, 0],
+                    [0],
+                    [np.inf]
+                    )
+            elif alignment == 'first':
+                linear_constraint = LinearConstraint(
+                    [(np.power(2,(-1/3))-np.power(2,(1/6))), 0],
+                    [-np.power(2,(-1/3))*sigma_bb.value_in_unit(unit.angstrom)],
+                    [np.inf]
+                    )
+
+    elif sigma_bb is None and bond_dist_bb is None:
+        if alternating:
+            # [sigma_sc, theta1, theta2, sigma_bb, t]
+            bounds = [(r/50,5*r),(0,2*np.pi/3),(0,2*np.pi/3),(r/50,15*r),(0.01,2*np.pi/3)]
+            # TODO: update the constraints for alignment == 'center'
+            linear_constraint = ()
+            
+        else:
+            # [sigma_sc, theta1, sigma_bb, t]
+            bounds = [(r/50,5*r),(0,2*np.pi/3),(r/50,15*r),(0.01,2*np.pi/3)]
+            # TODO: update the constraints for alignment == 'center'
+            linear_constraint = ()
+            
     
-        if alignment == 'center':
-            # No constraint needed - only that sigma_sc be positive:
-            linear_constraint = LinearConstraint(
-                [1, 0],
-                [0],
-                [np.inf]
-                )
-        elif alignment == 'first':
-            linear_constraint = LinearConstraint(
-                [(np.power(2,(-1/3))-np.power(2,(1/6))), 0],
-                [-np.power(2,(-1/3))*sigma_bb.value_in_unit(unit.angstrom)],
-                [np.inf]
-                ) 
+    else:
+        print('Error: sigma_bb and bond_dist_bb must either both be specified, or both be None')
+        exit()
                 
     opt_sol = differential_evolution(
         compute_helix_openmm_energy_vary_LJ_triangle,
@@ -1380,12 +1465,22 @@ def optimize_helix_LJ_parameters_triangle_sidechain(radius, pitch, n_particle_bb
     else:
         theta2_opt = theta1_opt
        
-    # Compute particle spacing based on bond constraints
-    t_delta_opt = get_t_from_bond_distance(r,c,bond_dist_bb)
+    if bond_dist_bb is None: 
+        if alternating:
+            sigma_bb = opt_sol.x[3] * unit.angstrom
+            t_delta_opt = opt_sol.x[4]
+        else:
+            sigma_bb = opt_sol.x[2] * unit.angstrom
+            t_delta_opt = opt_sol.x[3]
+    
+    else:
+        # Compute particle spacing based on bond constraints
+        t_delta_opt = get_t_from_bond_distance(r,c,bond_dist_bb)
+        
     if t_delta_opt < 0:
         print(t_delta_opt)
         t_delta_opt *= -1
-    
+
     t = np.zeros(n_particle_bb)
     for i in range(n_particle_bb):
         t[i] = i*t_delta_opt  
@@ -1572,16 +1667,22 @@ def compute_helix_openmm_energy_vary_LJ(geo, simulation, bb_array, sc_array,
 
 
 def compute_helix_openmm_energy_vary_LJ_constrained(
-    geo, simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, bond_dist_bb, bond_dist_sc):
+    geo, simulation, bb_array, sc_array, particle_type_list, r, c, n_particle_bb, bond_dist_bb, bond_dist_sc, sigma_bb_in):
     """
     Internal function for computing openmm energy of Lennard-Jones 12-6 helix
     """
     
     # Backbone sigma parameter
-    sigma_bb = geo[0] * unit.angstrom
+    if sigma_bb_in is None:
+        sigma_bb = geo[0] * unit.angstrom
+    else:
+        sigma_bb = sigma_bb_in
     
     # Sidechain sigma parameter
-    sigma_sc = geo[1] * unit.angstrom
+    if sigma_bb_in is None:
+        sigma_sc = geo[1] * unit.angstrom
+    else:
+        sigma_sc = geo[0] * unit.angstrom
     
     if bond_dist_bb is None and bond_dist_sc is not None:
         # variable bond_dist_bb, fixed bond_dist_sc
@@ -1594,7 +1695,18 @@ def compute_helix_openmm_energy_vary_LJ_constrained(
         # variable bond_dist_sc, fixed_bond_dist_bb
         t_delta = get_t_from_bond_distance(r,c,bond_dist_bb)
         r_bb = bond_dist_bb
-        r_bs = geo[2]
+        if sigma_bb_in is None:
+            r_bs = geo[2]
+        else:
+            r_bs = geo[1]
+            
+    elif bond_dist_sc == 'LJ' and bond_dist_bb is not None:
+        # set bb-sc bond from sigmas, fixed bond_dist_bb
+        t_delta = get_t_from_bond_distance(r,c,bond_dist_bb)
+        r_bb = bond_dist_bb
+        r_bs = (sigma_bb.value_in_unit(unit.angstrom)+sigma_sc.value_in_unit(unit.angstrom))/2*np.power(2,(1/6))
+        
+    # TODO: add case of 'LJ' bond_dist_sc and variable bond_dist_bb    
         
     else:
         # both bond distances fixed
@@ -2206,13 +2318,22 @@ def compute_helix_openmm_energy_vary_LJ_triangle(geo, simulation,
     # sidechain-sidechain bond length:
     r_ss = sigma_sc.value_in_unit(unit.angstrom)*np.power(2,(1/6))
     
+    if sigma_bb is None:
+        if alternating:
+            sigma_bb_var = geo[3]
+            t_delta = geo[4]
+        else:
+            sigma_bb_var = geo[2]
+            t_delta = geo[3]
+    else:
+        sigma_bb_var = sigma_bb.value_in_unit(unit.angstrom)
+        # Particle spacing (radians)
+        t_delta = get_t_from_bond_distance(r,c,bond_dist_bb)
+    
     # sidechain-backbone equilibrium distance:
-    r_eq_bb_sc = (sigma_bb.value_in_unit(unit.angstrom)+sigma_sc.value_in_unit(unit.angstrom))/2*np.power(2,(1/6))
+    r_eq_bb_sc = (sigma_bb_var+sigma_sc.value_in_unit(unit.angstrom))/2*np.power(2,(1/6))
     r_bs = r_eq_bb_sc    
         
-    # Particle spacing (radians)
-    t_delta = get_t_from_bond_distance(r,c,bond_dist_bb)
-    
     t = np.zeros(n_particle_bb)
     for i in range(n_particle_bb):
         t[i] = i*t_delta
