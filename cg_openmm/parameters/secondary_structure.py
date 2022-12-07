@@ -116,8 +116,8 @@ def get_helix_contacts(cgmodel, native_structure_file, backbone_type_name='bb', 
     :param native_structure_file: Path to file ('pdb' or 'dcd') containing particle positions for the native structure.
     :type native_structure_file: str
 
-    :param backbone_type_name: type name in cgmodel which corresponds to the particles forming the helical backbone (default='bb')
-    :type backbone_type_name: str
+    :param backbone_type_name: type name(s) in cgmodel which corresponds to the particles forming the helical backbone (default='bb')
+    :type backbone_type_name: str or list(str)
     
     :param verbose: Option to print detailed statistics for each helical backbone sequence considered
     :type verbose: bool
@@ -143,8 +143,15 @@ def get_helix_contacts(cgmodel, native_structure_file, backbone_type_name='bb', 
     
     # Now, filter out non-backbone types and determine the number of bonds separating each.
     bb_interaction_list = []
+    
+    if type(backbone_type_name) == str:
+        # Convert backbone type name to list if single string:
+        backbone_type_str = backbone_type_name
+        backbone_type_name = []
+        backbone_type_name.append(backbone_type_str)
+    
     for pair in nonbonded_interaction_list:
-        if cgmodel.get_particle_type_name(pair[0])==backbone_type_name and cgmodel.get_particle_type_name(pair[1])==backbone_type_name:
+        if cgmodel.get_particle_type_name(pair[0]) in backbone_type_name and cgmodel.get_particle_type_name(pair[1]) in backbone_type_name:
             bb_interaction_list.append(pair)
             
     # From the bonds list, determine the sequence of backbone particles
@@ -152,7 +159,7 @@ def get_helix_contacts(cgmodel, native_structure_file, backbone_type_name='bb', 
     bb_bond_list = []
     bb_bond_particle_list = []
     for bond in bond_list:
-        if cgmodel.get_particle_type_name(bond[0])==backbone_type_name and cgmodel.get_particle_type_name(bond[1])==backbone_type_name:
+        if cgmodel.get_particle_type_name(bond[0]) in backbone_type_name and cgmodel.get_particle_type_name(bond[1]) in backbone_type_name:
             bb_bond_list.append(bond)
             # Save the bond particles to a single list:
             bb_bond_particle_list.append(bond[0])
@@ -346,8 +353,13 @@ def expectations_fraction_contacts(fraction_native_contacts, frame_begin=0, samp
                 N_k[k] = n_samples//len(temps)  # these are the states that have samples
 
     # call MBAR to find weights at all states, sampled and unsampled
-    mbarT = pymbar.MBAR(unsampled_state_energies,N_k,verbose=False, relative_tolerance=1e-12);
+    solver_protocol = {"method":"L-BFGS-B"}
     
+    mbarT = pymbar.MBAR(
+        unsampled_state_energies,N_k,verbose=False,relative_tolerance=1e-12,
+        maximum_iterations=10000,solver_protocol=(solver_protocol,),
+        )
+        
     # Now we have the weights at all temperatures, so we can
     # calculate the expectations.
     
@@ -513,7 +525,8 @@ def fraction_native_contacts(
         # Determine value of decorrelation time to use  
         opt_g_results = minimize_scalar(
             erf_fun,
-            bounds=(0,10)
+            bounds=(0,10),
+            method='bounded',
             )
         decorrelation_spacing = int(np.ceil(np.mean(g)+opt_g_results.x*np.std(g)))
     else:
@@ -647,7 +660,8 @@ def fraction_native_contacts_preloaded(
         # Determine value of decorrelation time to use  
         opt_g_results = minimize_scalar(
             erf_fun,
-            bounds=(0,10)
+            bounds=(0,10),
+            method='bounded',
             )
         decorrelation_spacing = int(np.ceil(np.mean(g)+opt_g_results.x*np.std(g)))
     else:
@@ -1452,8 +1466,8 @@ def optimize_Q_tol_helix(
     :param frame_stride: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData (default=1)
     :type frame_stride: int 
     
-    :param backbone_type_name: type name in cgmodel which corresponds to the particles forming the helical backbone (default='bb')
-    :type backbone_type_name: str
+    :param backbone_type_name: type name(s) in cgmodel which corresponds to the particles forming the helical backbone (default='bb')
+    :type backbone_type_name: str or list(str)
     
     :param plotfile: Path to output file for plotting results (default='native_contacts_helix_opt.pdf')
     :type plotfile: str

@@ -123,6 +123,51 @@ def lj_v(positions_1, positions_2, sigma, epsilon, r_exp=12.0, a_exp=6.0):
         v = C*epsilon*(np.power((sigma/dist),r_exp)-np.power((sigma/dist),a_exp))
     
     return v
+    
+    
+def lj_go(positions_1, positions_2, sigma, epsilon_repulsive, epsilon_attractive, r_exp=12.0, a_exp=6.0):
+    """
+    Calculate the Lennard-Jones interaction energy between two particles, given their positions and definitions for their equilbrium interaction distance (sigma) and strength (epsilon).
+
+    :param positions_1: Positions for the first particle
+    :type positions_1: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [3] ), simtk.unit )
+
+    :param positions_2: Positions for the first particle
+    :type positions_2: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.array( [3] ), simtk.unit )
+
+    :param sigma: Lennard-Jones equilibrium interaction distance for two non-bonded particles
+    :type sigma: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
+
+    :param epsilon_repulsive: Lennard-Jones equilibrium interaction energy for two non-bonded particles (applies to repulsive part only).
+    :type epsilon_repulsive: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
+
+    :param epsilon_attractive: Lennard-Jones equilibrium interaction energy for two non-bonded particles (applies to attractive part only).
+    :type epsilon_attractive: `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_
+
+    :param r_exp: repulsive exponent (default=12.0)
+    :type r_exp: float
+    
+    :param a_exp: attractive exponent (default=6.0)
+    :type a_exp: float
+
+    :returns:
+       - v ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ) - Lennard-Jones interaction energy
+
+    """
+
+    dist = distance(positions_1, positions_2)
+
+    if r_exp == 12.0 and a_exp == 6.0:
+        # This is a standard LJ 12-6 function
+        v_rep = 4*epsilon_repulsive*(np.power((sigma/dist),12.0))
+        v_att = -4*epsilon_attractive*(np.power((sigma/dist),6.0))
+    else:
+        # This is a generalized LJ (Mie) function
+        C = (r_exp/(r_exp-a_exp))*(r_exp/a_exp)**(a_exp/(r_exp-a_exp))
+        v_rep = C*epsilon_repulsive*(np.power((sigma/dist),r_exp))
+        v_att = -C*epsilon_attractive*(np.power((sigma/dist),a_exp))
+    
+    return v_rep+v_att    
    
     
 def fit_sigmoid(xdata, ydata, plotfile='Q_vs_T_fit.pdf', xlabel='T (K)', ylabel='Q'):

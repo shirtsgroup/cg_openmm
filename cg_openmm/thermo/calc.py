@@ -225,6 +225,69 @@ def get_heat_capacity_derivative(Cv, temperature_list, plotfile='dCv_dT.pdf'):
     plt.close()
     
     return dCv_out, d2Cv_out, spline_tck
+    
+    
+def get_heat_capacity_integral_entropy(Cv, temperature_list, plotfile='Cv_entropy_change.pdf'):
+    """
+    Fit Cv/T vs T dataset to cubic spline, and compute integrals (delta_S(T)) from T_0 to T_i
+    Note this is the total entropy change from all states upon a temperature change,
+    separate from the entropy of folding.
+    
+    :param Cv: heat capacity data series
+    :type Cv: Quantity or numpy 1D array
+    
+    :param temperature_list: List of temperatures used in replica exchange simulations
+    :type temperature: Quantity or numpy 1D array
+    
+    :param plotfile: path to filename to output plot (default='Cv_entropy_change.pdf')
+    :type plotfile: str
+    
+    :returns:
+          - dCv_out ( 1D numpy array (float) ) - entropy changes from lowest temperature to each temperature in temperature_list
+
+    """
+    
+    xdata = temperature_list
+    ydata = Cv/temperature_list
+    
+    Cv_unit = Cv[0].unit
+    
+    # Strip units off quantities:
+    if type(xdata[0]) == unit.quantity.Quantity:
+        xdata_val = np.zeros((len(xdata)))
+        xunit = xdata[0].unit
+        for i in range(len(xdata)):
+            xdata_val[i] = xdata[i].value_in_unit(xunit)
+        xdata = xdata_val
+    
+    if type(ydata[0]) == unit.quantity.Quantity:
+        ydata_val = np.zeros((len(ydata)))
+        yunit = ydata[0].unit
+        for i in range(len(ydata)):
+            ydata_val[i] = ydata[i].value_in_unit(yunit)
+        ydata = ydata_val
+            
+    # Fit cubic spline to data, no smoothing
+    spline_tck = interpolate.splrep(xdata, ydata, s=0)
+    
+    # Entropy for T_o (xdata[0]) to T_i (xdata[i])
+    deltaS_array = np.zeros(len(xdata))
+    
+    for i in range(len(xdata)):
+        deltaS_array[i] = interpolate.splint(xdata[0],xdata[i],spline_tck)
+    
+    if plotfile is not None:    
+        # Plot the entropy change data:
+        figure = plt.figure()
+        line1 = plt.plot(xdata,deltaS_array,'ok',fillstyle='none')
+        
+        plt.xlabel(r'$T_i$')
+        plt.ylabel(r'$\Delta S\/(T_o\rightarrow T_i$')
+        
+        plt.savefig(f'{plotfile}')
+        plt.close()
+    
+    return deltaS_array*Cv_unit
         
 
 def get_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, output_data="output/output.nc",
@@ -358,7 +421,13 @@ def get_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, output_data
                 N_k[k] = n_samples//len(temps)  # these are the states that have samples
 
     # call MBAR to find weights at all states, sampled and unsampled
-    mbarT = pymbar.MBAR(unsampled_state_energies,N_k,verbose=False, relative_tolerance=1e-12);
+    
+    solver_protocol = {"method":"L-BFGS-B"}
+    
+    mbarT = pymbar.MBAR(
+        unsampled_state_energies,N_k,verbose=False,relative_tolerance=1e-12,
+        maximum_iterations=10000,solver_protocol=(solver_protocol,),
+        )
 
     for k in range(n_unsampled_states):
         # get the 'unreduced' potential -- we can't take differences of reduced potentials
@@ -557,7 +626,13 @@ def get_partial_heat_capacities(array_folded_states,
                 N_k[k] = n_samples//len(temps)  # these are the states that have samples
 
     # call MBAR to find weights at all states, sampled and unsampled
-    mbarT = pymbar.MBAR(unsampled_state_energies,N_k,verbose=False, relative_tolerance=1e-12);
+    
+    solver_protocol = {"method":"L-BFGS-B"}
+    
+    mbarT = pymbar.MBAR(
+        unsampled_state_energies,N_k,verbose=False,relative_tolerance=1e-12,
+        maximum_iterations=10000,solver_protocol=(solver_protocol,),
+        )
 
     for k in range(n_unsampled_states):
         # get the 'unreduced' potential -- we can't take differences of reduced potentials
@@ -830,11 +905,12 @@ def get_heat_capacity_reeval(
         N_k[k+n_unsampled_states] = 0 # None of these were actually sampled
        
     # call MBAR to find weights at all states, sampled and unsampled
+    
+    solver_protocol = {"method":"L-BFGS-B"}
+    
     mbarT = pymbar.MBAR(
-        unsampled_state_energies,
-        N_k,
-        verbose=False,
-        relative_tolerance=1e-12
+        unsampled_state_energies,N_k,verbose=False,relative_tolerance=1e-12,
+        maximum_iterations=10000,solver_protocol=(solver_protocol,),
     )
 
     for k in range(n_unsampled_states):
@@ -1175,7 +1251,7 @@ def bootstrap_partial_heat_capacities(array_folded_states,
 
 def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_file='heat_capacity_boot.pdf',
     output_data="output/output.nc", num_intermediate_states=0,frac_dT=0.05,conf_percent='sigma',
-    n_trial_boot=200, U_kln=None, sparsify_stride=1):
+    n_trial_boot=200, U_kln=None, sparsify_stride=1, compute_entropies=False):
     """
     Calculate and plot the heat capacity curve, with uncertainty determined using bootstrapping.
     Uncorrelated datasets are selected using a random starting frame, repeated n_trial_boot 
@@ -1219,6 +1295,9 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
     :param sparsify_stride: apply this stride to the replica energies from file, to match sparsified reevaluated energies (default=1)
     :type sparsify_stride: int
     
+    :param compute_entropies: option to compute the entropy changes from lowest simulated temperature to each other temperature defined by num_intermediate_states (default=False)
+    :type compute_entropies: bool
+    
     :returns:
        - T_list ( List( float * unit.simtk.temperature ) ) - The temperature list corresponding to the heat capacity values in 'Cv'
        - Cv_values ( List( float * kJ/mol/K ) ) - The heat capacity values for all (including inserted intermediates) states
@@ -1255,6 +1334,9 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
     Cv_values_boot = {}
     Cv_uncertainty_boot = {}
     N_eff_boot = {}
+    
+    if compute_entropies:
+        deltaS_boot = {}
     
     Tm_boot = np.zeros(n_trial_boot)
     Cv_height_boot = np.zeros(n_trial_boot)
@@ -1337,20 +1419,36 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
         Tm_boot[i_boot] = Tm_curr.value_in_unit(T_unit)
         Cv_height_boot[i_boot] = Cv_height_curr.value_in_unit(Cv_unit)
     
+        if compute_entropies:
+            deltaS_boot[i_boot] = get_heat_capacity_integral_entropy(
+                Cv_values_boot[i_boot],
+                T_list,
+                plotfile=None,
+                )
+                
+    
     # Convert dicts to array
     arr_Cv_values_boot = np.zeros((n_trial_boot, len(T_list)))
     arr_N_eff_boot = np.zeros((n_trial_boot, len(N_eff_boot[0])))
     
+    if compute_entropies:
+        arr_deltaS_values_boot = np.zeros_like(arr_Cv_values_boot)
+        for i_boot in range(n_trial_boot):
+                arr_deltaS_values_boot[i_boot,:] = deltaS_boot[i_boot].value_in_unit(Cv_unit)
+                
     for i_boot in range(n_trial_boot):
         arr_Cv_values_boot[i_boot,:] = Cv_values_boot[i_boot].value_in_unit(Cv_unit)
         arr_N_eff_boot[i_boot,:] = N_eff_boot[i_boot]
-            
+                
     # Compute mean values:        
     Cv_values = np.mean(arr_Cv_values_boot,axis=0)*Cv_unit      
     Cv_height_value = np.mean(Cv_height_boot)*Cv_unit
     Tm_value = np.mean(Tm_boot)*T_unit
     FWHM_value = np.mean(FWHM_boot)*T_unit
     N_eff_values = np.mean(arr_N_eff_boot)
+    
+    if compute_entropies:
+        deltaS_values = np.mean(arr_deltaS_values_boot,axis=0)*Cv_unit
     
     # Compute confidence intervals:
     if conf_percent == 'sigma':
@@ -1371,6 +1469,11 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
         # Full width half maximum:
         FWHM_std = np.std(FWHM_boot)
         FWHM_uncertainty = (-FWHM_std*T_unit, FWHM_std*T_unit)
+        
+        if compute_entropies:
+            # Entropy changes:
+            deltaS_std = np.std(arr_deltaS_values_boot,axis=0)
+            deltaS_uncertainty = (-deltaS_std*Cv_unit, deltaS_std*Cv_unit)
         
     else:
         # Compute specified confidence interval:
@@ -1404,12 +1507,23 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
         FWHM_conf_hi = np.percentile(FWHM_diff,p_hi,interpolation='linear')
         
         FWHM_uncertainty = (FWHM_conf_lo*T_unit, FWHM_conf_hi*T_unit) 
-    
+        
+        if compute_entropies:
+            # Entropy changes
+            deltaS_diff = arr_deltaS_values_boot-np.mean(arr_deltaS_values_boot,axis=0)
+            deltaS_conf_lo = np.percentile(deltaS_diff,p_lo,axis=0,interpolation='linear')
+            deltaS_conf_hi = np.percentile(deltaS_diff,p_hi,axis=0,interpolation='linear')
+            
+            deltaS_uncertainty = (deltaS_conf_lo*Cv_unit, deltaS_conf_hi*Cv_unit)
+        
     # Plot and return the heat capacity (with units)
     if plot_file is not None:
         plot_heat_capacity(Cv_values, Cv_uncertainty, T_list, file_name=plot_file)
-                    
-    return T_list, Cv_values, Cv_uncertainty, Tm_value, Tm_uncertainty, Cv_height_value, Cv_height_uncertainty, FWHM_value, FWHM_uncertainty, N_eff_values
+                     
+    if compute_entropies:
+        return T_list, Cv_values, Cv_uncertainty, Tm_value, Tm_uncertainty, Cv_height_value, Cv_height_uncertainty, FWHM_value, FWHM_uncertainty, N_eff_values, deltaS_values, deltaS_uncertainty
+    else:
+        return T_list, Cv_values, Cv_uncertainty, Tm_value, Tm_uncertainty, Cv_height_value, Cv_height_uncertainty, FWHM_value, FWHM_uncertainty, N_eff_values
         
     
 def get_cv_FWHM(Cv_values, T_list):

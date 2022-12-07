@@ -7,7 +7,7 @@ import openmm as mm
 import openmm.app.element as elem
 from cg_openmm.simulation.tools import build_mm_simulation
 from cg_openmm.utilities.iotools import write_pdbfile_without_topology
-from cg_openmm.utilities.util import lj_v
+from cg_openmm.utilities.util import lj_v, lj_go
 from openmm import unit, LangevinIntegrator
 from openmm.app.pdbfile import PDBFile
 from openmm.app.topology import Topology
@@ -402,6 +402,8 @@ def get_num_forces(cgmodel):
         total_forces += 1
     if cgmodel.include_torsion_forces:
         total_forces += 1
+    if cgmodel.hbonds:
+        total_forces += 1
         
     return total_forces
 
@@ -487,6 +489,7 @@ def check_force(cgmodel, force, force_type=None):
     
     if force_type == "Nonbonded":
 
+        # TODO: Check the precision of the numpy data being used in the manual calculation. 
         # TODO: add check of the nonbonded energy for Rosetta functional form
         if cgmodel.rosetta_functional_form:
             return True
@@ -531,16 +534,36 @@ def check_force(cgmodel, force, force_type=None):
                         elif kappa_name_reverse in cgmodel.binary_interaction_parameters:
                             # Apply the binary interaction parameter
                             kappa_ij = cgmodel.binary_interaction_parameters[kappa_name_reverse]
+                        else:
+                            # If this pair type has no defined binary_interaction, use 0,
+                            # which is the default.
+                            
+                            kappa_ij = 0
                     
                 else:
                     kappa_ij = 0
                     
                 epsilon_ij = (1-kappa_ij)*np.sqrt(epsilon1*epsilon2)    
                     
-                int_energy = lj_v(
-                    particle_1_positions, particle_2_positions, sigma_ij, epsilon_ij,
-                    r_exp=repulsive_exp, a_exp=attractive_exp
-                    )
+                    
+                if cgmodel.go_model:    
+                    if cgmodel.go_repulsive_epsilon is None or kappa_ij == 0:
+                        # Native or no uniform repulsive strength specified - using mixing rule:
+                        epsilon_ij_repulsive = np.sqrt(epsilon1*epsilon2)
+                    else:
+                        # Use uniform value for all pair types:
+                        epsilon_ij_repulsive = cgmodel.go_repulsive_epsilon
+                        
+                    epsilon_ij_attractive = (1-kappa_ij)*np.sqrt(epsilon1*epsilon2)
+                    int_energy = lj_go(
+                        particle_1_positions, particle_2_positions, sigma_ij, epsilon_ij_repulsive,
+                        epsilon_ij_attractive, r_exp=repulsive_exp, a_exp=attractive_exp
+                        )
+                else:
+                    int_energy = lj_v(
+                        particle_1_positions, particle_2_positions, sigma_ij, epsilon_ij,
+                        r_exp=repulsive_exp, a_exp=attractive_exp
+                        )
                 total_nonbonded_energy += int_energy
         
         
@@ -566,7 +589,7 @@ def check_force(cgmodel, force, force_type=None):
 
         openmm_nonbonded_energy  = 0.0 * unit.kilojoule_per_mole
         
-        for force_index, force in enumerate(simulation_test.system.getForces()):         
+        for force_index, force in enumerate(simulation_test.system.getForces()):      
             if force.__class__.__name__ in ["NonbondedForce", "CustomNonbondedForce"]:
                 openmm_nonbonded_energy += simulation_test.context.getState(getEnergy=True,groups={force_index}).getPotentialEnergy() 
             
@@ -576,22 +599,14 @@ def check_force(cgmodel, force, force_type=None):
             openmm_nonbonded_energy.value_in_unit(unit.kilojoule_per_mole)
             ) * unit.kilojoule_per_mole
 
-        if energy_diff > 1E-5 * unit.kilojoule_per_mole:
-            if energy_diff > 1E-2 * unit.kilojoule_per_mole:
-                print("Error: The nonbonded potential energy computed by hand does not agree")
-                print("with the value computed by OpenMM.")
-                print(f"The value computed by OpenMM was: {openmm_nonbonded_energy}")
-                print(f"The value computed by hand was: {total_nonbonded_energy}")
-                print("Check the units for your model parameters.  If the problem persists, there")
-                print("could be some other problem with the configuration of your coarse grained model.")
-                success = False
-            else:
-                print("Warning: The nonbonded potential energy computed by hand does not agree")
-                print("with the value computed by OpenMM.")
-                print(f"The value computed by OpenMM was: {openmm_nonbonded_energy}")
-                print(f"The value computed by hand was: {total_nonbonded_energy}")
-                print("Likely this is due to differences in rounding/precision.")
-                success = True
+        if energy_diff > 1E-1 * unit.kilojoule_per_mole:
+            print("Error: The nonbonded potential energy computed by hand does not agree")
+            print("with the value computed by OpenMM.")
+            print(f"The value computed by OpenMM was: {openmm_nonbonded_energy}")
+            print(f"The value computed by hand was: {total_nonbonded_energy}")
+            print("Check the units for your model parameters.  If the problem persists, there")
+            print("could be some other problem with the configuration of your coarse grained model.")
+            success = False
         else:
             # The OpenMM nonbonded energy matches the energy computed manually"
             success = True
@@ -692,6 +707,164 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
         cgmodel.system.addForce(bond_force)
         force = bond_force
 
+    if force_type == "HBond":
+        
+        #####################################
+        # Scheme A: Angles are sc-bb---bb
+        #####################################
+        
+        # Here we define:
+        # a1 = acceptor backbone
+        # a2 = acceptor sidechain
+        # d1 = donor backbone
+        # d2 = donor sidechain        
+        
+        hbond_force = mm.CustomHbondForce(
+           f"epsilon_hb*step(-abs(angle(d2,d1,a1)-theta_d)+pi/2)*step(-abs(angle(d2,a1,a2)-theta_a)+pi/2)*(5*(sigma_hb/distance(a1,d1))^12-6*(sigma_hb/distance(a1,d1))^10)*cos(angle(d2,d1,a1)-theta_d)^2*cos(angle(d1,a1,a2)-theta_a)^2"
+           )
+
+        #####################################
+        # Scheme B: Angles are bb-bb-bb 
+        #####################################
+        
+        # The center atom (d2/a2) is the h-bonding donor/acceptor           
+        
+        # hbond_force = mm.CustomHbondForce(
+            # f"epsilon_hb*step(-abs(theta_d_shift)+pi/2)*step(-abs(theta_a_shift)+pi/2)*(5*(sigma_hb/dist_da)^12-6*(sigma_hb/dist_da)^10)*cos(theta_d_shift)^2*cos(theta_a_shift)^2; dist_da=distance(a2,d2); theta_d_shift=angle(d1,d2,d3)-theta_d; theta_a_shift=angle(a1,a2,a3)-theta_a"
+            # )        
+            
+        #####################################
+        # Scheme C: Angles are bb-bb---bb 
+        #####################################
+        
+        # The donor group contains b_(i)*-b_(i+1), and the acceptor group contains b_(i-1)-b*
+        # where the * indicates the particles whose hbond distance is measured and i is the
+        # residue index 
+        
+        # a1 = acceptor bb_(i)*
+        # a2 = acceptor bb_(i-1)
+        # d1 = donor bb_(i)*
+        # d2 = donor bb_(i+1)               
+        
+        # hbond_force = mm.CustomHbondForce(
+            # f"epsilon_hb*step(-abs(theta_d_shift)+pi/2)*step(-abs(theta_a_shift)+pi/2)*(5*(sigma_hb/dist_da)^12-6*(sigma_hb/dist_da)^10)*cos(theta_d_shift)^2*cos(theta_a_shift)^2; dist_da=distance(a1,d1); theta_d_shift=angle(d2,d1,a1)-theta_d; theta_a_shift=angle(d1,a1,a2)-theta_a"
+            # )   
+        
+        # Note: the step functions are 0 if step(x) < 0, and 1 otherwise
+        # We can set pi as a global parameter here
+        # For now the epsilon_hb and sigma_hb and global parameters for homopolymer helices.
+        
+        hbond_force.addGlobalParameter('pi',np.pi)
+        hbond_force.addGlobalParameter('epsilon_hb',cgmodel.hbonds['epsilon_hb'].in_units_of(unit.kilojoules_per_mole))
+        hbond_force.addGlobalParameter('sigma_hb',cgmodel.hbonds['sigma_hb'].in_units_of(unit.nanometer))
+        hbond_force.addGlobalParameter('theta_d',cgmodel.hbonds['theta_d'].in_units_of(unit.radian))
+        hbond_force.addGlobalParameter('theta_a',cgmodel.hbonds['theta_a'].in_units_of(unit.radian))
+        
+        # Get lists of donor and acceptor residues:
+        donor_list = cgmodel.hbonds['donors']
+        acceptor_list = cgmodel.hbonds['acceptors']
+        
+        # For homopolymers, polymers get built in the order of the particle sequence
+        # specified in the monomer definition. For now, require that the particle sequence
+        # in the monomers be [d1,d2] and equivalently [a1,a2].
+        # For a scheme in which backbone-backbone contacts get the HBond interaction, this means [bb,sc]
+
+        mono0 = cgmodel.get_particle_monomer_type(0)
+        n_particles_per_mono = len(mono0["particle_sequence"])
+        
+        # Map the residue ids to the donor/acceptor ids
+        donor_index_map = {}    
+        acceptor_index_map = {}
+        
+        #####################################
+        # Scheme A: Angles are sc-bb---bb
+        #####################################        
+        
+        for donor in donor_list:
+            d1 = donor*n_particles_per_mono    # Particle index of donor1 bead
+            d2 = donor*n_particles_per_mono+1  # Particle index of donor2 bead
+            donor_id = hbond_force.addDonor(d1,d2,-1)     # Third particle not used, so set to -1
+            donor_index_map[donor] = donor_id
+        
+        for acceptor in acceptor_list:
+            a1 = acceptor*n_particles_per_mono    # Particle index of acceptor1 bead
+            a2 = acceptor*n_particles_per_mono+1  # Particle index of acceptor2 bead
+            acceptor_id = hbond_force.addAcceptor(a1,a2,-1)     # Third particle not used, so set to -1  
+            acceptor_index_map[acceptor] = acceptor_id
+            
+        #####################################
+        # Scheme B: Angles are bb-bb-bb 
+        #####################################  
+            
+        # for donor in donor_list:
+            # d1 = (donor-1)*n_particles_per_mono  # Particle index of donor1 bead
+            # d2 = donor*n_particles_per_mono      # Particle index of donor2 bead
+            # d3 = (donor+1)*n_particles_per_mono  # Particle index of donor3 bead
+            # donor_id = hbond_force.addDonor(d1,d2,d3)
+            # donor_index_map[donor] = donor_id
+        
+        # for acceptor in acceptor_list:
+            # a1 = (acceptor-1)*n_particles_per_mono  # Particle index of acceptor1 bead
+            # a2 = acceptor*n_particles_per_mono      # Particle index of acceptor2 bead
+            # a3 = (acceptor+1)*n_particles_per_mono  # Particle index of acceptor3 bead
+            # acceptor_id = hbond_force.addAcceptor(a1,a2,a3)
+            # acceptor_index_map[acceptor] = acceptor_id
+            
+        #####################################
+        # Scheme C: Angles are bb-bb---bb 
+        #####################################  
+            
+        # for donor in donor_list:
+            # d1 = donor*n_particles_per_mono           # Particle index of donor1 bead
+            # d2 = (donor+1)*n_particles_per_mono       # Particle index of donor2 bead
+            # donor_id = hbond_force.addDonor(d1,d2,-1) # Third particle not used, so set to -1
+            # donor_index_map[donor] = donor_id
+        
+        # for acceptor in acceptor_list:
+            # a1 = acceptor*n_particles_per_mono              # Particle index of acceptor1 bead
+            # a2 = (acceptor-1)*n_particles_per_mono          # Particle index of acceptor2 bead
+            # acceptor_id = hbond_force.addAcceptor(a1,a2,-1) # Third particle not used, so set to -1
+            # acceptor_index_map[acceptor] = acceptor_id
+
+        # The hbond potential will get applied to all combinations of donor/acceptor pairs, before applying exclusions.
+        all_hbond_pairs = []
+        for donor in donor_list:
+            for acceptor in acceptor_list:
+                all_hbond_pairs.append([donor,acceptor])
+        
+        # Now make a list of the hbond pairs to include, formatted as [donor,acceptor]:
+        included_hbond_pairs = []             
+        for i in range(len(donor_list)):
+            included_hbond_pairs.append([donor_list[i],acceptor_list[i]])
+                
+        # Now apply exclusions:        
+        excluded_hbond_pairs = []
+        # Exclude all hbond pairs not in included_hbond_pairs:  
+        # This does not work because each donor can have a maximimum of 4 exclusions
+        # for pair in all_hbond_pairs:
+            # if pair not in included_hbond_pairs:
+                #excluded_hbond_pairs.append(pair)
+                #hbond_force.addExclusion(donor_index_map[pair[0]],acceptor_index_map[pair[1]])      
+              
+        # We can use these 4 exclusions to exclude any self interaction and 1-2 neighbors which will cause instability:      
+        # Note - this code is specific to 1-1 models.
+        for pair in all_hbond_pairs:
+            if np.abs(pair[0]-pair[1]) < 2:
+                # If 1-2 or 1-3 neighbors (by residue), exclude:
+                excluded_hbond_pairs.append(pair)
+                hbond_force.addExclusion(donor_index_map[pair[0]],acceptor_index_map[pair[1]])      
+              
+        num_exclusions_openmm = hbond_force.getNumExclusions()
+        num_donors_openmm = hbond_force.getNumDonors()
+        num_acceptors_openmm = hbond_force.getNumAcceptors()
+        print(f'num_exclusions_openmm: {num_exclusions_openmm}')
+        print(f'num_donors_openmm: {num_donors_openmm}')
+        print(f'num_acceptors_openmm: {num_acceptors_openmm}')
+        print(f'hbond_exclusions: {excluded_hbond_pairs}')
+        
+        cgmodel.system.addForce(hbond_force)
+        force = hbond_force                
+
     if force_type == "Nonbonded":
 
         if cgmodel.nonbond_repulsive_exp != 12 or cgmodel.nonbond_attractive_exp != 6:
@@ -747,38 +920,121 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
                 cgmodel.system.addForce(nonbonded_force)
                 force = nonbonded_force                
             
-        else:               
-            # Standard LJ 12-6 potential
-            nonbonded_force = mm.NonbondedForce()
+        else:     
+            if not cgmodel.go_model:
+                # Standard LJ 12-6 potential
+                nonbonded_force = mm.NonbondedForce()
 
-            if rosetta_functional_form:
-                # rosetta has a 4.5-6 A vdw cutoff.  Note the OpenMM cutoff may not be quite the same
-                # functional form as the Rosetta cutoff, but it should be somewhat close.
-                nonbonded_force.setNonbondedMethod(mm.NonbondedForce.CutoffNonPeriodic)
-                nonbonded_force.setCutoffDistance(0.6)  # rosetta cutoff distance in nm
-                nonbonded_force.setUseSwitchingFunction(True)
-                nonbonded_force.setSwitchingDistance(0.45)  # start of rosetta switching distance in nm
-            else:
-                nonbonded_force.setNonbondedMethod(mm.NonbondedForce.NoCutoff)
+                if rosetta_functional_form:
+                    # rosetta has a 4.5-6 A vdw cutoff.  Note the OpenMM cutoff may not be quite the same
+                    # functional form as the Rosetta cutoff, but it should be somewhat close.
+                    nonbonded_force.setNonbondedMethod(mm.NonbondedForce.CutoffNonPeriodic)
+                    nonbonded_force.setCutoffDistance(0.6)  # rosetta cutoff distance in nm
+                    nonbonded_force.setUseSwitchingFunction(True)
+                    nonbonded_force.setSwitchingDistance(0.45)  # start of rosetta switching distance in nm
+                else:
+                    nonbonded_force.setNonbondedMethod(mm.NonbondedForce.NoCutoff)
 
-            for particle in range(cgmodel.num_beads):
-                charge = cgmodel.get_particle_charge(particle)
-                sigma = cgmodel.get_particle_sigma(particle)
-                epsilon = cgmodel.get_particle_epsilon(particle)
-                nonbonded_force.addParticle(charge, sigma, epsilon)
+                for particle in range(cgmodel.num_beads):
+                    charge = cgmodel.get_particle_charge(particle)
+                    sigma = cgmodel.get_particle_sigma(particle)
+                    epsilon = cgmodel.get_particle_epsilon(particle)
+                    nonbonded_force.addParticle(charge, sigma, epsilon)
 
-            # Add nonbonded exclusions:
-            nonbonded_exclusion_list = cgmodel.get_nonbonded_exclusion_list()
-            for pair in nonbonded_exclusion_list:
-                nonbonded_force.addException(pair[0],pair[1],0,0,0)
-               
-            # Check for binary interaction parameters:
-            if cgmodel.binary_interaction_parameters:
-                # If not an empty dict, use the input binary_interaction_parameters
-                # The cross epsilons are rescaled by (1-kappa) with addException
+                # Add nonbonded exclusions:
+                nonbonded_exclusion_list = cgmodel.get_nonbonded_exclusion_list()
+                for pair in nonbonded_exclusion_list:
+                    nonbonded_force.addException(pair[0],pair[1],0,0,0)
+                   
+                # Check for binary interaction parameters:
+                if cgmodel.binary_interaction_parameters:
+                    # If not an empty dict, use the input binary_interaction_parameters
+                    # The cross epsilons are rescaled by (1-kappa) with addException
+                    
+                    for pair in cgmodel.nonbonded_interaction_list:
+                        if pair not in nonbonded_exclusion_list and reversed(pair) not in nonbonded_exclusion_list:
+                            # If already excluded, no further action needed
+                            
+                            pair_type0 = cgmodel.get_particle_type_name(pair[0])
+                            pair_type1 = cgmodel.get_particle_type_name(pair[1])
+                            
+                            kappa_name = f"{pair_type0}_{pair_type1}_binary_interaction"
+                            kappa_name_reverse = f"{pair_type1}_{pair_type0}_binary_interaction"
+                            
+                            if pair_type0 == pair_type1:
+                                # Same type particle interactions should not be modified
+                                kappa = 0
+                            
+                            else:
+                                if kappa_name in cgmodel.binary_interaction_parameters:
+                                    # Apply the binary interaction parameter to this interaction group
+                                    kappa = cgmodel.binary_interaction_parameters[kappa_name]
+                                    
+                                elif kappa_name_reverse in cgmodel.binary_interaction_parameters:
+                                    # Apply the binary interaction parameter to this interaction group
+                                    kappa = cgmodel.binary_interaction_parameters[kappa_name_reverse]
+                                    
+                                else:
+                                    # The binary interaction parameter is not set for this interaction
+                                    # group. By default, we will use a value of 0 (standard mixing rules)
+                                    
+                                    print(f'Warning: no binary interaction parameter set for pair type {pair_type0}, {pair_type1}')
+                                    print(f'Applying default value of zero (standard mixing rules)')
+                                    
+                                    kappa = 0
+
+                            charge1 = cgmodel.get_particle_charge(pair[0])
+                            sigma1 = cgmodel.get_particle_sigma(pair[0]).in_units_of(unit.nanometer)
+                            epsilon1 = cgmodel.get_particle_epsilon(pair[0]).in_units_of(unit.kilojoule_per_mole)
+                            
+                            charge2 = cgmodel.get_particle_charge(pair[1])
+                            sigma2 = cgmodel.get_particle_sigma(pair[1]).in_units_of(unit.nanometer)
+                            epsilon2 = cgmodel.get_particle_epsilon(pair[1]).in_units_of(unit.kilojoule_per_mole)
+                            
+                            charge_ij = charge1*charge2
+                            sigma_ij = (sigma1+sigma2) / 2.0
+                            epsilon_ij = (1-kappa)*np.sqrt(epsilon1*epsilon2)
+                            nonbonded_force.addException(
+                                pair[0], pair[1], charge_ij, sigma_ij, epsilon_ij
+                            )
+                                
+                # For rosetta, apply a 0.2 weight to 1-5 interactions:
+                # This should not be used with the binary interaction parameters.
+                if rosetta_functional_form:
+                    for torsion in cgmodel.torsion_list:
+                        for bond in cgmodel.bond_list:
+                            if bond[0] not in torsion:
+                                if bond[1] == torsion[0]:
+                                    nonbonded_force = add_rosetta_exception_parameters(
+                                        cgmodel, nonbonded_force, bond[0], torsion[3]
+                                    )
+                                if bond[1] == torsion[3]:
+                                    nonbonded_force = add_rosetta_exception_parameters(
+                                        cgmodel, nonbonded_force, bond[0], torsion[0]
+                                    )
+                            if bond[1] not in torsion:
+                                if bond[0] == torsion[0]:
+                                    nonbonded_force = add_rosetta_exception_parameters(
+                                        cgmodel, nonbonded_force, bond[1], torsion[3]
+                                    )
+                                if bond[0] == torsion[3]:
+                                    nonbonded_force = add_rosetta_exception_parameters(
+                                        cgmodel, nonbonded_force, bond[1], torsion[0]
+                                    )
+
+                cgmodel.system.addForce(nonbonded_force)
+                force = nonbonded_force
+            elif cgmodel.go_model: 
+                # Go 12-6 LJ potential
+
+                # We can only set kappa as a global parameter, or as a per-particle parameter.
+                # One way is to use a separate nonbonded force object for each kappa.
+                
+                # First, construct a dictionary mapping kappa to the pairs it should be applied to:
+                kappa_map = {}
                 
                 for pair in cgmodel.nonbonded_interaction_list:
-                    if pair not in nonbonded_exclusion_list and reversed(pair) not in nonbonded_exclusion_list:
+                    if pair not in cgmodel.nonbonded_exclusion_list and reversed(pair) not in cgmodel.nonbonded_exclusion_list:
                         # If already excluded, no further action needed
                         
                         pair_type0 = cgmodel.get_particle_type_name(pair[0])
@@ -789,67 +1045,76 @@ def add_force(cgmodel, force_type=None, rosetta_functional_form=False):
                         
                         if pair_type0 == pair_type1:
                             # Same type particle interactions should not be modified
-                            kappa = 0
+                            kappa_pair = 0
                         
                         else:
                             if kappa_name in cgmodel.binary_interaction_parameters:
-                                # Apply the binary interaction parameter to this interaction group
-                                kappa = cgmodel.binary_interaction_parameters[kappa_name]
-                                
+                                kappa_pair = cgmodel.binary_interaction_parameters[kappa_name]
+
                             elif kappa_name_reverse in cgmodel.binary_interaction_parameters:
-                                # Apply the binary interaction parameter to this interaction group
-                                kappa = cgmodel.binary_interaction_parameters[kappa_name_reverse]
+                                kappa_pair = cgmodel.binary_interaction_parameters[kappa_name_reverse]
                                 
                             else:
-                                # The binary interaction parameter is not set for this interaction
-                                # group. By default, we will use a value of 0 (standard mixing rules)
+                                # The binary interaction parameter is not set for this pair.
+                                # By default, we will use a value of 0 (standard mixing rules)
                                 
                                 print(f'Warning: no binary interaction parameter set for pair type {pair_type0}, {pair_type1}')
                                 print(f'Applying default value of zero (standard mixing rules)')
                                 
-                                kappa = 0
+                                kappa_pair = 0
 
-                        charge1 = cgmodel.get_particle_charge(pair[0])
-                        sigma1 = cgmodel.get_particle_sigma(pair[0]).in_units_of(unit.nanometer)
-                        epsilon1 = cgmodel.get_particle_epsilon(pair[0]).in_units_of(unit.kilojoule_per_mole)
-                        
-                        charge2 = cgmodel.get_particle_charge(pair[1])
-                        sigma2 = cgmodel.get_particle_sigma(pair[1]).in_units_of(unit.nanometer)
-                        epsilon2 = cgmodel.get_particle_epsilon(pair[1]).in_units_of(unit.kilojoule_per_mole)
-                        
-                        charge_ij = charge1*charge2
-                        sigma_ij = (sigma1+sigma2) / 2.0
-                        epsilon_ij = (1-kappa)*np.sqrt(epsilon1*epsilon2)
-                        nonbonded_force.addException(
-                            pair[0], pair[1], charge_ij, sigma_ij, epsilon_ij
-                        )
+                    # Add pair to dict:
+                    if kappa_pair in kappa_map:
+                        kappa_map[kappa_pair].append(pair)
+                    else:
+                        kappa_map[kappa_pair] = []
+                        kappa_map[kappa_pair].append(pair)
                             
-            # For rosetta, apply a 0.2 weight to 1-5 interactions:
-            # This should not be used with the binary interaction parameters.
-            if rosetta_functional_form:
-                for torsion in cgmodel.torsion_list:
-                    for bond in cgmodel.bond_list:
-                        if bond[0] not in torsion:
-                            if bond[1] == torsion[0]:
-                                nonbonded_force = add_rosetta_exception_parameters(
-                                    cgmodel, nonbonded_force, bond[0], torsion[3]
-                                )
-                            if bond[1] == torsion[3]:
-                                nonbonded_force = add_rosetta_exception_parameters(
-                                    cgmodel, nonbonded_force, bond[0], torsion[0]
-                                )
-                        if bond[1] not in torsion:
-                            if bond[0] == torsion[0]:
-                                nonbonded_force = add_rosetta_exception_parameters(
-                                    cgmodel, nonbonded_force, bond[1], torsion[3]
-                                )
-                            if bond[0] == torsion[3]:
-                                nonbonded_force = add_rosetta_exception_parameters(
-                                    cgmodel, nonbonded_force, bond[1], torsion[0]
-                                )
+                
+                # Now, create a customNonbondedForce for each unique kappa:
+                force = []
+                for kappa, pair_list in kappa_map.items():
+                    particles_added = []
+                    
+                    # Full repulsive potential with scaled attractive potential
+                    
+                    if kappa == 0 or cgmodel.go_repulsive_epsilon is None:
+                        # This is either a native interaction, or we use mixing rules for the repulsive epsilon
+                        nonbonded_force = mm.CustomNonbondedForce(f"4*epsilon_rep*(sigma/r)^12-4*epsilon_att*(sigma/r)^6; sigma=0.5*(sigma1+sigma2); epsilon_rep=sqrt(epsilon1*epsilon2); epsilon_att=(1-{kappa})*sqrt(epsilon1*epsilon2)")
+                    
+                    else:
+                        # This is a non-native interaction and we use a uniform repulsive epsilon
+                        nonbonded_force = mm.CustomNonbondedForce(f"4*epsilon_rep_uni*(sigma/r)^12-4*epsilon_att*(sigma/r)^6; sigma=0.5*(sigma1+sigma2); epsilon_att=(1-{kappa})*sqrt(epsilon1*epsilon2)")
+                        nonbonded_force.addGlobalParameter("epsilon_rep_uni",cgmodel.go_repulsive_epsilon.in_units_of(unit.kilojoule_per_mole))
+                    
+                    nonbonded_force.addPerParticleParameter("sigma")
+                    nonbonded_force.addPerParticleParameter("epsilon")   
+                    
+                    # TODO: add the rosetta_functional_form switching function
+                    nonbonded_force.setNonbondedMethod(mm.NonbondedForce.NoCutoff)
+                    
+                    for particle in range(cgmodel.num_beads):
+                        # We don't need to define charge here, though we should add it in the future
+                        # We also don't need to define kappa since it is a global parameter
+                        # Each nonbonded force must have the same number of particles as the system,
+                        # so we add all particles here:
+                        
+                        sigma = cgmodel.get_particle_sigma(particle)
+                        epsilon = cgmodel.get_particle_epsilon(particle)
+                        nonbonded_force.addParticle((sigma, epsilon))
 
-            cgmodel.system.addForce(nonbonded_force)
-            force = nonbonded_force
+                    # We can't have different numbers of exclusions for each CustomNonbondedForce
+                    # Instead add pairs as interaction groups:
+                    for pair in pair_list:
+                        nonbonded_force.addInteractionGroup([pair[0]],[pair[1]])
+
+                    # Exclude pairs in the nonbonded exclusions list (commmon to all kappa):        
+                    for pair in cgmodel.nonbonded_exclusion_list:
+                        nonbonded_force.addExclusion(pair[0],pair[1])
+
+                    cgmodel.system.addForce(nonbonded_force)
+                    force.append(nonbonded_force)
+                        
 
     if force_type == "Angle":
 
@@ -1109,8 +1374,18 @@ def build_system(cgmodel, rosetta_functional_form=False, verify=True):
         cgmodel, nonbonded_force = add_force(
             cgmodel, force_type="Nonbonded", rosetta_functional_form=rosetta_functional_form,
         )
-        if cgmodel.positions is not None:
+        if verify and cgmodel.positions is not None:
             if not check_force(cgmodel, nonbonded_force, force_type="Nonbonded"):
+                print("ERROR: There was a problem with the nonbonded force definitions")
+                exit()
+
+    if cgmodel.hbonds:
+        # Create directional hbond forces
+        cgmodel, hbond_force = add_force(cgmodel, force_type="HBond")
+        
+        if verify and cgmodel.positions is not None:
+            # ***TODO: add the force check here (manual vs openmm):
+            if not check_force(cgmodel, hbond_force, force_type="HBond"):
                 print("ERROR: There was a problem with the nonbonded force definitions")
                 exit()
 
@@ -1119,7 +1394,7 @@ def build_system(cgmodel, rosetta_functional_form=False, verify=True):
             # Create bond (harmonic) potentials
             cgmodel, bond_force = add_force(cgmodel, force_type="Bond")
             
-            if cgmodel.positions is not None:
+            if verify and cgmodel.positions is not None:
             # ***This check is currently doing nothing:
                 if not check_force(cgmodel, bond_force, force_type="Bond"):
                     print("ERROR: The bond force definition is giving 'nan'")
@@ -1130,7 +1405,7 @@ def build_system(cgmodel, rosetta_functional_form=False, verify=True):
             # Create bond angle potentials
             cgmodel, bond_angle_force = add_force(cgmodel, force_type="Angle")
 
-            if cgmodel.positions is not None:
+            if verify and cgmodel.positions is not None:
             # ***This check is currently doing nothing:
                 if not check_force(cgmodel, bond_angle_force, force_type="Angle"):
                     print("ERROR: There was a problem with the bond angle force definitions.")
@@ -1141,16 +1416,15 @@ def build_system(cgmodel, rosetta_functional_form=False, verify=True):
             # Create torsion potentials
             cgmodel, torsion_force = add_force(cgmodel, force_type="Torsion")
 
-            if cgmodel.positions is not None:
+            if verify and cgmodel.positions is not None:
             # ***This check is currently doing nothing:
                 if not check_force(cgmodel, torsion_force, force_type="Torsion"):
                     print("ERROR: There was a problem with the torsion definitions.")
                     exit()
 
-    if verify:
-        if cgmodel.positions is not None:
-            if not check_forces(cgmodel):
-                print("ERROR: There was a problem with the forces.")
-                exit()
+    if verify and cgmodel.positions is not None:
+        if not check_forces(cgmodel):
+            print("ERROR: There was a problem with the forces.")
+            exit()
 
     return system

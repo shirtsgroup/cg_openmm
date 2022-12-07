@@ -107,6 +107,8 @@ class CGModel(object):
         equil_bond_angles={},
         torsion_phase_angles={},
         binary_interaction_parameters={},
+        go_model=False,
+        go_repulsive_epsilon=None,
         constrain_bonds=False,
         include_nonbonded_forces=True,
         include_bond_forces=True,
@@ -116,6 +118,7 @@ class CGModel(object):
         nonbond_repulsive_exp=12,
         nonbond_attractive_exp=6,
         exclusions={},
+        hbonds={},
         rosetta_functional_form=False,
         check_energy_conservation=True,
         use_structure_library=False,
@@ -163,6 +166,12 @@ class CGModel(object):
         :param binary_interaction_parameters: Binary interaction parameters used to scale nonbonded interactions between unlike particles (default=None)
         :type binary_interaction_parameters: dict( 'type_name1_type_name2_binary_interaction': float )
         
+        :param go_model: If True, the binary interaction parameters will be applied only to the attractive component of the nonbonded potential. Otherwise, binary_interaction_parameters will be applied to the total potential (default=False)
+        :type go_model: bool
+        
+        :param go_repulsive_epsilon: If not None and go_model=True, use a fixed value for repulsive interactions, applied only to pairs that also have a binary interaction parameters < 1. (default=None)
+        :type go_repulsive_epsilon: Quantity ( float*unit.kilojoule_per_mole )
+        
         :param constrain_bonds: Option to use rigid bond constaints during a simulation of the energy for the system (default = False)
         :type constrain_bonds: Bool
 
@@ -190,6 +199,9 @@ class CGModel(object):
         :param exclusions: Nonbonded weights for [1-2, 1-3, 1-4] interactions (default = [0,0,1])
         :type exclusions: dict( list( int ) )
         
+        :param hbonds: Dictionary containing directional CustomHbondedForce potential information. 
+        :type hbonds: dict( 'donors': list(); 'acceptors': list(); 'epsilon_hb': Quantity * unit.kilojoule_per_mole; 'sigma_hb': Quantity * unit.angstrom; 'theta_d': Quantity * unit.degrees; 'theta_a': Quantity * unit.degrees )  
+        
         :param rosetta_functional_form: Option to use nonbonded exclusions consistent with Rosetta
         :type rosetta_functional_form: Bool
 
@@ -198,15 +210,6 @@ class CGModel(object):
 
         :param use_structure_library: Flag designating whether or not to use a structure from the foldamers ensemble as the initial positions for the particles in the coarse-grained model (default = False)
         :type use_structure_library: Bool
-
-        :param backbone_lengths: List of the number of beads in the backbone for unique monomer types within the coarse grained model (default = 1)
-        :type backbone_lengths: int
-
-        :param sidechain_lengths: List of the number of beads in the sidechain for unique monomer types within the coarse grained model (default = 1)
-        :type sidechain_lengths: int
-
-        :param sidechain_positions: List of the indices of backbone beads upon which we will place sidechains, default = [0] (add a sidechain to the first backbone bead in each monomer)
-        :type sidechain_positions: List( int )
 
         :param random_positions: Flag designating whether or not to generate a set of random coordinates for the coarse-grained model (default = None)
         :type random_positions: Bool
@@ -274,8 +277,14 @@ class CGModel(object):
         self.particle_types = add_new_elements(self)
         
         # Assign binary interaction parameters
+        self.go_model = go_model
+        self.go_repulsive_epsilon = go_repulsive_epsilon
         self.binary_interaction_parameters = binary_interaction_parameters
-        self._validate_binary_interaction
+        self._validate_binary_interaction()
+        
+        # Assign directional H-bond parameters:
+        self.hbonds = hbonds
+        self._validate_hbonds()
 
         # Assign positions
         if positions == None:
@@ -447,14 +456,14 @@ class CGModel(object):
         return particle_type_list
         
         
-    def _validate_binary_interaction(self, binary_interaction_parameters):    
+    def _validate_binary_interaction(self):    
         """
         Check that the binary interaction definitions are valid.
         Each entry in the dictionary should be 'type_name1_type_name2_binary_interaction': float
         """
         
-        if binary_interaction_parameters is not None:
-            for key, value in binary_interaction_parameters.items():
+        if self.binary_interaction_parameters:
+            for key, value in self.binary_interaction_parameters.items():
                 # Extract the particle types:
                 kappa_list = []
                 string = ""
@@ -467,20 +476,66 @@ class CGModel(object):
                 kappa_list.append(string)
                 
                 if kappa_list[-2] != 'binary' or kappa_list[-1] != 'interaction':
-                    print(f'Incorrect suffix for binary interaction parameter for {binary_interaction_parameters[key]}')
+                    print(f'Incorrect suffix for binary interaction parameter for {self.binary_interaction_parameters[key]}')
                     exit()
   
                 # Use the first two particles in the dictionary key:
                 kappa_particle_list = kappa_list[0:2]
                 
+                # Get the names of all particles in particle_type_list:
+                particle_strings = []
+                for particle in self.particle_type_list:
+                    particle_strings.append(particle['particle_type_name'])
+                
                 for particle in kappa_particle_list:
-                    if particle in self.particle_type_list:
+                    if particle in particle_strings:
                         pass
                     else:
                         print(f'Invalid particle name {particle} in binary interaction parameter definition') 
                         exit()
                         
         return
+        
+        
+    def _validate_hbonds(self):    
+        """
+        Check that the direction hydrogen bond force definitions are valid.
+        The hbond dictionary must have the following entries and types:
+        'donors': list of donor residue indices,
+        'acceptors: list of acceptor residue indices,
+        'epsilon_hb': Quantity with energy units (hydrogen bond interaction strength between contacts)
+        'sigma_hb': Quantity with distance units (size parameter for hydrogen bond potential)
+        'theta_d': Quantity with angle units (angle between (sc_donor-bb_donor)---(bb_acceptor))
+        'theta_a': Quantity with angle units (angle between (bb_donor)---(bb_acceptor-sc_acceptor))
+        """
+        
+        if self.hbonds:
+            hbonds = self.hbonds
+            # Check for required parameter keys:
+            for param in ['donors','acceptors','epsilon_hb','sigma_hb','theta_d','theta_a']:
+                if param in hbonds:
+                    pass
+                else:
+                    print(f'Error: incomplete hbond potential parameters provided (missing {param})')
+                    exit()
+                
+            # Check acceptor and donor lists:
+            if (type(hbonds['donors']) == list and type(hbonds['acceptors']) == list and \
+                len(hbonds['donors']) == len(hbonds['acceptors'])):
+                pass
+            else:
+                print(f'Error: invalid hbond donor and acceptor residue lists')
+                exit()
+                
+            # Check hbond parameters:
+            for param in ['epsilon_hb','sigma_hb','theta_d','theta_a']:
+                if type(hbonds[param]) == unit.quantity.Quantity:
+                    pass
+                else:
+                    print(f'Error: invalid {param} parameter - check units')
+                    exit()
+         
+        return        
         
         
     def build_polymer(self, sequence):
@@ -870,105 +925,46 @@ class CGModel(object):
            - torsions ( List( List( int, int, int, int ) ) ) - A list of the particle indices for the torsions in the coarse-grained model
         """
 
-        bond_list = self.bond_list
         angle_list = self.bond_angle_list
-        torsions = []
-        # Choose the first bond in the torsion
-        for bond_1 in bond_list:
-            # Choose a second bond with which to attempt to define a torsion.
-            torsion = []
-            for bond_2 in bond_list:
-                # Make sure bonds 1 and 2 are different
-                if bond_2 != bond_1 and [bond_2[1], bond_2[0]] != bond_1:
-                    if bond_1[0] == bond_2[1]:
-                        torsion = [bond_2[0], bond_2[1], bond_1[1]]
-                    if bond_1[1] == bond_2[0]:
-                        torsion = [bond_1[0], bond_1[1], bond_2[1]]
+        torsion_list = []
+        
+        # New method - just use two overlapping angles:
+        for i in range(len(angle_list)):
+            for j in range(i,len(angle_list)):
+                angle_1 = angle_list[i]
+                angle_2 = angle_list[j]
 
-                if len(torsion) == 3:
-                    # Choose a third bond with which to attempt a torsion definition
-                    for bond_3 in bond_list:
-                        # Make sure the third bond is different from the first two bonds.
-                        if (
-                            bond_3 != bond_1
-                            and [bond_3[1], bond_3[0]] != bond_1
-                            and bond_3 != bond_2
-                            and [bond_3[1], bond_3[0]] != bond_2
-                        ):
-                            if bond_3[0] in torsion or bond_3[1] in torsion:
-                                if bond_3[0] == torsion[0] and len(torsion) < 4:
-                                    torsion.insert(0, bond_3[1])
-                                if bond_3[0] == torsion[1] and len(torsion) == 4:
-                                    torsion[0] = bond_3[1]
-
-                                if bond_3[1] == torsion[0] and len(torsion) < 4:
-                                    torsion.insert(0, bond_3[0])
-                                if bond_3[1] == torsion[1] and len(torsion) == 4:
-                                    torsion[0] = bond_3[0]
-                                if bond_3[0] == torsion[2] and len(torsion) < 4:
-                                    torsion.append(bond_3[1])
-                                if bond_3[0] == torsion[2] and len(torsion) == 4:
-                                    torsion[3] = bond_3[1]
-                                if bond_3[1] == torsion[2] and len(torsion) < 4:
-                                    torsion.append(bond_3[0])
-                                if bond_3[1] == torsion[2] and len(torsion) == 4:
-                                    torsion[3] = bond_3[0]
-                        if len(torsion) == 4:
-                            # Determine if the particles defining this torsion are suitable.
-                            if len(torsions) == 0:
-                                torsions.append(torsion)
-                            else:
-                                unique = True
-                                for existing_torsion in torsions:
-                                    if Counter(torsion) == Counter(existing_torsion):
-                                        unique = False
-                                if unique:
-                                    torsions.append(torsion)
-
-        for angle in angle_list:
-            for bond in bond_list:
-                if (
-                    bond[0] in angle
-                    and bond[1] not in angle
-                    or bond[1] in angle
-                    and bond[0] not in angle
-                ):
-                    if bond[0] == angle[0]:
-                        torsion = [bond[1], angle[0], angle[1], angle[2]]
-                        unique = True
-                        for existing_torsion in torsions:
-                            if Counter(torsion) == Counter(existing_torsion):
-                                unique = False
-                        if unique:
-                            torsions.append(torsion)
-                    if bond[0] == angle[2]:
-                        torsion = [angle[0], angle[1], angle[2], bond[1]]
-                        unique = True
-                        for existing_torsion in torsions:
-                            if Counter(torsion) == Counter(existing_torsion):
-                                unique = False
-                        if unique:
-                            torsions.append(torsion)
-                    if bond[1] == angle[0]:
-                        torsion = [bond[0], angle[0], angle[1], angle[2]]
-                        unique = True
-                        for existing_torsion in torsions:
-                            if Counter(torsion) == Counter(existing_torsion):
-                                unique = False
-                        if unique:
-                            torsions.append(torsion)
-                    if bond[1] == angle[2]:
-                        torsion = [angle[0], angle[1], angle[2], bond[0]]
-                        unique = True
-                        for existing_torsion in torsions:
-                            if Counter(torsion) == Counter(existing_torsion):
-                                unique = False
-                        if unique:
-                            torsions.append(torsion)
-
-        torsion_set = set(tuple(torsion) for torsion in torsions)
-        torsions = [list(torsion) for torsion in torsion_set]
-        return torsions
+                # Check overlap:
+                if [angle_1[1],angle_1[2]] == [angle_2[0],angle_2[1]]:
+                    # 0 1 2
+                    #   0 1 2
+                    torsion = [angle_1[0], angle_1[1], angle_1[2], angle_2[2]]
+                    # Check that torsion is new and that ends are not the same particle:
+                    if torsion not in torsion_list and reversed(torsion) not in torsion_list and torsion[0] != torsion[3]:
+                        torsion_list.append(torsion)
+                        
+                elif [angle_1[1],angle_1[2]] == [angle_2[2],angle_2[1]]:
+                    # 0 1 2
+                    #   2 1 0
+                    torsion = [angle_1[0], angle_1[1], angle_1[2], angle_2[0]]
+                    if torsion not in torsion_list and reversed(torsion) not in torsion_list and torsion[0] != torsion[3]:
+                        torsion_list.append(torsion)
+                        
+                elif [angle_1[1],angle_1[0]] == [angle_2[0],angle_2[1]]:
+                    # 2 1 0
+                    #   0 1 2
+                    torsion = [angle_1[2], angle_1[1], angle_1[0], angle_2[2]]
+                    if torsion not in torsion_list and reversed(torsion) not in torsion_list and torsion[0] != torsion[3]:
+                        torsion_list.append(torsion)
+                        
+                elif [angle_1[1],angle_1[0]] == [angle_2[2],angle_2[1]]:
+                    # 2 1 0
+                    #   2 1 0
+                    torsion = [angle_1[2], angle_1[1], angle_1[0], angle_2[0]]
+                    if torsion not in torsion_list and reversed(torsion) not in torsion_list and torsion[0] != torsion[3]:
+                        torsion_list.append(torsion)
+        
+        return torsion_list
         
 
     def get_particle_attribute(self, particle, attribute):

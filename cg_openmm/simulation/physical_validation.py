@@ -18,8 +18,9 @@ kB = unit.MOLAR_GAS_CONSTANT_R # Boltzmann constant
 
 def physical_validation_ensemble(
     output_data="output.nc", output_directory="ouput", plotfile='ensemble_check', 
-    pairs='single',ref_state_index=0
-):
+    pairs='single', ref_state_index=0, frame_start=0, frame_stride=1, frame_end=-1,
+    bootstrap_error=False, bootstrap_repetitions=200, bootstrap_seed=None, data_is_uncorrelated=False,
+    ):
     """
     Run ensemble physical validation test for 2 states in replica exchange simulation
 
@@ -34,6 +35,26 @@ def physical_validation_ensemble(
     :param ref_state_index: Index in temperature_list to use as one of the states in the ensemble check. The other state will be chosen based on the energy standard deviation at the reference state. Ignored if pairs='all'
     :type ref_state_index: int
     
+    :param frame_start: Set the starting frame for the analysis (default=0)
+    :type frame_start: int
+    
+    :param frame_stride: Set the sample spacing for decorrelated frames (default=1)
+    :type frame_stride: int
+    
+    :param frame_end: Set the end frame for the analysis (default=-1)
+    :type frame_end: int
+    
+    :param bootstrap_error: Flag indicating if standard error of energies should be computed via bootstrapping (default=False)
+    :type bootstrap_error: bool
+    
+    :param bootstrap_repetitions: Number of bootstrap repititions (default=200)
+    :type bootstrap_repetitions: int
+    
+    :param bootstrap_seed: Set a bootstrapping seed for reproducible results. If None, a random seed is used. (default=None)
+    :type bootstrap_seed: int
+    
+    :param data_is_uncorrelated: Flag indicating if the data after applying frame_start, frame_stride, and frame_end is uncorrelated. Applying the appropriate frame slicing greatly speeds up the ensemble check. (default=False)
+    :type data_is_uncorrelated: bool
     """
 
     # Get temperature list and read the energies for individual temperature replicas
@@ -46,11 +67,21 @@ def physical_validation_ensemble(
         temperature_list.append(s.temperature)
     
     (
-        replica_energies,
+        replica_energies_all,
         unsampled_state_energies,
         neighborhoods,
-        replica_state_indices,
+        replica_state_indices_all,
     ) = analyzer.read_energies()
+
+    # Select frames to analyze
+    if frame_end > 0:
+        replica_energies = replica_energies_all[:,:,frame_start:frame_end:frame_stride]
+        replica_state_indices = replica_state_indices_all[:,frame_start:frame_end:frame_stride]
+    else:
+        replica_energies = replica_energies_all[:,:,frame_start::frame_stride]    
+        replica_state_indices = replica_state_indices_all[:,frame_start::frame_stride]
+
+    del replica_energies_all, replica_state_indices_all
 
     n_particles = np.shape(reporter.read_sampler_states(iteration=0)[0].positions)[0]
     
@@ -122,7 +153,11 @@ def physical_validation_ensemble(
                 sim_data1,
                 sim_data2,
                 total_energy=False,
-                filename=plotfile
+                filename=plotfile,
+                bootstrap_error=bootstrap_error,
+                bootstrap_repetitions=bootstrap_repetitions,
+                bootstrap_seed=bootstrap_seed,
+                data_is_uncorrelated=data_is_uncorrelated,
                 )
             
             quantiles[f"state{state1_index}_state{state2_index}"] = quantiles_ij[0]
@@ -153,7 +188,11 @@ def physical_validation_ensemble(
                     sim_data1,
                     sim_data2,
                     total_energy=False,
-                    filename=f"{plotfile}_{state1_index}_{state2_index}"
+                    filename=f"{plotfile}_{state1_index}_{state2_index}",
+                    bootstrap_error=bootstrap_error,
+                    bootstrap_repetitions=bootstrap_repetitions,
+                    bootstrap_seed=bootstrap_seed,
+                    data_is_uncorrelated=data_is_uncorrelated,
                     )
                     
                 quantiles[f"state{state1_index}_state{state2_index}"] = quantiles_ij[0]
@@ -183,7 +222,11 @@ def physical_validation_ensemble(
                         sim_data1,
                         sim_data2,
                         total_energy=False,
-                        filename=f"{plotfile}_{state1_index}_{state2_index}"
+                        filename=f"{plotfile}_{state1_index}_{state2_index}",
+                        bootstrap_error=bootstrap_error,
+                        bootstrap_repetitions=bootstrap_repetitions,
+                        bootstrap_seed=bootstrap_seed,
+                        data_is_uncorrelated=data_is_uncorrelated,
                         )
                         
                     quantiles[f"state{state1_index}_state{state2_index}"] = quantiles_ij[0]
@@ -193,6 +236,7 @@ def physical_validation_ensemble(
                     
                     
     return quantiles
+    
     
 def set_simulation_data(
     state_energies, T_array, state1_index, state2_index

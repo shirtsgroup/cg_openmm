@@ -72,6 +72,40 @@ def test_heat_capacity_calc(tmpdir):
         
     assert_allclose(deltaS_list.value_in_unit(C_v.unit)/np.max(deltaS_list.value_in_unit(C_v.unit)),np.ones(len(deltaS_list)))
         
+        
+def test_heat_capacity_entropy_integral(tmpdir):  
+    """ Test heat capacity calculation"""
+    
+    plot_directory = tmpdir.mkdir("plot_output")
+    output_data = os.path.join(data_path, "output.nc")
+    
+    # number_replicas=12
+    # min_temp = 200.0 * unit.kelvin
+    # max_temp = 600.0 * unit.kelvin
+    
+    # Get the heat capacities:
+    C_v, dC_v, new_temperature_list, FWHM, Tm, Cv_height, N_eff = get_heat_capacity(
+    frame_begin=2,
+        output_data=output_data,
+        num_intermediate_states=2,
+        plot_file=f"{plot_directory}/heat_capacity.pdf"
+    )
+    
+    # Test heat capacity spline integral to compute entropy changes:
+    deltaS_integrals = get_heat_capacity_integral_entropy(
+        C_v,
+        new_temperature_list,
+        plotfile=f"{plot_directory}/Cv_entropy.pdf")
+        
+    # Check output array size:    
+    assert len(deltaS_integrals) == len(new_temperature_list)
+    
+    # Check entropy output units:
+    assert deltaS_integrals.unit == C_v.unit
+    
+    # Check plot output:
+    assert os.path.isfile(f"{plot_directory}/Cv_entropy.pdf")
+
     
 def test_bootstrap_heat_capacity_conf(tmpdir):  
     """Test heat capacity bootstrapping calculation with confidence intervals"""
@@ -113,6 +147,34 @@ def test_bootstrap_heat_capacity_sigma(tmpdir):
         
     assert FWHM_value.value_in_unit(unit.kelvin) > 0.0
     assert os.path.isfile(f"{plot_directory}/heat_capacity_boot.pdf")
+    
+ 
+def test_bootstrap_heat_capacity_sigma_entropies(tmpdir):  
+    """
+    Test heat capacity bootstrapping calculation with analytical standard deviation,
+    and including the entropy integrals at each iterations.
+    """
+    
+    plot_directory = tmpdir.mkdir("plot_output")
+    output_data = os.path.join(data_path, "output.nc")
+    
+    (new_temperature_list, C_v_values, C_v_uncertainty, Tm_value, Tm_uncertainty, 
+    Cv_height_value, Cv_height_uncertainty, FWHM_value, FWHM_uncertainty, N_eff,
+    deltaS_values, deltaS_uncertainty) = bootstrap_heat_capacity(
+        output_data=output_data,
+        num_intermediate_states=1,
+        frame_begin=2,
+        sample_spacing=4,
+        n_trial_boot=10,
+        plot_file=f"{plot_directory}/heat_capacity_boot.pdf",
+        conf_percent='sigma',
+        compute_entropies=True,
+        )
+        
+    assert len(deltaS_values) == len(C_v_values)    
+    assert deltaS_values.unit == C_v_values.unit
+    assert FWHM_value.value_in_unit(unit.kelvin) > 0.0
+    assert os.path.isfile(f"{plot_directory}/heat_capacity_boot.pdf") 
     
     
 def test_partial_heat_capacity_2state(tmpdir):
@@ -379,7 +441,7 @@ def test_physical_validation_1(tmpdir):
     quantiles = physical_validation_ensemble(
         output_data=output_data,
         output_directory=data_path,
-        plotfile=f"{plot_directory}ensemble_check",
+        plotfile=f"{plot_directory}/ensemble_check",
         pairs='single',
         ref_state_index=1,
     )
@@ -394,7 +456,7 @@ def test_physical_validation_2(tmpdir):
     quantiles = physical_validation_ensemble(
         output_data=output_data,
         output_directory=data_path,
-        plotfile=f"{plot_directory}ensemble_check",
+        plotfile=f"{plot_directory}/ensemble_check",
         pairs='adjacent',
     )
     
@@ -409,7 +471,7 @@ def test_physical_validation_3(tmpdir):
     quantiles = physical_validation_ensemble(
         output_data=output_data,
         output_directory=data_path,
-        plotfile=f"{plot_directory}ensemble_check",
+        plotfile=f"{plot_directory}/ensemble_check",
         pairs='all',
     )
     
@@ -424,7 +486,7 @@ def test_physical_validation_4(tmpdir):
     quantiles = physical_validation_ensemble(
         output_data=output_data,
         output_directory=data_path,
-        plotfile=f"{plot_directory}ensemble_check",
+        plotfile=f"{plot_directory}/ensemble_check",
     )
     
     
@@ -438,7 +500,67 @@ def test_physical_validation_5(tmpdir):
     quantiles = physical_validation_ensemble(
         output_data=output_data,
         output_directory=data_path,
-        plotfile=f"{plot_directory}ensemble_check",
+        plotfile=f"{plot_directory}/ensemble_check",
         pairs='invalid',
     )
+    
+    
+def test_physical_validation_decorrelated_single(tmpdir):
+    """Test physical validation ensemble check"""
+    
+    plot_directory = tmpdir.mkdir("plot_output")
+    output_data = os.path.join(data_path,"output.nc")
+    
+    # Pair option 'single' with decorrelated trajectories:
+    quantiles = physical_validation_ensemble(
+        output_data=output_data,
+        output_directory=data_path,
+        plotfile=f"{plot_directory}/ensemble_check",
+        pairs='single',
+        ref_state_index=1,
+        data_is_uncorrelated=True,
+        frame_start=10,
+        frame_stride=5,
+        frame_end=-1
+    ) 
+    
+
+def test_physical_validation_decorrelated_adjacent(tmpdir):
+    """Test physical validation ensemble check"""
+    
+    plot_directory = tmpdir.mkdir("plot_output")
+    output_data = os.path.join(data_path,"output.nc")
+    
+    # Pair option 'single' with decorrelated trajectories:
+    quantiles = physical_validation_ensemble(
+        output_data=output_data,
+        output_directory=data_path,
+        plotfile=f"{plot_directory}/ensemble_check",
+        pairs='adjacent',
+        ref_state_index=1,
+        data_is_uncorrelated=True,
+        frame_start=10,
+        frame_stride=5,
+        frame_end=-1
+    )  
+
+
+def test_physical_validation_decorrelated_all(tmpdir):
+    """Test physical validation ensemble check"""
+    
+    plot_directory = tmpdir.mkdir("plot_output")
+    output_data = os.path.join(data_path,"output.nc")
+    
+    # Pair option 'single' with decorrelated trajectories:
+    quantiles = physical_validation_ensemble(
+        output_data=output_data,
+        output_directory=data_path,
+        plotfile=f"{plot_directory}/ensemble_check",
+        pairs='all',
+        ref_state_index=1,
+        data_is_uncorrelated=True,
+        frame_start=10,
+        frame_stride=5,
+        frame_end=-1
+    )     
     

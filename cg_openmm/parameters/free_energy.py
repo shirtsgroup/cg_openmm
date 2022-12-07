@@ -187,8 +187,13 @@ def expectations_free_energy(Q, Q_folded, temperature_list, frame_begin=0, sampl
                 N_k[k] = n_samples//len(temps)  # these are the states that have samples
 
     # call MBAR to find weights at all states, sampled and unsampled
-    mbarT = pymbar.MBAR(unsampled_state_energies,N_k,verbose=False, relative_tolerance=1e-12);
-
+    solver_protocol = {"method":"L-BFGS-B"}
+    
+    mbarT = pymbar.MBAR(
+        unsampled_state_energies,N_k,verbose=False,relative_tolerance=1e-12,
+        maximum_iterations=10000,solver_protocol=(solver_protocol,),
+        )
+        
     # Calculate N expectations that a structure is in configurational state n
     # We need the probabilities of being in each state - first construct vectors of 0
     # (not in current state) and 1 (in current state)
