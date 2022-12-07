@@ -366,6 +366,177 @@ def expectations_fraction_contacts(fraction_native_contacts, frame_begin=0, samp
     return_results["dQ"] = dQ_expect
 
     return return_results
+    
+    
+def expectations_partial_contact_fractions(array_folded_states, fraction_native_contacts,
+    frame_begin=0, sample_spacing=1, output_data="output/output.nc", num_intermediate_states=0,
+    bootstrap_energies=None):
+    """
+    For systems with more than 2 conformational states, compute the expectation fraction of contacts
+    vs temperature for each individual configurational state by summing the appropriate mbar weights.
+    
+    :param array_folded_states: a precomputed array classifying the different conformational states
+    :type array_folded_states: 2d numpy array (int)     
+    
+    :param fraction_native_contacts: The fraction of native contacts for all selected frames in the trajectories.
+    :type fraction_native_contacts: numpy array (float * nframes x nreplicas)
+    
+    :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
+    :type frame_begin: int
+
+    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData (default=1)
+    :type sample_spacing: int       
+    
+    :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data (default="output/output.nc")                                                                                                  
+    :type output_data: str
+    
+    :param num_intermediate_states: The number of states to insert between existing simulated temperature states (default=0)
+    :type num_intermediate_states: int    
+    
+    :param bootstrap_energies: a custom replica_energies array to be used for bootstrapping calculations. Used instead of the energies in the .nc file. (default=None)
+    :type bootstrap_energies: 2d numpy array (float)
+    
+    :returns:
+       - Q_expect_confs ( dict ) - dictionary of the form {'m_n': 1D numpy array} containing partial contact fractions for each conformational state
+       - T_list_out ( np.array ( float * unit.simtk.temperature ) ) Temperature list corresponding to the partial contact fraction values
+    """
+
+    if bootstrap_energies is not None:
+        # Use a subsampled replica_energy matrix instead of reading from file
+        replica_energies = bootstrap_energies    
+        # Still need to get the thermodynamic states
+        reporter = MultiStateReporter(output_data, open_mode="r")
+    else:
+        # extract reduced energies and the state indices from the .nc  
+        reporter = MultiStateReporter(output_data, open_mode="r")
+        analyzer = ReplicaExchangeAnalyzer(reporter)
+        (
+            replica_energies_all,
+            unsampled_state_energies,
+            neighborhoods,
+            replica_state_indices,
+        ) = analyzer.read_energies()
+        
+        # Select production frames to analyze
+        replica_energies = replica_energies_all[:,:,frame_begin::sample_spacing]
+        
+        # Also apply frame selection to array_folded_states (starts at frame_begin):
+        array_folded_states = array_folded_states[::sample_spacing,:]        
+        
+        # Check the size of the fraction_native_contacts array:
+        if np.shape(replica_energies)[2] != np.shape(fraction_native_contacts)[0]:
+            # Mismatch in number of frames.
+            if np.shape(replica_energies_all[:,:,frame_begin::sample_spacing])[2] == np.shape(fraction_native_contacts[::sample_spacing,:])[0]:
+                # Correct starting frame, need to apply sampling stride:
+                fraction_native_contacts = fraction_native_contacts[::sample_spacing,:]
+            elif np.shape(replica_energies_all)[2] == np.shape(fraction_native_contacts)[0]:
+                # This is the full fraction_native_contacts, slice production frames:
+                fraction_native_contacts = fraction_native_contacts[production_start::sample_spacing,:]
+    
+    # Get the temperature list from .nc file:
+    states = reporter.read_thermodynamic_states()[0]
+    
+    temperature_list = []
+    for s in states:
+        temperature_list.append(s.temperature)
+
+    # Close the data file:
+    reporter.close()
+
+    # determine the numerical values of beta at each state in units consistent with the temperature
+    Tunit = temperature_list[0].unit
+    temps = np.array([temp.value_in_unit(Tunit)  for temp in temperature_list])  # should this just be array to begin with
+    beta_k = 1 / (kB.value_in_unit(unit.kilojoule_per_mole/Tunit) * temps)
+
+    # convert the energies from replica/evaluated state/sample form to evaluated state/sample form
+    replica_energies = pymbar.utils.kln_to_kn(replica_energies)
+    n_samples = len(replica_energies[0,:])
+    # n_samples in [nreplica x nsamples_per_replica]
+    
+    # calculate the number of states we need expectations at.  We want it at all of the original
+    # temperatures, each intermediate temperature, and then temperatures +/- from the original
+    # to take finite derivatives.
+
+    # create  an array for the temperature and energy for each state, including the
+    # finite different state.
+    n_sampled_T = len(temps)
+    n_unsampled_states = (n_sampled_T + (n_sampled_T-1)*num_intermediate_states)
+    unsampled_state_energies = np.zeros([n_unsampled_states,n_samples])
+    full_T_list = np.zeros(n_unsampled_states)
+
+    # delta is the spacing between temperatures.
+    delta = np.zeros(n_sampled_T-1)
+
+    # fill in a list of temperatures at all original temperatures and all intermediate states.
+    full_T_list[0] = temps[0]  
+    t = 0
+    for i in range(n_sampled_T-1):
+        delta[i] = (temps[i+1] - temps[i])/(num_intermediate_states+1)
+        for j in range(num_intermediate_states+1):
+            full_T_list[t] = temps[i] + delta[i]*j
+            t += 1
+    full_T_list[t] = temps[-1]
+    n_T_vals = t+1
+
+    # calculate betas of all of these temperatures
+    beta_full_k = 1 / (kB.value_in_unit(unit.kilojoule_per_mole/Tunit) * full_T_list)
+    
+    ti = 0
+    N_k = np.zeros(n_unsampled_states)
+    for k in range(n_unsampled_states):
+        # Calculate the reduced energies at all temperatures, sampled and unsample.
+        unsampled_state_energies[k, :] = replica_energies[0,:]*(beta_full_k[k]/beta_k[0])
+        if ti < len(temps):
+            # store in N_k which states do and don't have samples.
+            if full_T_list[k] == temps[ti]:
+                ti += 1
+                N_k[k] = n_samples//len(temps)  # these are the states that have samples
+
+    # call MBAR to find weights at all states, sampled and unsampled
+    mbarT = pymbar.MBAR(unsampled_state_energies,N_k,verbose=False, relative_tolerance=1e-12);
+    
+    # Get the weights from the mbar object:
+    # These weights include all of the intermediate temperatures 
+    w_nk = mbarT.W_nk    
+    
+    # Now we have the weights at all temperatures, so we can
+    # calculate the expectations.
+    
+    # Reshape fraction native contacts [nframes x nreplicas] column by column for pymbar
+    Q = np.reshape(fraction_native_contacts,np.size(fraction_native_contacts), order='F')
+    
+    # Repeat for corresponding array_folded_state
+    array_folded_states = np.reshape(array_folded_states,(np.size(array_folded_states)),order='F')       
+            
+    # Here we need to classify each of the sample mbar weights
+    num_confs = {} # w_i*U_i, for each state.
+    den_confs = {} # w_i
+    Q_expect_confs = {} # Contact fraction expectations
+    
+    n_conf_states = len(np.unique(array_folded_states))
+
+    for m in range(n_conf_states):
+        num_confs[f'{m}'] = 0
+        den_confs[f'{m}'] = 0
+
+    # Loop over the conformational states:    
+    for frame in range(len(array_folded_states)):
+        # Sum the weighted energies for partial contact fraction eval:
+        for m in range(n_conf_states):
+            if array_folded_states[frame] == m:
+                num_confs[f'{m}'] += w_nk[frame,:]*Q[frame]
+                den_confs[f'{m}'] += w_nk[frame,:]
+                break            
+            
+    # Now compute the final expectation values:        
+    for m in range(n_conf_states):
+        Q_expect_confs[f'{m}'] = num_confs[f'{m}']/den_confs[f'{m}']
+
+    # ***TODO: implement uncertainty directly from the mbar algorithm
+
+    T_list_out = full_T_list*unit.kelvin
+
+    return Q_expect_confs, T_list_out
 
     
 def fraction_native_contacts(
@@ -377,7 +548,7 @@ def fraction_native_contacts(
     native_contact_tol=1.3,
     subsample=True,
     homopolymer_sym=False,
-):
+    ):
     """
     Given a cgmodel, mdtraj trajectory object, and positions for the native structure, this function calculates the fraction of native contacts for the model.
     
@@ -430,13 +601,6 @@ def fraction_native_contacts(
     Q_avg = np.zeros((n_replicas))
     Q_stderr = np.zeros((n_replicas))
       
-    # For homopolymer symmetry, check that the chains are linear,
-    # which is the only option implemented for symmetry checks so far.
-    if homopolymer_sym:
-        if len(cgmodel.particle_type_list) > 1:
-            print(f'Error: For homopolymer symmetry checks, only linear chains with one bead type are supported')
-            exit()
-      
     for rep in range(n_replicas):            
         # This should work for pdb or dcd
         # However for dcd we need to insert a topology, and convert it from openmm->mdtraj topology 
@@ -456,16 +620,65 @@ def fraction_native_contacts(
         # This produces a [nframe x len(native_contacts)] array
         
         if homopolymer_sym:
-            # We can simply reverse the indices of the native contact list:
-            # ***TODO: allow the reversed indices to be specified explicitly.
-            # (such as if there are sidechains, or the order in the pdb file is different)
-  
+        
+            # ***Note: this assumes that the particles are indexed by monomer, and in the same
+            # order for each monomer.
+            # We check if the model is a linear homopolymer, since there may be multiple backbone
+            # beads per monomer.
+            
             n_particles = rep_traj.n_atoms
-            reverse_contact_list = []
-            for pair in native_contact_list:
-                reverse_par0 = n_particles-pair[0]-1
-                reverse_par1 = n_particles-pair[1]-1
-                reverse_contact_list.append([reverse_par0, reverse_par1])
+            reverse_contact_list = []            
+            
+            if len(cgmodel.particle_type_list) == 1:
+                # We can simply reverse the indices of the native contact list:
+      
+                for pair in native_contact_list:
+                    reverse_par0 = n_particles-pair[0]-1
+                    reverse_par1 = n_particles-pair[1]-1
+                    reverse_contact_list.append([reverse_par0, reverse_par1])
+                
+            else:
+                # We need to use the particle type list of the original model,
+                # and reconstruct monomer by monomer from the opposite end.
+                
+                particle_type_list = []
+                particle_indices_forward = []
+                particle_indices_reverse = []
+
+                # Check if linear chain with multiple beads per monomer:
+                mono = cgmodel.monomer_types
+                if len(mono) > 1:
+                    print(f'Error: cannot apply end-to-end symmetry with multiple monomer types')
+                    exit()
+                
+                mono = mono[0]
+                mono_bond_start = mono['start']
+                mono_bond_end = mono['end']
+                mono_bond_list = mono['bond_list']
+                mono_particle_sequence = mono['particle_sequence']
+
+                #***TODO: add rigorous check for linear topology here.
+                
+                n_particle_unique = len(set(particle_type_list))
+                
+                n_particles_per_mono = len(mono_particle_sequence)
+
+                n_mono = int(n_particles/n_particles_per_mono)
+                
+                if n_particle_unique == 1:
+                    particle_indices_reverse = particle_indices_forward[::-1]
+                
+                else:
+                    for m in range(n_mono):
+                        for p in range(n_particles_per_mono):
+                            particle_indices_reverse.append(n_particles - n_particles_per_mono*(m+1) + p)
+                            # For example, if forward indices [0,1] is [bb,sc] with 84 total particles, then [82,83] is the reverse
+                
+                # Now select the contact pairs:
+                for pair in native_contact_list:
+                    reverse_par0 = particle_indices_reverse[pair[0]]
+                    reverse_par1 = particle_indices_reverse[pair[1]]
+                    reverse_contact_list.append([reverse_par0, reverse_par1])
                 
             reverse_distances = md.compute_distances(
                 rep_traj,reverse_contact_list,periodic=False,opt=True)
@@ -582,6 +795,7 @@ def fraction_native_contacts_preloaded(
     
         if rep == 0:
             nframes = traj_dict[rep][frame_begin:].n_frames
+            n_particles = traj_dict[rep][frame_begin:].n_atoms
             Q = np.zeros((nframes,n_replicas))
 
         traj_distances = md.compute_distances(
@@ -590,16 +804,56 @@ def fraction_native_contacts_preloaded(
         # This produces a [nframe x len(native_contacts)] array
         
         if homopolymer_sym:
-            # We can simply reverse the indices of the native contact list:
-            # ***TODO: allow the reversed indices to be specified explicitly.
-            # (such as if there are sidechains, or the order in the pdb file is different)
-  
-            n_particles = traj_dict[rep].n_atoms
-            reverse_contact_list = []
-            for pair in native_contact_list:
-                reverse_par0 = n_particles-pair[0]-1
-                reverse_par1 = n_particles-pair[1]-1
-                reverse_contact_list.append([reverse_par0, reverse_par1])
+        
+            # ***Note: this assumes that the particles are indexed by monomer, and in the same
+            # order for each monomer.
+            
+            reverse_contact_list = []            
+            
+            if len(cgmodel.particle_type_list) == 1:
+                # We can simply reverse the indices of the native contact list:
+      
+                for pair in native_contact_list:
+                    reverse_par0 = n_particles-pair[0]-1
+                    reverse_par1 = n_particles-pair[1]-1
+                    reverse_contact_list.append([reverse_par0, reverse_par1])
+                
+            else:
+                # We need to use the particle type list of the original model,
+                # and reconstruct monomer by monomer from the opposite end.
+                
+                # This should also work for 1 particle per monomer.
+                
+                particle_type_list = []
+                mono_indices_list = []
+                particle_indices_forward = []
+                particle_indices_reverse = []
+
+                for p in range(n_particles):
+                    particle_indices_forward.append(p)
+                    particle_type_list.append(cgmodel.get_particle_type_name(p))
+                    mono_indices_list.append(cgmodel.get_particle_monomer(p))
+                
+                n_particles_per_mono = 0
+                
+                for p in range(n_particles):
+                    if cgmodel.get_particle_monomer(p) == 0:
+                        n_particles_per_mono += 1
+                    else:
+                        break
+                
+                n_mono = int(n_particles/n_particles_per_mono)
+                
+                for m in range(n_mono):
+                    for p in range(n_particles_per_mono):
+                        particle_indices_reverse.append(n_particles - n_particles_per_mono*(m+1) + p)
+                        # For example, if forward indices [0,1] is [bb,sc] with 84 total particles, then [82,83] is the reverse
+                
+                # Now select the contact pairs:
+                for pair in native_contact_list:
+                    reverse_par0 = particle_indices_reverse[pair[0]]
+                    reverse_par1 = particle_indices_reverse[pair[1]]
+                    reverse_contact_list.append([reverse_par0, reverse_par1])
                 
             reverse_distances = md.compute_distances(
                 traj_dict[rep][frame_begin:],reverse_contact_list,periodic=False,opt=True)
@@ -725,13 +979,6 @@ def optimize_Q_cut(
         # Convert to a 1 element list if not one
         traj_file_list = traj_file_list.split()  
         n_replicas = 1
-    
-    # For homopolymer symmetry, check that the chains are linear,
-    # which is the only option implemented for symmetry checks so far.    
-    if homopolymer_sym:
-        if len(cgmodel.particle_type_list) > 1:
-            print(f'Error: For homopolymer symmetry checks, only linear chains with one bead type are supported')
-            exit()    
         
     for rep in range(n_replicas):
         if traj_file_list[rep][-3:] == 'dcd':
@@ -968,14 +1215,7 @@ def optimize_Q_cut_1d(
         # Convert to a 1 element list if not one
         traj_file_list = traj_file_list.split()  
         n_replicas = 1
-      
-    # For homopolymer symmetry, check that the chains are linear,
-    # which is the only option implemented for symmetry checks so far.      
-    if homopolymer_sym:
-        if len(cgmodel.particle_type_list) > 1:
-            print(f'Error: For homopolymer symmetry checks, only linear chains with one bead type are supported')
-            exit()
-      
+        
     for rep in range(n_replicas):
         if traj_file_list[rep][-3:] == 'dcd':
             traj_dict[rep] = md.load(traj_file_list[rep],top=md.Topology.from_openmm(cgmodel.topology))
@@ -1196,13 +1436,6 @@ def bootstrap_native_contacts_expectation(
         # Convert to a 1 element list if not one
         traj_file_list = traj_file_list.split()  
         n_replicas = 1
-      
-    # For homopolymer symmetry, check that the chains are linear,
-    # which is the only option implemented for symmetry checks so far.      
-    if homopolymer_sym:
-        if len(cgmodel.particle_type_list) > 1:
-            print(f'Error: For homopolymer symmetry checks, only linear chains with one bead type are supported')
-            exit()        
         
     for rep in range(n_replicas):
         if traj_file_list[rep][-3:] == 'dcd':
@@ -1421,6 +1654,351 @@ def bootstrap_native_contacts_expectation(
     return temp_list, Q_values, Q_uncertainty, sigmoid_results_boot
     
     
+def bootstrap_partial_contacts_expectation(
+    cgmodel,
+    traj_file_list,
+    native_contact_list,
+    native_contact_distances,
+    array_folded_states,
+    output_data='output/output.nc',
+    frame_begin=0,
+    sample_spacing=1,
+    native_contact_tol=1.3,
+    num_intermediate_states=0,
+    n_trial_boot=200,
+    conf_percent='sigma',
+    plotfile='Q_vs_T_bootstrap.pdf',
+    homopolymer_sym=False,
+    ):
+    """
+    Given a cgmodel, native contact definitions, and trajectory file list, this function calculates the
+    fraction of native contacts for all specified frames, and uses a bootstrapping scheme to compute
+    the uncertainties in the Q vs T folding curve. Intended to be used after the native contact tolerance
+    has been optimized (either the helical or generalized versions).
+    
+    Here the partial contact fractions are computed for each conformational state in array_folded_states
+    
+    :param cgmodel: CGModel() class object
+    :type cgmodel: class
+        
+    :param traj_file_list: A list of replica PDB or DCD trajectory files corresponding to the energies in the .nc file, or a single file name
+    :type traj_file_list: List( str ) or str
+
+    :param native_contact_list: A list of the nonbonded interactions whose inter-particle distances are less than the 'native_contact_distance_cutoff'.
+    :type native_contact_list: List
+    
+    :param native_contact_distances: A numpy array of the native pairwise distances corresponding to native_contact_list
+    :type native_contact_distances: Quantity
+
+    :param array_folded_states: a precomputed array classifying the different conformational states
+    :type array_folded_states: 2d numpy array (int)   
+
+    :param frame_begin: Frame at which to start native contacts analysis (default=0)
+    :type frame_begin: int
+    
+    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData (default=1)
+    :type sample_spacing: int
+    
+    :param native_contact_tol: Tolerance factor beyond the native distance for determining whether a pair of particles is 'native' (in multiples of native distance) (default=1.3)
+    :type native_contact_tol: float
+    
+    :param num_intermediate_states: The number of states to insert between existing simulated temperature states (default=0)
+    :type num_intermediate_states: int
+    
+    :param n_trial_boot: number of trials to run for generating bootstrapping uncertainties (default=200)
+    :type n_trial_boot: int
+    
+    :param conf_percent: Confidence level in percent for outputting uncertainties (default='sigma'=68.27)
+    :type conf_percent: float
+    
+    :param plotfile: Path to output file for plotting results (default='Q_vs_T_bootstrap.pdf')
+    :type plotfile: str
+    
+    :param homopolymer_sym: if there is end-to-end symmetry, scan forwards and backwards sequences for highest Q (default=False)
+    :type homopolymer_sym: Boolean    
+    
+    :returns:
+       - temp_list ( List( float * unit.simtk.temperature ) ) - The temperature list corresponding to the native contact fraction values
+       - Q_values ( List( float ) ) - The native contact fraction values for all (including inserted intermediates) states
+       - Q_uncertainty ( Tuple ( np.array(float) ) - confidence interval for all Q_values computed from bootstrapping
+       - sigmoid_results_boot ( dict ) - dictionary containing the 4 sigmoid parameters and Q_folded (and their confidence interval tuples)
+    """
+    
+    # Pre-load the replica trajectories into MDTraj objects, to avoid having to load them
+    # at each iteration (very costly for pdb in particular)
+    
+    traj_dict = {}
+    
+    if type(traj_file_list) == list:
+        n_replicas = len(traj_file_list)
+    elif type(traj_file_list) == str:
+        # Convert to a 1 element list if not one
+        traj_file_list = traj_file_list.split()  
+        n_replicas = 1
+        
+    for rep in range(n_replicas):
+        if traj_file_list[rep][-3:] == 'dcd':
+            traj_dict[rep] = md.load(traj_file_list[rep],top=md.Topology.from_openmm(cgmodel.topology))
+        else:
+            traj_dict[rep] = md.load(traj_file_list[rep])    
+   
+    # Extract reduced energies and the state indices from the .nc
+    reporter = MultiStateReporter(output_data, open_mode="r")
+    analyzer = ReplicaExchangeAnalyzer(reporter)
+    (
+        replica_energies_all,
+        unsampled_state_energies,
+        neighborhoods,
+        replica_state_indices,
+    ) = analyzer.read_energies()   
+   
+    reporter.close()          
+            
+    # Get native contact fraction of all frames (bootstrapping draws uncorrelated samples from this full dataset)
+    # To avoid loading in files each iteration, use alternate version of fraction_native_contacts code
+    Q_all, Q_avg, Q_stderr, decorrelation_time = fraction_native_contacts_preloaded(
+        cgmodel,
+        traj_dict,
+        native_contact_list,
+        native_contact_distances,
+        frame_begin=frame_begin,
+        native_contact_tol=native_contact_tol,
+        subsample=False,
+        homopolymer_sym=homopolymer_sym,
+    )
+    
+    # Check the size of array_folded_states:
+    if np.shape(replica_energies_all[:,:,frame_begin::])[2] != np.shape(array_folded_states)[0]:
+        print(f'Error: mismatch in number of samples in array_folded_states and specified frames of replica energies')
+        exit()    
+    
+    # Get the number of conformational state classifications:
+    n_conf_states = len(np.unique(array_folded_states))      
+
+    # For each bootstrap trial, compute the expectation of native contacts and fit to sigmoid.
+    Q_expect_boot = {}
+    
+    sigmoid_Q_max = {}
+    sigmoid_Q_min = {}
+    sigmoid_d = {}
+    sigmoid_Tm = {}
+    Q_folded = {}
+    
+    for m in range(n_conf_states):
+        sigmoid_Q_max[m] = np.zeros(n_trial_boot)
+        sigmoid_Q_min[m] = np.zeros(n_trial_boot)
+        sigmoid_d[m] = np.zeros(n_trial_boot)
+        sigmoid_Tm[m] = np.zeros(n_trial_boot)
+        Q_folded[m] = np.zeros(n_trial_boot)
+    
+    for i_boot in range(n_trial_boot):
+        # Select production frames to analyze
+        # Here we can potentially change the reference frame for each bootstrap trial.
+        ref_shift = np.random.randint(sample_spacing)
+        # ***We should check if these energies arrays will be the same size for
+        # different reference frames
+        replica_energies = replica_energies_all[:,:,(frame_begin+ref_shift)::sample_spacing]
+        array_folded_states_boot = array_folded_states[ref_shift::sample_spacing,:]
+        # ***Unlike replica energies, Q does not include the equilibration frames
+        Q = Q_all[ref_shift::sample_spacing,:]
+        
+        # Get all possible sample indices
+        sample_indices_all = np.arange(0,len(replica_energies[0,0,:]))
+        # n_samples should match the size of the sliced replica energy dataset
+        sample_indices = resample(sample_indices_all, replace=True, n_samples=len(sample_indices_all))
+        
+        n_state = replica_energies.shape[0]
+        
+        replica_energies_resample = np.zeros_like(replica_energies)
+        # replica_energies is [n_states x n_states x n_frame]
+        # Q and array_folded_states are [nframes x n_replicas]
+        Q_resample = np.zeros((len(sample_indices),n_replicas))
+        array_folded_states_resample = np.zeros_like(array_folded_states_boot)
+        
+        # Select the sampled frames from array_folded_states and replica_energies:
+        j = 0
+        for i in sample_indices:
+            replica_energies_resample[:,:,j] = replica_energies[:,:,i]
+            array_folded_states_resample[j,:] = array_folded_states_boot[i,:]
+            Q_resample[j,:] = Q[i,:]
+            j += 1
+            
+        # Run the native contacts expectation calculation:
+        # Q_expect_boot is nested dict with keys [i_boot]['m']
+        Q_expect_boot[i_boot], T_list_out = expectations_partial_contact_fractions(
+            array_folded_states_resample,
+            Q_resample,
+            frame_begin=frame_begin,
+            num_intermediate_states=num_intermediate_states,
+            bootstrap_energies=replica_energies_resample,
+            output_data=output_data,
+        )
+        
+        # Fit contact fraction vs T for each state to sigmoid:
+        for m in range(n_conf_states):
+            param_opt, param_cov = fit_sigmoid(
+                T_list_out,
+                Q_expect_boot[i_boot][f'{m}'],
+                plotfile=None
+                )
+        
+            # Save the individual parameters:
+            # These have the reversed order of keys:
+            if param_opt[1] >= param_opt[2]:
+                sigmoid_Q_max[m][i_boot] = param_opt[1]
+                sigmoid_Q_min[m][i_boot] = param_opt[2]
+            else:
+                # This shouldn't occur unless d is negative
+                sigmoid_Q_max[m][i_boot] = param_opt[2]
+                sigmoid_Q_min[m][i_boot] = param_opt[1]
+                
+            sigmoid_d[m][i_boot] = param_opt[3]
+            sigmoid_Tm[m][i_boot] = param_opt[0]
+            Q_folded[m][i_boot] = (param_opt[1]+param_opt[2])/2
+        
+    # Compute uncertainty at all temps in Q_expect_boot over the n_trial_boot trials performed:
+    
+    # Total number of temps including intermediate states: 
+    n_temps = len(T_list_out)
+    
+    # Convert bootstrap trial dicts to array
+    arr_Q_values_boot = {}
+    
+    for m in range(n_conf_states):
+        arr_Q_values_boot[m] = np.zeros((n_trial_boot, n_temps))
+    
+        for i_boot in range(n_trial_boot):
+            arr_Q_values_boot[m][i_boot,:] = Q_expect_boot[i_boot][f'{m}']
+            
+    # Compute mean values:
+
+    Q_values = {}
+    sigmoid_Q_max_value = {}
+    sigmoid_Q_min_value = {}
+    sigmoid_d_value = {}
+    sigmoid_Tm_value = {}
+    Q_folded_value = {}
+    
+    for m in range(n_conf_states):
+        Q_values[m] = np.mean(arr_Q_values_boot[m],axis=0)
+        sigmoid_Q_max_value[m] = np.mean(sigmoid_Q_max[m])
+        sigmoid_Q_min_value[m] = np.mean(sigmoid_Q_min[m])
+        sigmoid_d_value[m] = np.mean(sigmoid_d[m])*unit.kelvin
+        sigmoid_Tm_value[m] = np.mean(sigmoid_Tm[m])*unit.kelvin
+        Q_folded_value[m] = np.mean(Q_folded[m])
+    
+    # Compute confidence intervals:
+    Q_uncertainty = {}
+    sigmoid_Q_max_uncertainty = {}
+    sigmoid_Q_min_uncertainty = {}
+    sigmoid_d_uncertainty = {}
+    sigmoid_Tm_uncertainty = {}
+    Q_folded_uncertainty = {}
+    
+    if conf_percent == 'sigma':
+        # Use analytical standard deviation instead of percentile method:
+        
+        for m in range(n_conf_states):
+            # Q values:
+            Q_std = np.std(arr_Q_values_boot[m],axis=0)
+            Q_uncertainty[m] = (-Q_std, Q_std)
+            
+            # Sigmoid Q_max:
+            sigmoid_Q_max_std = np.std(sigmoid_Q_max[m])
+            sigmoid_Q_max_uncertainty[m] = (-sigmoid_Q_max_std, sigmoid_Q_max_std)   
+            
+            # Sigmoid Q_min:
+            sigmoid_Q_min_std = np.std(sigmoid_Q_min[m])
+            sigmoid_Q_min_uncertainty[m] = (-sigmoid_Q_min_std, sigmoid_Q_min_std) 
+
+            # Sigmoid d:
+            sigmoid_d_std = np.std(sigmoid_d[m])
+            sigmoid_d_uncertainty[m] = (-sigmoid_d_std*unit.kelvin, sigmoid_d_std*unit.kelvin)
+            
+            # Sigmoid Tm:
+            sigmoid_Tm_std = np.std(sigmoid_Tm[m])
+            sigmoid_Tm_uncertainty[m] = (-sigmoid_Tm_std*unit.kelvin, sigmoid_Tm_std*unit.kelvin)
+            
+            # Q_folded:
+            Q_folded_std = np.std(Q_folded[m])
+            Q_folded_uncertainty[m] = (-Q_folded_std, Q_folded_std)
+        
+    else:
+        # Compute specified confidence interval:
+        p_lo = (100-conf_percent)/2
+        p_hi = 100-p_lo
+                
+        for m in range(n_conf_states):        
+            # Q values:
+            Q_diff = arr_Q_values_boot[m]-np.mean(arr_Q_values_boot[m],axis=0)
+            Q_conf_lo = np.percentile(Q_diff,p_lo,axis=0,interpolation='linear')
+            Q_conf_hi = np.percentile(Q_diff,p_hi,axis=0,interpolation='linear')
+          
+            Q_uncertainty[m] = (Q_conf_lo, Q_conf_hi) 
+                        
+            # Sigmoid Q_max:
+            sigmoid_Q_max_diff = sigmoid_Q_max[m]-np.mean(sigmoid_Q_max[m])
+            sigmoid_Q_max_conf_lo = np.percentile(sigmoid_Q_max_diff,p_lo,interpolation='linear')
+            sigmoid_Q_max_conf_hi = np.percentile(sigmoid_Q_max_diff,p_hi,interpolation='linear')
+            
+            sigmoid_Q_max_uncertainty[m] = (sigmoid_Q_max_conf_lo, sigmoid_Q_max_conf_hi)
+            
+            # Sigmoid Q_min:
+            sigmoid_Q_min_diff = sigmoid_Q_min[m]-np.mean(sigmoid_Q_min[m])
+            sigmoid_Q_min_conf_lo = np.percentile(sigmoid_Q_min_diff,p_lo,interpolation='linear')
+            sigmoid_Q_min_conf_hi = np.percentile(sigmoid_Q_min_diff,p_hi,interpolation='linear')
+            
+            sigmoid_Q_min_uncertainty[m] = (sigmoid_Q_min_conf_lo, sigmoid_Q_min_conf_hi)
+            
+            # Sigmoid d:
+            sigmoid_d_diff = sigmoid_d[m]-np.mean(sigmoid_d[m])
+            sigmoid_d_conf_lo = np.percentile(sigmoid_d_diff,p_lo,interpolation='linear')
+            sigmoid_d_conf_hi = np.percentile(sigmoid_d_diff,p_hi,interpolation='linear')
+            
+            sigmoid_d_uncertainty[m] = (sigmoid_d_conf_lo*unit.kelvin, sigmoid_d_conf_hi*unit.kelvin)
+            
+            # Sigmoid Tm:
+            sigmoid_Tm_diff = sigmoid_Tm[m]-np.mean(sigmoid_Tm[m])
+            sigmoid_Tm_conf_lo = np.percentile(sigmoid_Tm_diff,p_lo,interpolation='linear')
+            sigmoid_Tm_conf_hi = np.percentile(sigmoid_Tm_diff,p_hi,interpolation='linear')
+            
+            sigmoid_Tm_uncertainty[m] = (sigmoid_Tm_conf_lo*unit.kelvin, sigmoid_Tm_conf_hi*unit.kelvin)
+            
+            # Q_folded:
+            Q_folded_diff = Q_folded[m]-np.mean(Q_folded[m])
+            Q_folded_conf_lo = np.percentile(Q_folded_diff,p_lo,interpolation='linear')
+            Q_folded_conf_hi = np.percentile(Q_folded_diff,p_hi,interpolation='linear')
+            
+            Q_folded_uncertainty[m] = (Q_folded_conf_lo, Q_folded_conf_hi*unit.kelvin)      
+    
+    # Compile sigmoid results into dict of dicts:
+    sigmoid_results_boot = {}
+    
+    sigmoid_results_boot['sigmoid_Q_max_value'] = sigmoid_Q_max_value
+    sigmoid_results_boot['sigmoid_Q_max_uncertainty'] = sigmoid_Q_max_uncertainty
+    
+    sigmoid_results_boot['sigmoid_Q_min_value'] = sigmoid_Q_min_value
+    sigmoid_results_boot['sigmoid_Q_min_uncertainty'] = sigmoid_Q_min_uncertainty
+    
+    sigmoid_results_boot['sigmoid_d_value'] = sigmoid_d_value
+    sigmoid_results_boot['sigmoid_d_uncertainty'] = sigmoid_d_uncertainty
+    
+    sigmoid_results_boot['sigmoid_Tm_value'] = sigmoid_Tm_value
+    sigmoid_results_boot['sigmoid_Tm_uncertainty'] = sigmoid_Tm_uncertainty
+    
+    sigmoid_results_boot['Q_folded_value'] = Q_folded_value
+    sigmoid_results_boot['Q_folded_uncertainty'] = Q_folded_uncertainty
+    
+    # Plot Q vs T results with uncertainty and mean sigmoid parameters
+    if conf_percent=='sigma':
+        plot_partial_contact_fractions(
+            T_list_out, Q_values, Q_std, plotfile=plotfile, sigmoid_dict=sigmoid_results_boot
+            )
+    # TODO: implement unequal upper and lower error plotting
+    
+    return T_list_out, Q_values, Q_uncertainty, sigmoid_results_boot    
+    
+    
 def optimize_Q_tol_helix(
     cgmodel, native_structure_file, traj_file_list, output_data="output/output.nc",
     num_intermediate_states=0, frame_begin=0, frame_stride=1, backbone_type_name='bb',
@@ -1487,14 +2065,7 @@ def optimize_Q_tol_helix(
         # Convert to a 1 element list if not one
         traj_file_list = traj_file_list.split()  
         n_replicas = 1
-     
-    # For homopolymer symmetry, check that the chains are linear,
-    # which is the only option implemented for symmetry checks so far.     
-    if homopolymer_sym:
-        if len(cgmodel.particle_type_list) > 1:
-            print(f'Error: For homopolymer symmetry checks, only linear chains with one bead type are supported')
-            exit()
-     
+        
     for rep in range(n_replicas):
         if traj_file_list[rep][-3:] == 'dcd':
             traj_dict[rep] = md.load(traj_file_list[rep],top=md.Topology.from_openmm(cgmodel.topology))
@@ -1723,6 +2294,130 @@ def plot_native_contact_fraction(temperature_list, Q, Q_uncertainty, plotfile="Q
     plt.ylabel("Native contact fraction")
     plt.savefig(plotfile)
     plt.close()
+    
+    
+def plot_partial_contact_fractions(temperature_list, Q_values, Q_uncertainty, plotfile="partial_Q_vs_T.pdf", sigmoid_dict=None):
+    """
+    Given a list of temperatures and corresponding partial contact fractions, plot Q vs T for each conformational state.
+    If a sigmoid dict from bootstrapping is given, also plot the sigmoid curve.
+    Note that this sigmoid curve is generated by using the mean values of the 4 hyperbolic fitting parameters
+    taken over all bootstrap trials, not a direct fit to the Q vs T data. 
+
+    :param temperature_list: List of temperatures that will be used to define different replicas (thermodynamics states)
+    :type temperature_list: List( `SIMTK <https://simtk.org/>`_ `Unit() <http://docs.openmm.org/7.1.0/api-python/generated/simtk.unit.unit.Unit.html>`_ * number_replicas )
+
+    :param Q: native contact fraction array for all temperatures in temperature_list
+    :type Q: np.array(float * len(temperature_list))
+    
+    :param Q_uncertainty: uncertainty associated with Q
+    :type Q_uncertainty: np.array(float * len(temperature_list))
+    
+    :param plotfile: Path to output file for plotting results (default='Q_vs_T.pdf')
+    :type plotfile: str
+    
+    :param sigmoid_dict: dictionary containing sigmoid parameter mean values and uncertainties (default=None)
+    :type sigmoid_dict: dict
+    """
+
+    temperature_array = np.zeros((len(temperature_list)))
+    for i in range(len(temperature_list)):
+        temperature_array[i] = temperature_list[i].value_in_unit(unit.kelvin)
+    
+    if sigmoid_dict is not None:
+        # Also plot sigmoid curve
+        def tanh_switch(x,x0,y0,y1,d):
+            return (y0+y1)/2-((y0-y1)/2)*np.tanh(np.radians(x-x0)/d)
+        
+        for key, value in Q_values.items():
+            xsig = np.linspace(temperature_array[0],temperature_array[-1],1000)
+            ysig = tanh_switch(
+                xsig,
+                sigmoid_dict['sigmoid_Tm_value'][key].value_in_unit(unit.kelvin),
+                sigmoid_dict['sigmoid_Q_max_value'][key],
+                sigmoid_dict['sigmoid_Q_min_value'][key],
+                sigmoid_dict['sigmoid_d_value'][key].value_in_unit(unit.kelvin),
+                )
+            
+            
+            errorbar1 = plt.errorbar(
+                temperature_array,
+                Q_values[key],
+                yerr=Q_uncertainty,
+                linewidth=0.5,
+                markersize=4,
+                fmt='o',
+                label=f'state {key}',
+                fillstyle='none',
+                capsize=4,
+            )
+            
+            # Get the color of the errorbar:
+            lines_tuple = errorbar1.lines
+            # This contains (data_line(Line2D), caplines(Line2D), barlinecols(LineCollection))
+            color1 = lines_tuple[0].get_color()
+            
+            line2 = plt.plot(
+                xsig, ysig,'-',
+                label=f'state {key} fit',
+                color=color1, # keep the same color
+            )
+            
+            line3 = plt.errorbar(
+                sigmoid_dict['sigmoid_Tm_value'][key].value_in_unit(unit.kelvin),
+                sigmoid_dict['Q_folded_value'][key],
+                xerr=sigmoid_dict['sigmoid_Tm_uncertainty'][key][1].value_in_unit(unit.kelvin),
+                yerr=sigmoid_dict['Q_folded_uncertainty'][key][1],
+                linewidth=0.5,
+                markersize=4,
+                fmt='D-r',
+                fillstyle='none',
+                capsize=4,
+            )
+            
+            xlim = plt.xlim()
+            ylim = plt.ylim()        
+            
+            # TODO: update to use the asymmetric uncertainties here for confidence intervals
+            # We can add the hyperbolic fits with parameters for the upper and lower confidence bounds
+            # plt.text(
+                # (xlim[0]+0.90*(xlim[1]-xlim[0])),
+                # (ylim[0]+0.50*(ylim[1]-ylim[0])),
+                # f"T_m = {sigmoid_dict['sigmoid_Tm_value'].value_in_unit(unit.kelvin):.2f} \u00B1 {sigmoid_dict['sigmoid_Tm_uncertainty'][1].value_in_unit(unit.kelvin):.2f}    \n"\
+                # f"Q_m = {sigmoid_dict['Q_folded_value']:.4f} \u00B1 {sigmoid_dict['Q_folded_uncertainty'][1]:.4f}\n"\
+                # f"d = {sigmoid_dict['sigmoid_d_value'].value_in_unit(unit.kelvin):.4f} \u00B1 {sigmoid_dict['sigmoid_d_uncertainty'][1].value_in_unit(unit.kelvin):.4f}\n"\
+                # f"Qmax = {sigmoid_dict['sigmoid_Q_max_value']:.4f} \u00B1 {sigmoid_dict['sigmoid_Q_max_uncertainty'][1]:.4f}\n"\
+                # f"Qmin = {sigmoid_dict['sigmoid_Q_min_value']:.4f} \u00B1 {sigmoid_dict['sigmoid_Q_min_uncertainty'][1]:.4f}",
+                # {'fontsize': 10},
+                # horizontalalignment='right',
+                # )
+
+    else:
+        for key, value in Q_values.items():
+            plt.errorbar(
+                temperature_array,
+                Q_values[key],
+                Q_uncertainty[key],
+                linewidth=0.5,
+                markersize=4,
+                label=f'state {key}',
+                fmt='o-',
+                fillstyle='none',
+                capsize=4,
+            )
+            
+    plt.legend(
+        loc='upper right',
+        fontsize=6,
+        )
+
+    # Fix y limits:
+    plt.xlim((temperature_array[0],temperature_array[-1]))
+    plt.ylim((0,1))
+    
+    plt.xlabel("T (K)")
+    plt.ylabel("Contact fraction")
+    plt.savefig(plotfile)
+    plt.close()    
     
     
 def plot_native_contact_timeseries(

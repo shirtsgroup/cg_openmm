@@ -19,7 +19,40 @@ from openmmtools.multistate import MultiStateReporter, ReplicaExchangeAnalyzer
 
 current_path = os.path.dirname(os.path.abspath(__file__))
 data_path = os.path.join(current_path, 'test_data')
-       
+structures_path = os.path.join(current_path, 'test_structures')
+
+def test_energy_decomposition_dcd(tmpdir):  
+    """
+    Test the energy decomposition on a cgmodel and medoid, and check that the individual components
+    sum to the total potential energy.
+    """
+    
+    output_directory = tmpdir.mkdir("output")
+    
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+    
+    # Set path to medoid structure file:
+    medoid_file = f"{structures_path}/medoid_min.dcd"
+    
+    # Run the energy decomposition:
+    U_decomposition = energy_decomposition(
+        cgmodel,
+        medoid_file,
+    )
+    
+    # Check the sum of energy components:
+    sum_expected = U_decomposition['total']
+    sum_actual = 0 * unit.kilojoule_per_mole
+    
+    print(U_decomposition)
+    
+    for key,value in U_decomposition.items():
+        if key != 'total':
+            sum_actual += value
+    
+    assert sum_expected == sum_actual
+
     
 def test_eval_energy_no_change(tmpdir):  
     """

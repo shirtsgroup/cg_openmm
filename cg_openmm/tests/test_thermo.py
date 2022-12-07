@@ -173,7 +173,7 @@ def test_partial_heat_capacity_2state(tmpdir):
     array_folded_states = np.multiply((Q>=Q_folded),1)
     
     (Cv_partial, dCv_partial, temperature_list, \
-    FWHM_partial, Tm_partial, Cv_height_partial, U_expect_confs) = get_partial_heat_capacities(
+    FWHM_partial, Tm_partial, Cv_height_partial, U_expect_confs, N_eff_partial) = get_partial_heat_capacities(
         array_folded_states=array_folded_states,
         frame_begin=frame_begin,
         sample_spacing=1,
@@ -188,7 +188,7 @@ def test_partial_heat_capacity_2state(tmpdir):
     
     # Check data types of all output:
     for varname in [
-        'Cv_partial','FWHM_partial','Tm_partial','Cv_height_partial','U_expect_confs'
+        'Cv_partial','FWHM_partial','Tm_partial','Cv_height_partial','U_expect_confs','N_eff_partial',
         ]:
         
         assert eval(f'type({varname})') == dict
@@ -257,7 +257,7 @@ def test_bootstrap_partial_heat_capacity_2state_sigma(tmpdir):
     
     (T_list, Cv_values, Cv_uncertainty, Tm_value, Tm_uncertainty, \
     Cv_height_value, Cv_height_uncertainty, FWHM_value, FWHM_uncertainty, \
-    U_expect_values, U_expect_uncertainty) = bootstrap_partial_heat_capacities(
+    U_expect_values, U_expect_uncertainty, N_eff_values) = bootstrap_partial_heat_capacities(
         array_folded_states=array_folded_states,
         frame_begin=frame_begin,
         sample_spacing=1,
@@ -275,7 +275,8 @@ def test_bootstrap_partial_heat_capacity_2state_sigma(tmpdir):
     # Check data types of all output:
     for varname in ['Cv_values','Cv_uncertainty',
         'Tm_value','Tm_uncertainty','Cv_height_value','Cv_height_uncertainty',
-        'FWHM_value','FWHM_uncertainty','U_expect_values','U_expect_uncertainty'
+        'FWHM_value','FWHM_uncertainty','U_expect_values','U_expect_uncertainty',
+        'N_eff_values',
         ]:
         
         assert eval(f'type({varname})') == dict
@@ -344,7 +345,7 @@ def test_bootstrap_partial_heat_capacity_2state_conf(tmpdir):
     
     (T_list, Cv_values, Cv_uncertainty, Tm_value, Tm_uncertainty, \
     Cv_height_value, Cv_height_uncertainty, FWHM_value, FWHM_uncertainty, \
-    U_expect_values, U_expect_uncertainty) = bootstrap_partial_heat_capacities(
+    U_expect_values, U_expect_uncertainty, N_eff_values) = bootstrap_partial_heat_capacities(
         array_folded_states=array_folded_states,
         frame_begin=frame_begin,
         sample_spacing=2,
@@ -362,7 +363,8 @@ def test_bootstrap_partial_heat_capacity_2state_conf(tmpdir):
     # Check data types of all output:
     for varname in ['Cv_values','Cv_uncertainty',
         'Tm_value','Tm_uncertainty','Cv_height_value','Cv_height_uncertainty',
-        'FWHM_value','FWHM_uncertainty','U_expect_values','U_expect_uncertainty'
+        'FWHM_value','FWHM_uncertainty','U_expect_values','U_expect_uncertainty',
+        'N_eff_values',
         ]:
         
         assert eval(f'type({varname})') == dict

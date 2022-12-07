@@ -1158,3 +1158,64 @@ def get_replica_reeval_energies(replica, temperature_list, file_list, topology, 
             U_eval_rep[j,k] = (potential_energy*beta_all[j])
     
     return U_eval_rep, replica 
+    
+    
+def energy_decomposition(cgmodel, positions_file):  
+    """
+    Given a cgmodel with a topology and system and coordinates in positions_file,
+    perform an OpenMM energy decomposition.
+
+    :param cgmodel: CGModel() class object to evaluate energy with
+    :type cgmodel: class
+
+    :param positions_file: Path to pdb or dcd file containing molecular coordinates
+    :type positions_file: str
+    
+    :returns:
+        - U_decomposition - dict mapping force names to contribution to total energy.
+    """
+    
+    topology = cgmodel.topology
+    system = cgmodel.system
+    
+    # Load in the coordinates as mdtraj object:
+    if positions_file[-3:] == 'dcd':
+        traj = md.load(positions_file,top=md.Topology.from_openmm(topology))
+    else:
+        traj = md.load(positions_file)
+    
+    positions = traj[0].xyz[0]*unit.nanometer
+    
+    # Set up simulation object:
+    simulation_time_step = 5.0 * unit.femtosecond
+    friction = 0.0 / unit.picosecond
+    integrator = LangevinIntegrator(
+        0.0 * unit.kelvin, friction, simulation_time_step.in_units_of(unit.picosecond)
+    )
+    simulation = Simulation(topology, cgmodel.system, integrator)
+    simulation.context.setPositions(positions)    
+    
+    # Set force groups:
+    force_names = {}
+    U_decomposition = {}
+    
+    for force_index, force in enumerate(simulation.system.getForces()):
+        # These are the overall classes of forces, not the particle-specific forces
+        force_names[force_index] = force.__class__.__name__
+        force.setForceGroup(force_index)    
+   
+    # Need to create a new simulation object with the updated force groups:
+    integrator_new = LangevinIntegrator(
+        0.0 * unit.kelvin, friction, simulation_time_step.in_units_of(unit.picosecond)
+    )
+    simulation_new = Simulation(topology, simulation.system, integrator_new) 
+    simulation_new.context.setPositions(positions)
+     
+    total_energy = simulation_new.context.getState(getEnergy=True).getPotentialEnergy()      
+    U_decomposition['total'] = total_energy
+     
+    for force_index, force in enumerate(simulation_new.system.getForces()):    
+        force_names[force_index] = force.__class__.__name__
+        U_decomposition[force_names[force_index]] = simulation_new.context.getState(getEnergy=True,groups={force_index}).getPotentialEnergy()        
+
+    return U_decomposition

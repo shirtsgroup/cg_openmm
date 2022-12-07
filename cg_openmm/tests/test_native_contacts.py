@@ -134,10 +134,11 @@ def test_native_contacts_dcd(tmpdir):
     assert os.path.isfile(f"{output_directory}/Q_vs_T.pdf")
     
     
-def test_native_contacts_dcd_homopolymer_sym(tmpdir):
+def test_native_contacts_dcd_homopolymer_sym_linear(tmpdir):
     """
     Test native contact fraction calculation with homopolymer
     end-to-end symmetry checks.
+    (linear homopolymer with no sidechains)
     """
     
     output_directory = tmpdir.mkdir("output")
@@ -157,6 +158,68 @@ def test_native_contacts_dcd_homopolymer_sym(tmpdir):
         
     # Set path to native structure file:    
     native_structure_file=f"{data_path_linear}/native_medoid_min.dcd"
+    
+    # Set cutoff parameters:
+    # Cutoff for native structure pairwise distances:
+    native_contact_cutoff = 4.0* unit.angstrom
+
+    # Tolerance for current trajectory distances:
+    native_contact_tol = 1.5
+    
+    # Determine native contacts:
+    native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
+        cgmodel,
+        native_structure_file,
+        native_contact_cutoff,
+    )
+    
+    # Determine native contact fraction of current trajectories:
+    # With end-to-end symmetry check:
+    Q_sym, Q_avg_sym, Q_stderr_sym, decorrelation_spacing_sym = fraction_native_contacts(
+        cgmodel,
+        dcd_file_list,
+        native_contact_list,
+        native_contact_distances,
+        native_contact_tol=native_contact_tol,
+        homopolymer_sym=True,
+    )   
+    
+    # Without end-to-end symmetry check:
+    Q, Q_avg, Q_stderr, decorrelation_spacing = fraction_native_contacts(
+        cgmodel,
+        dcd_file_list,
+        native_contact_list,
+        native_contact_distances,
+        native_contact_tol=native_contact_tol,
+        homopolymer_sym=False,
+    )      
+
+    # End-to-end symmetry check should increase the contact fraction in all cases:
+    assert Q_sym.all() >= Q.all()
+
+
+def test_native_contacts_dcd_homopolymer_sym_sidechain(tmpdir):
+    """
+    Test native contact fraction calculation with homopolymer
+    end-to-end symmetry checks.
+    (1-1 homopolymer model with sidechains)
+    """
+    
+    output_directory = tmpdir.mkdir("output")
+    
+    # Replica exchange settings
+    number_replicas = 12
+    
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+    
+    # Create list of dcd trajectories to analyze
+    dcd_file_list = []
+    for i in range(number_replicas):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+        
+    # Set path to native structure file:    
+    native_structure_file=f"{structures_path}/medoid_0.dcd"
     
     # Set cutoff parameters:
     # Cutoff for native structure pairwise distances:
@@ -473,10 +536,156 @@ def test_expectations_fraction_contacts_dcd(tmpdir):
     assert os.path.isfile(f"{output_directory}/Q_vs_T_fit.pdf")
     
     
-def test_expectations_fraction_contacts_dcd_homopolymer_sym(tmpdir):
+def test_expectations_partial_contact_fractions_1state(tmpdir):
+    """
+    Test the partial contact fraction expectation code for the trivial case 
+    of a 1 state system (should match the original expectation native contact fraction result)
+    """
+
+    output_directory = tmpdir.mkdir("output")
+
+    # Replica exchange settings
+    number_replicas = 12
+    min_temp = 200.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
+    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
+
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+
+    # Create list of pdb trajectories to analyze
+    # For expectation fraction native contacts, we use replica trajectories: 
+    dcd_file_list = []
+    for i in range(len(temperature_list)):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+        
+    # Load in native structure file:    
+    native_structure_file=f"{structures_path}/medoid_0.dcd"
+
+    # Set cutoff parameters:
+    # Cutoff for native structure pairwise distances:
+    native_contact_cutoff = 4.0* unit.angstrom
+
+    # Tolerance for current trajectory distances:
+    native_contact_tol = 1.5
+
+    # Set production frames:
+    frame_begin = 100
+
+    # Get native contacts:
+    native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
+        cgmodel,
+        native_structure_file,
+        native_contact_cutoff,
+    )
+
+    Q, Q_avg, Q_stderr, decorrelation_spacing = fraction_native_contacts(
+        cgmodel,
+        dcd_file_list,
+        native_contact_list,
+        native_contact_distances,
+        frame_begin=frame_begin,
+        native_contact_tol=native_contact_tol,
+    )
+    
+    # Set all states to be the same
+    array_folded_states = np.zeros_like(Q)
+    
+    output_data = os.path.join(data_path, "output.nc")
+    num_intermediate_states=1
+
+    Q_values_partial, T_list_out = expectations_partial_contact_fractions(
+        array_folded_states,
+        Q,
+        frame_begin=100,
+        output_data=output_data,
+        num_intermediate_states=num_intermediate_states,
+    )
+    
+    Q_results = expectations_fraction_contacts(
+        Q,
+        frame_begin=100,
+        output_data=output_data,
+        num_intermediate_states=num_intermediate_states,
+    )
+    
+    assert Q_results['Q'].all() == Q_values_partial['0'].all()
+    
+    
+def test_expectations_partial_contact_fractions_2state(tmpdir):
+    """
+    Test the partial contact fraction expectation code for a 2 state system.
+    """
+
+    output_directory = tmpdir.mkdir("output")
+
+    # Replica exchange settings
+    number_replicas = 12
+    min_temp = 200.0 * unit.kelvin
+    max_temp = 600.0 * unit.kelvin
+    temperature_list = get_temperature_list(min_temp, max_temp, number_replicas)
+
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+
+    # Create list of pdb trajectories to analyze
+    # For expectation fraction native contacts, we use replica trajectories: 
+    dcd_file_list = []
+    for i in range(len(temperature_list)):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+        
+    # Load in native structure file:    
+    native_structure_file=f"{structures_path}/medoid_0.dcd"
+
+    # Set cutoff parameters:
+    # Cutoff for native structure pairwise distances:
+    native_contact_cutoff = 4.0* unit.angstrom
+
+    # Tolerance for current trajectory distances:
+    native_contact_tol = 1.5
+
+    # Set production frames:
+    frame_begin = 100
+
+    # Get native contacts:
+    native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
+        cgmodel,
+        native_structure_file,
+        native_contact_cutoff,
+    )
+
+    Q, Q_avg, Q_stderr, decorrelation_spacing = fraction_native_contacts(
+        cgmodel,
+        dcd_file_list,
+        native_contact_list,
+        native_contact_distances,
+        frame_begin=frame_begin,
+        native_contact_tol=native_contact_tol,
+    )
+    
+    # Set 1 as folded, 0 as unfolded:
+    Q_folded = 0.3
+    array_folded_states = np.multiply((Q>=Q_folded),1)        
+    
+    output_data = os.path.join(data_path, "output.nc")
+    num_intermediate_states=1
+
+    Q_values_partial, T_list_out = expectations_partial_contact_fractions(
+        array_folded_states,
+        Q,
+        frame_begin=100,
+        output_data=output_data,
+        num_intermediate_states=num_intermediate_states,
+    )
+    
+    assert len(Q_values_partial) == 2 and type(Q_values_partial) == dict
+    
+    
+def test_expectations_fraction_contacts_dcd_homopolymer_sym_linear(tmpdir):
     """
     See if we can determine native contacts expectations as a function of T,
     with homopolymer end-to-end symmetry checks.
+    (linear homopolymer with no sidechains)
     """
 
     output_directory = tmpdir.mkdir("output")
@@ -579,10 +788,156 @@ def test_bootstrap_native_contacts_expectation_dcd(tmpdir):
     assert os.path.isfile(f'{output_directory}/native_contacts_boot.pdf')  
     
     
-def test_bootstrap_native_contacts_expectation_dcd_homopolymer_sym(tmpdir):
+def test_bootstrap_partial_contacts_expectation_dcd_2state(tmpdir):
+    """Test bootstrapping of partial native contacts expectation, based on helix contacts"""
+    
+    output_directory = tmpdir.mkdir("output")
+    output_data = os.path.join(data_path, "output.nc")
+    
+    # Replica exchange settings
+    number_replicas = 12
+    
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+    
+    # Create list of pdb trajectories to analyze
+    # For fraction_native_contacts vs. T, we use state trajectories.
+    # However, we can test with the replica pdbs:
+    dcd_file_list = []
+    for i in range(number_replicas):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+        
+    # Load in native structure file:    
+    native_structure_file=f"{structures_path}/medoid_0.dcd"
+    
+    # Set cutoff parameters:
+    # Cutoff for native structure pairwise distances:
+    native_contact_cutoff = 4.0* unit.angstrom
+
+    # Tolerance for current trajectory distances:
+    native_contact_tol = 1.5    
+    
+    # Determine native contacts:
+    native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
+        cgmodel,
+        native_structure_file,
+        native_contact_cutoff,
+    )
+    
+    frame_begin = 100
+    
+    Q, Q_avg, Q_stderr, decorrelation_spacing = fraction_native_contacts(
+        cgmodel,
+        dcd_file_list,
+        native_contact_list,
+        native_contact_distances,
+        frame_begin=frame_begin,
+        native_contact_tol=native_contact_tol,
+    )
+    
+    # Set 1 as folded, 0 as unfolded:
+    Q_folded = 0.3
+    array_folded_states = np.multiply((Q>=Q_folded),1)    
+    
+    full_T_list, Q_values, Q_uncertainty, sigmoid_results_boot = bootstrap_partial_contacts_expectation(
+        cgmodel,
+        dcd_file_list,
+        native_contact_list,
+        native_contact_distances,
+        array_folded_states,
+        output_data=output_data,
+        frame_begin=frame_begin,
+        sample_spacing=20,
+        native_contact_tol=native_contact_tol,
+        num_intermediate_states=1,
+        n_trial_boot=10,
+        conf_percent='sigma',
+        plotfile=f'{output_directory}/partial_contacts_boot.pdf',
+        homopolymer_sym=False,
+        )
+        
+    assert os.path.isfile(f'{output_directory}/partial_contacts_boot.pdf')
+    
+
+def test_bootstrap_partial_contacts_expectation_dcd_2state_homopolymer_sym(tmpdir):
+    """
+    Test bootstrapping of partial native contacts expectation, based on helix contacts
+    (with homopolymer symmetry check)
+    """
+    
+    output_directory = tmpdir.mkdir("output")
+    output_data = os.path.join(data_path, "output.nc")
+    
+    # Replica exchange settings
+    number_replicas = 12
+    
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+    
+    # Create list of pdb trajectories to analyze
+    # For fraction_native_contacts vs. T, we use state trajectories.
+    # However, we can test with the replica pdbs:
+    dcd_file_list = []
+    for i in range(number_replicas):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+        
+    # Load in native structure file:    
+    native_structure_file=f"{structures_path}/medoid_0.dcd"
+    
+    # Set cutoff parameters:
+    # Cutoff for native structure pairwise distances:
+    native_contact_cutoff = 4.0* unit.angstrom
+
+    # Tolerance for current trajectory distances:
+    native_contact_tol = 1.5    
+    
+    # Determine native contacts:
+    native_contact_list, native_contact_distances, contact_type_dict = get_native_contacts(
+        cgmodel,
+        native_structure_file,
+        native_contact_cutoff,
+    )
+    
+    frame_begin = 100
+    
+    Q, Q_avg, Q_stderr, decorrelation_spacing = fraction_native_contacts(
+        cgmodel,
+        dcd_file_list,
+        native_contact_list,
+        native_contact_distances,
+        frame_begin=frame_begin,
+        native_contact_tol=native_contact_tol,
+    )
+    
+    # Set 1 as folded, 0 as unfolded:
+    Q_folded = 0.3
+    array_folded_states = np.multiply((Q>=Q_folded),1)    
+    
+    full_T_list, Q_values, Q_uncertainty, sigmoid_results_boot = bootstrap_partial_contacts_expectation(
+        cgmodel,
+        dcd_file_list,
+        native_contact_list,
+        native_contact_distances,
+        array_folded_states,
+        output_data=output_data,
+        frame_begin=frame_begin,
+        sample_spacing=20,
+        native_contact_tol=native_contact_tol,
+        num_intermediate_states=1,
+        n_trial_boot=10,
+        conf_percent='sigma',
+        plotfile=f'{output_directory}/partial_contacts_boot.pdf',
+        homopolymer_sym=True,
+        )
+        
+    assert os.path.isfile(f'{output_directory}/partial_contacts_boot.pdf')       
+    
+    
+def test_bootstrap_native_contacts_expectation_dcd_homopolymer_sym_linear(tmpdir):
     """
     Test bootstrapping of native contacts expectation, based on helix contacts,
     with homopolymer end-to-end symmetry checks.
+    (linear homopolymer with no sidechains)
     """
     
     output_directory = tmpdir.mkdir("output")
@@ -631,6 +986,59 @@ def test_bootstrap_native_contacts_expectation_dcd_homopolymer_sym(tmpdir):
         )
         
     assert os.path.isfile(f'{output_directory}/native_contacts_boot_sym.pdf')      
+    
+    
+def test_bootstrap_native_contacts_expectation_dcd_homopolymer_sym_sidechain(tmpdir):
+    """
+    Test bootstrapping of native contacts expectation, based on helix contacts,
+    with homopolymer end-to-end symmetry checks.
+    (1-1 homopolymer model with sidechains)
+    """
+    
+    output_directory = tmpdir.mkdir("output")
+    output_data = os.path.join(data_path, "output.nc")
+    
+    # Replica exchange settings
+    number_replicas = 12
+    
+    # Load in cgmodel
+    cgmodel = pickle.load(open(f"{data_path}/stored_cgmodel.pkl", "rb" ))
+    
+    # Create list of dcd trajectories to analyze
+    dcd_file_list = []
+    for i in range(number_replicas):
+        dcd_file_list.append(f"{data_path}/replica_{i+1}.dcd")
+        
+    # Set path to native structure file:    
+    native_structure_file=f"{structures_path}/medoid_0.dcd"
+
+    # Tolerance for current trajectory distances:
+    native_contact_tol = 1.5    
+    
+    # Determine native contacts:
+    native_contact_list, native_contact_distances, opt_seq_spacing = get_helix_contacts(
+        cgmodel,
+        native_structure_file,
+        backbone_type_name='bb',
+    )
+    
+    full_T_list, Q_values, Q_uncertainty, sigmoid_results_boot = bootstrap_native_contacts_expectation(
+        cgmodel,
+        dcd_file_list,
+        native_contact_list,
+        native_contact_distances,
+        output_data=output_data,
+        frame_begin=100,
+        sample_spacing=20,
+        native_contact_tol=1.2,
+        num_intermediate_states=1,
+        n_trial_boot=10,
+        conf_percent='sigma',
+        plotfile=f'{output_directory}/native_contacts_boot_sym.pdf',
+        homopolymer_sym=True,
+        )
+        
+    assert os.path.isfile(f'{output_directory}/native_contacts_boot_sym.pdf')          
     
     
 def test_optimize_Q_helix_tol_dcd(tmpdir):
