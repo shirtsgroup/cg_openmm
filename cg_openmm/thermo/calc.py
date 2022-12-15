@@ -298,7 +298,7 @@ def get_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, output_data
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
     :type frame_begin: int
     
-    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData (default=1)
+    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsample_correlated_data (default=1)
     :type sample_spacing: int
     
     :param frame_end: index of last frame to include in heat capacity calculation (default=-1)
@@ -420,13 +420,10 @@ def get_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, output_data
                 ti += 1
                 N_k[k] = n_samples//len(temps)  # these are the states that have samples
 
-    # call MBAR to find weights at all states, sampled and unsampled
-    
-    solver_protocol = {"method":"L-BFGS-B"}
-    
+    # call MBAR to find weights at all states, sampled and unsampled 
     mbarT = pymbar.MBAR(
-        unsampled_state_energies,N_k,verbose=False,relative_tolerance=1e-12,
-        maximum_iterations=10000,solver_protocol=(solver_protocol,),
+        unsampled_state_energies,N_k,relative_tolerance=1e-12,
+        solver_protocol='robust', maximum_iterations=1000000,
         )
 
     for k in range(n_unsampled_states):
@@ -435,16 +432,16 @@ def get_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, output_data
         unsampled_state_energies[k, :] /= beta_full_k[k]
 
     # we don't actually need these expectations, but this code can be used to validate
-    #results = mbarT.computeExpectations(unsampled_state_energies, state_dependent=True)
+    #results = mbarT.compute_expectations(unsampled_state_energies, state_dependent=True)
     #E_expect = results[0]
     #dE_expect = results[1]
     
     # expectations for the differences between states, which we need for numerical derivatives                                               
-    results = mbarT.computeExpectations(unsampled_state_energies, output="differences", state_dependent=True)
-    DeltaE_expect = results[0]
-    dDeltaE_expect = results[1]
+    results = mbarT.compute_expectations(unsampled_state_energies, output="differences", state_dependent=True)
+    DeltaE_expect = results['mu']
+    dDeltaE_expect = results['sigma']
     
-    N_eff = mbarT.computeEffectiveSampleNumber()
+    N_eff = mbarT.compute_effective_sample_number()
 
     # Now calculate heat capacity (with uncertainties) using the finite difference approach. 
     Cv = np.zeros(n_T_vals)
@@ -497,7 +494,7 @@ def get_partial_heat_capacities(array_folded_states,
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
     :type frame_begin: int
     
-    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData (default=1)
+    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsample_correlated_data (default=1)
     :type sample_spacing: int
     
     :param frame_end: index of last frame to include in heat capacity calculation (default=-1)
@@ -625,13 +622,10 @@ def get_partial_heat_capacities(array_folded_states,
                 ti += 1
                 N_k[k] = n_samples//len(temps)  # these are the states that have samples
 
-    # call MBAR to find weights at all states, sampled and unsampled
-    
-    solver_protocol = {"method":"L-BFGS-B"}
-    
+    # call MBAR to find weights at all states, sampled and unsampled 
     mbarT = pymbar.MBAR(
-        unsampled_state_energies,N_k,verbose=False,relative_tolerance=1e-12,
-        maximum_iterations=10000,solver_protocol=(solver_protocol,),
+        unsampled_state_energies,N_k,relative_tolerance=1e-12,
+        solver_protocol='robust', maximum_iterations=1000000,
         )
 
     for k in range(n_unsampled_states):
@@ -667,7 +661,7 @@ def get_partial_heat_capacities(array_folded_states,
         
     for frame in range(len(array_folded_states)):
         # Sum the weighted energies for partial heat capacity eval:
-        # These energies should be the same unsampled_state_energies used in the computeExpectations calculation
+        # These energies should be the same unsampled_state_energies used in the compute_expectations calculation
         for c in range(n_conf_states):
             if array_folded_states[frame] == c:
                 num_confs[c] += w_nk[frame,:]*unsampled_state_energies[:,frame]
@@ -751,7 +745,7 @@ def get_heat_capacity_reeval(
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
     :type frame_begin: int
     
-    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData (default=1)
+    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsample_correlated_data (default=1)
     :type sample_spacing: int
     
     :param frame_end: index of last frame to include in heat capacity calculation (default=-1)
@@ -903,15 +897,12 @@ def get_heat_capacity_reeval(
     for k in range(n_unsampled_states):
         unsampled_state_energies[k+n_unsampled_states,:] = state_energies_reeval[0,:]*(beta_full_k[k]/beta_k[0])
         N_k[k+n_unsampled_states] = 0 # None of these were actually sampled
-       
-    # call MBAR to find weights at all states, sampled and unsampled
     
-    solver_protocol = {"method":"L-BFGS-B"}
-    
+    # call MBAR to find weights at all states, sampled and unsampled 
     mbarT = pymbar.MBAR(
-        unsampled_state_energies,N_k,verbose=False,relative_tolerance=1e-12,
-        maximum_iterations=10000,solver_protocol=(solver_protocol,),
-    )
+        unsampled_state_energies,N_k,relative_tolerance=1e-12,
+        solver_protocol='robust', maximum_iterations=1000000,
+        )
 
     for k in range(n_unsampled_states):
         # get the 'unreduced' potential -- we can't take differences of reduced potentials
@@ -920,20 +911,20 @@ def get_heat_capacity_reeval(
         unsampled_state_energies[k+n_unsampled_states,:] /= beta_full_k[k]        
 
     # we don't actually need these expectations, but this code can be used to validate
-    #results = mbarT.computeExpectations(unsampled_state_energies, state_dependent=True)
+    #results = mbarT.compute_expectations(unsampled_state_energies, state_dependent=True)
     #E_expect = results[0]
     #dE_expect = results[1]
     
     # expectations for the differences between states, which we need for numerical derivatives                                               
-    results = mbarT.computeExpectations(
+    results = mbarT.compute_expectations(
         unsampled_state_energies,
         output="differences",
         state_dependent=True
     )
-    DeltaE_expect = results[0]
-    dDeltaE_expect = results[1]
+    DeltaE_expect = results['mu']
+    dDeltaE_expect = results['sigma']
 
-    N_eff = mbarT.computeEffectiveSampleNumber()
+    N_eff = mbarT.compute_effective_sample_number()
     
     # Now calculate heat capacity (with uncertainties) using the finite difference approach. 
     
@@ -1003,7 +994,7 @@ def bootstrap_partial_heat_capacities(array_folded_states,
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
     :type frame_begin: int
     
-    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData (default=1)
+    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsample_correlated_data (default=1)
     :type sample_spacing: int
     
     :param frame_end: index of last frame to include in heat capacity calculation (default=-1)
@@ -1265,7 +1256,7 @@ def bootstrap_heat_capacity(frame_begin=0, sample_spacing=1, frame_end=-1, plot_
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
     :type frame_begin: int
     
-    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData (default=1)
+    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsample_correlated_data (default=1)
     :type sample_spacing: int
     
     :param frame_end: index of last frame to include in heat capacity calculation (default=-1)
