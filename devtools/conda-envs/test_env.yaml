@@ -13,7 +13,7 @@ dependencies:
   - physical_validation
   - pickleshare
   - pip
-  - pymbar=3
+  - pymbar=4
   - pytest
   - pytest-cov
   - python
