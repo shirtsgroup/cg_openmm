@@ -798,6 +798,7 @@ def run_replica_exchange(
         mcmc_moves=move,
         number_of_iterations=exchange_attempts,
         replica_mixing_scheme='swap-neighbors',
+        online_analysis_interval=None,
     )
 
     if os.path.exists(output_data):
@@ -812,6 +813,9 @@ def run_replica_exchange(
     print("Running OpenMM replica exchange simulation...")
     print(f"Time step: {simulation_time_step}")
     print(f"Iterations: {exchange_attempts}",flush=True)
+    
+    simulation.run()
+    
     try:
         simulation.run()
     except BaseException:
