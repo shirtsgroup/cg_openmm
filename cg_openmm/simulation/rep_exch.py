@@ -401,10 +401,10 @@ def process_replica_exchange_data(
     :param write_data_file: Option to write a text data file containing the state_energies array (default=True)
     :type write_data_file: Boolean
     
-    :param plot_production_only: Option to plot only the production region, as determined from pymbar detectEquilibration (default=False)
+    :param plot_production_only: Option to plot only the production region, as determined from pymbar detect_equilibration (default=False)
     :type plot_production_only: Boolean    
 
-    :param equil_nskip: skip this number of frames to sparsify the energy timeseries for pymbar detectEquilibration (default=1) - this is used only when frame_begin=0 and the trajectory has less than 40000 frames.
+    :param equil_nskip: skip this number of frames to sparsify the energy timeseries for pymbar detect_equilibration (default=1) - this is used only when frame_begin=0 and the trajectory has less than 40000 frames.
     :type equil_nskip: Boolean
     
     :param frame_begin: analyze starting from this frame, discarding all prior as equilibration period (default=0)
@@ -416,7 +416,7 @@ def process_replica_exchange_data(
     :returns:
         - replica_energies ( `Quantity() <http://docs.openmm.org/development/api-python/generated/simtk.unit.quantity.Quantity.html>`_ ( np.float( [number_replicas,number_simulation_steps] ), simtk.unit ) ) - The potential energies for all replicas at all (printed) time steps
         - replica_state_indices ( np.int64( [number_replicas,number_simulation_steps] ), simtk.unit ) - The thermodynamic state assignments for all replicas at all (printed) time steps
-        - production_start ( int - The frame at which the production region begins for all replicas, as determined from pymbar detectEquilibration
+        - production_start ( int - The frame at which the production region begins for all replicas, as determined from pymbar detect_equilibration
         - sample_spacing ( int - The number of frames between uncorrelated state energies, estimated using heuristic algorithm )
         - n_transit ( np.float( [number_replicas] ) ) - Number of half-transitions between state 0 and n for each replica
         - mixing_stats ( tuple ( np.float( [number_replicas x number_replicas] ) , np.float( [ number_replicas ] ) , float( statistical inefficiency ) ) ) - transition matrix, corresponding eigenvalues, and statistical inefficiency
@@ -515,7 +515,7 @@ def process_replica_exchange_data(
     subsample_indices = {}
     
     # If sufficiently large, discard the first 20000 frames as equilibration period and use 
-    # subsampleCorrelatedData to get the energy decorrelation time.
+    # subsample_correlated_data to get the energy decorrelation time.
     if total_steps >= 40000 or frame_begin > 0:
         if frame_begin > 0:
             # If specified, use frame_begin as the start of the production region
@@ -525,16 +525,16 @@ def process_replica_exchange_data(
             production_start=20000
             
         for state in range(n_replicas):
-            subsample_indices[state] = timeseries.subsampleCorrelatedData(
+            subsample_indices[state] = timeseries.subsample_correlated_data(
                 state_energies[state][production_start:],
                 conservative=True,
             )
             g[state] = subsample_indices[state][1]-subsample_indices[state][0]
     
     else:
-        # For small trajectories, use detectEquilibration
+        # For small trajectories, use detect_equilibration
         for state in range(n_replicas):
-            t0[state], g[state], Neff_max = timeseries.detectEquilibration(state_energies[state], nskip=equil_nskip)  
+            t0[state], g[state], Neff_max = timeseries.detect_equilibration(state_energies[state], nskip=equil_nskip)  
 
             # Choose the latest equil timestep to apply to all states    
             production_start = int(np.max(t0))
@@ -798,6 +798,7 @@ def run_replica_exchange(
         mcmc_moves=move,
         number_of_iterations=exchange_attempts,
         replica_mixing_scheme='swap-neighbors',
+        online_analysis_interval=None,
     )
 
     if os.path.exists(output_data):
@@ -812,6 +813,9 @@ def run_replica_exchange(
     print("Running OpenMM replica exchange simulation...")
     print(f"Time step: {simulation_time_step}")
     print(f"Iterations: {exchange_attempts}",flush=True)
+    
+    simulation.run()
+    
     try:
         simulation.run()
     except BaseException:

@@ -247,7 +247,7 @@ def expectations_fraction_contacts(fraction_native_contacts, frame_begin=0, samp
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
     :type frame_begin: int
 
-    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData (default=1)
+    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsample_correlated_data (default=1)
     :type sample_spacing: int       
     
     :param output_data: Path to the output data for a NetCDF-formatted file containing replica exchange simulation data (default="output/output.nc")                                                                                                  
@@ -352,12 +352,10 @@ def expectations_fraction_contacts(fraction_native_contacts, frame_begin=0, samp
                 ti += 1
                 N_k[k] = n_samples//len(temps)  # these are the states that have samples
 
-    # call MBAR to find weights at all states, sampled and unsampled
-    solver_protocol = {"method":"L-BFGS-B"}
-    
+    # call MBAR to find weights at all states, sampled and unsampled 
     mbarT = pymbar.MBAR(
-        unsampled_state_energies,N_k,verbose=False,relative_tolerance=1e-12,
-        maximum_iterations=10000,solver_protocol=(solver_protocol,),
+        unsampled_state_energies,N_k,relative_tolerance=1e-12,
+        solver_protocol='robust', maximum_iterations=1000000,
         )
         
     # Now we have the weights at all temperatures, so we can
@@ -367,9 +365,9 @@ def expectations_fraction_contacts(fraction_native_contacts, frame_begin=0, samp
     Q = np.reshape(fraction_native_contacts,np.size(fraction_native_contacts), order='F')
             
     # calculate the expectation of Q at each unsampled states         
-    results = mbarT.computeExpectations(Q)  # compute expectations of Q at all points
-    Q_expect = results[0]
-    dQ_expect = results[1]
+    results = mbarT.compute_expectations(Q)  # compute expectations of Q at all points
+    Q_expect = results['mu']
+    dQ_expect = results['sigma']
 
     # return the results in a dictionary (better than in a list)
     return_results = dict()
@@ -411,7 +409,7 @@ def fraction_native_contacts(
     :param native_contact_tol: Tolerance factor beyond the native distance for determining whether a pair of particles is 'native' (in multiples of native distance) (default=1.3)
     :type native_contact_tol: float
     
-    :param subsample: option to use pymbar subsampleCorrelatedData to detect and return the interval between uncorrelated data points (default=True)
+    :param subsample: option to use pymbar subsample_correlated_data to detect and return the interval between uncorrelated data points (default=True)
     :type subsample: Boolean
     
     :param homopolymer_sym: if there is end-to-end symmetry, scan forwards and backwards sequences for highest Q (default=False)
@@ -516,7 +514,7 @@ def fraction_native_contacts(
         g = np.zeros(n_replicas)
         subsample_indices = {}
         for rep in range(n_replicas):
-            subsample_indices[rep] = timeseries.subsampleCorrelatedData(
+            subsample_indices[rep] = timeseries.subsample_correlated_data(
                 Q[:,rep],
                 conservative=True,
             )
@@ -566,7 +564,7 @@ def fraction_native_contacts_preloaded(
     :param native_contact_tol: Tolerance factor beyond the native distance for determining whether a pair of particles is 'native' (in multiples of native distance) (default=1.3)
     :type native_contact_tol: float
     
-    :param subsample: option to use pymbar subsampleCorrelatedData to detect and return the interval between uncorrelated data points (default=True)
+    :param subsample: option to use pymbar subsample_correlated_data to detect and return the interval between uncorrelated data points (default=True)
     :type subsample: Boolean
     
     :param homopolymer_sym: if there is end-to-end symmetry, scan forwards and backwards sequences for highest Q (default=False)
@@ -651,7 +649,7 @@ def fraction_native_contacts_preloaded(
         g = np.zeros(n_replicas)
         subsample_indices = {}
         for rep in range(n_replicas):
-            subsample_indices[rep] = timeseries.subsampleCorrelatedData(
+            subsample_indices[rep] = timeseries.subsample_correlated_data(
                 Q[:,rep],
                 conservative=True,
             )
@@ -697,7 +695,7 @@ def optimize_Q_cut(
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
     :type frame_begin: int
 
-    :param frame_stride: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData (default=1)
+    :param frame_stride: spacing of uncorrelated data points, for example determined from pymbar timeseries subsample_correlated_data (default=1)
     :type frame_stride: int
     
     :param plotfile: Path to output file for plotting results (default='native_contacts_opt_2d.pdf')
@@ -941,7 +939,7 @@ def optimize_Q_cut_1d(
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
     :type frame_begin: int
 
-    :param frame_stride: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData (default=1)
+    :param frame_stride: spacing of uncorrelated data points, for example determined from pymbar timeseries subsample_correlated_data (default=1)
     :type frame_stride: int
     
     :param native_contact_tol: Tolerance factor beyond the native distance for determining whether a pair of particles is 'native' (in multiples of native distance) (default=1.3)
@@ -1171,7 +1169,7 @@ def bootstrap_native_contacts_expectation(
     :param frame_begin: Frame at which to start native contacts analysis (default=0)
     :type frame_begin: int
     
-    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData (default=1)
+    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsample_correlated_data (default=1)
     :type sample_spacing: int
     
     :param native_contact_tol: Tolerance factor beyond the native distance for determining whether a pair of particles is 'native' (in multiples of native distance) (default=1.3)
@@ -1463,7 +1461,7 @@ def optimize_Q_tol_helix(
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
     :type frame_begin: int
 
-    :param frame_stride: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData (default=1)
+    :param frame_stride: spacing of uncorrelated data points, for example determined from pymbar timeseries subsample_correlated_data (default=1)
     :type frame_stride: int 
     
     :param backbone_type_name: type name(s) in cgmodel which corresponds to the particles forming the helical backbone (default='bb')
