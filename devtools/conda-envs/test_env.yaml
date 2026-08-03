@@ -1,8 +1,7 @@
 name: test
 channels:
   - conda-forge
-  - omnia
-  - defaults
+  - nodefaults
 dependencies:
   - matplotlib-base
   - mdtraj
