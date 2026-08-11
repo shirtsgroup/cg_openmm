@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cg_openmm"
+version = "1.0"
+description = "Package containing tools to perform coarse-grained modeling in OpenMM."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "Garrett A. Meek", email = "garrett.a.meek@gmail.com" },
+]
+requires-python = ">=3.9"
+dependencies = [
+    "matplotlib",
+    "mdtraj",
+    "numpy",
+    "openmm >=7.7",
+    "openmmtools",
+    "physical_validation",
+    "pymbar >=3.0.5,<4",
+    "scikit-learn",
+    "scipy",
+]
+
+[project.urls]
+Homepage = "https://github.com/shirtsgroup/cg_openmm"
+Documentation = "https://cg-openmm.readthedocs.io/en/latest/"
+
+[project.optional-dependencies]
+test = ["pytest", "pytest-cov"]
+
+[tool.setuptools.packages.find]
+include = ["cg_openmm*"]
+
+[tool.setuptools]
+include-package-data = true
