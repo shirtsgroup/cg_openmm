@@ -15,7 +15,13 @@ Cite:
 > Walker, CC; Meek, GA; Fobe, TL; Shirts, MR. Using a Coarse-Grained Modeling Framework to Identify Oligomeric Motifs with Tunable Secondary Structure. *J. Chem. Theory Comput.* 2021, 17 (10), 6018–6035. https://doi.org/10.1021/acs.jctc.1c00528
 
 ## Installation
-To install `cg_openmm`, run `python setup.py install` in the base directory.
+We recommend installing dependencies with conda (or mamba), then installing `cg_openmm` with pip from the base directory:
+
+```
+conda env create -f environment.yml
+conda activate cg_openmm
+pip install -e .
+```
 
 To use structural analysis features, including native structure determination and calculation of bonded distributions, also install [analyze_foldamers](https://github.com/shirtsgroup/analyze_foldamers).
 
