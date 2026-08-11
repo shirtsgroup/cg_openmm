@@ -125,3 +125,65 @@ def test_random_builder(tmpdir):
     positions = PDBFile(filename).getPositions()
     
     assert len(positions)==10
+
+@pytest.mark.parametrize(
+    "monomer_bond_list",
+    [
+        [[0, 1], [0, 2], [1, 3]],  # sorted (previously working)
+        [[0, 1], [1, 3], [0, 2]],  # unsorted (issue #153)
+        [[1, 3], [0, 2], [0, 1]],  # fully shuffled
+    ],
+)
+def test_random_builder_bond_list_order(tmpdir, monomer_bond_list):
+    """The random builder should not depend on the order of a monomer's bond_list
+    (issue #153). Uses a 1-backbone / 3-sidechain monomer with both 2-bead and
+    1-bead sidechain connections to the same backbone bead."""
+
+    bond_length = 1.5 * unit.angstrom
+    bond_lengths = {
+        "bb_bb_bond_length": bond_length,
+        "bb_sc_bond_length": bond_length,
+        "sc_sc_bond_length": bond_length,
+    }
+    bond_force_constant = 1000 * unit.kilojoule_per_mole / unit.nanometer / unit.nanometer
+    bond_force_constants = {
+        "bb_bb_bond_force_constant": bond_force_constant,
+        "bb_sc_bond_force_constant": bond_force_constant,
+        "sc_sc_bond_force_constant": bond_force_constant,
+    }
+
+    mass = 100.0 * unit.amu
+    sigma = 1.5 * bond_length / (2.0 ** (1.0 / 6.0))
+    epsilon = 0.5 * unit.kilojoule_per_mole
+
+    bb = {"particle_type_name": "bb", "sigma": sigma, "epsilon": epsilon, "mass": mass}
+    sc = {"particle_type_name": "sc", "sigma": sigma, "epsilon": epsilon, "mass": mass}
+
+    A = {
+        "monomer_name": "A",
+        "particle_sequence": [bb, sc, sc, sc],
+        "bond_list": monomer_bond_list,
+        "start": 0,
+        "end": 0,
+    }
+
+    cgmodel = CGModel(
+        particle_type_list=[bb, sc],
+        bond_lengths=bond_lengths,
+        bond_force_constants=bond_force_constants,
+        include_nonbonded_forces=True,
+        include_bond_forces=True,
+        include_bond_angle_forces=False,
+        include_torsion_forces=False,
+        sequence=3 * [A],
+        constrain_bonds=False,
+        random_positions=True,
+        monomer_types=[A],
+    )
+
+    output_directory = tmpdir.mkdir("output")
+    filename = f"{output_directory}/3mer_1b3s_builder_test.pdb"
+    write_pdbfile_without_topology(cgmodel, filename)
+    positions = PDBFile(filename).getPositions()
+
+    assert len(positions) == 12
