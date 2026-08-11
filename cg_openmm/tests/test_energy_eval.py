@@ -22,6 +22,27 @@ structures_path = os.path.join(current_path, 'test_structures')
 data_path = os.path.join(current_path, 'test_data')
 
 
+def _torsion_params_by_type(force, cgmodel, type_names):
+    """Return getTorsionParameters() for the first torsion in ``force`` whose
+    particle-type-name sequence matches ``type_names`` in either direction.
+
+    OpenMM does not guarantee a stable torsion ordering across OpenMM/Python
+    versions, so tests locate torsions by type rather than by a hardcoded index
+    (index 4 is no longer necessarily bb-bb-bb-bb, etc.). ``eval_energy`` updates
+    every torsion of a given type identically, so any representative torsion of
+    the requested type reflects the update.
+    """
+    target = tuple(type_names)
+    for i in range(force.getNumTorsions()):
+        params = force.getTorsionParameters(i)
+        types = tuple(cgmodel.get_particle_type_name(pp) for pp in params[0:4])
+        if types == target or types == target[::-1]:
+            return params
+    raise AssertionError(
+        f"no PeriodicTorsion of type {target} found among "
+        f"{force.getNumTorsions()} torsions")
+
+
 def test_eval_energy_no_change(tmpdir):
     """
     Make sure the reevaluated energies are the same as those in the .nc file,
@@ -682,9 +703,9 @@ def test_eval_energy_new_torsion_val(tmpdir):
     for force_index, force in enumerate(simulation.system.getForces()):
         force_name = force.__class__.__name__
         if force_name == 'PeriodicTorsionForce':
-            (par1, par2, par3, par4, per, sc_bb_bb_sc_angle_updated, k) = force.getTorsionParameters(0)
-            (par1, par2, par3, par4, per, bb_bb_bb_bb_angle_updated, k) = force.getTorsionParameters(4)
-            (par1, par2, par3, par4, per, bb_bb_bb_sc_angle_updated, k) = force.getTorsionParameters(1)
+            (par1, par2, par3, par4, per, sc_bb_bb_sc_angle_updated, k) = _torsion_params_by_type(force, cgmodel, ('sc', 'bb', 'bb', 'sc'))
+            (par1, par2, par3, par4, per, bb_bb_bb_bb_angle_updated, k) = _torsion_params_by_type(force, cgmodel, ('bb', 'bb', 'bb', 'bb'))
+            (par1, par2, par3, par4, per, bb_bb_bb_sc_angle_updated, k) = _torsion_params_by_type(force, cgmodel, ('bb', 'bb', 'bb', 'sc'))
 
     assert sc_bb_bb_sc_angle_updated == param_dict['sc_bb_bb_sc_torsion_phase_angle']
     assert bb_bb_bb_bb_angle_updated == param_dict['bb_bb_bb_bb_torsion_phase_angle']
@@ -710,7 +731,7 @@ def test_eval_energy_new_torsion_val(tmpdir):
     for force_index, force in enumerate(simulation.system.getForces()):
         force_name = force.__class__.__name__
         if force_name == 'PeriodicTorsionForce':
-            (par1, par2, par3, par4, per, sc_bb_bb_bb_angle_updated, k) = force.getTorsionParameters(1)
+            (par1, par2, par3, par4, per, sc_bb_bb_bb_angle_updated, k) = _torsion_params_by_type(force, cgmodel, ('bb', 'bb', 'bb', 'sc'))
 
     assert sc_bb_bb_bb_angle_updated == param_dict_rev['sc_bb_bb_bb_torsion_phase_angle']
 
@@ -761,9 +782,9 @@ def test_eval_energy_new_torsion_k(tmpdir):
     for force_index, force in enumerate(simulation.system.getForces()):
         force_name = force.__class__.__name__
         if force_name == 'PeriodicTorsionForce':
-            (par1, par2, par3, par4, per, angle, sc_bb_bb_sc_k_updated) = force.getTorsionParameters(0)
-            (par1, par2, par3, par4, per, angle, bb_bb_bb_bb_k_updated) = force.getTorsionParameters(4)
-            (par1, par2, par3, par4, per, angle, bb_bb_bb_sc_k_updated) = force.getTorsionParameters(1)
+            (par1, par2, par3, par4, per, angle, sc_bb_bb_sc_k_updated) = _torsion_params_by_type(force, cgmodel, ('sc', 'bb', 'bb', 'sc'))
+            (par1, par2, par3, par4, per, angle, bb_bb_bb_bb_k_updated) = _torsion_params_by_type(force, cgmodel, ('bb', 'bb', 'bb', 'bb'))
+            (par1, par2, par3, par4, per, angle, bb_bb_bb_sc_k_updated) = _torsion_params_by_type(force, cgmodel, ('bb', 'bb', 'bb', 'sc'))
 
     assert sc_bb_bb_sc_k_updated == param_dict['sc_bb_bb_sc_torsion_force_constant']
     assert bb_bb_bb_bb_k_updated == param_dict['bb_bb_bb_bb_torsion_force_constant']
@@ -789,7 +810,7 @@ def test_eval_energy_new_torsion_k(tmpdir):
     for force_index, force in enumerate(simulation.system.getForces()):
         force_name = force.__class__.__name__
         if force_name == 'PeriodicTorsionForce':
-            (par1, par2, par3, par4, per, angle, sc_bb_bb_bb_k_updated) = force.getTorsionParameters(1)
+            (par1, par2, par3, par4, per, angle, sc_bb_bb_bb_k_updated) = _torsion_params_by_type(force, cgmodel, ('bb', 'bb', 'bb', 'sc'))
 
     assert sc_bb_bb_bb_k_updated == param_dict_rev['sc_bb_bb_bb_torsion_force_constant']
 
@@ -840,9 +861,9 @@ def test_eval_energy_new_torsion_periodicity(tmpdir):
     for force_index, force in enumerate(simulation.system.getForces()):
         force_name = force.__class__.__name__
         if force_name == 'PeriodicTorsionForce':
-            (par1, par2, par3, par4, sc_bb_bb_sc_per_updated, angle, k) = force.getTorsionParameters(0)
-            (par1, par2, par3, par4, bb_bb_bb_bb_per_updated, angle, k) = force.getTorsionParameters(4)
-            (par1, par2, par3, par4, bb_bb_bb_sc_per_updated, angle, k) = force.getTorsionParameters(1)
+            (par1, par2, par3, par4, sc_bb_bb_sc_per_updated, angle, k) = _torsion_params_by_type(force, cgmodel, ('sc', 'bb', 'bb', 'sc'))
+            (par1, par2, par3, par4, bb_bb_bb_bb_per_updated, angle, k) = _torsion_params_by_type(force, cgmodel, ('bb', 'bb', 'bb', 'bb'))
+            (par1, par2, par3, par4, bb_bb_bb_sc_per_updated, angle, k) = _torsion_params_by_type(force, cgmodel, ('bb', 'bb', 'bb', 'sc'))
 
     assert sc_bb_bb_sc_per_updated == param_dict['sc_bb_bb_sc_torsion_periodicity']
     assert bb_bb_bb_bb_per_updated == param_dict['bb_bb_bb_bb_torsion_periodicity']
@@ -868,7 +889,7 @@ def test_eval_energy_new_torsion_periodicity(tmpdir):
     for force_index, force in enumerate(simulation.system.getForces()):
         force_name = force.__class__.__name__
         if force_name == 'PeriodicTorsionForce':
-            (par1, par2, par3, par4, sc_bb_bb_bb_per_updated, angle, k) = force.getTorsionParameters(1)
+            (par1, par2, par3, par4, sc_bb_bb_bb_per_updated, angle, k) = _torsion_params_by_type(force, cgmodel, ('bb', 'bb', 'bb', 'sc'))
 
     assert sc_bb_bb_bb_per_updated == param_dict_rev['sc_bb_bb_bb_torsion_periodicity']
 
@@ -1143,17 +1164,17 @@ def test_eval_energy_all_parameters(tmpdir):
             (par1, par2, par3, par4,
             sc_bb_bb_sc_per_updated,
             sc_bb_bb_sc_angle_updated,
-            sc_bb_bb_sc_k_updated) = force.getTorsionParameters(0)
+            sc_bb_bb_sc_k_updated) = _torsion_params_by_type(force, cgmodel, ('sc', 'bb', 'bb', 'sc'))
 
             (par1, par2, par3, par4,
             bb_bb_bb_bb_per_updated,
             bb_bb_bb_bb_angle_updated,
-            bb_bb_bb_bb_k_updated) = force.getTorsionParameters(4)
+            bb_bb_bb_bb_k_updated) = _torsion_params_by_type(force, cgmodel, ('bb', 'bb', 'bb', 'bb'))
 
             (par1, par2, par3, par4,
             bb_bb_bb_sc_per_updated,
             bb_bb_bb_sc_angle_updated,
-            bb_bb_bb_sc_k_updated) = force.getTorsionParameters(1)
+            bb_bb_bb_sc_k_updated) = _torsion_params_by_type(force, cgmodel, ('bb', 'bb', 'bb', 'sc'))
 
     # Check updated nonbonded parameters:
 

@@ -1,9 +1,9 @@
 name: test
 channels:
   - conda-forge
-  - omnia
-  - defaults
+  - nodefaults
 dependencies:
+  - libnetcdf <4.9  # avoid netcdf-c 4.9 deflate/string-var regression (openmmtools reporter)
   - matplotlib-base
   - mdtraj
   - mpi4py
