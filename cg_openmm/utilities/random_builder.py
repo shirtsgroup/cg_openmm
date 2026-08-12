@@ -722,15 +722,29 @@ def get_random_positions(
                     completed_list.append(bead_index)
                     bead_index = bead_index + 1
                 else:
-                    # place the monomers involved in this bond
+                    # place the beads involved in these bonds.
+                    # Beads must be placed in ascending index order, because each new
+                    # bead's coordinates are inserted at row bead_index of the positions
+                    # array. A bond is ready to be placed only when one of its ends is
+                    # the next bead to place (bead_index) and its other end has already
+                    # been placed. Bonds that are not ready yet are skipped and picked
+                    # up on a later sweep, so the monomer bond_list may be given in any
+                    # order (see issue #153).
+                    placed_in_sweep = False
                     for bond_index in range(len(monomer_bond_list)):
                         bond = monomer_bond_list[bond_index]
                         if bond[0] in completed_list and bond[1] in completed_list:
                             continue  # if bond atoms in completed list, go in to the next bond
+                        if bond[0] == bead_index and bond[1] < bead_index:
+                            parent_bead, new_bead = bond[1], bond[0]
+                        elif bond[1] == bead_index and bond[0] < bead_index:
+                            parent_bead, new_bead = bond[0], bond[1]
+                        else:
+                            continue  # this bond cannot be placed yet
                         # place the atoms on a pseudogrid
                         if lattice_style:
                             trial_positions, placement = assign_position_lattice_style(
-                                cgmodel, stored_positions, distance_cutoff, bond[0], bond[1]
+                                cgmodel, stored_positions, distance_cutoff, parent_bead, new_bead
                             )
                         else:
                             # this choice not working now
@@ -738,18 +752,30 @@ def get_random_positions(
                                 stored_positions,
                                 get_bond_length(bond),
                                 distance_cutoff,
-                                bond[1],
-                                bond[0],
+                                parent_bead,
+                                new_bead,
                             )
 
                         if placement:  # if we successfuly placed this atom, move to the next one.
                             stored_positions = trial_positions
-                            completed_list.append(bead_index)
+                            completed_list.append(new_bead)
                             bead_index = bead_index + 1
+                            placed_in_sweep = True
                         else:
                             # we tried 6 directions, and we couldn't place it. Trapped!
                             monomer_trapped = True
                             break
+
+                    if not placed_in_sweep and not monomer_trapped:
+                        # No bond could place the next bead, so another sweep will not
+                        # make progress; the monomer's bond graph cannot be built up
+                        # one bead at a time in index order.
+                        raise ValueError(
+                            f"Cannot determine a placement order for the beads of monomer "
+                            f"{monomer_index} from its bond list. Check that every bead in "
+                            f"the monomer is connected (directly or through lower-indexed "
+                            f"beads) to the start of the monomer."
+                        )
 
             if monomer_trapped:
                 # there is no way to go - start over with the first monomer.
