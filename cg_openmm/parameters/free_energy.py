@@ -66,7 +66,7 @@ def expectations_free_energy(Q, Q_folded, temperature_list, frame_begin=0, sampl
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
     :type frame_begin: int    
     
-    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData
+    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsample_correlated_data
     :type sample_spacing: int     
     
     :param output_data: Path to the simulation .nc file.
@@ -186,12 +186,10 @@ def expectations_free_energy(Q, Q_folded, temperature_list, frame_begin=0, sampl
                 ti += 1
                 N_k[k] = n_samples//len(temps)  # these are the states that have samples
 
-    # call MBAR to find weights at all states, sampled and unsampled
-    solver_protocol = {"method":"L-BFGS-B"}
-    
+    # call MBAR to find weights at all states, sampled and unsampled 
     mbarT = pymbar.MBAR(
-        unsampled_state_energies,N_k,verbose=False,relative_tolerance=1e-12,
-        maximum_iterations=10000,solver_protocol=(solver_protocol,),
+        unsampled_state_energies,N_k,relative_tolerance=1e-12,
+        solver_protocol='robust', maximum_iterations=1000000,
         )
         
     # Calculate N expectations that a structure is in configurational state n
@@ -214,7 +212,7 @@ def expectations_free_energy(Q, Q_folded, temperature_list, frame_begin=0, sampl
 
         # compute expectations of being in conformational state n
         # Store results in a dictionary
-        results[str(i)] = mbarT.computeMultipleExpectations(
+        results[str(i)] = mbarT.compute_multiple_expectations(
             bool_i,U_n,compute_covariance=True)
 
     deltaF_values = {}
@@ -236,11 +234,11 @@ def expectations_free_energy(Q, Q_folded, temperature_list, frame_begin=0, sampl
                 # Free energy change for s2 --> s1 at temp i
                 deltaF_values[f"state{s1}_state{s2}"][i] = (
                     -kB*full_T_list[i]*Tunit*(
-                    np.log(results[str(i)][0][s1])-
-                    np.log(results[str(i)][0][s2]))).value_in_unit(F_unit)
+                    np.log(results[str(i)]['mu'][s1])-
+                    np.log(results[str(i)]['mu'][s2]))).value_in_unit(F_unit)
                     
                 # Get covariance matrix:
-                theta_i = results[str(i)][2]
+                theta_i = results[str(i)]['covariances']
                 deltaF_uncertainty[f"state{s1}_state{s2}"][i] = (
                     kB*full_T_list[i]*unit.kelvin*np.sqrt(
                     theta_i[s1,s1] + theta_i[s2,s2] - (theta_i[s2,s1]+theta_i[s1,s2]))).value_in_unit(F_unit)
@@ -275,7 +273,7 @@ def bootstrap_free_energy_folding(Q, Q_folded, array_folded_states=None, output_
     :param frame_begin: index of first frame defining the range of samples to use as a production period (default=0)
     :type frame_begin: int    
     
-    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsampleCorrelatedData
+    :param sample_spacing: spacing of uncorrelated data points, for example determined from pymbar timeseries subsample_correlated_data
     :type sample_spacing: int     
     
     :param n_trial_boot: number of trials to run for generating bootstrapping uncertainties (default=200)

@@ -9,11 +9,10 @@ dependencies:
   - mpi4py
   - numpy
   - openmm
-  - openmmtools=0.21.1
   - physical_validation
   - pickleshare
   - pip
-  - pymbar=3
+  - pymbar=4
   - pytest
   - pytest-cov
   - python
@@ -26,4 +25,5 @@ dependencies:
   - pip:
     - codecov
     - git+https://github.com/shirtsgroup/analyze_foldamers.git
+    - git+https://github.com/cwalker7/openmmtools.git@openmmtools_0_21_2_pymbar_4
 
